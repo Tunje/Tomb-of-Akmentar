@@ -4,6 +4,8 @@ extends RiggedBody
 ## shoot, reload, roll, death. The player feeds it state; it never reads input.
 
 const EXPLORER := "res://assets/characters/explorer/explorer.glb"
+## Tests can show another GLB on the same rig in the player's place (--explorer-glb).
+static var glb_path := EXPLORER
 ## Ground speed (m/s) -> locomotion blend points, and the speed each clip naturally covers
 ## (Wreck Wreckers measured Walk 1.03, Jog 6.1, Sprint 9.4 on the same clips).
 const GAIT := [[0.0, 1.0], [1.6, 1.03], [4.0, 6.1], [6.6, 9.4]]
@@ -24,7 +26,7 @@ var _armed := 1.0
 
 ## Null when an asset is missing; the caller keeps its stand-in then.
 static func create() -> ExplorerBody:
-	if not assets_present(EXPLORER):
+	if not assets_present(glb_path):
 		return null
 	var b := ExplorerBody.new()
 	b.name = "ExplorerBody"
@@ -32,7 +34,7 @@ static func create() -> ExplorerBody:
 
 
 func _ready() -> void:
-	_setup_rig(EXPLORER)
+	_setup_rig(glb_path)
 	var hand := BoneAttachment3D.new()
 	hand.bone_name = BONE_MAP["hand_r"]
 	skeleton.add_child(hand)

@@ -187,7 +187,7 @@ func _pose_check() -> void:
 	if local_t > 0.4 and not _pose_shot_front:
 		_pose_shot_front = true
 		print("RESULT bones %s: %s" % [POSES[i], p.explorer.debug_report()])
-		_pose_cam.look_at_from_position(chest + p.model.global_basis * Vector3(0, 0.15, -2.8), chest)
+		_pose_cam.look_at_from_position(chest + p.model.global_basis * Vector3(0, 0.15, 2.8 if args.has("back") else -2.8), chest)
 		_screenshot("pose_%d_%s_front.png" % [i, POSES[i]])
 	elif local_t > 1.0 and not _pose_shot_side:
 		_pose_shot_side = true
@@ -277,7 +277,7 @@ func _press(action: String, on: bool) -> void:
 
 func _screenshot(file: String) -> void:
 	await RenderingServer.frame_post_draw
-	var path := _dir.path_join(file)
+	var path := _dir.path_join(file.replace("/", "_"))
 	get_viewport().get_texture().get_image().save_png(path)
 	print("RESULT shot %s" % ProjectSettings.globalize_path(path))
 

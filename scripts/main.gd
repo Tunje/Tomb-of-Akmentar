@@ -28,6 +28,8 @@ func _ready() -> void:
 			n.process_mode = Node.PROCESS_MODE_PAUSABLE)
 	_setup_input()
 	var args := TestDriver.parse_args()
+	if args.has("explorer-glb"):
+		ExplorerBody.glb_path = args["explorer-glb"]
 	if args.has("mummy-glb"):
 		MummyBody.glb_path = args["mummy-glb"]
 	level = Level.new()
