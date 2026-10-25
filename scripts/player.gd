@@ -73,6 +73,7 @@ var camera: Camera3D
 var model: Node3D
 var gun_pivot: Node3D
 var gun_mesh: MeshInstance3D
+var gun_model: Node3D  # the weapon's GLB when it has one; gun_mesh is the box stand-in
 var muzzle: Marker3D
 var _shape: CollisionShape3D
 var _capsule: CapsuleShape3D
@@ -326,6 +327,12 @@ func _process(delta: float) -> void:
 		lower = 0.6
 	gun_pivot.rotation = Vector3(deg_to_rad(_gun_kick * 25.0 - lower * 50.0), 0, 0)
 	gun_pivot.position.z = (0.0 if explorer else -0.25) + _gun_kick * 0.12
+	# A break-action opens for the reload: snaps open, stays open, swings shut at the end.
+	var barrels := gun_model.find_child("barrels", true, false) as Node3D if gun_model else null
+	if barrels:
+		var p := reload_progress()
+		var open := 0.0 if _reload_t <= 0.0 else clampf(minf(p / 0.15, (1.0 - p) / 0.12), 0.0, 1.0)
+		barrels.rotation.x = -deg_to_rad(35.0) * open
 
 
 func _update_facing(delta: float, wish: Vector3) -> void:
@@ -384,6 +391,17 @@ func _equip(i: int, instant: bool) -> void:
 	_reload_t = 0.0
 	_switch_t = 0.0 if instant else SWITCH_TIME
 	var w := weapons[i]
+	if gun_model:
+		gun_model.queue_free()
+		gun_model = null
+	if w.model_path != "" and ResourceLoader.exists(w.model_path):
+		gun_model = (load(w.model_path) as PackedScene).instantiate()
+		gun_pivot.add_child(gun_model)
+		gun_mesh.visible = false
+		var m := gun_model.find_child("muzzle", true, false) as Node3D
+		muzzle.position = gun_pivot.to_local(m.global_position) if m and m.is_inside_tree() else Vector3(0, 0.02, -w.model_length)
+		return
+	gun_mesh.visible = true
 	var bm := BoxMesh.new()
 	bm.size = Vector3(0.06, 0.1, w.model_length)
 	gun_mesh.mesh = bm
@@ -445,9 +463,29 @@ func try_fire() -> void:
 	_gun_kick = 1.0
 	Sfx.play_at(self, Sfx.gunshot(w.sound_pitch), muzzle.global_position, 2.0)
 	Fx.muzzle_flash(get_parent(), muzzle.global_position, -camera.global_basis.z)
+	_cycle_gun_parts(w)
 	fired.emit()
 	if ammo[current] == 0:
 		_fire_cd = maxf(_fire_cd, 0.3)
+
+
+## The model's moving parts per shot: the hammer snaps back and falls, a revolver's cylinder
+## turns one chamber (parts named "hammer" / "cylinder" in the GLB; missing ones are skipped).
+func _cycle_gun_parts(w: WeaponData) -> void:
+	if gun_model == null:
+		return
+	for hammer: Node3D in gun_model.find_children("hammer*", "Node3D", true, false):
+		var rest: float = hammer.get_meta("rest_x", hammer.rotation.x)
+		hammer.set_meta("rest_x", rest)
+		var tw := hammer.create_tween()
+		tw.tween_property(hammer, "rotation:x", rest - 0.6, 0.04)
+		tw.tween_property(hammer, "rotation:x", rest, minf(w.fire_interval * 0.5, 0.15))
+	var cyl := gun_model.find_child("cylinder", true, false) as Node3D
+	if cyl:
+		var to: float = cyl.get_meta("turn_to", cyl.rotation.z) + TAU / w.mag_size
+		cyl.set_meta("turn_to", to)
+		cyl.create_tween().tween_property(cyl, "rotation:z", to, minf(w.fire_interval * 0.6, 0.12)) \
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 
 func _fire_bullets(w: WeaponData) -> void:

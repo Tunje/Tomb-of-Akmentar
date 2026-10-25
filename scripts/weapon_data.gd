@@ -22,7 +22,9 @@ extends Resource
 @export var falloff_start := 30.0  # damage drops linearly to 50% at range_m
 @export var aim_fov := 50.0
 @export var sound_pitch := 1.0
-@export var model_length := 0.35
+@export var model_length := 0.35  # stand-in box length when there's no model
+## image-to-3d GLB: barrel along -Z, origin at the grip, an empty named "muzzle".
+@export var model_path := ""
 
 
 static func defaults() -> Array[WeaponData]:
@@ -44,6 +46,7 @@ static func defaults() -> Array[WeaponData]:
 	revolver.aim_fov = 52.0
 	revolver.sound_pitch = 1.15
 	revolver.model_length = 0.28
+	revolver.model_path = "res://assets/guns/revolver_cairo.glb"
 
 	var rifle := WeaponData.new()
 	rifle.id = "rifle"
@@ -66,6 +69,7 @@ static func defaults() -> Array[WeaponData]:
 	rifle.aim_fov = 38.0
 	rifle.sound_pitch = 0.85
 	rifle.model_length = 0.95
+	rifle.model_path = "res://assets/guns/rifle_lever.glb"
 
 	var shotgun := WeaponData.new()
 	shotgun.id = "shotgun"
@@ -89,5 +93,6 @@ static func defaults() -> Array[WeaponData]:
 	shotgun.aim_fov = 56.0
 	shotgun.sound_pitch = 0.7
 	shotgun.model_length = 0.85
+	shotgun.model_path = "res://assets/guns/shotgun_tombsweeper.glb"
 
 	return [revolver, rifle, shotgun]

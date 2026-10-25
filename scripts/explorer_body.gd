@@ -157,3 +157,6 @@ func _orient_gun() -> void:
 		# Lowered: along the body, tipped down.
 		dir = (-global_basis.z + Vector3.DOWN * 0.7).normalized()
 	gun_holder.global_basis = Basis.looking_at(dir, Vector3.UP)
+	# The grip in the palm (between the wrist and the middle knuckle), not at the wrist joint.
+	if bone_map.has("middle_01_r"):
+		gun_holder.global_position = (bone_point("hand_r") + bone_point("middle_01_r")) * 0.5

@@ -27,6 +27,8 @@ var driver: Node3D
 var body: Node3D
 var skeleton: Skeleton3D
 var anim_player: AnimationPlayer
+## BONE_MAP plus the fingers found on this body (see with_fingers).
+var bone_map := {}
 var _tree: AnimationTree
 var _src: Skeleton3D
 var _retarget: ModelRetarget
@@ -61,13 +63,53 @@ func _setup_rig(glb: String) -> void:
 	for lib_name in UAL:
 		anim_player.add_animation_library(lib_name, library(lib_name))
 	_build_tree()
+	bone_map = with_fingers(BONE_MAP, skeleton, _src)
 	_retarget = ModelRetarget.new()
 	add_child(_retarget)
-	_retarget.setup(_src, skeleton, BONE_MAP)
+	_retarget.setup(_src, skeleton, bone_map)
 
 
 func _build_tree() -> void:
 	pass
+
+
+## `map` plus its fingers -> UAL's (thumb, index, middle, ring, pinky; 3 joints each), found from
+## each hand's children: the thumb is the one nearest the wrist, the others ordered across the
+## knuckles from the thumb's side. Unmapped, the fingers stayed spread open around the gun.
+## Ported from Wreck Wreckers (game/armour/player_body.gd, with_fingers).
+const FINGERS := ["thumb", "index", "middle", "ring", "pinky"]
+
+
+static func with_fingers(map: Dictionary, sk: Skeleton3D, ours: Skeleton3D) -> Dictionary:
+	var out := map.duplicate()
+	for side: String in ["l", "r"]:
+		var hand := sk.find_bone(String(map.get("hand_" + side, "")))
+		if hand < 0:
+			continue
+		var kids := Array(sk.get_bone_children(hand))
+		if kids.size() != 5:
+			continue
+		kids.sort_custom(func(a: int, b: int) -> bool: return sk.get_bone_rest(a).origin.length() < sk.get_bone_rest(b).origin.length())
+		var thumb: int = kids.pop_front()
+		var mid := Vector3.ZERO
+		for k: int in kids:
+			mid += sk.get_bone_rest(k).origin / 4.0
+		var along := mid.normalized()
+		var toward := sk.get_bone_rest(thumb).origin - mid
+		toward = (toward - along * toward.dot(along)).normalized()
+		kids.sort_custom(func(a: int, b: int) -> bool: return sk.get_bone_rest(a).origin.dot(toward) > sk.get_bone_rest(b).origin.dot(toward))
+		kids.push_front(thumb)
+		for f in 5:
+			var bone: int = kids[f]
+			for j in 3:
+				var ual := "%s_0%d_%s" % [FINGERS[f], j + 1, side]
+				if ours.find_bone(ual) >= 0:
+					out[ual] = sk.get_bone_name(bone)
+				var next := sk.get_bone_children(bone)
+				if next.is_empty():
+					break
+				bone = next[0]
+	return out
 
 
 ## Head as high as the driver's (~1.8 m), feet on the ground: the GLBs are 1.0 unit tall.
@@ -130,7 +172,7 @@ func _start_tree(root: AnimationNode) -> void:
 
 ## Our bone (by UAL name) as a world point now.
 func bone_point(ual: String) -> Vector3:
-	var i := skeleton.find_bone(BONE_MAP.get(ual, ""))
+	var i := skeleton.find_bone(bone_map.get(ual, BONE_MAP.get(ual, "")))
 	return skeleton.global_transform * skeleton.get_bone_global_pose(i).origin if i >= 0 else global_position
 
 

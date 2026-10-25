@@ -145,17 +145,28 @@ func _pose_check() -> void:
 		_pose_cam.fov = 40.0
 		game.add_child(_pose_cam)
 		_pose_cam.current = true
+	# --poses=A,B limits the list; Pistol poses hold the gun along the aim, and get a hand close-up.
+	var poses: Array = str(args["poses"]).split(",") if args.has("poses") else POSES
 	var i := int((_t - 1.0) / 1.5)
-	if i >= POSES.size():
+	if i >= poses.size():
 		_finish()
 		return
 	if i < 0:
 		return
 	if i != _pose_i:
 		_pose_i = i
-		p.explorer.debug_pose(POSES[i])
+		p.explorer.debug_pose(poses[i])
+		_press("aim", str(poses[i]).begins_with("Pistol"))
 		_pose_shot_front = false
 		_pose_shot_side = false
+		_pose_shot_hand = not str(poses[i]).begins_with("Pistol")
+	if not _pose_shot_hand and _t - 1.0 - i * 1.5 > 1.3:
+		_pose_shot_hand = true
+		var hand := p.explorer.bone_point("hand_r")
+		_pose_cam.look_at_from_position(hand + p.model.global_basis * Vector3(0.55, 0.12, 0.05), hand + p.model.global_basis * Vector3(0, 0, -0.12))
+		_screenshot("pose_%d_%s_%s_hand.png" % [i, poses[i], p.weapons[p.current].id])
+		return
+	var POSES := poses
 	var chest := p.global_position + Vector3.UP * 1.2
 	var local_t := _t - 1.0 - i * 1.5
 	if local_t > 0.4 and not _pose_shot_front:
@@ -171,6 +182,7 @@ func _pose_check() -> void:
 
 var _pose_shot_front := false
 var _pose_shot_side := false
+var _pose_shot_hand := true
 
 
 func _nearest(p: Player) -> Mummy:
