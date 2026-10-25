@@ -43,6 +43,8 @@ var _shape: CollisionShape3D
 var _skin: StandardMaterial3D
 var _parts := {}  # name -> {node: Node3D or null, boxes: Array of StaticBody3D}
 var rig: MummyBody
+## A High Priest instead of a Tomb Guard (looks only; set before adding to the tree).
+var priest := false
 var _arm_pivots := {}
 
 
@@ -75,7 +77,7 @@ func _build_model() -> void:
 	_skin.emission_enabled = true
 	_skin.emission = Color(1, 0.9, 0.8)
 	_skin.emission_energy_multiplier = 0.0
-	rig = MummyBody.create()
+	rig = MummyBody.create(priest)
 	if rig:
 		model.add_child(rig)
 		rig.build_hitboxes(self)

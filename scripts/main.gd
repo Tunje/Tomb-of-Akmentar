@@ -45,8 +45,9 @@ func _ready() -> void:
 	player.damaged.connect(hud.on_damaged)
 	player.died.connect(_on_player_died)
 	player.fired.connect(_on_fired)
-	for p in level.mummy_spawns:
-		var m := _spawn_mummy()
+	for i in level.mummy_spawns.size():
+		var p := level.mummy_spawns[i]
+		var m := _spawn_mummy(i % 3 == 2)  # every third is a High Priest
 		m.global_position = p
 		m.rotation.y = randf() * TAU
 
@@ -65,8 +66,9 @@ func _ready() -> void:
 		hud.show_message("TOMBS OF AKMENTAR", "Click to begin\n\nWASD move · Shift sprint · C crouch · Space dodge · E cover (W+E vault)\nRight mouse aim · Left mouse fire · R reload · 1 2 3 guns\nEsc pause")
 
 
-func _spawn_mummy() -> Mummy:
+func _spawn_mummy(priest := false) -> Mummy:
 	var m := Mummy.new()
+	m.priest = priest
 	add_child(m)
 	m.target = player
 	m.killed.connect(_on_mummy_killed)
@@ -180,7 +182,7 @@ func _sarcophagus_wave() -> void:
 			var tw := s.create_tween()
 			tw.tween_property(lid, "position", lid.position + dir * 1.1 + Vector3.DOWN * 0.35, 0.6).set_trans(Tween.TRANS_QUAD)
 			tw.parallel().tween_property(lid, "rotation", Vector3(dir.z * 0.4, 0, -dir.x * 0.4), 0.6)
-			var m := _spawn_mummy()
+			var m := _spawn_mummy(true)  # priests rise from the sarcophagi
 			m.rise(s.global_position + Vector3.DOWN * 0.45, s.get_meta("exit")))
 
 

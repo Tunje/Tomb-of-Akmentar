@@ -4,26 +4,31 @@ extends RiggedBody
 ## UAL2 knockback. Hitboxes ride the bones; a severed limb collapses by scaling its bone to 0.
 
 const TOMB_GUARD := "res://assets/characters/mummies/tomb_guard.glb"
+const HIGH_PRIEST := "res://assets/characters/mummies/high_priest.glb"
 const WALK_NATURAL := 0.9  # m/s the zombie walk covers at 1x (estimate)
 
 ## Tests can point mummies at another GLB on the same rig.
 static var glb_path := TOMB_GUARD
+
+var _glb := TOMB_GUARD
 
 ## part -> Array of StaticBody3D hitboxes; Mummy reads these.
 var hitboxes := {}
 var _overlay: StandardMaterial3D
 
 
-static func create() -> MummyBody:
-	if not assets_present(glb_path):
+static func create(priest := false) -> MummyBody:
+	var path := HIGH_PRIEST if priest and ResourceLoader.exists(HIGH_PRIEST) else glb_path
+	if not assets_present(path):
 		return null
 	var b := MummyBody.new()
+	b._glb = path
 	b.name = "MummyBody"
 	return b
 
 
 func _ready() -> void:
-	_setup_rig(glb_path)
+	_setup_rig(_glb)
 	_overlay = StandardMaterial3D.new()
 	_overlay.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_overlay.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
