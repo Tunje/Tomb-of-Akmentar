@@ -8,6 +8,7 @@ extends Node
 ##   --gun=0|1|2            starting gun;  --cycle-guns  switch gun after each kill
 ##   --god                  player can't die (for long looks at the AI)
 ##   --no-dodge             bot never rolls (checks that mummy hits land)
+##   --mummy-glb=res://...  mummies use this GLB (same rig) instead of the Tomb Guard
 
 var args := {}
 var game: Node

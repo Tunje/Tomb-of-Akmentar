@@ -1,7 +1,8 @@
 class_name Mummy
 extends CharacterBody3D
 ## Shambling mummy. Body-part hitboxes, limb loss, stagger, windup→swipe→recover.
-## Visuals live under $Model (stand-in capsules) so the GLB can replace them.
+## Visuals live under $Model: image-to-3d's mummy (MummyBody) when its GLB is there,
+## stand-in capsules otherwise.
 
 signal killed(mummy: Mummy)
 
@@ -40,7 +41,8 @@ var model: Node3D
 var _agent: NavigationAgent3D
 var _shape: CollisionShape3D
 var _skin: StandardMaterial3D
-var _parts := {}  # name -> {node: Node3D, box: StaticBody3D}
+var _parts := {}  # name -> {node: Node3D or null, boxes: Array of StaticBody3D}
+var rig: MummyBody
 var _arm_pivots := {}
 
 
@@ -73,6 +75,13 @@ func _build_model() -> void:
 	_skin.emission_enabled = true
 	_skin.emission = Color(1, 0.9, 0.8)
 	_skin.emission_energy_multiplier = 0.0
+	rig = MummyBody.create()
+	if rig:
+		model.add_child(rig)
+		rig.build_hitboxes(self)
+		for part in rig.hitboxes:
+			_parts[part] = {"node": null, "boxes": rig.hitboxes[part]}
+		return
 
 	_part("leg_l", model, Vector3(-0.13, 0.45, 0), _capsule(0.11, 0.9))
 	_part("leg_r", model, Vector3(0.13, 0.45, 0), _capsule(0.11, 0.9))
@@ -127,7 +136,7 @@ func _part(part_name: String, parent: Node3D, pos: Vector3, mesh: CapsuleMesh) -
 	cs.shape = shape
 	box.add_child(cs)
 	holder.add_child(box)
-	_parts[part_name] = {"node": holder, "box": box}
+	_parts[part_name] = {"node": holder, "boxes": [box]}
 	return holder
 
 
@@ -165,12 +174,20 @@ func _enter(s: State) -> void:
 	state = s
 	_t = 0.0
 	_struck = false
+	if rig:
+		match s:
+			State.WINDUP:
+				rig.attack(WINDUP + RECOVER)
+			State.STAGGER:
+				rig.stagger(STAGGER_TIME)
 
 
 func _physics_process(delta: float) -> void:
 	_t += delta
 	_flash = maxf(_flash - delta, 0.0)
 	_skin.emission_energy_multiplier = _flash * 6.0
+	if rig:
+		rig.flash(_flash * 3.0)
 	_stagger_pts = maxf(_stagger_pts - delta * 1.2, 0.0)
 	_update_lean(delta)
 	if state in [State.DORMANT, State.RISING, State.DEAD]:
@@ -269,15 +286,24 @@ func take_hit(part: String, dmg: float, dir: Vector3, point: Vector3, stagger: f
 		_stagger_pts = 0.0
 		_enter(State.STAGGER)
 		_lean_v += Vector2(local.z, 0).normalized() * 6.0
+	elif rig:
+		rig.flinch()
 	return {"killed": false}
 
 
 func _sever(part: String, dir: Vector3) -> void:
 	_lost[part] = true
-	var holder: Node3D = _parts[part].node
-	_gib(holder, dir)
-	holder.visible = false
-	(_parts[part].box as StaticBody3D).collision_layer = 0
+	_gib(part, dir)
+	for box in _parts[part].boxes:
+		(box as StaticBody3D).collision_layer = 0
+	if rig:
+		# The real body has no crawl clip: an arm collapses into the shoulder, a leg just limps.
+		if part.begins_with("arm"):
+			rig.collapse("upperarm_" + part.right(1))
+		else:
+			speed *= 0.55
+		return
+	_parts[part].node.visible = false
 	if part.begins_with("leg") and not crawling:
 		crawling = true
 		var cap := _shape.shape as CapsuleShape3D
@@ -286,26 +312,31 @@ func _sever(part: String, dir: Vector3) -> void:
 		_enter(State.STAGGER)
 
 
-func _gib(holder: Node3D, dir: Vector3) -> void:
-	var src: MeshInstance3D = holder.get_child(0)
+## A wrapped chunk flies off where `part` was (sized from its first hitbox).
+func _gib(part: String, dir: Vector3) -> void:
+	var box: StaticBody3D = _parts[part].boxes[0]
+	var shape := (box.get_child(0) as CollisionShape3D).shape as CapsuleShape3D
+	var k := box.global_basis.get_scale().x
 	var rb := RigidBody3D.new()
 	rb.collision_layer = 0
 	rb.collision_mask = 1
 	rb.mass = 2.0
 	var cs := CollisionShape3D.new()
 	var cap := CapsuleShape3D.new()
-	var cm := src.mesh as CapsuleMesh
-	cap.radius = cm.radius
-	cap.height = cm.height
+	cap.radius = shape.radius * k
+	cap.height = shape.height * k
 	cs.shape = cap
 	rb.add_child(cs)
+	var cm := CapsuleMesh.new()
+	cm.radius = cap.radius
+	cm.height = cap.height
 	var mi := MeshInstance3D.new()
 	mi.mesh = cm
 	mi.material_override = _skin.duplicate()
 	(mi.material_override as StandardMaterial3D).emission_energy_multiplier = 0.0
 	rb.add_child(mi)
 	get_parent().add_child(rb)
-	rb.global_transform = src.global_transform
+	rb.global_transform = Transform3D(box.global_basis.orthonormalized(), box.global_position)
 	rb.apply_central_impulse((dir + Vector3.UP * 0.6) * 5.0)
 	rb.apply_torque_impulse(Vector3(randf_range(-1, 1), randf_range(-1, 1), randf_range(-1, 1)) * 0.6)
 	get_tree().create_timer(12.0).timeout.connect(rb.queue_free)
@@ -315,12 +346,23 @@ func _die(dir: Vector3, headshot: bool) -> void:
 	_enter(State.DEAD)
 	if headshot and not _lost.has("head"):
 		_lost["head"] = true
-		_gib(_parts.head.node, dir)
-		_parts.head.node.visible = false
+		_gib("head", dir)
+		if rig:
+			rig.collapse("Head")
+		else:
+			_parts.head.node.visible = false
 	collision_layer = 0
 	collision_mask = 1
 	_set_hitboxes(false)
 	velocity = Vector3.ZERO
+	if rig:
+		rig.die()
+		var sink := create_tween()
+		sink.tween_interval(9.0)
+		sink.tween_property(model, "position:y", -0.6, 2.0)
+		sink.tween_callback(queue_free)
+		killed.emit(self)
+		return
 	# Topple along the shot.
 	var local := global_basis.inverse() * Vector3(dir.x, 0, dir.z).normalized()
 	var tw := create_tween()
@@ -339,7 +381,8 @@ func _die(dir: Vector3, headshot: bool) -> void:
 
 func _set_hitboxes(on: bool) -> void:
 	for p in _parts:
-		(_parts[p].box as StaticBody3D).collision_layer = 8 if on and not _lost.has(p) else 0
+		for box in _parts[p].boxes:
+			(box as StaticBody3D).collision_layer = 8 if on and not _lost.has(p) else 0
 
 
 # ---------------------------------------------------------------- stand-in animation
@@ -353,6 +396,10 @@ func _update_lean(delta: float) -> void:
 
 func _animate(delta: float, moving: float) -> void:
 	if state == State.DEAD:
+		return
+	if rig:
+		rig.update(moving)
+		model.rotation = Vector3(_lean.x * 0.6, 0, _lean.y * 0.6)  # hit lean on top of the clips
 		return
 	_phase += delta * (2.2 + moving * 1.5)
 	var sway := sin(_phase) * 0.12 * minf(moving + 0.3, 1.0)

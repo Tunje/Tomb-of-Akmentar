@@ -27,6 +27,9 @@ func _ready() -> void:
 		if n.process_mode == Node.PROCESS_MODE_INHERIT:
 			n.process_mode = Node.PROCESS_MODE_PAUSABLE)
 	_setup_input()
+	var args := TestDriver.parse_args()
+	if args.has("mummy-glb"):
+		MummyBody.glb_path = args["mummy-glb"]
 	level = Level.new()
 	add_child(level)
 	player = Player.new()
@@ -45,7 +48,6 @@ func _ready() -> void:
 		m.global_position = p
 		m.rotation.y = randf() * TAU
 
-	var args := TestDriver.parse_args()
 	if args.size() > 0:
 		# Test windows must never take Simon's keyboard or mouse while he plays.
 		get_window().set_flag(Window.FLAG_NO_FOCUS, true)
