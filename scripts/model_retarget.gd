@@ -1,4 +1,6 @@
-## Copied from Wreck Wreckers (game/enemies/model_retarget.gd, Rivet), unchanged apart from this line.
+## Copied from Wreck Wreckers (game/enemies/model_retarget.gd, Rivet). Tombs change: setup()'s
+## `unaligned` UAL bones skip the aim correction (the explorer's clavicles: aimed like UAL's they
+## turned ~30 deg at rest and lifted his shoulders; they now copy the clip's motion only).
 ## ModelRetarget — D136 pilot: plays our Quaternius (UAL) animations on one of Simon's own
 ## enemy models, whose auto-rig has generic bones (bone_0..N) and a rest pose that is not
 ## our T-pose. Owner: Rivet.
@@ -39,7 +41,7 @@ var _leg_ratio := 1.0
 
 
 ## `map`: UAL bone name -> target bone name. Call after both skeletons are in the tree.
-func setup(src: Skeleton3D, tgt: Skeleton3D, map: Dictionary) -> void:
+func setup(src: Skeleton3D, tgt: Skeleton3D, map: Dictionary, unaligned: Array = []) -> void:
 	if source != null and is_instance_valid(source) and source.skeleton_updated.is_connected(apply):
 		source.skeleton_updated.disconnect(apply)
 	source = src
@@ -82,7 +84,7 @@ func setup(src: Skeleton3D, tgt: Skeleton3D, map: Dictionary) -> void:
 			var s: int = _src_of[t]
 			var aim: StringName = AIM.get(StringName(src.get_bone_name(s)), &"")
 			var sa := src.find_bone(String(aim)) if aim != &"" else -1
-			if sa >= 0 and tgt_of.has(sa):
+			if sa >= 0 and tgt_of.has(sa) and not String(src.get_bone_name(s)) in unaligned:
 				var d_s := _src_dir(src.get_bone_global_rest(sa).origin - src.get_bone_global_rest(s).origin)
 				var d_t := _tgt_dir(tgt.get_bone_global_rest(tgt_of[sa]).origin - tgt.get_bone_global_rest(t).origin)
 				var name := String(src.get_bone_name(s))

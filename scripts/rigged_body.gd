@@ -17,6 +17,8 @@ const BONE_MAP := {
 	"thigh_l": "bone_44", "calf_l": "bone_45", "foot_l": "bone_46", "ball_l": "bone_47",
 	"thigh_r": "bone_48", "calf_r": "bone_49", "foot_r": "bone_50", "ball_r": "bone_51",
 }
+## Bones that copy the clip's motion without being re-aimed like UAL's at rest (see ModelRetarget).
+const UNALIGNED := ["clavicle_l", "clavicle_r"]
 ## Clips that loop; everything else plays once.
 const LOOPED := ["Idle", "Walk", "Jog_Fwd", "Sprint", "Crouch_Idle", "Crouch_Fwd",
 	"Pistol_Aim_Down", "Pistol_Aim_Neutral", "Pistol_Aim_Up", "Zombie_Idle", "Zombie_Walk_Fwd"]
@@ -66,7 +68,7 @@ func _setup_rig(glb: String) -> void:
 	bone_map = with_fingers(BONE_MAP, skeleton, _src)
 	_retarget = ModelRetarget.new()
 	add_child(_retarget)
-	_retarget.setup(_src, skeleton, bone_map)
+	_retarget.setup(_src, skeleton, bone_map, UNALIGNED)
 
 
 func _build_tree() -> void:

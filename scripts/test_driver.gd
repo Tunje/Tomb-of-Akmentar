@@ -164,6 +164,7 @@ func _pose_check() -> void:
 		_pose_shot_hand = true
 		var hand := p.explorer.bone_point("hand_r")
 		_pose_cam.look_at_from_position(hand + p.model.global_basis * Vector3(0.55, 0.12, 0.05), hand + p.model.global_basis * Vector3(0, 0, -0.12))
+		print("RESULT grip %s" % p.explorer.grip_now())
 		_screenshot("pose_%d_%s_%s_hand.png" % [i, poses[i], p.weapons[p.current].id])
 		return
 	var POSES := poses

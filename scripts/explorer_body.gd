@@ -8,6 +8,11 @@ const EXPLORER := "res://assets/characters/explorer/explorer.glb"
 ## (Wreck Wreckers measured Walk 1.03, Jog 6.1, Sprint 9.4 on the same clips).
 const GAIT := [[0.0, 1.0], [1.6, 1.03], [4.0, 6.1], [6.6, 9.4]]
 const CROUCH_FWD_NATURAL := 1.4
+## Gun rotation relative to the right hand bone, measured in Pistol_Aim_Neutral with the gun
+## along the aim (test_driver --scenario=pose prints it as "RESULT grip").
+const GRIP := Quaternion(0.246879, -0.645783, 0.311249, 0.652027)
+## How far an aimed gun turns from the hand's grip toward the exact aim (0 = hand only).
+const AIM_PULL := 0.5
 
 ## Point the gun along this (world) every frame; zero = let it hang with the hand.
 var aim_dir := Vector3.ZERO
@@ -145,6 +150,12 @@ func roll(seconds: float) -> void:
 	_tree.set("parameters/roll/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 
 
+## The gun's rotation relative to the hand bone right now (test: measured in the aim pose).
+func grip_now() -> Quaternion:
+	var hb := (skeleton.global_basis * skeleton.get_bone_global_pose(skeleton.find_bone(BONE_MAP["hand_r"])).basis).orthonormalized()
+	return (hb.inverse() * gun_holder.global_basis.orthonormalized()).get_rotation_quaternion()
+
+
 func die() -> void:
 	_tree.set("parameters/state/transition_request", "dead")
 
@@ -152,11 +163,14 @@ func die() -> void:
 func _orient_gun() -> void:
 	if gun_holder == null:
 		return
-	var dir := aim_dir
-	if dir.length() < 0.01:
-		# Lowered: along the body, tipped down.
-		dir = (-global_basis.z + Vector3.DOWN * 0.7).normalized()
-	gun_holder.global_basis = Basis.looking_at(dir, Vector3.UP)
+	# The gun turns with the hand at a fixed grip (Simon: "the guns don't turn naturally in the
+	# hands" when they were forced along the aim). While aiming it leans part-way to the aim so
+	# the barrel still lines up with the crosshair.
+	var hb := (skeleton.global_basis * skeleton.get_bone_global_pose(skeleton.find_bone(BONE_MAP["hand_r"])).basis).orthonormalized()
+	var held := Quaternion(hb) * GRIP
+	if aim_dir.length() > 0.01:
+		held = held.slerp(Quaternion(Basis.looking_at(aim_dir, Vector3.UP)), AIM_PULL)
+	gun_holder.global_basis = Basis(held)
 	# The grip in the palm (between the wrist and the middle knuckle), not at the wrist joint.
 	if bone_map.has("middle_01_r"):
 		gun_holder.global_position = (bone_point("hand_r") + bone_point("middle_01_r")) * 0.5
