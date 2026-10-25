@@ -62,6 +62,8 @@ var _crouch_blend := 0.0
 var _shake_t := 0.0
 var _hurt_cd := 0.0
 var _model_hidden := false
+var _upper_aim := 0.0
+var explorer: ExplorerBody
 
 var cam_root: Node3D
 var cam_pitch: Node3D
@@ -136,6 +138,15 @@ func _build_body() -> void:
 	gun_pivot.add_child(gun_mesh)
 	muzzle = Marker3D.new()
 	gun_pivot.add_child(muzzle)
+
+	# Simon's explorer when its files are there; the capsule stays as the fallback.
+	explorer = ExplorerBody.create()
+	if explorer:
+		model.add_child(explorer)
+		for n in [body, head, hat]:
+			n.visible = false
+		gun_pivot.reparent(explorer.gun_holder, false)
+		gun_pivot.transform = Transform3D.IDENTITY
 
 	_audio = AudioStreamPlayer.new()
 	add_child(_audio)
@@ -314,7 +325,7 @@ func _process(delta: float) -> void:
 	elif _reload_t > 0.0:
 		lower = 0.6
 	gun_pivot.rotation = Vector3(deg_to_rad(_gun_kick * 25.0 - lower * 50.0), 0, 0)
-	gun_pivot.position.z = -0.25 + _gun_kick * 0.12
+	gun_pivot.position.z = (0.0 if explorer else -0.25) + _gun_kick * 0.12
 
 
 func _update_facing(delta: float, wish: Vector3) -> void:
@@ -326,6 +337,13 @@ func _update_facing(delta: float, wish: Vector3) -> void:
 	elif wish.length() > 0.1:
 		target_yaw = atan2(-wish.x, -wish.z)
 	model.rotation.y = lerp_angle(model.rotation.y, target_yaw, minf(delta * 14.0, 1.0))
+	if explorer:
+		# Upper body raises the gun while aiming and for a moment after each shot.
+		var want := 1.0 if (aiming or _face_aim_t > 0.0) and _reload_t <= 0.0 and _switch_t <= 0.0 and alive else 0.0
+		_upper_aim = move_toward(_upper_aim, want, delta / 0.12)
+		explorer.update(Vector2(velocity.x, velocity.z).length(), crouching, _upper_aim, pitch)
+		explorer.aim_dir = -camera.global_basis.z if _upper_aim > 0.5 else Vector3.ZERO
+		return
 	model.rotation.x = 0.0
 	if _dodge_t > 0.0:
 		# Roll the stand-in forward so a dodge reads clearly.
@@ -361,6 +379,8 @@ func switch_to(i: int) -> void:
 
 func _equip(i: int, instant: bool) -> void:
 	current = i
+	if _reload_t > 0.0 and explorer:
+		explorer.cancel_reload()
 	_reload_t = 0.0
 	_switch_t = 0.0 if instant else SWITCH_TIME
 	var w := weapons[i]
@@ -377,6 +397,8 @@ func start_reload() -> void:
 		return
 	_reload_t = w.reload_time
 	sprinting = false
+	if explorer:
+		explorer.reload(w.reload_time)
 	Sfx.play_at(self, Sfx.click(), global_position + Vector3.UP, -6.0)
 
 
@@ -389,6 +411,8 @@ func dodge() -> void:
 	_dodge_dir = (Basis(Vector3.UP, yaw) * Vector3(input.x, 0, input.y)).normalized()
 	_dodge_t = DODGE_TIME
 	_dodge_cd = DODGE_TIME + DODGE_COOLDOWN
+	if explorer:
+		explorer.roll(DODGE_TIME)
 
 
 func is_invulnerable() -> bool:
@@ -410,6 +434,9 @@ func try_fire() -> void:
 	sprinting = false
 	# Snap the body to the camera so the muzzle is where it will be.
 	model.rotation.y = yaw
+	if explorer:
+		_upper_aim = 1.0  # a hip shot snaps the gun up
+		explorer.shoot()
 	_fire_bullets(w)
 	_recoil_target += Vector2(w.recoil_pitch, randf_range(-w.recoil_yaw, w.recoil_yaw))
 	pitch = clampf(pitch + deg_to_rad(w.recoil_pitch * 0.22), deg_to_rad(-70), deg_to_rad(60))  # part of the kick stays
@@ -485,7 +512,10 @@ func take_damage(amount: float, from: Vector3) -> bool:
 	damaged.emit(amount)
 	if health <= 0.0:
 		alive = false
-		model.rotation.z = PI * 0.5
-		model.position.y = 0.3
+		if explorer:
+			explorer.die()
+		else:
+			model.rotation.z = PI * 0.5
+			model.position.y = 0.3
 		died.emit()
 	return true

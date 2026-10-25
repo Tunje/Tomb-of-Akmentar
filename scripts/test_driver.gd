@@ -65,6 +65,8 @@ func _physics_process(delta: float) -> void:
 	_t += delta
 	if args.get("scenario", "") == "demo":
 		_bot(delta)
+	elif args.get("scenario", "") == "pose":
+		_pose_check()
 	if _shots.size() > 0 and _t >= _shots[0]:
 		var at: float = _shots.pop_front()
 		_screenshot("shot_%05.1f.png" % at)
@@ -122,6 +124,52 @@ func _waypoint(p: Player, goal: Vector3) -> Vector3:
 	while _path.size() > 1 and Vector2(_path[0].x - p.global_position.x, _path[0].z - p.global_position.z).length() < 0.7:
 		_path.remove_at(0)
 	return _path[0] if not _path.is_empty() else goal
+
+
+## --scenario=pose: the explorer close up from the front and at 45 degrees, in his own rest
+## pose (no retarget) and then in a few held clips. Shots are taken here, not by --shots.
+const POSES := ["rest", "A_TPose", "Idle", "Pistol_Aim_Neutral", "Walk"]
+var _pose_i := -1
+var _pose_cam: Camera3D
+
+
+func _pose_check() -> void:
+	var p: Player = game.player
+	if p.explorer == null:
+		print("RESULT pose no explorer body")
+		_finish()
+		return
+	if _pose_cam == null:
+		_pose_cam = Camera3D.new()
+		_pose_cam.fov = 40.0
+		game.add_child(_pose_cam)
+		_pose_cam.current = true
+	var i := int((_t - 1.0) / 1.5)
+	if i >= POSES.size():
+		_finish()
+		return
+	if i < 0:
+		return
+	if i != _pose_i:
+		_pose_i = i
+		p.explorer.debug_pose(POSES[i])
+		_pose_shot_front = false
+		_pose_shot_side = false
+	var chest := p.global_position + Vector3.UP * 1.2
+	var local_t := _t - 1.0 - i * 1.5
+	if local_t > 0.4 and not _pose_shot_front:
+		_pose_shot_front = true
+		print("RESULT bones %s: %s" % [POSES[i], p.explorer.debug_report()])
+		_pose_cam.look_at_from_position(chest + p.model.global_basis * Vector3(0, 0.15, -2.8), chest)
+		_screenshot("pose_%d_%s_front.png" % [i, POSES[i]])
+	elif local_t > 1.0 and not _pose_shot_side:
+		_pose_shot_side = true
+		_pose_cam.look_at_from_position(chest + p.model.global_basis * Vector3(1.6, 0.4, -1.6), chest + Vector3.UP * 0.2)
+		_screenshot("pose_%d_%s_side.png" % [i, POSES[i]])
+
+
+var _pose_shot_front := false
+var _pose_shot_side := false
 
 
 func _nearest(p: Player) -> Mummy:

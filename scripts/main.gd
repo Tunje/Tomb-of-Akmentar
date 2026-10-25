@@ -47,11 +47,15 @@ func _ready() -> void:
 
 	var args := TestDriver.parse_args()
 	if args.size() > 0:
+		# Test windows must never take Simon's keyboard or mouse while he plays.
+		get_window().set_flag(Window.FLAG_NO_FOCUS, true)
+		set_process_unhandled_input(false)
+		player.set_process_unhandled_input(false)
 		var d := TestDriver.new()
 		d.args = args
 		d.game = self
 		add_child(d)
-		_start()
+		_start(false)
 	else:
 		player.controls_enabled = false
 		hud.show_message("TOMBS OF AKMENTAR", "Click to begin\n\nWASD move · Shift sprint · C crouch · Space dodge\nRight mouse aim · Left mouse fire · R reload · 1 2 3 guns\nEsc pause")
@@ -68,11 +72,12 @@ func _spawn_mummy() -> Mummy:
 	return m
 
 
-func _start() -> void:
+func _start(capture_mouse := true) -> void:
 	started = true
 	player.controls_enabled = true
 	hud.show_message("")
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	if capture_mouse:
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
 func _unhandled_input(event: InputEvent) -> void:
