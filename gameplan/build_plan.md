@@ -42,8 +42,9 @@ what I check with a bot run and screenshots before showing it to you.
 One central record of the game: day and actions left, money, flags ("met the pilot"),
 each companion's trust / conviction / fear, who is in the party, inventory, horses and trucks
 (with condition), countdowns.
-- Save and load to a file; quick-save in the pause menu.
-- **Done when:** change values in the Proving Ground, quit, restart, load, and everything is back.
+- Save at beds and campfires ("E rest"); load from the start menu. An automatic save at each act start.
+- **Done when:** change values in the Proving Ground, save at the campfire, quit, restart, load,
+  and everything is back.
 
 ### Step 2: Explore mode vs combat mode
 Same third-person explorer. Explore mode: gun holstered, relaxed walk, interact prompt
@@ -145,18 +146,21 @@ and the two mummies already work in game). So:
 | Asset type | Who / how | Notes |
 |---|---|---|
 | Main characters (≈25: companions, rival leaders, guardians, pilot, sponsor …) | image-to-3d, one model each, 52-bone rig | Same pipeline as the explorer |
-| Crowd and enemy archetypes (bandits, gunmen, workers, civilians, police) | image-to-3d, about 15–25 base bodies | Reuse with colour and prop changes |
+| Crowd and enemy archetypes (bandits, gunmen, workers, civilians, police) | image-to-3d, **one full model per person** (about 1 h each after the picture) | Head swapping looked bad; hats can be separate props on the head bone |
 | Guns | image-to-3d with separate moving parts | As done for the revolver and shotgun |
-| Props (crates, tents, statues, jars, amulet …) | image-to-3d static models | Lots of them; batch by area |
+| Props (crates, tents, statues, jars, amulet …) | image-to-3d static models, about 4 min each on the GPU | Fire and lantern glow are effects in code |
 | Buildings and tomb pieces | Built in Godot from modular blocks first; image-to-3d for statues and special pieces | Keeps levels editable |
-| **Horses, camels** (4 legs) | **Ask image-to-3d**: a 4-legged rig is new; the UAL clips are human only | Needs a horse rig + walk / trot / gallop clips |
-| **Truck, riverboat, plane, chariot** | **Ask image-to-3d**: static models with separate wheels / doors / propeller | No skeleton needed; parts move in code |
+| **Horses, camels** (4 legs) | image-to-3d: model from a side-view picture + its own quadruped skeleton (pelvis, 3 spine, 2 neck, head, jaw, 4 bones per leg, 3 tail), about ½ day for the first horse | Clips: free CC0 Quaternius horse (idle / walk / run / jump / death; Simon decides on outside clips) or legs animated in code on that skeleton |
+| **Truck** | image-to-3d: one model with wheels, doors and steering wheel as separate parts with pivots, about ½ day | Damage states made from the intact mesh (separate generations wouldn't match) |
+| **Riverboat** | Hull and walkable deck built by me (flat, exact collision); image-to-3d makes the cabin, funnel, wheelhouse, rails and crates | One TRELLIS model is too lumpy at 20–25 m |
+| **Biplane** | image-to-3d, propeller separate; the picture needs thick struts and no wires | Thin parts break in TRELLIS |
 | Scarabs | Small model + a swarm effect in code | |
 
-**Animations:** the UAL clips cover walking, talking, sitting and basic actions.
-**Simon makes the special ones in anim-core:** rifle and shotgun handling, riding,
-driving / sitting in vehicles, fist fighting, rituals. Each system step above lists the
-clips it needs, so Simon can make them in the order we build.
+**Animations:** the UAL clips cover walking, talking, sitting, basic actions and **driving**
+(UAL1 has a `Driving` clip). **Riding** is built from the sitting pose plus code (bounce with
+the gait, hands to the reins with the arm IK we already use). Simon makes the rifle and
+two-handed clips in anim-core; other special clips (fist fighting, rituals) we list as we
+reach them.
 
 ---
 
@@ -172,12 +176,11 @@ clips it needs, so Simon can make them in the order we build.
 
 ---
 
-## 6. Questions for Simon before Phase 1 starts
+## 6. Decisions (Simon, 2026-10-26)
 
-1. **Riding and driving animations**: will you make those in anim-core, and roughly when?
-   Until then, horses and trucks get placeholder poses.
-2. **Horses and vehicles**: OK for me to ask image-to-3d whether it can rig a horse (4 legs)
-   and make a truck as separate parts?
-3. **Conversation look**: Mass Effect wheel with paraphrased choices ("Threaten him"), or
-   the full line written on each choice?
-4. **Saves**: save anywhere, or only at camps and day ends?
+1. **Riding and driving animations:** Simon hasn't made these before; we use UAL `Driving`
+   and a coded riding pose (see section 4).
+2. **Horses and vehicles:** ask image-to-3d for anything we need.
+3. **Conversation wheel:** short summaries on the choices ("Threaten him"); the full line is
+   spoken after you pick.
+4. **Saving:** at fixed points like beds and campfires (plus an automatic save at each act start).
