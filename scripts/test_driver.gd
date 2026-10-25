@@ -18,6 +18,16 @@ var _kills := 0
 var _fired := 0
 var _hits := 0
 var _bot_target: Mummy
+var _tour_i := 0
+var _path := PackedVector3Array()
+var _repath := 0.0
+
+## Bot route: down the stairs, entrance hall, great hall, west room, east room, burial chamber.
+const TOUR := [
+	Vector3(40, -6, 48), Vector3(40, -6, 32), Vector3(10, -6, 32), Vector3(10, -6, 10),
+	Vector3(10, -6, 30), Vector3(70, -6, 30), Vector3(70, -6, 10), Vector3(70, -6, 30),
+	Vector3(40, -6, 30), Vector3(40, -6, 12),
+]
 
 
 static func parse_args() -> Dictionary:
@@ -66,14 +76,15 @@ func _bot(delta: float) -> void:
 	var p: Player = game.player
 	if not p.alive:
 		return
-	# Walk up the corridor until the chamber is in sight, then hold there and fight.
-	var hold := Vector3(20.0, 0.0, 13.5)
-	var to_hold := hold - p.global_position
-	to_hold.y = 0
+	# Tour the rooms along the navmesh; stop and fight whatever comes into view.
 	_bot_target = _nearest(p)
+	var goal: Vector3 = TOUR[mini(_tour_i, TOUR.size() - 1)]
+	if p.global_position.distance_to(goal) < 2.5 and _tour_i < TOUR.size() - 1:
+		_tour_i += 1
+		print("RESULT tour reached %d t=%.1f" % [_tour_i, _t])
 	var move := Vector2.ZERO
-	if to_hold.length() > 0.8 and (_bot_target == null or p.global_position.distance_to(_bot_target.global_position) > 7.0):
-		var wp := _corridor_waypoint(p.global_position)
+	if _bot_target == null or p.global_position.distance_to(_bot_target.global_position) > 7.0:
+		var wp := _waypoint(p, goal)
 		var d := wp - p.global_position
 		var local := Basis(Vector3.UP, -p.yaw) * Vector3(d.x, 0, d.z).normalized()
 		move = Vector2(local.x, local.z)
@@ -103,13 +114,14 @@ func _bot(delta: float) -> void:
 		p.dodge()
 
 
-func _corridor_waypoint(pos: Vector3) -> Vector3:
-	# Corridor centreline: north up the first leg, east along the bend, north to the mouth.
-	if pos.z > 27.6 and pos.x < 12.0:
-		return Vector3(10, 0, 26.5)
-	if pos.x < 19.6:
-		return Vector3(20.5, 0, 27)
-	return Vector3(20, 0, 17)
+func _waypoint(p: Player, goal: Vector3) -> Vector3:
+	_repath -= get_physics_process_delta_time()
+	if _repath <= 0.0 or _path.is_empty():
+		_repath = 0.5
+		_path = NavigationServer3D.map_get_path(p.get_world_3d().navigation_map, p.global_position, goal, true)
+	while _path.size() > 1 and Vector2(_path[0].x - p.global_position.x, _path[0].z - p.global_position.z).length() < 0.7:
+		_path.remove_at(0)
+	return _path[0] if not _path.is_empty() else goal
 
 
 func _nearest(p: Player) -> Mummy:

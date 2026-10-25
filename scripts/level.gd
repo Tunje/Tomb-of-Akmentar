@@ -1,55 +1,83 @@
 class_name Level
 extends Node3D
-## Builds the tomb from a character map. One cell = CELL metres.
+## Desert topside above a tomb built from a character map. One cell = CELL metres.
+## Tomb floor is at FLOOR_Y; the ground (and tomb ceiling slab) top is at y = 0.
 ## '#' wall  '.' floor  'P' pillar  'B' brazier  'L' wall torch (wall cell)
-## 'S' sarcophagus (a mummy rises from it later)  'M' dormant mummy  '@' player start
+## 'S' sarcophagus (a mummy rises from it later)  'M' dormant mummy
+## 'D' stairwell (ramp up to the surface; the high end is the south end)
 
 const CELL := 2.0
+const FLOOR_Y := -6.0
 const WALL_H := 5.0
 const MAP := [
-	"####################",
-	"#M.......SS.......M#",
-	"#..P...B....B...P..#",
-	"#..................#",
-	"#S..P....M.....P..S#",
-	"#..................#",
-	"#..P...B....B...P..#",
-	"#.M..............M.#",
-	"########....########",
-	"#########..#########",
-	"########L..L########",
-	"#########..#########",
-	"#########..#########",
-	"####.......#########",
-	"####..L#############",
-	"####..##############",
-	"###L..L#############",
-	"####..##############",
-	"####.@##############",
-	"####################",
+	"########################################",
+	"#........###.......SS.......###........#",
+	"#.M......###..P..B....B..P..###......M.#",
+	"#........###................###........#",
+	"#..B..B..###...P...M....P...###..B..B..#",
+	"#........###................###........#",
+	"#......M.###..P..B....B..P..###.M......#",
+	"#........###S..............S###........#",
+	"#........###....M......M....###........#",
+	"#........###................###........#",
+	"####..#############..#############..####",
+	"###L..L###########L..L###########L..L###",
+	"####..#############..#############..####",
+	"#......................................#",
+	"#...P....P....P......P....P....P....P..#",
+	"#.....M..........B..........M..........#",
+	"#......................................#",
+	"#..........B.........M..........B......#",
+	"#...P....P....P......P....P....P....P..#",
+	"#......................................#",
+	"#.......M..............................#",
+	"###################..###################",
+	"#############..............#############",
+	"#############..B........B..#############",
+	"#############......M.......#############",
+	"#############..B........B..#############",
+	"#############..............#############",
+	"###################DD###################",
+	"##################LDDL##################",
+	"###################DD###################",
+	"###################DD###################",
+	"##################LDDL##################",
+	"###################DD###################",
+	"########################################",
 ]
-## Rows above this are the burial chamber.
-const CHAMBER_LAST_ROW := 7
+## Burial chamber, in cells (inclusive): the sarcophagus wave happens here.
+const BURIAL := Rect2i(12, 1, 16, 9)
+## How far the desert reaches south of the tomb footprint (m).
+const SOUTH_EXTENT := 34.0
 
 var player_spawn := Vector3.ZERO
 var mummy_spawns: Array[Vector3] = []
 var sarcophagi: Array[Node3D] = []
 var torches: Array[OmniLight3D] = []
-var chamber_z_max := 0.0
 
 var _nav: NavigationRegion3D
 var _stone: StandardMaterial3D
 var _floor_mat: StandardMaterial3D
+var _sand: StandardMaterial3D
+var _env: Environment
+var _sun: DirectionalLight3D
+var _rows := 0
+var _cols := 0
 var _t := 0.0
 
 
 func _ready() -> void:
+	_rows = MAP.size()
+	_cols = 0
+	for line in MAP:
+		_cols = maxi(_cols, (line as String).length())
 	_make_materials()
 	_nav = NavigationRegion3D.new()
 	var nm := NavigationMesh.new()
-	nm.agent_radius = 0.45
-	nm.agent_height = 1.8
-	nm.agent_max_climb = 0.3
+	nm.agent_radius = 0.5
+	nm.agent_height = 1.75
+	nm.agent_max_climb = 0.25
+	nm.agent_max_slope = 40.0
 	nm.cell_size = 0.25
 	nm.cell_height = 0.25
 	nm.geometry_parsed_geometry_type = NavigationMesh.PARSED_GEOMETRY_STATIC_COLLIDERS
@@ -57,46 +85,8 @@ func _ready() -> void:
 	_nav.navigation_mesh = nm
 	add_child(_nav)
 
-	var rows := MAP.size()
-	var cols: int = MAP[0].length()
-	chamber_z_max = (CHAMBER_LAST_ROW + 1) * CELL
-	# Floor and ceiling as single slabs.
-	var size := Vector3(cols * CELL, 1.0, rows * CELL)
-	var centre := Vector3(cols * CELL * 0.5, -0.5, rows * CELL * 0.5)
-	_box(_nav, centre, size, _floor_mat)
-	_box(self, centre + Vector3.UP * (WALL_H + 1.0), size, _stone)
-
-	for r in rows:
-		var line: String = MAP[r]
-		var c := 0
-		while c < cols:
-			var ch := line[c]
-			var p := _cell(r, c)
-			match ch:
-				"#", "L":
-					# Merge horizontal runs of wall into one box.
-					var run := 1
-					while c + run < cols and line[c + run] in ["#", "L"]:
-						run += 1
-					var mid := (_cell(r, c) + _cell(r, c + run - 1)) * 0.5
-					_box(_nav, mid + Vector3.UP * WALL_H * 0.5, Vector3(run * CELL, WALL_H, CELL), _stone)
-					for k in run:
-						if line[c + k] == "L":
-							_wall_torch(r, c + k)
-					c += run
-					continue
-				"P":
-					_pillar(p)
-				"B":
-					_brazier(p)
-				"S":
-					_sarcophagus(p, r)
-				"M":
-					mummy_spawns.append(p)
-				"@":
-					player_spawn = p
-			c += 1
-
+	_build_tomb()
+	_build_surface()
 	_environment()
 	_nav.bake_navigation_mesh(false)
 
@@ -109,13 +99,246 @@ func _process(delta: float) -> void:
 		l.light_energy = base * (0.85 + 0.1 * sin(_t * 13.0 + i * 1.7) + 0.06 * sin(_t * 31.0 + i * 4.1))
 
 
-func is_in_chamber(pos: Vector3) -> bool:
-	return pos.z < chamber_z_max
+func _ch(r: int, c: int) -> String:
+	var line: String = MAP[r]
+	return line[c] if c < line.length() else "#"
 
 
 func _cell(r: int, c: int) -> Vector3:
-	return Vector3(c * CELL + CELL * 0.5, 0.0, r * CELL + CELL * 0.5)
+	return Vector3(c * CELL + CELL * 0.5, FLOOR_Y, r * CELL + CELL * 0.5)
 
+
+func is_in_burial(pos: Vector3) -> bool:
+	var c := int(pos.x / CELL)
+	var r := int(pos.z / CELL)
+	return pos.y < FLOOR_Y + 3.0 and BURIAL.has_point(Vector2i(c, r))
+
+
+## 0 out in the sun, 1 deep in the tomb; blends along the stairwell.
+func indoor_amount(pos: Vector3) -> float:
+	return clampf(-(pos.y + 0.5) / 4.0, 0.0, 1.0)
+
+
+func set_indoor(f: float) -> void:
+	_sun.light_energy = lerpf(1.6, 0.0, f)
+	_env.ambient_light_energy = lerpf(0.55, 0.12, f)
+	_env.ambient_light_sky_contribution = lerpf(1.0, 0.0, f)
+	_env.fog_light_color = Color(0.75, 0.62, 0.45).lerp(Color(0.12, 0.08, 0.05), f)
+	_env.fog_density = lerpf(0.004, 0.025, f)
+	_env.tonemap_exposure = lerpf(0.9, 1.1, f)
+
+
+# ---------------------------------------------------------------- tomb
+
+func _build_tomb() -> void:
+	# Tomb floor in one slab.
+	var size := Vector3(_cols * CELL, 1.0, _rows * CELL)
+	var centre := Vector3(_cols * CELL * 0.5, FLOOR_Y - 0.5, _rows * CELL * 0.5)
+	_box(_nav, centre, size, _floor_mat)
+
+	var stair := Rect2i()
+	for r in _rows:
+		var c := 0
+		while c < _cols:
+			var ch := _ch(r, c)
+			var p := _cell(r, c)
+			match ch:
+				"#", "L":
+					# Merge horizontal runs of wall into one box.
+					var run := 1
+					while c + run < _cols and _ch(r, c + run) in ["#", "L"]:
+						run += 1
+					var mid := (_cell(r, c) + _cell(r, c + run - 1)) * 0.5
+					_box(_nav, mid + Vector3.UP * WALL_H * 0.5, Vector3(run * CELL, WALL_H, CELL), _stone)
+					for k in run:
+						if _ch(r, c + k) == "L":
+							_wall_torch(r, c + k)
+					c += run
+					continue
+				"D":
+					stair = Rect2i(c, r, 1, 1) if stair.size == Vector2i.ZERO else stair.expand(Vector2i(c, r))
+				"P":
+					_box(_nav, p + Vector3.UP * WALL_H * 0.5, Vector3(1.3, WALL_H, 1.3), _stone)
+				"B":
+					_brazier(p)
+				"S":
+					_sarcophagus(p, r, c)
+				"M":
+					mummy_spawns.append(p)
+			c += 1
+
+	# Ceiling slab (= the desert ground) with a hole over the stairwell.
+	for r in _rows:
+		var c := 0
+		while c < _cols:
+			if _ch(r, c) == "D":
+				c += 1
+				continue
+			var run := 1
+			while c + run < _cols and _ch(r, c + run) != "D":
+				run += 1
+			var a := _cell(r, c)
+			var b := _cell(r, c + run - 1)
+			_box(_nav, Vector3((a.x + b.x) * 0.5, -0.5, a.z), Vector3(run * CELL, 1.0, CELL), _sand)
+			c += run
+	if stair.size != Vector2i.ZERO:
+		stair.size += Vector2i.ONE
+		_stairs(stair)
+
+
+func _stairs(cells: Rect2i) -> void:
+	# A ramp to walk on, with step meshes over it so it reads as stairs.
+	var x0 := cells.position.x * CELL
+	var x1 := (cells.position.x + cells.size.x) * CELL
+	var z_low := cells.position.y * CELL  # north end, tomb floor
+	var z_high := (cells.position.y + cells.size.y) * CELL  # south end, surface
+	var run := z_high - z_low
+	var rise := -FLOOR_Y
+	var slope := atan2(rise, run)
+	var len := sqrt(run * run + rise * rise)
+	var ramp := StaticBody3D.new()
+	var cs := CollisionShape3D.new()
+	var bs := BoxShape3D.new()
+	bs.size = Vector3(x1 - x0, 0.4, len)
+	cs.shape = bs
+	ramp.add_child(cs)
+	_nav.add_child(ramp)
+	ramp.position = Vector3((x0 + x1) * 0.5, FLOOR_Y + rise * 0.5 - 0.2 / cos(slope), (z_low + z_high) * 0.5)
+	ramp.rotation.x = -slope  # high end to the south (+Z)
+	var steps := int(rise / 0.3)
+	for i in steps:
+		var mi := MeshInstance3D.new()
+		var bm := BoxMesh.new()
+		bm.size = Vector3(x1 - x0, 0.3, run / steps)
+		mi.mesh = bm
+		mi.material_override = _stone
+		add_child(mi)
+		mi.position = Vector3((x0 + x1) * 0.5, FLOOR_Y + (i + 0.5) * 0.3, z_low + (i + 0.5) * run / steps)
+	# Doorway on the surface: posts, lintel, low side walls.
+	var mx := (x0 + x1) * 0.5
+	for side in [-1.0, 1.0]:
+		_box(self, Vector3(mx + side * ((x1 - x0) * 0.5 + 0.6), 2.5, z_high - 0.6), Vector3(1.2, 5.0, 1.2), _stone)
+		_box(self, Vector3(mx + side * ((x1 - x0) * 0.5 + 0.35), 0.5, (z_low + z_high) * 0.5), Vector3(0.7, 1.0, run), _stone)
+	_box(self, Vector3(mx, 5.4, z_high - 0.6), Vector3(x1 - x0 + 3.2, 0.8, 1.6), _stone)
+	_box(self, Vector3(mx, 0.75, z_low - 0.35), Vector3(x1 - x0 + 1.4, 1.5, 0.7), _stone)
+
+
+# ---------------------------------------------------------------- surface
+
+func _build_surface() -> void:
+	var w := _cols * CELL
+	var d := _rows * CELL
+	# Ground south of the tomb footprint, where you arrive.
+	_box(_nav, Vector3(w * 0.5, -0.5, d + SOUTH_EXTENT * 0.5), Vector3(w, 1.0, SOUTH_EXTENT), _sand)
+	player_spawn = Vector3(w * 0.5, 0.0, d + SOUTH_EXTENT * 0.55)
+
+	# Invisible edges, with dunes beyond so it doesn't look like a wall.
+	var total_d := d + SOUTH_EXTENT
+	for e in [
+		[Vector3(-0.5, 5, total_d * 0.5), Vector3(1, 10, total_d)],
+		[Vector3(w + 0.5, 5, total_d * 0.5), Vector3(1, 10, total_d)],
+		[Vector3(w * 0.5, 5, -0.5), Vector3(w, 10, 1)],
+		[Vector3(w * 0.5, 5, total_d + 0.5), Vector3(w, 10, 1)],
+	]:
+		var b := StaticBody3D.new()
+		var cs := CollisionShape3D.new()
+		var bs := BoxShape3D.new()
+		bs.size = e[1]
+		cs.shape = bs
+		b.add_child(cs)
+		add_child(b)
+		b.position = e[0]
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 1923
+	# Far sand only OUTSIDE the play area, so it never covers the stairwell.
+	const FAR := 300.0
+	for r in [
+		Rect2(-FAR, -FAR, w + FAR * 2.0, FAR),  # north
+		Rect2(-FAR, total_d, w + FAR * 2.0, FAR),  # south
+		Rect2(-FAR, 0, FAR, total_d),  # west
+		Rect2(w, 0, FAR, total_d),  # east
+	]:
+		var far := MeshInstance3D.new()
+		var plane := PlaneMesh.new()
+		plane.size = r.size
+		far.mesh = plane
+		far.material_override = _sand
+		add_child(far)
+		far.position = Vector3(r.position.x + r.size.x * 0.5, 0.0, r.position.y + r.size.y * 0.5)
+	# Low dunes ringing the edges, kept fully outside the walkable area.
+	for i in 48:
+		var radius := rng.randf_range(8, 18)
+		var reach := radius * 1.6 + 1.0  # widest half-extent after scaling
+		var side := i % 4
+		var t := rng.randf()
+		var out := reach + rng.randf_range(0, 12)
+		var pos: Vector3
+		match side:
+			0: pos = Vector3(lerpf(-20, w + 20, t), 0, -out)
+			1: pos = Vector3(lerpf(-20, w + 20, t), 0, total_d + out)
+			2: pos = Vector3(-out, 0, lerpf(-20, total_d + 20, t))
+			_: pos = Vector3(w + out, 0, lerpf(-20, total_d + 20, t))
+		var dune := MeshInstance3D.new()
+		var sm := SphereMesh.new()
+		sm.radius = radius
+		sm.height = radius * 2.0
+		dune.mesh = sm
+		dune.material_override = _sand
+		add_child(dune)
+		dune.position = pos + Vector3.DOWN * radius * 0.15
+		dune.scale = Vector3(1.6, 0.4, 1.6)
+
+	# Ruins: broken columns and wall stubs to move between and hide behind.
+	var stair_x := w * 0.5
+	var stair_z0 := 27.0 * CELL - 4.0
+	var stair_z1 := 33.0 * CELL + 4.0
+	var placed := 0
+	var tries := 0
+	while placed < 34 and tries < 400:
+		tries += 1
+		var p := Vector3(rng.randf_range(4, w - 4), 0, rng.randf_range(4, total_d - 4))
+		if absf(p.x - stair_x) < 7.0 and p.z > stair_z0 and p.z < stair_z1:
+			continue
+		if p.distance_to(player_spawn) < 6.0:
+			continue
+		placed += 1
+		if rng.randf() < 0.6:
+			var h := rng.randf_range(1.0, 5.5)
+			var col := _cylinder(self, p + Vector3.UP * h * 0.5, 0.65, h)
+			col.rotation.z = rng.randf_range(-0.06, 0.06)
+		else:
+			var len := rng.randf_range(3.0, 7.0)
+			var h := rng.randf_range(1.2, 2.6)
+			var wall := _box(self, p + Vector3.UP * h * 0.5, Vector3(len, h, 0.9), _stone)
+			wall.rotation.y = rng.randf() * PI
+	# An obelisk to steer by.
+	_box(self, Vector3(w * 0.5, 0.4, d + SOUTH_EXTENT - 8.0), Vector3(3, 0.8, 3), _stone)
+	var ob := _box(self, Vector3(w * 0.5, 6.5, d + SOUTH_EXTENT - 8.0), Vector3(1.6, 11.5, 1.6), _stone)
+	ob.scale = Vector3(1, 1, 1)
+
+
+func _cylinder(parent: Node, pos: Vector3, radius: float, h: float) -> StaticBody3D:
+	var body := StaticBody3D.new()
+	var cs := CollisionShape3D.new()
+	var shape := CylinderShape3D.new()
+	shape.radius = radius
+	shape.height = h
+	cs.shape = shape
+	body.add_child(cs)
+	var mi := MeshInstance3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = radius * 0.9
+	cm.bottom_radius = radius
+	cm.height = h
+	mi.mesh = cm
+	mi.material_override = _stone
+	body.add_child(mi)
+	parent.add_child(body)
+	body.position = pos
+	return body
+
+
+# ---------------------------------------------------------------- pieces
 
 func _make_materials() -> void:
 	_stone = StandardMaterial3D.new()
@@ -127,6 +350,9 @@ func _make_materials() -> void:
 	_stone.uv1_scale = Vector3.ONE * 0.25
 	_floor_mat = _stone.duplicate()
 	_floor_mat.albedo_texture = _noise_tex(Color(0.3, 0.24, 0.16), Color(0.5, 0.41, 0.28), 0.03, false)
+	_sand = _stone.duplicate()
+	_sand.albedo_texture = _noise_tex(Color(0.7, 0.55, 0.36), Color(0.86, 0.72, 0.5), 0.02, false)
+	_sand.uv1_scale = Vector3.ONE * 0.1
 
 
 func _noise_tex(a: Color, b: Color, freq: float, normal: bool) -> NoiseTexture2D:
@@ -169,18 +395,14 @@ func _box(parent: Node, pos: Vector3, size: Vector3, mat: Material) -> StaticBod
 	return body
 
 
-func _pillar(p: Vector3) -> void:
-	_box(_nav, p + Vector3.UP * WALL_H * 0.5, Vector3(1.3, WALL_H, 1.3), _stone)
-
-
-func _flame(parent: Node3D, pos: Vector3, energy: float, light_range: float) -> void:
+func _flame(parent: Node3D, pos: Vector3, energy: float, light_range: float, shadows: bool) -> void:
 	var l := OmniLight3D.new()
 	l.light_color = Color(1.0, 0.62, 0.3)
 	l.light_energy = energy
 	l.set_meta("base", energy)
 	l.omni_range = light_range
 	l.omni_attenuation = 1.3
-	l.shadow_enabled = true
+	l.shadow_enabled = shadows
 	parent.add_child(l)
 	l.position = pos
 	torches.append(l)
@@ -222,7 +444,7 @@ func _flame(parent: Node3D, pos: Vector3, energy: float, light_range: float) -> 
 
 func _brazier(p: Vector3) -> void:
 	var b := _box(_nav, p + Vector3.UP * 0.5, Vector3(0.6, 1.0, 0.6), _stone)
-	_flame(b, Vector3.UP * 0.85, 3.0, 11.0)
+	_flame(b, Vector3.UP * 0.85, 3.0, 11.0, true)
 
 
 func _wall_torch(r: int, c: int) -> void:
@@ -230,9 +452,9 @@ func _wall_torch(r: int, c: int) -> void:
 	for d in [Vector2i(0, 1), Vector2i(0, -1), Vector2i(1, 0), Vector2i(-1, 0)]:
 		var rr: int = r + d.y
 		var cc: int = c + d.x
-		if rr < 0 or rr >= MAP.size() or cc < 0 or cc >= MAP[0].length():
+		if rr < 0 or rr >= _rows or cc < 0 or cc >= _cols:
 			continue
-		if MAP[rr][cc] in ["#", "L"]:
+		if _ch(rr, cc) in ["#", "L"]:
 			continue
 		var holder := Node3D.new()
 		add_child(holder)
@@ -248,13 +470,13 @@ func _wall_torch(r: int, c: int) -> void:
 		wood.albedo_color = Color(0.2, 0.12, 0.06)
 		stick.material_override = wood
 		holder.add_child(stick)
-		_flame(holder, Vector3.UP * 0.4, 2.2, 8.0)
+		_flame(holder, Vector3.UP * 0.4, 2.2, 8.0, false)
 		return
 
 
-func _sarcophagus(p: Vector3, r: int) -> void:
-	# Long axis along x for the side ones, along z for the head-wall pair.
-	var along_z: bool = r == 1
+func _sarcophagus(p: Vector3, r: int, c: int) -> void:
+	# Lie along a wall: long axis along z if there's wall north of it.
+	var along_z: bool = _ch(r - 1, c) in ["#", "L"]
 	var size := Vector3(1.0, 0.9, 2.2) if along_z else Vector3(2.2, 0.9, 1.0)
 	var base := _box(_nav, p + Vector3.UP * 0.45, size, _stone)
 	var lid := MeshInstance3D.new()
@@ -269,7 +491,8 @@ func _sarcophagus(p: Vector3, r: int) -> void:
 	base.add_child(lid)
 	lid.position = Vector3.UP * 0.54
 	# Open and climb out on the side that faces the room centre.
-	var to_c := Vector3(10.0 * CELL, 0, (CHAMBER_LAST_ROW + 1) * CELL * 0.5) - p
+	var centre := _cell(BURIAL.position.y + BURIAL.size.y / 2, BURIAL.position.x + BURIAL.size.x / 2)
+	var to_c := centre - p
 	var dir := Vector3(signf(to_c.x), 0, 0) if absf(to_c.x) > absf(to_c.z) else Vector3(0, 0, signf(to_c.z))
 	var half := absf(dir.dot(size)) * 0.5
 	base.set_meta("lid", lid)
@@ -280,21 +503,34 @@ func _sarcophagus(p: Vector3, r: int) -> void:
 
 func _environment() -> void:
 	var we := WorldEnvironment.new()
-	var env := Environment.new()
-	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0.01, 0.008, 0.006)
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.32, 0.26, 0.2)
-	env.ambient_light_energy = 0.12
-	env.tonemap_mode = Environment.TONE_MAPPER_AGX
-	env.tonemap_exposure = 1.1
-	env.glow_enabled = true
-	env.glow_intensity = 0.6
-	env.glow_bloom = 0.05
-	env.ssao_enabled = true
-	env.ssao_intensity = 2.5
-	env.fog_enabled = true
-	env.fog_light_color = Color(0.12, 0.08, 0.05)
-	env.fog_density = 0.025
-	we.environment = env
+	_env = Environment.new()
+	var sky := Sky.new()
+	var sm := ProceduralSkyMaterial.new()
+	sm.sky_top_color = Color(0.32, 0.5, 0.75)
+	sm.sky_horizon_color = Color(0.85, 0.75, 0.6)
+	sm.ground_horizon_color = Color(0.8, 0.68, 0.5)
+	sm.ground_bottom_color = Color(0.5, 0.4, 0.28)
+	sm.sun_angle_max = 20.0
+	sky.sky_material = sm
+	_env.sky = sky
+	_env.background_mode = Environment.BG_SKY
+	_env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+	_env.ambient_light_color = Color(0.32, 0.26, 0.2)
+	_env.reflected_light_source = Environment.REFLECTION_SOURCE_DISABLED
+	_env.tonemap_mode = Environment.TONE_MAPPER_AGX
+	_env.glow_enabled = true
+	_env.glow_intensity = 0.6
+	_env.glow_bloom = 0.05
+	_env.ssao_enabled = true
+	_env.ssao_intensity = 2.5
+	_env.fog_enabled = true
+	_env.fog_sky_affect = 0.3
+	we.environment = _env
 	add_child(we)
+	_sun = DirectionalLight3D.new()
+	_sun.light_color = Color(1.0, 0.9, 0.75)
+	_sun.shadow_enabled = true
+	_sun.directional_shadow_max_distance = 90.0
+	add_child(_sun)
+	_sun.rotation = Vector3(deg_to_rad(-38), deg_to_rad(-140), 0)
+	set_indoor(0.0)

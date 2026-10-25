@@ -1,9 +1,11 @@
 extends Node3D
-## Game loop: start screen, wake the chamber, a sarcophagus wave, clear = win.
+## Game loop: start topside, go down into the tomb, mummies wake when they see
+## or hear you, a sarcophagus wave in the burial chamber, every mummy dead = win.
 ## Test runs: pass args after "--", see TestDriver.
 
-const WAVE_WHEN_LEFT := 2
-const WAKE_RADIUS := 18.0
+const WAVE_WHEN_LEFT := 1
+const WAKE_RADIUS := 18.0  # gunfire
+const SIGHT := 13.0
 
 var level: Level
 var player: Player
@@ -14,7 +16,8 @@ var started := false
 var over := false
 var wave_done := false
 var elapsed := 0.0
-var _chamber_woken := false
+var _entered_burial := false
+var _sight_t := 0.0
 
 
 func _ready() -> void:
@@ -29,7 +32,7 @@ func _ready() -> void:
 	player = Player.new()
 	add_child(player)
 	player.global_position = level.player_spawn
-	player.yaw = 0.0  # look north, up the corridor
+	player.yaw = 0.0  # look north, toward the tomb doorway
 	hud = Hud.new()
 	hud.player = player
 	add_child(hud)
@@ -40,7 +43,7 @@ func _ready() -> void:
 	for p in level.mummy_spawns:
 		var m := _spawn_mummy()
 		m.global_position = p
-		m.rotation.y = PI  # face the entrance (south)
+		m.rotation.y = randf() * TAU
 
 	var args := TestDriver.parse_args()
 	if args.size() > 0:
@@ -93,20 +96,44 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
+	level.set_indoor(level.indoor_amount(player.camera.global_position))
 	if not started or over or get_tree().paused:
 		return
 	elapsed += delta
-	if not _chamber_woken and level.is_in_chamber(player.global_position + Vector3(0, 0, -3)):
-		_chamber_woken = true
-		for m in mummies:
-			_wake_later(m, randf_range(0.0, 1.8))
+	_sight_t -= delta
+	if _sight_t <= 0.0:
+		_sight_t = 0.25
+		_wake_by_sight()
+	if level.is_in_burial(player.global_position):
+		_entered_burial = true
 	var alive := alive_count()
 	hud.remaining = alive + (0 if wave_done else level.sarcophagi.size())
-	if _chamber_woken and not wave_done and alive <= WAVE_WHEN_LEFT:
+	if _entered_burial and not wave_done and _alive_in_burial() <= WAVE_WHEN_LEFT:
 		wave_done = true
 		_sarcophagus_wave()
 	if wave_done and alive == 0 and not over:
 		_win()
+
+
+func _alive_in_burial() -> int:
+	var n := 0
+	for m in mummies:
+		if m.is_active() and level.is_in_burial(m.global_position):
+			n += 1
+	return n
+
+
+func _wake_by_sight() -> void:
+	var eye := player.global_position + Vector3.UP * 1.5
+	var space := get_world_3d().direct_space_state
+	for m in mummies:
+		if m.state != Mummy.State.DORMANT:
+			continue
+		var head := m.global_position + Vector3.UP * 1.5
+		if head.distance_to(eye) > SIGHT:
+			continue
+		if space.intersect_ray(PhysicsRayQueryParameters3D.create(head, eye, 1)).is_empty():
+			_wake_later(m, randf_range(0.0, 0.8))
 
 
 func alive_count() -> int:
@@ -161,7 +188,7 @@ func _win() -> void:
 		return
 	over = true
 	player.controls_enabled = false
-	hud.show_message("CHAMBER CLEARED", "Time %d:%02d · Health %d\n\nEnter to play again · Q to quit" % [int(elapsed) / 60, int(elapsed) % 60, int(player.health)])
+	hud.show_message("TOMB CLEARED","Time %d:%02d · Health %d\n\nEnter to play again · Q to quit" % [int(elapsed) / 60, int(elapsed) % 60, int(player.health)])
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 
