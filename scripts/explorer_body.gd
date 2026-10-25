@@ -17,6 +17,9 @@ const AIM_PULL := 0.5
 ## Point the gun along this (world) every frame; zero = let it hang with the hand.
 var aim_dir := Vector3.ZERO
 var gun_holder: Node3D
+## The gun's foregrip in its own space (from WeaponData); zero = no left-hand reach.
+var foregrip := Vector3.ZERO
+var _armed := 1.0
 
 
 ## Null when an asset is missing; the caller keeps its stand-in then.
@@ -36,6 +39,8 @@ func _ready() -> void:
 	gun_holder = Node3D.new()
 	hand.add_child(gun_holder)
 	skeleton.skeleton_updated.connect(_orient_gun)
+	# Connected after the retarget's own connection, so it runs on the retargeted pose.
+	_src.skeleton_updated.connect(_reach_left)
 
 
 func _build_tree() -> void:
@@ -61,6 +66,10 @@ func _build_tree() -> void:
 	aim.add_blend_point(_anim("Pistol_Aim_Up"), 1.0, -1, "Pistol_Aim_Up")
 	aim.min_space = -1.0
 	bt.add_node("aim_bs", aim)
+	# Armed (Simon: "the guns look bad when walking"): the arms hold the gun at low ready instead
+	# of swinging with the walk, and blend to the aim pose.
+	bt.add_node("ready_anim", _anim("Pistol_Idle"))
+	bt.add_node("armed_mix", AnimationNodeBlend2.new())
 	var aim_mix := AnimationNodeBlend2.new()
 	_upper_only(aim_mix)
 	bt.add_node("aim_mix", aim_mix)
@@ -101,7 +110,9 @@ func _build_tree() -> void:
 	bt.connect_node("crouch_mix", 1, "crouch_bs")
 	bt.connect_node("speed_ts", 0, "crouch_mix")
 	bt.connect_node("aim_mix", 0, "speed_ts")
-	bt.connect_node("aim_mix", 1, "aim_bs")
+	bt.connect_node("armed_mix", 0, "ready_anim")
+	bt.connect_node("armed_mix", 1, "aim_bs")
+	bt.connect_node("aim_mix", 1, "armed_mix")
 	bt.connect_node("shoot", 0, "aim_mix")
 	bt.connect_node("shoot", 1, "shoot_anim")
 	bt.connect_node("reload_ts", 0, "reload_anim")
@@ -119,15 +130,18 @@ func _build_tree() -> void:
 	_start_tree(bt)
 
 
-## speed m/s along the ground; aim 0..1; pitch radians (up positive).
-func update(speed: float, crouching: bool, aim: float, pitch: float) -> void:
+## speed m/s along the ground; armed 0..1 (arms hold the gun); aim 0..1 (low ready -> aimed);
+## pitch radians (up positive).
+func update(speed: float, crouching: bool, aim: float, pitch: float, armed := 1.0) -> void:
 	if _tree == null:
 		return
 	_tree.set("parameters/loco/blend_position", minf(speed, 7.0))
 	_tree.set("parameters/crouch_bs/blend_position", speed)
 	_tree.set("parameters/crouch_mix/blend_amount", 1.0 if crouching else 0.0)
 	_tree.set("parameters/aim_bs/blend_position", clampf(pitch / 0.9, -1.0, 1.0))
-	_tree.set("parameters/aim_mix/blend_amount", aim)
+	_tree.set("parameters/armed_mix/blend_amount", aim)
+	_tree.set("parameters/aim_mix/blend_amount", maxf(armed, aim))
+	_armed = maxf(armed, aim)
 	# Play the gait near the speed it was made for so the feet don't skate.
 	var natural := CROUCH_FWD_NATURAL if crouching else _natural(speed)
 	_tree.set("parameters/speed_ts/scale", clampf(speed / natural, 0.6, 1.4) if speed > 0.2 else 1.0)
@@ -175,16 +189,42 @@ func die() -> void:
 
 
 func _orient_gun() -> void:
-	if gun_holder == null:
-		return
-	# The gun turns with the hand at a fixed grip (Simon: "the guns don't turn naturally in the
-	# hands" when they were forced along the aim). While aiming it leans part-way to the aim so
-	# the barrel still lines up with the crosshair.
+	if gun_holder:
+		gun_holder.global_transform = _gun_transform()
+
+
+## Where the gun is this frame (world): it turns with the right hand at a fixed grip (Simon: "the
+## guns don't turn naturally in the hands" when forced along the aim), leaning part-way to the aim
+## while aiming so the barrel lines up with the crosshair; the grip sits in the palm (between the
+## wrist and the middle knuckle), not at the wrist joint.
+func _gun_transform() -> Transform3D:
 	var hb := (skeleton.global_basis * skeleton.get_bone_global_pose(skeleton.find_bone(BONE_MAP["hand_r"])).basis).orthonormalized()
 	var held := Quaternion(hb) * GRIP
 	if aim_dir.length() > 0.01:
 		held = held.slerp(Quaternion(Basis.looking_at(aim_dir, Vector3.UP)), AIM_PULL)
-	gun_holder.global_basis = Basis(held)
-	# The grip in the palm (between the wrist and the middle knuckle), not at the wrist joint.
+	var at := bone_point("hand_r")
 	if bone_map.has("middle_01_r"):
-		gun_holder.global_position = (bone_point("hand_r") + bone_point("middle_01_r")) * 0.5
+		at = (at + bone_point("middle_01_r")) * 0.5
+	return Transform3D(Basis(held), at)
+
+
+## After the retarget each frame: the left palm onto the gun's foregrip (two-bone reach, as
+## Wreck Wreckers' PlayerBody does). foregrip = zero (the revolver): the clip's own two-hand hold.
+func _reach_left() -> void:
+	if foregrip == Vector3.ZERO or _armed < 0.5 or gun_holder == null:
+		return
+	var up := skeleton.find_bone(BONE_MAP["upperarm_l"])
+	var lo := skeleton.find_bone(BONE_MAP["lowerarm_l"])
+	var hd := skeleton.find_bone(BONE_MAP["hand_l"])
+	var to_sk := skeleton.global_transform.affine_inverse()
+	var grip_w := _gun_transform() * foregrip
+	# Palm, not wrist, on the grip: back off by the wrist -> palm offset of this pose.
+	var palm := Vector3.ZERO
+	if bone_map.has("middle_01_l"):
+		var mid := skeleton.find_bone(bone_map["middle_01_l"])
+		palm = (skeleton.get_bone_global_pose(mid).origin - skeleton.get_bone_global_pose(hd).origin) * 0.5
+	var s := skeleton.get_bone_global_pose(up).origin
+	var e := skeleton.get_bone_global_pose(lo).origin
+	var h := skeleton.get_bone_global_pose(hd).origin
+	var line := (h - s).normalized()
+	ArmIK.reach(skeleton, up, lo, hd, to_sk * grip_w - palm, (e - s) - line * (e - s).dot(line))

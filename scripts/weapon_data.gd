@@ -25,6 +25,8 @@ extends Resource
 @export var model_length := 0.35  # stand-in box length when there's no model
 ## image-to-3d GLB: barrel along -Z, origin at the grip, an empty named "muzzle".
 @export var model_path := ""
+## Where the left hand holds the gun, in the model's space (zero = one-handed / the clip's hold).
+@export var foregrip := Vector3.ZERO
 
 
 static func defaults() -> Array[WeaponData]:
@@ -70,6 +72,7 @@ static func defaults() -> Array[WeaponData]:
 	rifle.sound_pitch = 0.85
 	rifle.model_length = 0.95
 	rifle.model_path = "res://assets/guns/rifle_lever.glb"
+	rifle.foregrip = Vector3(0, -0.02, -0.42)
 
 	var shotgun := WeaponData.new()
 	shotgun.id = "shotgun"
@@ -94,5 +97,6 @@ static func defaults() -> Array[WeaponData]:
 	shotgun.sound_pitch = 0.7
 	shotgun.model_length = 0.85
 	shotgun.model_path = "res://assets/guns/shotgun_tombsweeper.glb"
+	shotgun.foregrip = Vector3(0, -0.03, -0.3)
 
 	return [revolver, rifle, shotgun]

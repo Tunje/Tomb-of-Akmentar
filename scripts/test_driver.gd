@@ -70,6 +70,18 @@ func _physics_process(delta: float) -> void:
 		_pose_check()
 	elif args.get("scenario", "") == "cover":
 		_cover_check()
+	elif args.get("scenario", "") == "walkcam":
+		# Walk forward with a camera alongside (front-quarter view of the arms and gun); aim from 3 s.
+		var p: Player = game.player
+		_press("move_forward", true)
+		_press("aim", _t > 3.0)
+		if _pose_cam == null:
+			_pose_cam = Camera3D.new()
+			_pose_cam.fov = 45.0
+			game.add_child(_pose_cam)
+			_pose_cam.current = true
+		var chest := p.global_position + Vector3.UP * 1.3
+		_pose_cam.look_at_from_position(chest + p.model.global_basis * Vector3(1.4, 0.2, -1.6), chest)
 	if _shots.size() > 0 and _t >= _shots[0]:
 		var at: float = _shots.pop_front()
 		_screenshot("shot_%05.1f.png" % at)

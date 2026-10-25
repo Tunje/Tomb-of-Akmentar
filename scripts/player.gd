@@ -378,7 +378,9 @@ func _update_facing(delta: float, wish: Vector3) -> void:
 		# Upper body raises the gun while aiming and for a moment after each shot.
 		var want := 1.0 if (aiming or _face_aim_t > 0.0) and _reload_t <= 0.0 and _switch_t <= 0.0 and alive else 0.0
 		_upper_aim = move_toward(_upper_aim, want, delta / 0.12)
-		explorer.update(Vector2(velocity.x, velocity.z).length(), crouching, _upper_aim, pitch)
+		# Arms hold the gun everywhere except crouched in cover (gun lowered, as in Wreck Wreckers).
+		var armed := 0.0 if cover.state == Cover.State.IN_COVER or not alive else 1.0
+		explorer.update(Vector2(velocity.x, velocity.z).length(), crouching, _upper_aim, pitch, armed)
 		explorer.aim_dir = -camera.global_basis.z if _upper_aim > 0.5 else Vector3.ZERO
 		return
 	model.rotation.x = 0.0
@@ -418,6 +420,8 @@ func _equip(i: int, instant: bool) -> void:
 	current = i
 	if _reload_t > 0.0 and explorer:
 		explorer.cancel_reload()
+	if explorer:
+		explorer.foregrip = weapons[i].foregrip
 	_reload_t = 0.0
 	_switch_t = 0.0 if instant else SWITCH_TIME
 	var w := weapons[i]
