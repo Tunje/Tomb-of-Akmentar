@@ -122,7 +122,7 @@ func indoor_amount(pos: Vector3) -> float:
 
 func set_indoor(f: float) -> void:
 	_sun.light_energy = lerpf(1.6, 0.0, f)
-	_env.ambient_light_energy = lerpf(0.55, 0.12, f)
+	_env.ambient_light_energy = lerpf(0.55, 0.2, f)
 	_env.ambient_light_sky_contribution = lerpf(1.0, 0.0, f)
 	_env.fog_light_color = Color(0.75, 0.62, 0.45).lerp(Color(0.12, 0.08, 0.05), f)
 	_env.fog_density = lerpf(0.004, 0.025, f)
@@ -330,6 +330,11 @@ func _build_surface() -> void:
 func _mark_cover(body: StaticBody3D, size: Vector3) -> void:
 	body.set_meta("cover_size", size)
 	body.add_to_group("cover")
+	# Simon: "why does the world go dark if you crouch or take cover?": in the tomb the braziers
+	# burn just above these, so their shadow swallowed anyone crouched behind them.
+	if body.position.y < FLOOR_Y + 3.0:
+		for mi in body.find_children("*", "MeshInstance3D", true, false):
+			(mi as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 
 func _cylinder(parent: Node, pos: Vector3, radius: float, h: float) -> StaticBody3D:
@@ -459,6 +464,8 @@ func _flame(parent: Node3D, pos: Vector3, energy: float, light_range: float, sha
 
 func _brazier(p: Vector3) -> void:
 	var b := _box(_nav, p + Vector3.UP * 0.5, Vector3(0.6, 1.0, 0.6), _stone)
+	# Its own flame sits on top: casting, the base threw a black square around itself.
+	(b.get_child(1) as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_flame(b, Vector3.UP * 0.85, 3.0, 11.0, true)
 
 
@@ -537,7 +544,7 @@ func _environment() -> void:
 	_env.glow_enabled = true
 	_env.glow_intensity = 0.6
 	_env.glow_bloom = 0.05
-	_env.ssao_enabled = true
+	_env.ssao_enabled = not OS.get_cmdline_user_args().has("--no-ssao")
 	_env.ssao_intensity = 2.5
 	_env.fog_enabled = true
 	_env.fog_sky_affect = 0.3

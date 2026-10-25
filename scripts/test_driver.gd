@@ -70,6 +70,17 @@ func _physics_process(delta: float) -> void:
 		_pose_check()
 	elif args.get("scenario", "") == "cover":
 		_cover_check()
+	elif args.get("scenario", "") == "crouch":
+		# --at=x,y,z --yaw=deg: stand there, crouch from 1.5 s; prints the light state each 0.5 s.
+		var p: Player = game.player
+		if _t < 0.05 and args.has("at"):
+			var v := str(args["at"]).split(",")
+			p.global_position = Vector3(float(v[0]), float(v[1]), float(v[2]))
+			p.yaw = deg_to_rad(float(args.get("yaw", "0")))
+		_press("crouch", _t > 1.5)
+		if fmod(_t, 0.5) < delta:
+			print("RESULT crouch t=%.1f crouching=%s cam_y=%.2f indoor=%.2f" % [_t, p.crouching,
+				p.camera.global_position.y, game.level.indoor_amount(p.camera.global_position)])
 	elif args.get("scenario", "") == "walkcam":
 		# Walk forward with a camera alongside (front-quarter view of the arms and gun); aim from 3 s.
 		var p: Player = game.player

@@ -202,6 +202,13 @@ func _orient_gun() -> void:
 func _gun_transform() -> Transform3D:
 	var hb := (skeleton.global_basis * skeleton.get_bone_global_pose(skeleton.find_bone(BONE_MAP["hand_r"])).basis).orthonormalized()
 	var held := Quaternion(hb) * GRIP
+	# Simon: "they don't point along the arms" / "the pistols are even worse now": the grip was
+	# measured in the aim pose, so in other poses (low ready) the wrist's turn sent the barrel off
+	# sideways. The barrel now runs along the forearm (elbow -> hand); the grip keeps only its roll.
+	var forearm := bone_point("hand_r") - bone_point("lowerarm_r")
+	if forearm.length() > 0.01:
+		var fwd := Basis(held) * Vector3.FORWARD
+		held = Quaternion(fwd.normalized(), forearm.normalized()) * held
 	if aim_dir.length() > 0.01:
 		held = held.slerp(Quaternion(Basis.looking_at(aim_dir, Vector3.UP)), AIM_PULL)
 	var at := bone_point("hand_r")
