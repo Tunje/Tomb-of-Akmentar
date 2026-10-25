@@ -101,9 +101,10 @@ func _build_tree() -> void:
 	bt.add_node("vault_anim", _anim("ual2/ClimbUp_1m"))
 	bt.add_node("vault_ts", AnimationNodeTimeScale.new())
 	var state := AnimationNodeTransition.new()
-	state.input_count = 2
+	state.input_count = 3
 	state.set_input_name(0, "alive")
 	state.set_input_name(1, "dead")
+	state.set_input_name(2, "drive")
 	state.xfade_time = 0.15
 	bt.add_node("state", state)
 	bt.add_node("death_anim", _anim("Death01"))
@@ -127,7 +128,9 @@ func _build_tree() -> void:
 	bt.connect_node("vault", 0, "roll")
 	bt.connect_node("vault", 1, "vault_ts")
 	bt.connect_node("state", 0, "vault")
+	bt.add_node("drive_anim", _anim("Driving"))
 	bt.connect_node("state", 1, "death_anim")
+	bt.connect_node("state", 2, "drive_anim")
 	bt.connect_node("output", 0, "state")
 	_start_tree(bt)
 
@@ -237,3 +240,8 @@ func _reach_left() -> void:
 	var h := skeleton.get_bone_global_pose(hd).origin
 	var line := (h - s).normalized()
 	ArmIK.reach(skeleton, up, lo, hd, to_sk * grip_w - palm, (e - s) - line * (e - s).dot(line))
+
+
+## Seated at a steering wheel (UAL1 Driving) while true; back to the normal body after.
+func set_driving(on: bool) -> void:
+	_tree.set("parameters/state/transition_request", "drive" if on else "alive")

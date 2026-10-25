@@ -21,7 +21,8 @@ const BONE_MAP := {
 const UNALIGNED := ["clavicle_l", "clavicle_r"]
 ## Clips that loop; everything else plays once.
 const LOOPED := ["Idle", "Walk", "Jog_Fwd", "Sprint", "Crouch_Idle", "Crouch_Fwd",
-	"Pistol_Aim_Down", "Pistol_Aim_Neutral", "Pistol_Aim_Up", "Zombie_Idle", "Zombie_Walk_Fwd"]
+	"Pistol_Aim_Down", "Pistol_Aim_Neutral", "Pistol_Aim_Up", "Zombie_Idle", "Zombie_Walk_Fwd", "Driving",
+	"Sitting_Idle"]
 
 static var _libs := {}
 

@@ -68,6 +68,9 @@ var cover := Cover.new()
 var armed := true
 ## What E would use right now (shown on the HUD).
 var focus: Interactable
+## The truck we're driving, or null.
+var vehicle: Truck
+var _drive_blend := 0.0
 var _vaulting := false
 var _cover_blend := 0.0
 var explorer: ExplorerBody
@@ -210,6 +213,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		switch_to((current + weapons.size() - 1) % weapons.size())
 	elif event.is_action_pressed("reload"):
 		start_reload()
+	elif vehicle:
+		return  # seated: only looking around
 	elif event.is_action_pressed("dodge"):
 		dodge()
 	elif event.is_action_pressed("holster"):
@@ -236,6 +241,10 @@ func _physics_process(delta: float) -> void:
 		_reload_t -= delta
 		if _reload_t <= 0.0:
 			ammo[current] = w.mag_size
+
+	if vehicle:
+		_drive_step(delta)
+		return
 
 	var input := Vector2.ZERO
 	var want_aim := false
@@ -334,7 +343,7 @@ func _process(delta: float) -> void:
 		sin(_shake_t * 37.0 + 1.3) * 0.6 + sin(_shake_t * 67.0) * 0.4,
 		sin(_shake_t * 29.0 + 2.1)) * s
 
-	var head := lerpf(HEAD_H, CROUCH_HEAD_H, _crouch_blend)
+	var head := lerpf(HEAD_H, CROUCH_HEAD_H, _crouch_blend) + 1.4 * _drive_blend  # above the cab when driving
 	cam_root.global_position = global_position + Vector3.UP * head
 	cam_root.rotation = Vector3(0, yaw + deg_to_rad(_recoil.y), 0)
 	cam_pitch.rotation = Vector3(pitch + deg_to_rad(_recoil.x), 0, deg_to_rad(shake.z * 3.0))
@@ -349,7 +358,9 @@ func _process(delta: float) -> void:
 	shoulder.position.x = move_toward(shoulder.position.x, want, delta * 6.0) if shoulder.position.x < want else want
 	# In cover the camera comes 0.5 m closer (crouching already lowers it), 0.25 s blend.
 	_cover_blend = move_toward(_cover_blend, 1.0 if cover.in_cover() else 0.0, delta / 0.25)
+	_drive_blend = move_toward(_drive_blend, 1.0 if vehicle else 0.0, delta / 0.4)
 	arm.spring_length = lerpf(ARM_LEN, AIM_ARM_LEN, e) - 0.5 * _cover_blend * (1.0 - e)
+	arm.spring_length += 3.2 * _drive_blend  # pulled back behind the truck
 	camera.fov = lerpf(BASE_FOV, w.aim_fov, e)
 	camera.h_offset = shake.x * 0.06
 	camera.v_offset = shake.y * 0.06
@@ -487,6 +498,51 @@ func dodge() -> void:
 
 
 ## HUD hint for cover, or "".
+## Into a truck's driver's seat (from its door Interactable).
+func enter_vehicle(t: Truck) -> void:
+	if vehicle or not t.board(self, 0):
+		return
+	vehicle = t
+	focus = null
+	cover.leave()
+	set_armed(false)
+	_shape.disabled = true
+	velocity = Vector3.ZERO
+	arm.add_excluded_object(t.get_rid())
+	if explorer:
+		explorer.set_driving(true)
+
+
+func exit_vehicle() -> void:
+	if vehicle == null:
+		return
+	var t := vehicle
+	t.leave(self)
+	t.idle()
+	arm.remove_excluded_object(t.get_rid())
+	vehicle = null
+	global_position = t.exit_point()
+	_shape.disabled = false
+	if explorer:
+		explorer.set_driving(false)
+
+
+## Seated: follow the seat, steer with the move keys, E gets out. The camera stays free.
+func _drive_step(delta: float) -> void:
+	var seat := vehicle.seats[0]
+	global_position = seat.global_position - Vector3.UP * 0.55
+	var truck_yaw := vehicle.global_rotation.y
+	model.rotation.y = truck_yaw
+	if not alive:
+		exit_vehicle()
+		return
+	if controls_enabled and Input.is_action_just_pressed("cover"):
+		exit_vehicle()
+		return
+	var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back") if controls_enabled else Vector2.ZERO
+	vehicle.drive(-input.y, -input.x, controls_enabled and Input.is_action_pressed("dodge"), delta)
+
+
 ## Explore (false) or combat (true). Drawing plays the weapon-raise; holstering hides the gun.
 func set_armed(on: bool) -> void:
 	if on == armed:
@@ -504,6 +560,8 @@ func set_armed(on: bool) -> void:
 func cover_prompt() -> String:
 	if not alive or not controls_enabled:
 		return ""
+	if vehicle:
+		return "E  get out · W/S drive · A/D steer · Space brake"
 	if focus:
 		return "E  " + focus.prompt
 	if cover.in_cover():
@@ -563,6 +621,15 @@ func _cycle_gun_parts(w: WeaponData) -> void:
 		var tw := hammer.create_tween()
 		tw.tween_property(hammer, "rotation:x", rest - 0.6, 0.04)
 		tw.tween_property(hammer, "rotation:x", rest, minf(w.fire_interval * 0.5, 0.15))
+	# A lever action: throw the lever down and back while the next round chambers.
+	var lever := gun_model.find_child("lever", true, false) as Node3D
+	if lever:
+		var lrest: float = lever.get_meta("rest_x", lever.rotation.x)
+		lever.set_meta("rest_x", lrest)
+		var lt := lever.create_tween()
+		lt.tween_interval(0.08)
+		lt.tween_property(lever, "rotation:x", lrest + deg_to_rad(40.0), w.fire_interval * 0.35).set_trans(Tween.TRANS_QUAD)
+		lt.tween_property(lever, "rotation:x", lrest, w.fire_interval * 0.35).set_trans(Tween.TRANS_QUAD)
 	var cyl := gun_model.find_child("cylinder", true, false) as Node3D
 	if cyl:
 		var to: float = cyl.get_meta("turn_to", cyl.rotation.z) + TAU / w.mag_size
@@ -616,7 +683,8 @@ func _fire_bullets(w: WeaponData) -> void:
 
 
 func _ray(from: Vector3, to: Vector3, mask: int) -> Dictionary:
-	var q := PhysicsRayQueryParameters3D.create(from, to, mask, [get_rid()])
+	var skip := [get_rid(), vehicle.get_rid()] if vehicle else [get_rid()]
+	var q := PhysicsRayQueryParameters3D.create(from, to, mask, skip)
 	return get_world_3d().direct_space_state.intersect_ray(q)
 
 

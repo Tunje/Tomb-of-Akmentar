@@ -12,6 +12,7 @@ var player: Player
 var hud: Hud
 var mummies: Array[Mummy] = []  # live nodes only; corpses leave when they sink
 var spawned := 0
+var truck: Truck
 var started := false
 var over := false
 var wave_done := false
@@ -52,6 +53,10 @@ func _ready() -> void:
 		m.rotation.y = randf() * TAU
 	level.interactables["camp_fire"].used.connect(func(_by): _save_at("camp_fire"))
 	level.interactables["camp_bed"].used.connect(func(_by): _sleep_at("camp_bed"))
+	# A truck by the camp (Proving Ground step 9).
+	truck = Truck.new()
+	add_child(truck)
+	truck.global_position = level.player_spawn + Vector3(-7.0, 0.6, 1.0)
 
 	if args.size() > 0:
 		# Test windows must never take Simon's keyboard or mouse while he plays.

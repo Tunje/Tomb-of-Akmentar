@@ -70,6 +70,8 @@ func _physics_process(delta: float) -> void:
 		_pose_check()
 	elif args.get("scenario", "") == "cover":
 		_cover_check()
+	elif args.get("scenario", "") == "truck":
+		_truck_check()
 	elif args.get("scenario", "") == "camp":
 		_camp_check()
 	elif args.get("scenario", "") == "crouch":
@@ -261,6 +263,46 @@ func _cover_check() -> void:
 			_finish()
 		_:
 			_screenshot("cover_%s.png" % what)
+
+
+## --scenario=truck: walk to the driver's door, E in, drive 4 s, steer left 2 s, E out.
+var _truck_step := 0
+
+
+func _truck_check() -> void:
+	var p: Player = game.player
+	var t: Truck = game.truck
+	var steps := [[0.5, "door"], [0.9, "enter"], [1.3, "go"], [3.0, "shot_drive"], [4.0, "left"], [5.6, "shot_turn"],
+		[6.0, "stop"], [7.5, "exit"], [8.2, "shot_out"], [8.6, "end"]]
+	if _truck_step >= steps.size() or _t < steps[_truck_step][0]:
+		_press("cover", false)
+		return
+	var what: String = steps[_truck_step][1]
+	_truck_step += 1
+	match what:
+		"door":
+			p.global_position = t.door.global_position + t.global_basis.x * -0.6
+			var to := t.door.global_position - p.global_position
+			p.yaw = atan2(-to.x, -to.z)
+		"enter", "exit":
+			Input.action_press("cover")
+		"go":
+			_press("move_forward", true)
+			p.yaw = t.global_rotation.y
+			p.pitch = -0.2
+		"left":
+			_press("move_left", true)
+		"stop":
+			_press("move_left", false)
+			_press("move_forward", false)
+			_press("move_back", true)
+		"end":
+			_press("move_back", false)
+			_finish()
+		_:
+			_screenshot("truck_%s.png" % what)
+	print("RESULT truck %s in=%s speed=%.1f pos=%s health=%.0f" % [what, p.vehicle != null,
+		t.linear_velocity.length(), t.global_position, t.health])
 
 
 ## --scenario=camp: rest at the campfire (save), sleep in the bedroll (day 2), holster the gun.
