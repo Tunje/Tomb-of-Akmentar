@@ -50,6 +50,8 @@ func _ready() -> void:
 		var m := _spawn_mummy(i % 3 == 2)  # every third is a High Priest
 		m.global_position = p
 		m.rotation.y = randf() * TAU
+	level.interactables["camp_fire"].used.connect(func(_by): _save_at("camp_fire"))
+	level.interactables["camp_bed"].used.connect(func(_by): _sleep_at("camp_bed"))
 
 	if args.size() > 0:
 		# Test windows must never take Simon's keyboard or mouse while he plays.
@@ -63,7 +65,39 @@ func _ready() -> void:
 		_start(false)
 	else:
 		player.controls_enabled = false
-		hud.show_message("TOMBS OF AKMENTAR", "Click to begin\n\nWASD move · Shift sprint · C crouch · Space dodge · E cover (W+E vault)\nRight mouse aim · Left mouse fire · R reload · 1 2 3 guns\nEsc pause")
+		var cont := "\nC  continue from your last save" if Game.has_save() else ""
+		hud.show_message("TOMBS OF AKMENTAR", "Click to begin a new game" + cont + "\n\nWASD move · Shift sprint · C crouch · Space dodge · E use / cover (W+E vault)\nRight mouse aim · Left mouse fire · R reload · 1 2 3 guns · X holster\nSave at campfires and beds · Esc pause")
+
+
+## Rest at a campfire: save here.
+func _save_at(spot: String) -> void:
+	Game.place = spot
+	Game.set_flag("player_health", player.health)
+	Game.set_flag("ammo", player.ammo)
+	if Game.save_game():
+		hud.toast("Game saved")
+
+
+## Sleep: the next day starts, then save.
+func _sleep_at(spot: String) -> void:
+	Game.end_day()
+	hud.toast("Day %d" % Game.day)
+	_save_at(spot)
+
+
+func _continue() -> void:
+	if not Game.load_game():
+		return
+	var spot: Node3D = level.interactables.get(Game.place)
+	if spot:
+		player.global_position = spot.global_position + Vector3(0, 0, 1.5)
+	player.health = float(Game.flag("player_health", player.max_health))
+	var saved_ammo: Variant = Game.flag("ammo", null)
+	if saved_ammo is Array and saved_ammo.size() == player.ammo.size():
+		for i in saved_ammo.size():
+			player.ammo[i] = int(saved_ammo[i])
+	_start()
+	hud.toast("Day %d" % Game.day)
 
 
 func _spawn_mummy(priest := false) -> Mummy:
@@ -89,6 +123,7 @@ func _start(capture_mouse := true) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
 		if not started:
+			Game.reset()
 			_start()
 		elif Input.mouse_mode != Input.MOUSE_MODE_CAPTURED and not over:
 			get_tree().paused = false
@@ -101,6 +136,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventKey and event.pressed:
 		if event.keycode == KEY_Q and (get_tree().paused or not started or over):
 			get_tree().quit()
+		elif event.keycode == KEY_C and not started and Game.has_save():
+			_continue()
 		elif event.keycode == KEY_ENTER and over:
 			get_tree().paused = false
 			get_tree().reload_current_scene()
@@ -213,7 +250,7 @@ func _setup_input() -> void:
 	var keys := {
 		"move_forward": [KEY_W], "move_back": [KEY_S], "move_left": [KEY_A], "move_right": [KEY_D],
 		"sprint": [KEY_SHIFT], "crouch": [KEY_C, KEY_CTRL], "dodge": [KEY_SPACE],
-		"reload": [KEY_R], "cover": [KEY_E], "weapon_1": [KEY_1], "weapon_2": [KEY_2], "weapon_3": [KEY_3],
+		"reload": [KEY_R], "cover": [KEY_E], "holster": [KEY_X], "weapon_1": [KEY_1], "weapon_2": [KEY_2], "weapon_3": [KEY_3],
 	}
 	var mouse := {
 		"fire": [MOUSE_BUTTON_LEFT], "aim": [MOUSE_BUTTON_RIGHT],

@@ -55,6 +55,8 @@ var player_spawn := Vector3.ZERO
 var mummy_spawns: Array[Vector3] = []
 var sarcophagi: Array[Node3D] = []
 var torches: Array[OmniLight3D] = []
+## Save points and other usable things the game wires up (Interactable.id -> node).
+var interactables := {}
 
 var _nav: NavigationRegion3D
 var _stone: StandardMaterial3D
@@ -235,6 +237,7 @@ func _build_surface() -> void:
 	# Ground south of the tomb footprint, where you arrive.
 	_box(_nav, Vector3(w * 0.5, -0.5, d + SOUTH_EXTENT * 0.5), Vector3(w, 1.0, SOUTH_EXTENT), _sand)
 	player_spawn = Vector3(w * 0.5, 0.0, d + SOUTH_EXTENT * 0.55)
+	_camp(player_spawn + Vector3(6.0, 0.0, 2.0))
 
 	# Invisible edges, with dunes beyond so it doesn't look like a wall.
 	var total_d := d + SOUTH_EXTENT
@@ -324,6 +327,53 @@ func _build_surface() -> void:
 	_box(self, Vector3(w * 0.5, 0.4, d + SOUTH_EXTENT - 8.0), Vector3(3, 0.8, 3), _stone)
 	var ob := _box(self, Vector3(w * 0.5, 6.5, d + SOUTH_EXTENT - 8.0), Vector3(1.6, 11.5, 1.6), _stone)
 	ob.scale = Vector3(1, 1, 1)
+
+
+## Expedition camp: a campfire (rest = save) and a bedroll (sleep = next day + save).
+## Stand-in shapes until image-to-3d's camp props arrive.
+func _camp(at: Vector3) -> void:
+	var dark := StandardMaterial3D.new()
+	dark.albedo_color = Color(0.25, 0.22, 0.2)
+	var wood := StandardMaterial3D.new()
+	wood.albedo_color = Color(0.3, 0.18, 0.09)
+	for i in 8:
+		var a := TAU * i / 8.0
+		var stone := MeshInstance3D.new()
+		var sm := SphereMesh.new()
+		sm.radius = 0.16
+		sm.height = 0.22
+		stone.mesh = sm
+		stone.material_override = dark
+		add_child(stone)
+		stone.position = at + Vector3(cos(a), 0.06, sin(a)) * Vector3(0.55, 1, 0.55)
+	for i in 3:
+		var log := MeshInstance3D.new()
+		var cm := CylinderMesh.new()
+		cm.top_radius = 0.06
+		cm.bottom_radius = 0.06
+		cm.height = 0.8
+		log.mesh = cm
+		log.material_override = wood
+		add_child(log)
+		log.position = at + Vector3.UP * 0.1
+		log.rotation = Vector3(PI * 0.5, TAU * i / 3.0, 0)
+	var fire := Node3D.new()
+	add_child(fire)
+	fire.position = at
+	_flame(fire, Vector3.UP * 0.45, 2.5, 9.0, true)
+	interactables["camp_fire"] = Interactable.make(self, at, "Rest by the fire (save)", "camp_fire", 1.2)
+
+	var bed_at := at + Vector3(2.2, 0, 0.8)
+	var cloth := StandardMaterial3D.new()
+	cloth.albedo_color = Color(0.45, 0.38, 0.26)
+	var bed := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = Vector3(0.8, 0.12, 1.9)
+	bed.mesh = bm
+	bed.material_override = cloth
+	add_child(bed)
+	bed.position = bed_at + Vector3.UP * 0.06
+	interactables["camp_bed"] = Interactable.make(self, bed_at, "Sleep (next day, save)", "camp_bed", 1.0)
 
 
 ## A box the player can take cover at (Cover reads the size; the body's origin is its centre).

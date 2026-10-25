@@ -70,6 +70,8 @@ func _physics_process(delta: float) -> void:
 		_pose_check()
 	elif args.get("scenario", "") == "cover":
 		_cover_check()
+	elif args.get("scenario", "") == "camp":
+		_camp_check()
 	elif args.get("scenario", "") == "crouch":
 		# --at=x,y,z --yaw=deg: stand there, crouch from 1.5 s; prints the light state each 0.5 s.
 		var p: Player = game.player
@@ -259,6 +261,42 @@ func _cover_check() -> void:
 			_finish()
 		_:
 			_screenshot("cover_%s.png" % what)
+
+
+## --scenario=camp: rest at the campfire (save), sleep in the bedroll (day 2), holster the gun.
+## --scenario=camp --continue: load the save instead and report where we are.
+var _camp_step := 0
+
+
+func _camp_check() -> void:
+	var p: Player = game.player
+	var fire: Node3D = game.level.interactables["camp_fire"]
+	var bed: Node3D = game.level.interactables["camp_bed"]
+	var steps := [[0.3, "start"], [0.8, "fire"], [1.2, "use"], [1.6, "bed"], [2.0, "use"], [2.4, "holster"], [3.0, "shot"], [3.4, "end"]]
+	if _camp_step >= steps.size() or _t < steps[_camp_step][0]:
+		_press("cover", false)
+		return
+	var what: String = steps[_camp_step][1]
+	_camp_step += 1
+	match what:
+		"start":
+			if args.has("continue"):
+				game._continue()
+		"fire", "bed":
+			var at: Node3D = fire if what == "fire" else bed
+			p.global_position = at.global_position + Vector3(0, 0, 1.4)
+			p.yaw = 0.0  # facing -Z, toward it
+		"use":
+			if not args.has("continue"):
+				Input.action_press("cover")
+		"holster":
+			p.set_armed(false)
+		"shot":
+			_screenshot("camp.png")
+		"end":
+			_finish()
+	print("RESULT camp %s day=%d actions=%d place=%s saved=%s armed=%s focus=%s pos=%s" % [what, Game.day,
+		Game.actions_left, Game.place, Game.has_save(), p.armed, p.focus.prompt if p.focus else "-", p.global_position])
 
 
 func _nearest(p: Player) -> Mummy:

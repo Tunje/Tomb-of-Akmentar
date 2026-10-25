@@ -64,6 +64,10 @@ var _hurt_cd := 0.0
 var _model_hidden := false
 var _upper_aim := 0.0
 var cover := Cover.new()
+## Explore mode = false: gun holstered, relaxed arms, E talks and uses things.
+var armed := true
+## What E would use right now (shown on the HUD).
+var focus: Interactable
 var _vaulting := false
 var _cover_blend := 0.0
 var explorer: ExplorerBody
@@ -208,6 +212,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		start_reload()
 	elif event.is_action_pressed("dodge"):
 		dodge()
+	elif event.is_action_pressed("holster"):
+		set_armed(not armed)
 
 
 func look(dyaw: float, dpitch: float) -> void:
@@ -243,13 +249,26 @@ func _physics_process(delta: float) -> void:
 			and not want_fire and not crouching and _reload_t <= 0.0
 	else:
 		sprinting = false
+	# Explore mode: aiming or firing draws the gun first.
+	if not armed and (want_aim or want_fire) and controls_enabled and alive:
+		set_armed(true)
+	if not armed:
+		want_aim = false
+		want_fire = false
 	aiming = want_aim and _dodge_t <= 0.0 and not sprinting
 
 	var basis_yaw := Basis(Vector3.UP, yaw)
 	var wish := basis_yaw * Vector3(input.x, 0, input.y)
 
+	# E uses whatever is in front of you; only with nothing to use does it take cover
+	# (Wreck Wreckers' e_choice rule).
+	var e_pressed := controls_enabled and alive and Input.is_action_just_pressed("cover")
+	focus = Interactable.pick(get_tree(), global_position, -basis_yaw.z) if cover.state == Cover.State.FREE else null
+	if e_pressed and focus:
+		focus.use(self)
+		e_pressed = false
 	# Cover first (Wreck Wreckers' rules): it returns the move while in cover, or null.
-	var cover_pressed := controls_enabled and alive and Input.is_action_just_pressed("cover")
+	var cover_pressed := e_pressed
 	var leave_now := not alive or _dodge_t > 0.0 or (controls_enabled and Input.is_action_pressed("sprint"))
 	var cover_move: Variant = cover.step(self, delta, input, -basis_yaw.z, cover_pressed, want_aim, leave_now)
 	if cover.state == Cover.State.VAULT:
@@ -379,8 +398,8 @@ func _update_facing(delta: float, wish: Vector3) -> void:
 		var want := 1.0 if (aiming or _face_aim_t > 0.0) and _reload_t <= 0.0 and _switch_t <= 0.0 and alive else 0.0
 		_upper_aim = move_toward(_upper_aim, want, delta / 0.12)
 		# Arms hold the gun everywhere except crouched in cover (gun lowered, as in Wreck Wreckers).
-		var armed := 0.0 if cover.state == Cover.State.IN_COVER or not alive else 1.0
-		explorer.update(Vector2(velocity.x, velocity.z).length(), crouching, _upper_aim, pitch, armed)
+		var hold := 0.0 if cover.state == Cover.State.IN_COVER or not alive or not armed else 1.0
+		explorer.update(Vector2(velocity.x, velocity.z).length(), crouching, _upper_aim, pitch, hold)
 		explorer.aim_dir = -camera.global_basis.z if _upper_aim > 0.5 else Vector3.ZERO
 		return
 	model.rotation.x = 0.0
@@ -468,9 +487,25 @@ func dodge() -> void:
 
 
 ## HUD hint for cover, or "".
+## Explore (false) or combat (true). Drawing plays the weapon-raise; holstering hides the gun.
+func set_armed(on: bool) -> void:
+	if on == armed:
+		return
+	armed = on
+	gun_pivot.visible = on
+	if on:
+		_switch_t = SWITCH_TIME
+	elif _reload_t > 0.0:
+		_reload_t = 0.0
+		if explorer:
+			explorer.cancel_reload()
+
+
 func cover_prompt() -> String:
 	if not alive or not controls_enabled:
 		return ""
+	if focus:
+		return "E  " + focus.prompt
 	if cover.in_cover():
 		var hint := "E  leave cover · right mouse  pop up and shoot"
 		return hint + " · W+E  vault" if Cover.vaultable(cover.piece) else hint

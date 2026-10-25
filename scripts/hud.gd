@@ -16,6 +16,9 @@ var _ammo: Label
 var _gun: Label
 var _count: Label
 var _prompt: Label
+var _info: Label
+var _toast: Label
+var _toast_t := 0.0
 
 
 func _ready() -> void:
@@ -30,6 +33,8 @@ func _ready() -> void:
 	_gun = _label(18, HORIZONTAL_ALIGNMENT_RIGHT, Vector2(300, 30))
 	_count = _label(20, HORIZONTAL_ALIGNMENT_CENTER, Vector2(400, 30))
 	_prompt = _label(20, HORIZONTAL_ALIGNMENT_CENTER, Vector2(800, 30))
+	_info = _label(18, HORIZONTAL_ALIGNMENT_LEFT, Vector2(400, 30))
+	_toast = _label(24, HORIZONTAL_ALIGNMENT_CENTER, Vector2(800, 40))
 
 
 func _layout() -> void:
@@ -40,6 +45,8 @@ func _layout() -> void:
 	_gun.position = Vector2(s.x - 330, s.y - 130)
 	_count.position = Vector2(s.x * 0.5 - 200, 20)
 	_prompt.position = Vector2(s.x * 0.5 - 400, s.y * 0.5 + 150)
+	_info.position = Vector2(30, 20)
+	_toast.position = Vector2(s.x * 0.5 - 400, s.y * 0.28)
 
 
 func _label(font_size: int, align: HorizontalAlignment, box: Vector2) -> Label:
@@ -79,6 +86,9 @@ func _process(delta: float) -> void:
 		_gun.text = w.display_name + ("   reloading" if player.is_reloading() else "")
 	_count.text = "Mummies: %d" % remaining if remaining > 0 else ""
 	_prompt.text = player.cover_prompt() if player else ""
+	_info.text = "Day %d   Actions %s   £%d" % [Game.day, "●".repeat(Game.actions_left) + "○".repeat(maxi(Game.ACTIONS_PER_DAY - Game.actions_left, 0)), Game.money]
+	_toast_t = maxf(_toast_t - delta, 0.0)
+	_toast.modulate.a = clampf(_toast_t, 0.0, 1.0)
 	_layout()
 	_canvas.queue_redraw()
 
@@ -90,7 +100,7 @@ func _draw_overlay() -> void:
 		_canvas.draw_rect(Rect2(Vector2.ZERO, size), Color(0.5, 0.0, 0.0, _hurt * 0.35))
 	if not player:
 		return
-	if player.alive and player.controls_enabled:
+	if player.alive and player.controls_enabled and player.armed:
 		# Gap shows the real cone the next bullet can land in.
 		var half_fov := deg_to_rad(player.camera.fov * 0.5)
 		var gap := tan(deg_to_rad(player.current_spread())) / tan(half_fov) * size.y * 0.5
@@ -113,3 +123,9 @@ func _draw_overlay() -> void:
 	_canvas.draw_rect(hb, Color(0, 0, 0, 0.55))
 	var frac := player.health / player.max_health
 	_canvas.draw_rect(Rect2(hb.position, Vector2(hb.size.x * frac, hb.size.y)), Color(0.75, 0.2, 0.15).lerp(Color(0.85, 0.75, 0.45), frac))
+
+
+## A short notice in the upper middle ("Game saved", "Day 2").
+func toast(text: String, secs := 2.5) -> void:
+	_toast.text = text
+	_toast_t = secs
