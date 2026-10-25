@@ -63,6 +63,9 @@ var _shake_t := 0.0
 var _hurt_cd := 0.0
 var _model_hidden := false
 var _upper_aim := 0.0
+var cover := Cover.new()
+var _vaulting := false
+var _cover_blend := 0.0
 var explorer: ExplorerBody
 
 var cam_root: Node3D
@@ -245,7 +248,26 @@ func _physics_process(delta: float) -> void:
 	var basis_yaw := Basis(Vector3.UP, yaw)
 	var wish := basis_yaw * Vector3(input.x, 0, input.y)
 
-	if _dodge_t > 0.0:
+	# Cover first (Wreck Wreckers' rules): it returns the move while in cover, or null.
+	var cover_pressed := controls_enabled and alive and Input.is_action_just_pressed("cover")
+	var leave_now := not alive or _dodge_t > 0.0 or (controls_enabled and Input.is_action_pressed("sprint"))
+	var cover_move: Variant = cover.step(self, delta, input, -basis_yaw.z, cover_pressed, want_aim, leave_now)
+	if cover.state == Cover.State.VAULT:
+		if explorer and not _vaulting:
+			explorer.vault(Cover.VAULT_TIME)
+		_vaulting = true
+		_update_facing(delta, wish)
+		return  # the arc moves the body itself
+	_vaulting = false
+	if cover_move != null:
+		sprinting = false
+		crouching = cover.state == Cover.State.IN_COVER
+		aiming = cover.state == Cover.State.POP_OUT
+		velocity.x = (cover_move as Vector3).x
+		velocity.z = (cover_move as Vector3).z
+		if cover.state == Cover.State.IN_COVER:
+			want_fire = false  # no blind fire
+	elif _dodge_t > 0.0:
 		_dodge_t -= delta
 		var k := clampf(_dodge_t / DODGE_TIME, 0.0, 1.0)
 		var v := _dodge_dir * DODGE_SPEED * (0.35 + 0.65 * k)
@@ -306,7 +328,9 @@ func _process(delta: float) -> void:
 	want = maxf(want, 0.0)
 	# Snap in when a wall is close, ease back out when it clears.
 	shoulder.position.x = move_toward(shoulder.position.x, want, delta * 6.0) if shoulder.position.x < want else want
-	arm.spring_length = lerpf(ARM_LEN, AIM_ARM_LEN, e)
+	# In cover the camera comes 0.5 m closer (crouching already lowers it), 0.25 s blend.
+	_cover_blend = move_toward(_cover_blend, 1.0 if cover.in_cover() else 0.0, delta / 0.25)
+	arm.spring_length = lerpf(ARM_LEN, AIM_ARM_LEN, e) - 0.5 * _cover_blend * (1.0 - e)
 	camera.fov = lerpf(BASE_FOV, w.aim_fov, e)
 	camera.h_offset = shake.x * 0.06
 	camera.v_offset = shake.y * 0.06
@@ -337,7 +361,13 @@ func _process(delta: float) -> void:
 
 func _update_facing(delta: float, wish: Vector3) -> void:
 	var target_yaw := model.rotation.y
-	if aiming or _face_aim_t > 0.0 or _reload_t > 0.0:
+	var face := cover.current_edge()
+	if cover.state == Cover.State.IN_COVER and not face.is_empty():
+		var n: Vector3 = face.normal
+		target_yaw = atan2(n.x, n.z)  # crouched facing the cover
+	elif cover.state == Cover.State.VAULT:
+		pass
+	elif aiming or _face_aim_t > 0.0 or _reload_t > 0.0:
 		target_yaw = yaw
 	elif _dodge_t > 0.0:
 		target_yaw = atan2(-_dodge_dir.x, -_dodge_dir.z)
@@ -421,7 +451,7 @@ func start_reload() -> void:
 
 
 func dodge() -> void:
-	if _dodge_t > 0.0 or _dodge_cd > 0.0 or not is_on_floor():
+	if _dodge_t > 0.0 or _dodge_cd > 0.0 or not is_on_floor() or cover.state == Cover.State.VAULT:
 		return
 	var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	if input.length() < 0.2:
@@ -431,6 +461,20 @@ func dodge() -> void:
 	_dodge_cd = DODGE_TIME + DODGE_COOLDOWN
 	if explorer:
 		explorer.roll(DODGE_TIME)
+
+
+## HUD hint for cover, or "".
+func cover_prompt() -> String:
+	if not alive or not controls_enabled:
+		return ""
+	if cover.in_cover():
+		var hint := "E  leave cover · right mouse  pop up and shoot"
+		return hint + " · W+E  vault" if Cover.vaultable(cover.piece) else hint
+	if cover.state == Cover.State.FREE:
+		var hit := Cover.find_edge(get_tree().get_nodes_in_group("cover"), global_position, -Basis(Vector3.UP, yaw).z)
+		if not hit.is_empty():
+			return "E  take cover"
+	return ""
 
 
 func is_invulnerable() -> bool:
@@ -546,7 +590,8 @@ func take_damage(amount: float, from: Vector3) -> bool:
 	trauma = minf(trauma + 0.55, 1.0)
 	var push := (global_position - from)
 	push.y = 0
-	velocity += push.normalized() * 3.0
+	if not cover.in_cover():  # in cover the snap would fight the shove
+		velocity += push.normalized() * 3.0
 	damaged.emit(amount)
 	if health <= 0.0:
 		alive = false

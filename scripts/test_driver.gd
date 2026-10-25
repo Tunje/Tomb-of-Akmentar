@@ -68,6 +68,8 @@ func _physics_process(delta: float) -> void:
 		_bot(delta)
 	elif args.get("scenario", "") == "pose":
 		_pose_check()
+	elif args.get("scenario", "") == "cover":
+		_cover_check()
 	if _shots.size() > 0 and _t >= _shots[0]:
 		var at: float = _shots.pop_front()
 		_screenshot("shot_%05.1f.png" % at)
@@ -184,6 +186,56 @@ func _pose_check() -> void:
 var _pose_shot_front := false
 var _pose_shot_side := false
 var _pose_shot_hand := true
+
+
+## --scenario=cover: in front of the nearest vaultable topside wall: take cover (E), slide right,
+## pop up and aim, then W+E vault. Prints the cover state at each step, with shots.
+var _cover_step := 0
+var _cover_piece: Node3D
+
+
+func _cover_check() -> void:
+	var p: Player = game.player
+	if _cover_piece == null:
+		var best := INF
+		for c in get_tree().get_nodes_in_group("cover"):
+			var n := c as Node3D
+			if absf(n.global_position.y) < 2.0 and Cover.vaultable(n) and n.global_position.distance_to(p.global_position) < best:
+				best = n.global_position.distance_to(p.global_position)
+				_cover_piece = n
+		var e: Dictionary = Cover.edges(_cover_piece)[0]
+		var mid: Vector3 = ((e.a as Vector3) + (e.b as Vector3)) * 0.5
+		var n: Vector3 = e.normal
+		p.global_position = mid + n * 0.8
+		p.yaw = atan2(n.x, n.z)
+		p.pitch = -0.1
+	var steps := [[1.0, "cover"], [1.6, "shot_in"], [1.7, "slide"], [2.4, "stop"], [2.6, "shot_slid"],
+		[2.8, "aim"], [3.4, "shot_pop"], [3.5, "unaim"], [4.0, "vault"], [4.3, "shot_vault"], [5.2, "shot_after"], [5.4, "end"]]
+	if _cover_step >= steps.size() or _t < steps[_cover_step][0]:
+		_press("cover", false) if _t > 0.05 else null
+		return
+	var what: String = steps[_cover_step][1]
+	_cover_step += 1
+	print("RESULT cover %s state=%s pos=%s" % [what, Cover.State.keys()[p.cover.state], p.global_position])
+	match what:
+		"cover":
+			Input.action_press("cover")
+		"slide":
+			_press("move_right", true)
+		"stop":
+			_press("move_right", false)
+		"aim":
+			_press("aim", true)
+		"unaim":
+			_press("aim", false)
+		"vault":
+			_press("move_forward", true)
+			Input.action_press("cover")
+		"end":
+			_press("move_forward", false)
+			_finish()
+		_:
+			_screenshot("cover_%s.png" % what)
 
 
 func _nearest(p: Player) -> Mummy:

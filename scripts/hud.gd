@@ -15,6 +15,7 @@ var _sub: Label
 var _ammo: Label
 var _gun: Label
 var _count: Label
+var _prompt: Label
 
 
 func _ready() -> void:
@@ -28,6 +29,7 @@ func _ready() -> void:
 	_ammo = _label(40, HORIZONTAL_ALIGNMENT_RIGHT, Vector2(300, 50))
 	_gun = _label(18, HORIZONTAL_ALIGNMENT_RIGHT, Vector2(300, 30))
 	_count = _label(20, HORIZONTAL_ALIGNMENT_CENTER, Vector2(400, 30))
+	_prompt = _label(20, HORIZONTAL_ALIGNMENT_CENTER, Vector2(800, 30))
 
 
 func _layout() -> void:
@@ -37,6 +39,7 @@ func _layout() -> void:
 	_ammo.position = Vector2(s.x - 330, s.y - 100)
 	_gun.position = Vector2(s.x - 330, s.y - 130)
 	_count.position = Vector2(s.x * 0.5 - 200, 20)
+	_prompt.position = Vector2(s.x * 0.5 - 400, s.y * 0.5 + 150)
 
 
 func _label(font_size: int, align: HorizontalAlignment, box: Vector2) -> Label:
@@ -75,6 +78,7 @@ func _process(delta: float) -> void:
 		_ammo.text = "%d / %d" % [player.ammo[player.current], w.mag_size]
 		_gun.text = w.display_name + ("   reloading" if player.is_reloading() else "")
 	_count.text = "Mummies: %d" % remaining if remaining > 0 else ""
+	_prompt.text = player.cover_prompt() if player else ""
 	_layout()
 	_canvas.queue_redraw()
 

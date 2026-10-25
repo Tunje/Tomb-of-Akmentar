@@ -83,6 +83,12 @@ func _build_tree() -> void:
 	bt.add_node("roll", roll)
 	bt.add_node("roll_anim", _anim("Roll"))
 	bt.add_node("roll_ts", AnimationNodeTimeScale.new())
+	var vault := AnimationNodeOneShot.new()
+	vault.fadein_time = 0.08
+	vault.fadeout_time = 0.15
+	bt.add_node("vault", vault)
+	bt.add_node("vault_anim", _anim("ual2/ClimbUp_1m"))
+	bt.add_node("vault_ts", AnimationNodeTimeScale.new())
 	var state := AnimationNodeTransition.new()
 	state.input_count = 2
 	state.set_input_name(0, "alive")
@@ -104,7 +110,10 @@ func _build_tree() -> void:
 	bt.connect_node("roll_ts", 0, "roll_anim")
 	bt.connect_node("roll", 0, "reload")
 	bt.connect_node("roll", 1, "roll_ts")
-	bt.connect_node("state", 0, "roll")
+	bt.connect_node("vault_ts", 0, "vault_anim")
+	bt.connect_node("vault", 0, "roll")
+	bt.connect_node("vault", 1, "vault_ts")
+	bt.connect_node("state", 0, "vault")
 	bt.connect_node("state", 1, "death_anim")
 	bt.connect_node("output", 0, "state")
 	_start_tree(bt)
@@ -154,6 +163,11 @@ func roll(seconds: float) -> void:
 func grip_now() -> Quaternion:
 	var hb := (skeleton.global_basis * skeleton.get_bone_global_pose(skeleton.find_bone(BONE_MAP["hand_r"])).basis).orthonormalized()
 	return (hb.inverse() * gun_holder.global_basis.orthonormalized()).get_rotation_quaternion()
+
+
+func vault(seconds: float) -> void:
+	_tree.set("parameters/vault_ts/scale", clip_length("ual2/ClimbUp_1m") / maxf(seconds, 0.1))
+	_tree.set("parameters/vault/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 
 
 func die() -> void:

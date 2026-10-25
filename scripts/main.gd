@@ -60,7 +60,7 @@ func _ready() -> void:
 		_start(false)
 	else:
 		player.controls_enabled = false
-		hud.show_message("TOMBS OF AKMENTAR", "Click to begin\n\nWASD move · Shift sprint · C crouch · Space dodge\nRight mouse aim · Left mouse fire · R reload · 1 2 3 guns\nEsc pause")
+		hud.show_message("TOMBS OF AKMENTAR", "Click to begin\n\nWASD move · Shift sprint · C crouch · Space dodge · E cover (W+E vault)\nRight mouse aim · Left mouse fire · R reload · 1 2 3 guns\nEsc pause")
 
 
 func _spawn_mummy() -> Mummy:
@@ -209,7 +209,7 @@ func _setup_input() -> void:
 	var keys := {
 		"move_forward": [KEY_W], "move_back": [KEY_S], "move_left": [KEY_A], "move_right": [KEY_D],
 		"sprint": [KEY_SHIFT], "crouch": [KEY_C, KEY_CTRL], "dodge": [KEY_SPACE],
-		"reload": [KEY_R], "weapon_1": [KEY_1], "weapon_2": [KEY_2], "weapon_3": [KEY_3],
+		"reload": [KEY_R], "cover": [KEY_E], "weapon_1": [KEY_1], "weapon_2": [KEY_2], "weapon_3": [KEY_3],
 	}
 	var mouse := {
 		"fire": [MOUSE_BUTTON_LEFT], "aim": [MOUSE_BUTTON_RIGHT],

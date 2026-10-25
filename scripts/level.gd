@@ -5,6 +5,7 @@ extends Node3D
 ## '#' wall  '.' floor  'P' pillar  'B' brazier  'L' wall torch (wall cell)
 ## 'S' sarcophagus (a mummy rises from it later)  'M' dormant mummy
 ## 'D' stairwell (ramp up to the surface; the high end is the south end)
+## 'W' waist-high broken wall: cover you can vault (see Cover)
 
 const CELL := 2.0
 const FLOOR_Y := -6.0
@@ -15,7 +16,7 @@ const MAP := [
 	"#.M......###..P..B....B..P..###......M.#",
 	"#........###................###........#",
 	"#..B..B..###...P...M....P...###..B..B..#",
-	"#........###................###........#",
+	"#........###...W........W...###........#",
 	"#......M.###..P..B....B..P..###.M......#",
 	"#........###S..............S###........#",
 	"#........###....M......M....###........#",
@@ -26,15 +27,15 @@ const MAP := [
 	"#......................................#",
 	"#...P....P....P......P....P....P....P..#",
 	"#.....M..........B..........M..........#",
-	"#......................................#",
+	"#.....W.......W..........W.......W.....#",
 	"#..........B.........M..........B......#",
 	"#...P....P....P......P....P....P....P..#",
-	"#......................................#",
+	"#..........W..........W...........W....#",
 	"#.......M..............................#",
 	"###################..###################",
 	"#############..............#############",
 	"#############..B........B..#############",
-	"#############......M.......#############",
+	"#############..W...M....W..#############",
 	"#############..B........B..#############",
 	"#############..............#############",
 	"###################DD###################",
@@ -163,6 +164,9 @@ func _build_tomb() -> void:
 					_brazier(p)
 				"S":
 					_sarcophagus(p, r, c)
+				"W":
+					var wall_size := Vector3(1.9, 1.1, 0.6)
+					_mark_cover(_box(_nav, p + Vector3.UP * wall_size.y * 0.5, wall_size, _stone), wall_size)
 				"M":
 					mummy_spawns.append(p)
 			c += 1
@@ -308,13 +312,24 @@ func _build_surface() -> void:
 			col.rotation.z = rng.randf_range(-0.06, 0.06)
 		else:
 			var len := rng.randf_range(3.0, 7.0)
-			var h := rng.randf_range(1.2, 2.6)
-			var wall := _box(self, p + Vector3.UP * h * 0.5, Vector3(len, h, 0.9), _stone)
+			# Most stubs are waist-high cover; some stand tall.
+			var low := rng.randf() < 0.7
+			var h := rng.randf_range(0.95, 1.25) if low else rng.randf_range(1.8, 2.6)
+			var size := Vector3(len, h, 0.7 if low else 0.9)
+			var wall := _box(self, p + Vector3.UP * h * 0.5, size, _stone)
 			wall.rotation.y = rng.randf() * PI
+			if low:
+				_mark_cover(wall, size)
 	# An obelisk to steer by.
 	_box(self, Vector3(w * 0.5, 0.4, d + SOUTH_EXTENT - 8.0), Vector3(3, 0.8, 3), _stone)
 	var ob := _box(self, Vector3(w * 0.5, 6.5, d + SOUTH_EXTENT - 8.0), Vector3(1.6, 11.5, 1.6), _stone)
 	ob.scale = Vector3(1, 1, 1)
+
+
+## A box the player can take cover at (Cover reads the size; the body's origin is its centre).
+func _mark_cover(body: StaticBody3D, size: Vector3) -> void:
+	body.set_meta("cover_size", size)
+	body.add_to_group("cover")
 
 
 func _cylinder(parent: Node, pos: Vector3, radius: float, h: float) -> StaticBody3D:
@@ -479,6 +494,7 @@ func _sarcophagus(p: Vector3, r: int, c: int) -> void:
 	var along_z: bool = _ch(r - 1, c) in ["#", "L"]
 	var size := Vector3(1.0, 0.9, 2.2) if along_z else Vector3(2.2, 0.9, 1.0)
 	var base := _box(_nav, p + Vector3.UP * 0.45, size, _stone)
+	_mark_cover(base, size)
 	var lid := MeshInstance3D.new()
 	var lm := BoxMesh.new()
 	lm.size = Vector3(size.x + 0.1, 0.18, size.z + 0.1)
