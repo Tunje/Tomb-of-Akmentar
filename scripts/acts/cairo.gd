@@ -697,10 +697,11 @@ func _quay() -> void:
 		_palm(Vector3(RIVER_X - 2.4, 0, z), 8.0 + _rng.randf_range(-1, 1))
 	# The labour market: men wait by sacks and crates for a day's hire.
 	var sack := _flat(Color(0.7, 0.62, 0.45))
-	for p in [Vector3(106, 0, 58), Vector3(107.2, 0, 58.3), Vector3(110, 0, 69), Vector3(104.8, 0, 70)]:
+	# Kept to the river edge: the quay road (x 104-112) stays open the whole way.
+	for p in [Vector3(110.5, 0, 66.8), Vector3(110.3, 0, 68.2), Vector3(110.6, 0, 73)]:
 		var s := _box(_nav, p + Vector3.UP * 0.35, Vector3(1.0, 0.7, 0.7), sack)
 		s.rotation.y = _rng.randf() * PI
-	for p in [Vector3(109.6, 0, 59), Vector3(109.6, 0, 60.4)]:
+	for p in [Vector3(110.4, 0, 57.4), Vector3(110.4, 0, 58.8)]:
 		var crate := _box(_nav, p + Vector3.UP * 0.5, Vector3(1.6, 1.0, 1.0), _wood)
 		_mark_cover(crate, Vector3(1.6, 1.0, 1.0))
 		_dress(crate, "prop_crate_large.glb", Vector3(1.0, 0.52, 0.49))

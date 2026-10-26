@@ -58,10 +58,14 @@ func _run() -> void:
 	for i in 4:
 		await get_tree().physics_frame
 	var map := get_world_3d().navigation_map
-	NavigationServer3D.map_force_update(map)
-	await get_tree().physics_frame
+	for i in 120:  # until the server has synced the baked region into the map
+		if NavigationServer3D.map_get_iteration_id(map) > 0 and NavigationServer3D.map_get_closest_point(map, _level.player_spawn) != Vector3.ZERO:
+			break
+		await get_tree().physics_frame
 	var space := get_world_3d().direct_space_state
 	var from := NavigationServer3D.map_get_closest_point(map, _level.player_spawn)
+	var nm: NavigationMesh = _level._nav.navigation_mesh
+	print("RESULT navmesh %d polys, closest to spawn %s, map regions %d" % [nm.get_polygon_count(), from, NavigationServer3D.map_get_regions(map).size()])
 	_check(from.distance_to(_level.player_spawn) < 0.6, "spawn is on the navmesh")
 	for id in _level.spots:
 		var to: Vector3 = _level.spots[id]
@@ -69,7 +73,7 @@ func _run() -> void:
 			to.y = 0.15
 		var path := NavigationServer3D.map_get_path(map, from, to, true)
 		var end := path[path.size() - 1] if path.size() > 0 else from
-		_check(path.size() > 0 and Vector2(end.x, end.z).distance_to(Vector2(to.x, to.z)) < 0.9, "reach %s (path end %.1f m off)" % [id, Vector2(end.x, end.z).distance_to(Vector2(to.x, to.z))])
+		_check(path.size() > 0 and Vector2(end.x, end.z).distance_to(Vector2(to.x, to.z)) < 0.9, "reach %s (path end %.1f m off at %s)" % [id, Vector2(end.x, end.z).distance_to(Vector2(to.x, to.z)), end])
 		_check(not _inside(space, to + Vector3.UP * 1.0), "%s spot is clear" % id)
 	for id in _level.npcs:
 		var p: Vector3 = (_level.npcs[id] as Node3D).global_position
