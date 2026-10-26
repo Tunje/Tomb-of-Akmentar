@@ -59,6 +59,7 @@ var sarcophagi: Array[Node3D] = []
 var torches: Array[OmniLight3D] = []
 ## Save points and other usable things the game wires up (Interactable.id -> node).
 var interactables := {}
+var _map: Array = []
 
 var _nav: NavigationRegion3D
 var _stone: StandardMaterial3D
@@ -72,9 +73,10 @@ var _t := 0.0
 
 
 func _ready() -> void:
-	_rows = MAP.size()
+	_map = map_rows()
+	_rows = _map.size()
 	_cols = 0
-	for line in MAP:
+	for line in _map:
 		_cols = maxi(_cols, (line as String).length())
 	_make_materials()
 	_nav = NavigationRegion3D.new()
@@ -105,7 +107,7 @@ func _process(delta: float) -> void:
 
 
 func _ch(r: int, c: int) -> String:
-	var line: String = MAP[r]
+	var line: String = _map[r]
 	return line[c] if c < line.length() else "#"
 
 
@@ -173,6 +175,9 @@ func _build_tomb() -> void:
 					_mark_cover(_box(_nav, p + Vector3.UP * wall_size.y * 0.5, wall_size, _stone), wall_size)
 				"M":
 					mummy_spawns.append(p)
+				_:
+					if ch != ".":
+						_marker(ch, p, r, c)
 			c += 1
 
 	# Ceiling slab (= the desert ground) with a hole over the stairwell.
@@ -642,3 +647,13 @@ func _dress(body: StaticBody3D, file: String, native: Vector3) -> void:
 	p.position = Vector3(0, -size.y * 0.5, 0)
 	p.scale = Vector3(size.x / native.x, size.y / native.y, size.z / native.z)
 	(body.get_child(1) as MeshInstance3D).visible = false
+
+
+## The tomb's layout (subclasses return their own map, same legend).
+func map_rows() -> Array:
+	return MAP
+
+
+## Any other map letter (subclasses use them for points of interest, spawns, etc.).
+func _marker(_ch: String, _p: Vector3, _r: int, _c: int) -> void:
+	pass
