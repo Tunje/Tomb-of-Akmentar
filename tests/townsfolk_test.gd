@@ -61,5 +61,32 @@ func _run(level: Cairo) -> void:
 	for i in 30:
 		w._update_fade(1.0 / 60.0)
 	_check(w._fade < 0.1, "and comes back when it isn't (%.2f)" % w._fade)
+	# A wall on the side it would pick: it steps the other way. Walking east along the hotel's front
+	# (the wall 1.3 m to its left), the player just right of its line ahead: away from them is
+	# the wall, so it must go right.
+	var w2 := Townsperson.make(level, [Vector3(30, 0, 47.3), Vector3(56, 0, 47.3)], Characters.DIR + Cairo.TOWNSFOLK_MODELS[1])
+	w2._i = 0
+	w2._base = Vector3(38, 0, 47.3)
+	w2.global_position = w2._base
+	w2._wait = 0.0
+	w.queue_free()
+	player.global_position = Vector3(40.0, 0, 47.6)
+	await get_tree().create_timer(1.5).timeout
+	_check(w2._aside_sign >= 1.0 and w2._side > 0.3, "steps away from the wall, not into it (side %.2f, chose %.0f)" % [w2._side, w2._aside_sign])
+	# A standing Npc between the camera and the player fades, unless you're talking to them.
+	w2.queue_free()
+	var npc := Npc.make(level, "townsfolk_test", Vector3(60, 0, 50), "", Characters.DIR + Cairo.TOWNSFOLK_MODELS[0])
+	player.global_position = Vector3(60, 0, 46)
+	cam.global_position = Vector3(60, 1.0, 54)
+	cam.look_at(player.global_position + Vector3.UP, Vector3.UP)
+	await get_tree().create_timer(0.6).timeout
+	_check(npc._fade > 0.5, "an Npc in the camera's way fades (%.2f)" % npc._fade)
+	var talk := Conversation.new()
+	talk._npc = npc
+	Conversation.current = talk
+	await get_tree().create_timer(0.6).timeout
+	_check(npc._fade < 0.1, "but not the one you're talking to (%.2f)" % npc._fade)
+	Conversation.current = null
+	talk.free()
 	print("RESULT townsfolk_test %s fails=%d" % ["PASS" if _fails == 0 else "FAIL", _fails])
 	get_tree().quit(0 if _fails == 0 else 1)

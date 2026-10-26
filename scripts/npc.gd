@@ -26,6 +26,8 @@ var body: NpcBody
 
 var _yaw_goal := 0.0
 var _talk_goal := 0.0
+var _fade := 0.0              # CameraFade: see-through while between the camera and the player
+var _fade_meshes: Array = []
 
 
 static func make(parent: Node3D, id: String, pos: Vector3, conversation_id := "", glb_path := "") -> Npc:
@@ -89,6 +91,9 @@ func _process(delta: float) -> void:
 		body.talk = move_toward(body.talk, _talk_goal, delta * 3.0)
 	if interactable:
 		interactable.global_position = global_position + Vector3.UP * 1.0
+	# Out of the way of the camera, except the one you're talking to (the talk frames them).
+	var talking := Conversation.current != null and Conversation.current._npc == self
+	_fade = CameraFade.step(self, _fade, delta, _fade_meshes, not talking)
 
 
 func _stand_in() -> void:

@@ -13,7 +13,6 @@ const HALT := 1.2             # m: this close and they stop walking until they'r
 const ASIDE := 1.0            # m off their line
 const PASS_CLEAR := 0.85      # m to the side: stood this far aside, they walk on past
 const SIDE_SPEED := 1.1       # m/s sideways
-const CAMERA_CLEAR := 0.7     # m from the camera-to-player line: closer and they fade
 
 var glb := ""
 var route: Array = []
@@ -22,6 +21,7 @@ var _wait := 0.0
 var _move := 0.0              # 0 idle .. 1 walking (blend)
 var _base := Vector3.ZERO     # where they are on their own line
 var _side := 0.0              # how far they've stepped off it (+ = to their right)
+var _aside_sign := 0.0        # the side picked while someone's in the way (0 = none yet)
 var _fade := 0.0              # 0 seen .. 1 faded out
 var _faded_meshes: Array[GeometryInstance3D] = []
 var _player: Node3D
@@ -72,11 +72,17 @@ func _process(delta: float) -> void:
 	var pace := 1.0
 	if not block.is_empty():
 		var rel: Vector3 = block.rel
-		# Step to the side away from them (their right if dead ahead).
-		want_side = -ASIDE * signf(rel.dot(right)) if absf(rel.dot(right)) > 0.1 else ASIDE
+		# Step to the side away from them (their right if dead ahead), unless a wall or a stall is
+		# there: then the other way; with no room either side, they just stop. Chosen once.
+		if _aside_sign == 0.0:
+			var pref := -signf(rel.dot(right)) if absf(rel.dot(right)) > 0.1 else 1.0
+			_aside_sign = pref if _room(right * pref) else (-pref if _room(-right * pref) else 0.001)
+		want_side = ASIDE * _aside_sign if absf(_aside_sign) >= 1.0 else 0.0
 		pace = clampf((float(block.dist) - HALT) / (NOTICE - HALT), 0.0, 1.0)
 		if absf(rel.dot(right)) >= PASS_CLEAR and absf(_side) >= ASIDE * 0.95:
 			pace = 1.0  # stepped well aside: walk on past them
+	else:
+		_aside_sign = 0.0
 	_side = move_toward(_side, want_side, SIDE_SPEED * delta)
 	var walking := _wait <= 0.0
 	if not walking:
@@ -120,6 +126,13 @@ func _blocker(fwd: Vector3) -> Dictionary:
 	return best
 
 
+## Room to step aside that way: a short ray at waist height off their line hits nothing solid.
+func _room(dir: Vector3) -> bool:
+	var from := _base + Vector3.UP * 0.9
+	var q := PhysicsRayQueryParameters3D.create(from, from + dir.normalized() * (ASIDE + 0.4), 1)
+	return get_world_3d().direct_space_state.intersect_ray(q).is_empty()
+
+
 func _find_player() -> Node3D:
 	if is_instance_valid(_player):
 		return _player
@@ -134,23 +147,4 @@ func _find_player() -> Node3D:
 
 ## Fade out while standing between the camera and the player (they'd fill the screen).
 func _update_fade(delta: float) -> void:
-	var cam := get_viewport().get_camera_3d()
-	var p := _find_player()
-	var block := false
-	if cam and p:
-		var a := cam.global_position
-		var b := p.global_position + Vector3.UP * 1.2
-		var ab := b - a
-		var t := clampf((global_position + Vector3.UP * 1.0 - a).dot(ab) / maxf(ab.length_squared(), 0.001), 0.0, 1.0)
-		var closest := a + ab * t
-		block = t > 0.05 and t < 0.95 and closest.distance_to(global_position + Vector3.UP * 1.0) < CAMERA_CLEAR
-	var target := 0.85 if block else 0.0
-	if is_equal_approx(_fade, target):
-		return
-	_fade = move_toward(_fade, target, delta * 4.0)
-	if _faded_meshes.is_empty():
-		for mi in find_children("*", "GeometryInstance3D", true, false):
-			_faded_meshes.append(mi)
-	for mi in _faded_meshes:
-		if is_instance_valid(mi):
-			mi.transparency = _fade
+	_fade = CameraFade.step(self, _fade, delta, _faded_meshes)
