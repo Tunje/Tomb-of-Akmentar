@@ -223,10 +223,10 @@ func _stairs(cells: Rect2i) -> void:
 	# Doorway on the surface: posts, lintel, low side walls.
 	var mx := (x0 + x1) * 0.5
 	for side in [-1.0, 1.0]:
-		_box(self, Vector3(mx + side * ((x1 - x0) * 0.5 + 0.6), 2.5, z_high - 0.6), Vector3(1.2, 5.0, 1.2), _stone)
-		_box(self, Vector3(mx + side * ((x1 - x0) * 0.5 + 0.35), 0.5, (z_low + z_high) * 0.5), Vector3(0.7, 1.0, run), _stone)
-	_box(self, Vector3(mx, 5.4, z_high - 0.6), Vector3(x1 - x0 + 3.2, 0.8, 1.6), _stone)
-	_box(self, Vector3(mx, 0.75, z_low - 0.35), Vector3(x1 - x0 + 1.4, 1.5, 0.7), _stone)
+		_box(_nav, Vector3(mx + side * ((x1 - x0) * 0.5 + 0.6), 2.5, z_high - 0.6), Vector3(1.2, 5.0, 1.2), _stone)
+		_box(_nav, Vector3(mx + side * ((x1 - x0) * 0.5 + 0.35), 0.5, (z_low + z_high) * 0.5), Vector3(0.7, 1.0, run), _stone)
+	_box(_nav, Vector3(mx, 5.4, z_high - 0.6), Vector3(x1 - x0 + 3.2, 0.8, 1.6), _stone)
+	_box(_nav, Vector3(mx, 0.75, z_low - 0.35), Vector3(x1 - x0 + 1.4, 1.5, 0.7), _stone)
 
 
 # ---------------------------------------------------------------- surface
@@ -311,7 +311,7 @@ func _build_surface() -> void:
 		placed += 1
 		if rng.randf() < 0.6:
 			var h := rng.randf_range(1.0, 5.5)
-			var col := _cylinder(self, p + Vector3.UP * h * 0.5, 0.65, h)
+			var col := _cylinder(_nav, p + Vector3.UP * h * 0.5, 0.65, h)
 			col.rotation.z = rng.randf_range(-0.06, 0.06)
 		else:
 			var len := rng.randf_range(3.0, 7.0)
@@ -319,13 +319,13 @@ func _build_surface() -> void:
 			var low := rng.randf() < 0.7
 			var h := rng.randf_range(0.95, 1.25) if low else rng.randf_range(1.8, 2.6)
 			var size := Vector3(len, h, 0.7 if low else 0.9)
-			var wall := _box(self, p + Vector3.UP * h * 0.5, size, _stone)
+			var wall := _box(_nav, p + Vector3.UP * h * 0.5, size, _stone)
 			wall.rotation.y = rng.randf() * PI
 			if low:
 				_mark_cover(wall, size)
 	# An obelisk to steer by.
-	_box(self, Vector3(w * 0.5, 0.4, d + SOUTH_EXTENT - 8.0), Vector3(3, 0.8, 3), _stone)
-	var ob := _box(self, Vector3(w * 0.5, 6.5, d + SOUTH_EXTENT - 8.0), Vector3(1.6, 11.5, 1.6), _stone)
+	_box(_nav, Vector3(w * 0.5, 0.4, d + SOUTH_EXTENT - 8.0), Vector3(3, 0.8, 3), _stone)
+	var ob := _box(_nav, Vector3(w * 0.5, 6.5, d + SOUTH_EXTENT - 8.0), Vector3(1.6, 11.5, 1.6), _stone)
 	ob.scale = Vector3(1, 1, 1)
 
 
