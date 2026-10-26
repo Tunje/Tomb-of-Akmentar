@@ -10,6 +10,7 @@ extends ModalScreen
 ##    "options": [
 ##      {"id": "desert", "label": "Across the desert", "desc": "...",
 ##       "days": 3, "risk": 2, "cost": 120,            risk 0-3 (none / low / high / severe)
+##       "days_if": [{"if": {...}, "days": 2}],         first match overrides (also cost_if, risk_if)
 ##       "if": {conditions}, "locked_text": "...",     greyed when it fails
 ##       "unavailable": "No riverboats are left.",     always greyed with this reason
 ##       "path": [[0.12, 0.45], [0.5, 0.35], [0.86, 0.55]],   the line on the map (0-1 of the map)
@@ -60,6 +61,14 @@ func options() -> Array:
 	return data.get("options", [])
 
 
+## An option's days / cost / risk now: the first "<key>_if" entry whose "if" passes, else "<key>".
+static func num(o: Dictionary, key: String) -> int:
+	for e: Dictionary in o.get(key + "_if", []):
+		if Game.check(e.get("if", {})):
+			return int(e.get(key, 0))
+	return int(o.get(key, 0))
+
+
 ## Why option `i` can't be taken ("" = it can).
 func reason(i: int) -> String:
 	var o: Dictionary = options()[i]
@@ -67,8 +76,8 @@ func reason(i: int) -> String:
 		return str(o.unavailable)
 	if not Game.check(o.get("if", {})):
 		return str(o.get("locked_text", "Not possible"))
-	if Game.money < int(o.get("cost", 0)):
-		return "Needs £%d" % int(o.get("cost", 0))
+	if Game.money < num(o, "cost"):
+		return "Needs £%d" % num(o, "cost")
 	return ""
 
 
@@ -81,14 +90,14 @@ func choose(i: int) -> bool:
 		_flash(why)
 		return false
 	var o: Dictionary = options()[i]
-	Game.apply([{"money": -int(o.get("cost", 0))}])
+	Game.apply([{"money": -num(o, "cost")}])
 	Game.set_flag("route_" + board_id, str(o.get("id", i)))
-	for d in int(o.get("days", 0)):
+	for d in num(o, "days"):
 		Game.end_day()
 	DayLog.begin_day()
 	Game.apply(o.get("do", []))
 	picks.append({"board": board_id, "id": str(o.get("id", i)), "label": str(o.get("label", ""))})
-	print("ROUTE %s -> %s (%d days, £%d)" % [board_id, o.get("id", i), int(o.get("days", 0)), int(o.get("cost", 0))])
+	print("ROUTE %s -> %s (%d days, £%d)" % [board_id, o.get("id", i), num(o, "days"), num(o, "cost")])
 	var next := str(o.get("next", ""))
 	if next != "":
 		_load(next)
@@ -257,18 +266,18 @@ func _draw_card() -> void:
 	var o: Dictionary = options()[i]
 	text(str(o.get("label", "")), Vector2(x, c.position.y + 46), 26, GOLD)
 	var y := c.position.y + 90
-	var days := int(o.get("days", 0))
+	var days := num(o, "days")
 	text("Days", Vector2(x, y), 18, DIM)
 	text("%d" % days, Vector2(c.end.x - 24, y), 20, TEXT, HORIZONTAL_ALIGNMENT_RIGHT)
 	y += 32
-	var risk := clampi(int(o.get("risk", 0)), 0, 3)
+	var risk := clampi(num(o, "risk"), 0, 3)
 	text("Risk", Vector2(x, y), 18, DIM)
 	text(RISK[risk], Vector2(c.end.x - 24, y), 20, [TEXT, TEXT, Color(1, 0.7, 0.4), RED][risk], HORIZONTAL_ALIGNMENT_RIGHT)
 	for k in 3:
 		root.draw_rect(Rect2(c.end.x - 150 + k * 18, y - 13, 12, 12), RED if k < risk else Color(DIM, 0.4))
 	y += 32
 	text("Cost", Vector2(x, y), 18, DIM)
-	text("£%d" % int(o.get("cost", 0)), Vector2(c.end.x - 24, y), 20, TEXT, HORIZONTAL_ALIGNMENT_RIGHT)
+	text("£%d" % num(o, "cost"), Vector2(c.end.x - 24, y), 20, TEXT, HORIZONTAL_ALIGNMENT_RIGHT)
 	y += 22
 	text("You have £%d" % Game.money, Vector2(c.end.x - 24, y), 15, DIM, HORIZONTAL_ALIGNMENT_RIGHT)
 	y += 30

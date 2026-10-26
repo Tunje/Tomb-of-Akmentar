@@ -15,14 +15,19 @@ var _player: FakePlayer
 var _fails := 0
 
 
+var _events: Array[String] = []
+
 func _ready() -> void:
 	get_window().set_flag(Window.FLAG_NO_FOCUS, true)
+	if DisplayServer.get_name() == "headless":
+		get_window().size = Vector2i(1600, 900)  # the boards lay out from the screen size
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--shot-dir="):
 			_dir = a.substr(11)
 	DirAccess.make_dir_recursive_absolute(_dir)
 	Game.reset()
 	Game.money = 300
+	Game.event.connect(func(e: String) -> void: _events.append(e))
 	DayLog.begin_day()
 	var we := WorldEnvironment.new()
 	we.environment = Environment.new()
@@ -51,17 +56,28 @@ func _run() -> void:
 	await _shot("board_2_route_desert.png")
 	_click(b.option_point(0))  # a second click takes it
 	await _wait(0.2)
-	_check(Game.money == 180 and Game.day == 4 and Game.flag("route_act3_route") == "desert",
-			"desert: £120 paid (money %d), 3 days (day %d)" % [Game.money, Game.day])
-	_check(b.board_id == "act3_desert_branch", "the desert branch board follows (%s)" % b.board_id)
+	# No guide hired: the desert takes 4 days, not 3; the fork talk (event desert_fork) comes next.
+	_check(Game.money == 240 and Game.day == 5 and Game.flag("route_act3_route") == "desert",
+			"desert: £60 paid (money %d), 4 days without a guide (day %d)" % [Game.money, Game.day])
+	_check(_gone(b) and "desert_fork" in _events, "the desert board closes and raises desert_fork (%s)" % [_events])
+	Game.set_flag("fork_temple")  # what act3_fork decided
+	b = RouteBoard.open(self, "act3_desert_branch", _player)
+	await _wait(0.3)
+	_check(b.reason(1) == "You chose the temple" and b.reason(0) == "", "the branch follows the fork (%s)" % b.reason(1))
 	await _shot("board_3_branch.png")
 	var picks: Array = []
 	b.finished.connect(func(p: Array): picks.append_array(p))
 	_key(KEY_1)
 	_key(KEY_ENTER)
 	await _wait(0.2)
-	_check(_gone(b) and picks.size() == 2, "temple taken, board closed (picks %s)" % [picks])
-	_check(int(Game.flag("race_step")) == 3 and Game.flag("visited_temple") and Game.day == 5, "race_step 3, day 5")
+	_check(_gone(b) and picks.size() == 1, "temple taken, board closed (picks %s)" % [picks])
+	_check(int(Game.flag("race_step")) == 3 and Game.flag("visited_temple") and Game.day == 6, "race_step 3, day 6")
+	# A guide saves the day; a booked riverboat is free.
+	Game.set_flag("hired_youssef")
+	Game.set_flag("booked_riverboat")
+	var o: Array = RouteBoard.load_board("act3_route").options
+	_check(RouteBoard.num(o[0], "days") == 3 and RouteBoard.num(o[1], "cost") == 0 and RouteBoard.num(o[2], "days") == 6,
+			"days_if / cost_if (%d days, £%d)" % [RouteBoard.num(o[0], "days"), RouteBoard.num(o[1], "cost")])
 
 	# ---- Countdowns and the Act 6 return
 	Game.apply([{"countdown": ["thieves", 5]}, {"countdown": ["mummy", 8]}])
@@ -194,6 +210,8 @@ func _check(ok: bool, what: String) -> void:
 
 
 func _shot(file: String) -> void:
+	if DisplayServer.get_name() == "headless":
+		return  # no pictures with the dummy renderer
 	await RenderingServer.frame_post_draw
 	var path := _dir.path_join(file)
 	get_viewport().get_texture().get_image().save_png(path)

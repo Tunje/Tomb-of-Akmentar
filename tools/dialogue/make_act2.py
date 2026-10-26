@@ -646,13 +646,13 @@ TALKS["act2_clara"] = talk(
     })
 
 TALKS["act2_hamdi"] = talk(
-    "Act 2, the docks (free): passage on the riverboat. heard_americans_boat; booking now (40) sets booked_riverboat for Act 3's river route; heard_river_warning.",
+    "Act 2, the docks (free): passage on the riverboat. heard_americans_boat; booking now (20) sets booked_riverboat for Act 3's river route; heard_river_warning.",
     {"hamdi": "Captain Yusuf Hamdi"}, {
-        "start": L("hamdi", "Passage upriver for your whole party: forty pounds. But I warn you, the Americans have booked half my deck.", "menu",
+        "start": L("hamdi", "Deck passage upriver for your whole party: twenty pounds. But I warn you, the Americans have booked half my deck.", "menu",
                    do=[flag("heard_americans_boat")]),
         "menu": L("hamdi", "Well?", choices=[
-            C("Book passage", "Forty pounds. Keep us a corner of that deck.", "booked",
-              if_={"money": 40, "not_flag": "booked_riverboat"}, do=[pay(40), flag("booked_riverboat")]),
+            C("Book passage", "Twenty pounds. Keep us a corner of that deck.", "booked",
+              if_={"money": 20, "not_flag": "booked_riverboat"}, do=[pay(20), flag("booked_riverboat")]),
             C("Ask about the river", "Is the river safe these days?", "river",
               if_={"not_flag": "heard_river_warning"}, do=[flag("heard_river_warning")]),
             C("Leave", "I'll think about it.", "bye"),
