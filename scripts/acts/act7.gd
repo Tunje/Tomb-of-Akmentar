@@ -15,7 +15,8 @@ extends Node3D
 ##   at the bank (data-gated) and the hotel bed takes you on to Act 8.
 ## - The thieves countdown at 0 before that: act7_too_late (thieves_escaped), then Act 8.
 ## Test args (after --): --auto[=intercept|late|mummy] (a bot; RESULT lines), --resume (at game over,
-## load the last save the way Enter does), --chain (on into Act 8), --thieves=americans|
+## load the last save the way Enter does), --chain (on into Act 8), --plan=fight|talk (the bot at
+## the confrontation; talks are played by BotTalk), --thieves=americans|
 ## germans|italians, --seconds=N, --shots=t1,t2, --shot-dir=path.
 
 static var _bot_resumed := false  # --resume: the bot loads the save once, then stops
@@ -115,10 +116,8 @@ func _ready() -> void:
 		hud.toast(worst, 5.0)
 	if Game.in_party("hassan") and not Game.flag("act7_hassan_heard", false):
 		Game.set_flag("act7_hassan_heard")
-		if args.has("auto"):
-			print("RESULT act7 hassan_talk")
-		else:
-			await _talk("act7_hassan", companions.get("hassan", player))
+		print("RESULT act7 hassan_talk")
+		await _talk("act7_hassan", companions.get("hassan", player))
 	if args.has("auto"):
 		_auto()
 
@@ -243,10 +242,8 @@ func _catastrophe() -> void:
 func _too_late() -> void:
 	_may_leave = true
 	print("RESULT act7 too_late day=%d" % Game.day)
-	if args.has("auto"):
-		Game.set_flag("thieves_escaped")
-	else:
-		await _talk("act7_too_late", player)
+	if not await _talk("act7_too_late", player):
+		Game.set_flag("thieves_escaped")  # (what the talk sets)
 	_finish()
 
 
@@ -398,23 +395,27 @@ func _recovered() -> void:
 	_recovering = true
 	while Conversation.current:  # the confrontation's own end first
 		await get_tree().process_frame
-	if args.has("auto"):
+	if not await _talk("act7_recovered", player):  # no talk file: what it would have set
 		Game.apply([{"set_flag": ["new_objective", "return_artifacts"]}, {"set_flag": "act7_done"}])
-	else:
-		await _talk("act7_recovered", player)
 	_may_leave = true
 	_save("recovered")
 	print("RESULT act7 recovered peaceful=%s" % Game.flag("recovered_peacefully", false))
 	hud.toast("The artifacts are yours. Sir Reginald waits at the bank; the hotel bed takes you on.", 6.0)
 
 
-func _talk(id: String, with: Node3D) -> void:
+## A talk, played by the player or (--auto) by BotTalk, which steers clear of `avoid`. False if
+## the talk file is missing (the caller then applies its effects by hand).
+func _talk(id: String, with: Node3D, avoid: Array = BotTalk.AVOID) -> bool:
 	if not FileAccess.file_exists("res://dialogue/%s.json" % id):
-		return
+		return false
+	if args.has("auto"):
+		await BotTalk.run(self, id, player, with, avoid)
+		return true
 	var c := Conversation.new()
 	add_child(c)
 	c.start(id, player, with if with else player)
 	await c.finished
+	return true
 
 
 ## Out of Cairo: the tally, and Enter goes on to Act 8.
@@ -425,8 +426,9 @@ func _finish() -> void:
 	Game.place = "act7_end"
 	Game.save_game(_slot())
 	var got: bool = Game.flag("artifacts_recovered", false)
-	print("RESULT act7 end day=%d recovered=%s escaped=%s thieves=%d mummy=%d" % [Game.day, got,
-		Game.flag("thieves_escaped", false), int(Game.countdowns.get("thieves", 0)), int(Game.countdowns.get("mummy", 0))])
+	print("RESULT act7 end day=%d recovered=%s escaped=%s done=%s objective=%s thieves=%d mummy=%d" % [Game.day, got,
+		Game.flag("thieves_escaped", false), Game.flag("act7_done", false), Game.flag("new_objective", ""),
+		int(Game.countdowns.get("thieves", 0)), int(Game.countdowns.get("mummy", 0))])
 	hud.show_message("LEAVING CAIRO", ("You have the jars and the amulet. %d days before he reaches the city." if got
 		else "The thieves are gone with the artifacts. He is %d days from the city.") % int(Game.countdowns.get("mummy", 0))
 		+ "\n\nEnter  on to Act 8")
@@ -537,7 +539,12 @@ func _auto() -> void:
 	Game.set_flag("lockdown")
 	await get_tree().create_timer(0.5).timeout
 	print("RESULT act7 intercept_ok=%s" % (_intercept_at == "road_gate"))
-	Game.apply([{"event": "fight_thieves"}])
+	# The confrontation as the player would have it: --plan=talk lets the bot try the peaceful ways,
+	# otherwise it steers to the fight.
+	var peace := ["Appeal to Sofia", "Appeal to Vogel", "Buy them back", "Pay him", "Point at the sky"]
+	var avoid: Array = BotTalk.AVOID + ([] if args.get("plan", "fight") == "talk" else peace)
+	if not await _talk("act7_confront", player, avoid):
+		Game.apply([{"event": "fight_thieves"}])
 	await get_tree().create_timer(1.0).timeout
 	for g in guards:
 		if is_instance_valid(g):

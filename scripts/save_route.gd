@@ -1,8 +1,8 @@
 class_name SaveRoute
 extends RefCounted
 ## Where a save resumes: Game.place -> the scene that picks it up (the end of one act goes into
-## the next). Game overs and deaths call resume() to load the last save and go there, the same
-## way the title screen's Continue does.
+## the next). THE table: main.gd's Continue, and the game overs and deaths (resume()), all use it.
+## Every Game.place an act saves must be here (act9_end: the game is over; act9.tscn shows it).
 ##   SaveRoute.resume(get_tree())
 
 const SCENES := {
@@ -10,7 +10,7 @@ const SCENES := {
 	"act3_end": "res://act4.tscn", "act4_camp": "res://act4.tscn", "act4_end": "res://act5.tscn",
 	"act5_end": "res://act6.tscn", "act6_keepers": "res://act6.tscn", "act6_end": "res://act7.tscn",
 	"act7_hotel_bed": "res://act7.tscn", "act7_recovered": "res://act7.tscn", "act7_end": "res://act8.tscn",
-	"act8_end": "res://act9.tscn",
+	"act8_end": "res://act9.tscn", "act9_start": "res://act9.tscn", "act9_end": "res://act9.tscn",
 }
 
 

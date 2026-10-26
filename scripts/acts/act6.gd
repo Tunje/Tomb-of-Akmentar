@@ -133,12 +133,10 @@ func _keepers() -> void:
 		Game.countdowns.erase("mummy")
 		if _thief() == "":
 			Game.set_flag("thieves_americans")
-		if args.has("auto"):
+		if not await _talk("act6_keepers", rashad):  # no talk file: what it would have set
 			var c: Dictionary = plan.get("countdowns", {})
 			Game.apply([{"countdown": ["thieves", int(c.get("thieves", 7))]}, {"countdown": ["mummy", int(c.get("mummy", 9))]},
 				{"set_flag": ["keeper_horses", 2]}, {"set_flag": "act6_started"}])
-		else:
-			await _talk("act6_keepers", rashad)
 		if not Game.flag("act6_started", false):  # a talk that missed it: still set the clocks
 			Game.apply([{"countdown": ["thieves", 7]}, {"countdown": ["mummy", 9]}, {"set_flag": "act6_started"}])
 	print("RESULT act6 keepers thieves=%d mummy=%d keeper_horses=%d" % [int(Game.countdowns.get("thieves", 0)),
@@ -227,21 +225,20 @@ func _road(route: String) -> void:
 	await get_tree().create_timer(2.5).timeout
 	hud.show_message("")
 	_events.clear()
-	if args.has("auto"):
-		if str(args.get("plan", "hold")) == "ride":
+	var ride := str(args.get("plan", "hold")) == "ride"  # (the bot's pick at the camp)
+	if not await _talk("act6_road", player, BotTalk.AVOID + (["Hold the camp"] if ride else ["Break camp and ride"])):
+		if ride:
 			Game.set_flag("act6_night_ride")
+			for id in Game.party():  # (the talk does this itself)
+				Game.apply([{"stat": [id, "fear", 1]}])
 		else:
 			Game.apply([{"event": "fight_mummy_servants"}])
-	else:
-		await _talk("act6_road", player)
 	if _events.has("fight_mummy_servants"):
 		await _servants(camp)
 		if not player.alive:
 			return
 	elif Game.flag("act6_night_ride", false):
 		hud.toast("You break camp and ride through the dark, the servants' shapes keeping pace on the dunes.", 4.0)
-		for id in Game.party():
-			Game.apply([{"stat": [id, "fear", 1]}])
 		await get_tree().create_timer(2.0).timeout
 	_arrival()
 
@@ -302,8 +299,7 @@ func _arrival() -> void:
 	hud.show_message("CAIRO", Cairo.countdown_line())
 	await get_tree().create_timer(2.5).timeout
 	hud.show_message("")
-	if not args.has("auto"):
-		await _talk("act6_arrival", player)
+	await _talk("act6_arrival", player)
 	_finish()
 
 
@@ -322,13 +318,19 @@ func _finish() -> void:
 			get_tree().quit(0)
 
 
-func _talk(id: String, with: Node3D) -> void:
+## A talk, played by the player or (--auto) by BotTalk, which steers clear of `avoid`. False if
+## the talk file is missing (the caller then applies its effects by hand).
+func _talk(id: String, with: Node3D, avoid: Array = BotTalk.AVOID) -> bool:
 	if not FileAccess.file_exists("res://dialogue/%s.json" % id):
-		return
+		return false
+	if args.has("auto"):
+		await BotTalk.run(self, id, player, with, avoid)
+		return true
 	var c := Conversation.new()
 	add_child(c)
 	c.start(id, player, with if with else player)
 	await c.finished
+	return true
 
 
 func _save(where: String) -> void:
