@@ -75,7 +75,7 @@ func _ready() -> void:
 	# a Cairo street stall (3 actions a day) and the camp's companion talks.
 	var camp: Vector3 = level.interactables["camp_fire"].global_position
 	Game.changed.connect(_on_game_changed)
-	npcs["eleanor"] = Npc.make(level, "eleanor", camp + Vector3(-1.5, 0.0, -3.0), "eleanor_meet", NpcBody.SCOUT)
+	npcs["eleanor"] = Npc.make(level, "eleanor", camp + Vector3(-1.5, 0.0, -3.0), "eleanor_meet", Characters.glb("eleanor"))
 	ActionSpot.make(level, "cairo_corner", level.player_spawn + Vector3(-3.0, 0.0, -6.0))
 	ActionSpot.make(level, "camp", camp + Vector3(1.2, 0.0, -1.6))
 	# Investigation (step 11): three statues near the tomb doorway, and a sealed slab that only
@@ -364,7 +364,7 @@ func _spawn_party() -> void:
 func _spawn_companion(id: String, at: Vector3) -> void:
 	if companions.has(id) and is_instance_valid(companions[id]):
 		return
-	var c := Gunman.make_companion(id, player, COMPANION_GLB.get(id, NpcBody.SCOUT))
+	var c := Gunman.make_companion(id, player, Characters.glb(id))
 	if c == null:
 		return
 	add_child(c)

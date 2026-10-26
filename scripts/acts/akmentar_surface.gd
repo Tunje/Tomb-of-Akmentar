@@ -142,9 +142,14 @@ func _temple() -> void:
 func _site_landmark(id: String, p: Vector3) -> void:
 	match id:
 		"anubis", "horus", "ra":
-			_box(_nav, p + Vector3.UP * 0.6, Vector3(2.2, 1.2, 2.2), _stone)  # plinth
-			var statue := _box(_nav, p + Vector3.UP * 3.0, Vector3(1.2, 3.6, 1.4), _floor_mat)
+			# image-to-3d's statue (4 m with its base, facing +Z, toward the camps) on a wider
+			# plinth; the box keeps the collision, and stands in if the model is missing.
+			_box(_nav, p + Vector3.UP * 0.3, Vector3(2.6, 0.6, 2.6), _stone)
+			var foot: Vector2 = {"anubis": Vector2(1.12, 1.58), "horus": Vector2(1.14, 1.33), "ra": Vector2(1.39, 1.78)}[id]
+			var statue := _box(_nav, p + Vector3.UP * 2.6, Vector3(foot.x, 4.0, foot.y), _floor_mat)
 			statue.set_meta("statue", id)
+			if _prop(self, "statue_%s.glb" % id, p + Vector3.UP * 0.6):
+				(statue.get_child(1) as MeshInstance3D).visible = false
 		"scarabs", "hieroglyphs":
 			_box(_nav, p + Vector3.UP * 2.0, Vector3(1.0, 4.0, 9.0), _stone)
 		"greetings", "mummification":

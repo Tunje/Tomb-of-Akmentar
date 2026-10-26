@@ -9,8 +9,6 @@ extends Node3D
 enum Step { ARRIVE, DRAFT, DAY, NIGHT, RAID, DAWN, END }
 
 const NIGHT_RAID := "res://scripts/night_raid.gd"
-const RIVAL_GLB := {"whitfield": "res://assets/characters/bandits/bandit_gunhand.glb",
-	"adler": "res://assets/characters/bandits/bandit_raider.glb"}
 
 var level: AkmentarSurface
 var player: Player
@@ -52,8 +50,14 @@ func _ready() -> void:
 	level.interactables["camp_fire"].used.connect(func(_by): _save())
 	level.interactables["camp_bed"].used.connect(func(_by): _end_day())
 	# The rivals at their camps (stand-in bodies until image-to-3d's leaders exist).
-	npcs["whitfield"] = Npc.make(level, "whitfield", level.camps.americans + Vector3(1.5, 0, 2.0), "act4_whitfield", RIVAL_GLB.whitfield)
-	npcs["adler"] = Npc.make(level, "adler", level.camps.germans + Vector3(-1.5, 0, 2.0), "act4_adler", RIVAL_GLB.adler)
+	npcs["whitfield"] = Npc.make(level, "whitfield", level.camps.americans + Vector3(1.5, 0, 2.0), "act4_whitfield", Characters.glb("whitfield"))
+	npcs["adler"] = Npc.make(level, "adler", level.camps.germans + Vector3(-1.5, 0, 2.0), "act4_adler", Characters.glb("adler"))
+	# Their people about the camps (no talk yet), and the rivals' gunmen in the raid.
+	Npc.make(level, "maggie", level.camps.americans + Vector3(-2.5, 0, 1.0), "", Characters.glb("maggie"))
+	Npc.make(level, "kruger", level.camps.germans + Vector3(2.5, 0, 1.0), "", Characters.glb("kruger"))
+	if ResourceLoader.exists(NIGHT_RAID):
+
+		NightRaid.rival_glb = {"americans": Characters.glb("callahan"), "germans": Characters.glb("vogel")}
 	_spawn_party()
 	if not Game.flags.has("race_step") or args.has("race-step"):
 		Game.set_flag("race_step", int(args.get("race-step", "3")))
@@ -227,7 +231,7 @@ func _save() -> void:
 func _spawn_party() -> void:
 	var i := 0
 	for id in Game.party():
-		var c := Gunman.make_companion(id, player, NpcBody.SCOUT)
+		var c := Gunman.make_companion(id, player, Characters.glb(id))
 		if c:
 			add_child(c)
 			c.global_position = player.global_position + Vector3(i * 1.4 - 0.7, 0, 2.5)
@@ -278,7 +282,7 @@ func _auto_day() -> void:
 		if Game.flag("claimed_" + id, "") != "player":
 			continue
 		var spot: Node3D = level.site_spots[id]
-		player.global_position = spot.global_position + Vector3(0, 0, 0.6)
+		player.global_position = spot.global_position + Vector3(0, 0, 2.6)
 		player.yaw = 0.0
 		await get_tree().create_timer(0.4).timeout
 		(spot as SiteSpot).interactable.use(player)
