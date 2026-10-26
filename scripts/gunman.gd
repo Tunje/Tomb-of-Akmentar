@@ -77,6 +77,8 @@ const SURRENDER_CHECK := 2.0
 
 ## Cover spot key -> the Gunman holding it.
 static var _claims := {}
+## Allied team pairs ("a|b", sorted): they don't shoot each other. Teams are otherwise hostile.
+static var _allies := {}
 static var _last_flank := -100.0
 
 ## Who they're shooting at (Player, Gunman or Mummy). Enemies wait until it's first set.
@@ -98,6 +100,14 @@ var companion_id := ""
 var leader: Node3D
 var order := "follow"
 var hold_at := Vector3.ZERO
+## Defenders (any team): their cover stays within LEASH of this point (INF = free to roam).
+var guard_at := Vector3.INF
+## The player, for teams that may fight him or fight beside him but don't start with him as target.
+var foe_player: Player
+## Attackers (any team): only targets within hunt_radius of this point count (INF = anywhere).
+## A raid on one camp keeps its bandits off the camp across the ruins.
+var hunt_at := Vector3.INF
+var hunt_radius := 25.0
 ## Counters for tests and the HUD.
 var shots_fired := 0
 var shots_hit := 0
@@ -107,8 +117,10 @@ var flanks := 0
 var stuck_count := 0
 ## Hands up: out of the fight, hostile to no one (shooting him anyway is the story's mean choice).
 var surrendered := false
-## Enemies only: whether this one may give up at all (a fanatic of the order might not).
+## Enemies only: whether this one may give up at all (a fanatic of the order might not), and how
+## likely per hit once hurt and outnumbered (a quarter of it again every SURRENDER_CHECK).
 var can_surrender := true
+var surrender_chance := SURRENDER_CHANCE
 
 ## For mummies and anything else that asks `target.alive`.
 var alive: bool:
@@ -142,6 +154,7 @@ var _last_burst := -100.0
 var _bad_spots := {}  # spot key -> time it proved unreachable
 var _following := false
 var _surrender_t := 0.0
+var _surrendered_at := 0.0
 var _flank_try := -100.0  # last time this one looked for a flank (found or not)
 var _deck: RiverBoat
 var _deck_xf := Transform3D()
@@ -183,6 +196,23 @@ static func toggle_party_order(tree: SceneTree) -> String:
 	for c in party:
 		(c as Gunman).set_order(to)
 	return to
+
+
+## Make two teams allies (they hold fire on each other) or enemies again.
+static func set_allies(a: String, b: String, on := true) -> void:
+	var k := _ally_key(a, b)
+	if on:
+		_allies[k] = true
+	else:
+		_allies.erase(k)
+
+
+static func allied(a: String, b: String) -> bool:
+	return a == b or _allies.has(_ally_key(a, b))
+
+
+static func _ally_key(a: String, b: String) -> String:
+	return a + "|" + b if a < b else b + "|" + a
 
 
 func set_order(o: String) -> void:
@@ -296,9 +326,9 @@ func is_hostile(n: Node) -> bool:
 	if n is Gunman and (n as Gunman).surrendered:
 		return false
 	if n is Player:
-		return team != PARTY
+		return not allied(team, PARTY)
 	if n is Gunman:
-		return (n as Gunman).team != team
+		return not allied((n as Gunman).team, team)
 	if n is Mummy:
 		return team == PARTY
 	return false
@@ -364,16 +394,18 @@ func _candidates() -> Array[Node3D]:
 	else:
 		if target is Player:
 			out.append(target)
-		for c in get_tree().get_nodes_in_group("party"):
-			if is_hostile(c) and (c as Gunman).is_active():
-				out.append(c)
+		if foe_player and is_hostile(foe_player) and not out.has(foe_player):
+			out.append(foe_player)
+		for g in get_tree().get_nodes_in_group("gunmen"):
+			if is_hostile(g) and (g as Gunman).is_active():
+				out.append(g)
 		for g in get_tree().get_nodes_in_group("party"):
 			var leader_node: Node3D = (g as Gunman).leader
 			if leader_node and is_hostile(leader_node) and not out.has(leader_node):
 				out.append(leader_node)
 	var alive_only: Array[Node3D] = []
 	for n in out:
-		if _target_alive(n):
+		if _target_alive(n) and (hunt_at == Vector3.INF or _flat(n.global_position - hunt_at).length() <= hunt_radius):
 			alive_only.append(n)
 	return alive_only
 
@@ -441,7 +473,7 @@ func _physics_process(delta: float) -> void:
 	_surrender_t += delta
 	if _surrender_t >= SURRENDER_CHECK:
 		_surrender_t = 0.0
-		_maybe_surrender()
+		_maybe_surrender(0.25)
 	_stagger_pts = maxf(_stagger_pts - delta * 1.2, 0.0)
 
 	_retarget -= delta
@@ -692,6 +724,8 @@ func _follow(delta: float) -> Vector3:
 
 ## Companions keep their fights near the player (or the hold point).
 func _anchor() -> Vector3:
+	if guard_at != Vector3.INF:
+		return guard_at
 	if order == "hold" or leader == null or not is_instance_valid(leader):
 		return hold_at
 	return leader.global_position
@@ -794,7 +828,7 @@ func _pick(mode: String) -> void:
 		var d := _flat(p - pos).length()
 		if d < MIN_RANGE or d > SEARCH:
 			continue
-		if team == PARTY and _flat(pos - anchor).length() > LEASH:
+		if (team == PARTY or guard_at != Vector3.INF) and _flat(pos - anchor).length() > LEASH:
 			continue
 		var travel := _flat(pos - global_position).length()
 		if travel > MAX_TRAVEL * (2.0 if mode in ["retreat", "flank"] else 1.0):
@@ -894,7 +928,7 @@ func _firing_point(p: Vector3) -> Dictionary:
 ## Companions just fight from where they stand (pulled back toward the player when far off).
 func _exposed_spot(p: Vector3) -> Dictionary:
 	var want := global_position
-	if team == PARTY:
+	if team == PARTY or guard_at != Vector3.INF:
 		var anchor := _anchor()
 		if _flat(want - anchor).length() > LEASH * 0.5:
 			want = anchor + _flat(want - anchor).normalized() * LEASH * 0.5
@@ -1094,11 +1128,12 @@ func _bullet_hit(hit: Dictionary, dir: Vector3, travelled: float) -> void:
 
 # ---------------------------------------------------------------- damage
 
-## The player's bullets (Player._fire_bullets). Companions don't take friendly fire.
+## The player's bullets (Player._fire_bullets). Companions and allies don't take friendly fire.
 func take_hit(part: String, dmg: float, dir: Vector3, _point: Vector3, stagger: float, knock: float) -> Dictionary:
-	if team == PARTY:
+	if allied(team, PARTY):
 		return {"killed": false}
-	if surrendered and state != State.DEAD:
+	# A round already in flight when he gave up doesn't count as the mean choice.
+	if surrendered and state != State.DEAD and alive_time - _surrendered_at > 1.0:
 		Game.apply([{"set_flag": "shot_surrendered"}, {"event": "shot_surrendered"}])
 	return _hurt(part, dmg, dir, stagger, knock)
 
@@ -1131,7 +1166,7 @@ func _hurt(part: String, dmg: float, dir: Vector3, stagger: float, knock: float)
 		return {"killed": true}
 	if surrendered:
 		return {"killed": false}  # hands stay up
-	if _maybe_surrender():
+	if _maybe_surrender(1.0):
 		return {"killed": false}
 	if not retreating and health < RETREAT_AT * max_health / MAX_HEALTH:
 		retreating = true
@@ -1155,7 +1190,7 @@ func _hurt(part: String, dmg: float, dir: Vector3, stagger: float, knock: float)
 
 ## Hurt below SURRENDER_AT and outnumbered (his side's fighters no more than the other side's):
 ## a chance to give up. Returns whether he did.
-func _maybe_surrender() -> bool:
+func _maybe_surrender(odds: float) -> bool:
 	if team == PARTY or surrendered or not can_surrender or state == State.DEAD:
 		return false
 	if health > max_health * SURRENDER_AT or not _target_alive(target):
@@ -1164,14 +1199,15 @@ func _maybe_surrender() -> bool:
 	var theirs := 0
 	for g in get_tree().get_nodes_in_group("gunmen"):
 		var m := g as Gunman
-		if m.is_active() and not m.surrendered:
+		# Only who's in this fight counts (not a camp across the ruins).
+		if m.is_active() and not m.surrendered and m.global_position.distance_to(global_position) < SIGHT:
 			if m.team == team:
 				mine += 1
-			elif m.team == PARTY:
+			elif is_hostile(m):
 				theirs += 1
 	if _any_player_alive():
 		theirs += 1
-	if mine > theirs or randf() > SURRENDER_CHANCE:
+	if mine > theirs or randf() > surrender_chance * odds:
 		return false
 	_surrender()
 	return true
@@ -1180,6 +1216,8 @@ func _maybe_surrender() -> bool:
 func _any_player_alive() -> bool:
 	if target is Player:
 		return (target as Player).alive
+	if foe_player:
+		return foe_player.alive and is_hostile(foe_player)
 	for c in get_tree().get_nodes_in_group("party"):
 		var l: Node3D = (c as Gunman).leader
 		if l is Player and (l as Player).alive:
@@ -1190,6 +1228,7 @@ func _any_player_alive() -> bool:
 ## Drop the gun, kneel, hands up.
 func _surrender() -> void:
 	surrendered = true
+	_surrendered_at = alive_time
 	flanking = false
 	_set_spot({"key": ""})
 	_enter(State.SURRENDER)
