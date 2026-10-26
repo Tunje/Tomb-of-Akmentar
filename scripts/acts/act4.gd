@@ -242,6 +242,8 @@ func _process(delta: float) -> void:
 	if _shots.size() > 0 and _t >= _shots[0]:
 		_shots.pop_front()
 		_shot("act4_%05.1f.png" % _t)
+	if args.has("auto") and step == Step.RAID:
+		_auto_fight(delta)
 	if args.has("seconds") and _t > float(args.seconds):
 		print("RESULT act4 timeout step=%s" % Step.keys()[step])
 		get_tree().quit(1)
@@ -287,6 +289,38 @@ func _auto_day() -> void:
 	player.global_position = level.interactables.camp_bed.global_position + Vector3(0, 0, 1.0)
 	await get_tree().create_timer(0.5).timeout
 	_end_day()
+
+
+## Raid: god mode, aim at the nearest visible bandit and fire when lined up.
+func _auto_fight(delta: float) -> void:
+	player.max_health = 100000.0
+	player.health = 100000.0
+	var best: Gunman = null
+	var bd := 40.0
+	var space := get_world_3d().direct_space_state
+	for n in get_tree().get_nodes_in_group("gunmen"):
+		var g := n as Gunman
+		if g == null or g.team != Gunman.BANDITS or not g.alive or g.surrendered:
+			continue
+		var d := player.global_position.distance_to(g.global_position)
+		var seen := space.intersect_ray(PhysicsRayQueryParameters3D.create(player.camera.global_position, g.global_position + Vector3.UP * 1.3, 1)).is_empty()
+		if seen and d < bd:
+			bd = d
+			best = g
+	if best == null:
+		Input.action_release("fire")
+		Input.action_release("aim")
+		return
+	var aim := best.global_position + Vector3.UP * 1.3 - player.camera.global_position
+	var want_yaw := atan2(-aim.x, -aim.z)
+	var want_pitch := asin(clampf(aim.normalized().y, -1, 1))
+	player.yaw = lerp_angle(player.yaw, want_yaw, minf(delta * 10.0, 1.0))
+	player.pitch = lerpf(player.pitch, want_pitch, minf(delta * 10.0, 1.0))
+	Input.action_press("aim")
+	if absf(angle_difference(player.yaw, want_yaw)) < deg_to_rad(2.5) and fmod(_t, 0.4) < delta:
+		Input.action_press("fire")
+	else:
+		Input.action_release("fire")
 
 
 func _close_modals() -> void:

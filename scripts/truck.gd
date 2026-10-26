@@ -12,6 +12,11 @@ const BRAKE := 60.0
 const STEER := 0.55
 const STEER_SPEED := 2.5
 const MAX_HEALTH := 100.0
+const MODEL := "res://assets/props/vehicle_truck.glb"
+const WHEEL_Z := 1.655  # half the model's wheelbase
+var _door_mesh: Node3D
+var _wheel_mesh: Node3D
+var _door_open := 0.0
 const MAX_SPEED := 12.5  # m/s, about 45 km/h: a loaded 1920s truck
 
 var id := "truck"
@@ -52,11 +57,21 @@ func _build() -> void:
 	_part(Vector3(1.6, 0.6, 1.3), Vector3(0, 1.2, -2.15), paint, false)  # bonnet
 	_part(Vector3(1.9, 0.5, 2.6), Vector3(0, 1.25, 1.0), paint, false)  # bed sides
 	_part(Vector3(1.95, 0.9, 2.5), Vector3(0, 1.95, 1.05), canvas, false)
-	for z in [-1.55, 1.45]:
-		for x in [-0.9, 0.9]:
+	# image-to-3d's truck (when present) replaces the boxes; its wheels, door and steering wheel
+	# are separate nodes with their origins on their pivots.
+	var model: Node3D = (load(MODEL) as PackedScene).instantiate() if ResourceLoader.exists(MODEL) else null
+	if model:
+		add_child(model)
+		for mi in get_children():
+			if mi is MeshInstance3D:
+				(mi as MeshInstance3D).visible = false
+		_door_mesh = model.find_child("door_l", true, false) as Node3D
+		_wheel_mesh = model.find_child("steering_wheel", true, false) as Node3D
+	for z in [-WHEEL_Z, WHEEL_Z]:
+		for x in [-0.89, 0.89]:
 			var w := VehicleWheel3D.new()
-			w.position = Vector3(x, 0.45, z)
-			w.wheel_radius = 0.45
+			w.position = Vector3(x, 0.46, z)
+			w.wheel_radius = 0.46
 			w.wheel_rest_length = 0.18
 			w.suspension_travel = 0.22
 			w.suspension_stiffness = 70.0
@@ -67,6 +82,14 @@ func _build() -> void:
 			w.use_as_steering = z < 0.0
 			w.use_as_traction = z > 0.0
 			add_child(w)
+			if model:
+				# The model's wheel rides the physics wheel (spins and steers with it).
+				var wname := "wheel_%s%s" % ["f" if z < 0.0 else "r", "l" if x < 0.0 else "r"]
+				var wm := model.find_child(wname, true, false) as Node3D
+				if wm:
+					wm.reparent(w, false)
+					wm.transform = Transform3D.IDENTITY
+				continue
 			var mi := MeshInstance3D.new()
 			var cm := CylinderMesh.new()
 			cm.top_radius = 0.45
@@ -76,7 +99,8 @@ func _build() -> void:
 			mi.material_override = dark
 			mi.rotation.z = PI * 0.5
 			w.add_child(mi)
-	for p in [Vector3(-0.4, 1.25, -1.0), Vector3(0.45, 1.25, -1.0), Vector3(-0.5, 1.5, 1.0), Vector3(0.5, 1.5, 1.0)]:
+	# Driver behind the steering wheel (model: x -0.2, z -0.22), passenger beside, two in the back.
+	for p in [Vector3(-0.22, 1.2, 0.25), Vector3(0.45, 1.2, 0.25), Vector3(-0.5, 1.45, 1.4), Vector3(0.5, 1.45, 1.4)]:
 		var s := Marker3D.new()
 		s.position = p
 		add_child(s)
@@ -160,6 +184,16 @@ func idle() -> void:
 	steering = move_toward(steering, 0.0, 0.05)
 
 
+func _process(delta: float) -> void:
+	# The model's moving parts: steering wheel with the front wheels, door open while
+	# someone climbs in or out (briefly after a change of driver).
+	if _wheel_mesh:
+		_wheel_mesh.rotation.y = -steering * 4.0
+	if _door_mesh:
+		_door_open = maxf(_door_open - delta, 0.0)
+		_door_mesh.rotation.y = -deg_to_rad(70.0) * clampf(_door_open * 2.0, 0.0, 1.0)
+
+
 func _physics_process(_delta: float) -> void:
 	# Crashes hurt: a sudden loss of speed above walking pace.
 	var speed := Vector2(linear_velocity.x, linear_velocity.z).length()  # bounces aren't crashes
@@ -195,6 +229,7 @@ func _wreck() -> void:
 
 ## Seat `who` (0 = driver). Returns false if taken.
 func board(who: Node3D, seat: int) -> bool:
+	_door_open = 1.0
 	if seat == 0:
 		if driver:
 			return false
@@ -207,6 +242,7 @@ func board(who: Node3D, seat: int) -> bool:
 
 
 func leave(who: Node3D) -> void:
+	_door_open = 1.0
 	if driver == who:
 		driver = null
 	passengers.erase(who)

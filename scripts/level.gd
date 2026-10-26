@@ -612,3 +612,33 @@ func _environment() -> void:
 	add_child(_sun)
 	_sun.rotation = Vector3(deg_to_rad(-38), deg_to_rad(-140), 0)
 	set_indoor(0.0)
+
+
+# ---------------------------------------------------------------- image-to-3d props
+
+const PROPS := "res://assets/props/"
+
+
+## A static prop GLB (real metres, origin on the ground) at `pos`, or null if it's missing.
+func _prop(parent: Node, file: String, pos: Vector3, rot_y := 0.0, scale_by := Vector3.ONE) -> Node3D:
+	if not ResourceLoader.exists(PROPS + file):
+		return null
+	var p: Node3D = (load(PROPS + file) as PackedScene).instantiate()
+	parent.add_child(p)
+	p.global_position = pos
+	p.rotation.y = rot_y
+	p.scale = scale_by
+	return p
+
+
+## Swap a stand-in box's look for a prop fitted to the box (its collision stays).
+## `native` is the prop's own size in metres.
+func _dress(body: StaticBody3D, file: String, native: Vector3) -> void:
+	if not ResourceLoader.exists(PROPS + file):
+		return
+	var size: Vector3 = (body.get_child(0) as CollisionShape3D).shape.size
+	var p: Node3D = (load(PROPS + file) as PackedScene).instantiate()
+	body.add_child(p)
+	p.position = Vector3(0, -size.y * 0.5, 0)
+	p.scale = Vector3(size.x / native.x, size.y / native.y, size.z / native.z)
+	(body.get_child(1) as MeshInstance3D).visible = false

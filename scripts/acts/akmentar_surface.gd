@@ -188,11 +188,15 @@ func _expedition_camp(id: String, at: Vector3) -> void:
 	add_child(fire)
 	fire.position = at
 	_flame(fire, Vector3.UP * 0.45, 2.8, 12.0, true)
+	_prop(self, "prop_campfire.glb", at)
 	for k in 3:
 		var a := PI + (k - 1) * 0.9
 		var tent_at := at + Vector3(cos(a), 0, sin(a)) * 6.0
-		var tent := _box(_nav, tent_at + Vector3.UP * 1.0, Vector3(2.6, 2.0, 3.2), canvas)
-		tent.look_at(at + Vector3.UP * 1.0, Vector3.UP)
+		# image-to-3d's tent is 2.5 long (x) x 1.53 x 1.17 high: scaled up a little, its long side
+		# facing the fire; the stand-in box keeps the collision.
+		var tent := _box(_nav, tent_at + Vector3.UP * 0.7, Vector3(3.0, 1.4, 1.8), canvas)
+		tent.look_at(at + Vector3.UP * 0.7, Vector3.UP)
+		_dress(tent, "prop_tent.glb", Vector3(2.5, 1.17, 1.53))
 	# Cover in a loose ring: crates and a cart.
 	var ring := [[Vector3(-4.5, 0, 3.5), Vector3(1.6, 1.0, 1.0)], [Vector3(4.5, 0, 3.5), Vector3(1.6, 1.0, 1.0)],
 		[Vector3(0, 0, 5.5), Vector3(3.4, 1.1, 1.2)], [Vector3(-6.5, 0, -1.0), Vector3(1.0, 1.0, 2.2)],
@@ -200,6 +204,15 @@ func _expedition_camp(id: String, at: Vector3) -> void:
 	for r in ring:
 		var crate := _box(_nav, at + r[0] + Vector3.UP * (r[1] as Vector3).y * 0.5, r[1], wood)
 		_mark_cover(crate, r[1])
+		_dress(crate, "prop_crate_large.glb", Vector3(1.0, 0.52, 0.49))
+	var lamp := _prop(self, "prop_lantern.glb", at + Vector3(-4.5, 1.0, 3.5))
+	if lamp:
+		var glow := OmniLight3D.new()
+		glow.light_color = Color(1.0, 0.75, 0.4)
+		glow.light_energy = 1.4
+		glow.omni_range = 6.0
+		lamp.add_child(glow)
+		glow.position = Vector3.UP * 0.21
 	if id == "party":
 		interactables["camp_fire"] = Interactable.make(self, at, "Rest by the fire (save)", "camp_fire", 1.2)
 		var bed_at := at + Vector3(-2.4, 0, -2.0)
@@ -210,6 +223,8 @@ func _expedition_camp(id: String, at: Vector3) -> void:
 		bed.material_override = canvas
 		add_child(bed)
 		bed.position = bed_at + Vector3.UP * 0.06
+		if _prop(self, "prop_bedroll.glb", bed_at, PI * 0.5):
+			bed.visible = false
 		interactables["camp_bed"] = Interactable.make(self, bed_at, "Sleep (end the day)", "camp_bed", 1.0)
 
 
