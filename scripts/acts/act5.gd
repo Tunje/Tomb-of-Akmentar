@@ -529,7 +529,7 @@ func _spawn_party() -> void:
 		var c := Gunman.make_companion(id, player, Characters.glb(id))
 		if c:
 			add_child(c)
-			c.global_position = player.global_position + Vector3(i * 1.4 - 0.7, 0, 2.5)
+			c.global_position = player.global_position + Vector3((2.4 + i * 1.2) * (1 if i % 2 == 0 else -1), 0, -1.0)  # to the sides, not in the lens
 			companions[id] = c
 			i += 1
 
