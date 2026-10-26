@@ -336,7 +336,7 @@ func _secret(r: int, c: int) -> void:
 	_box(_nav, Vector3(p.x, FLOOR_Y - 0.5, p.z), Vector3(CELL, 1.0, CELL), _floor_mat)
 	_box(_nav, Vector3(p.x, FLOOR_Y - 1.0 - PIT_DROP * 0.5, p.z), Vector3(CELL, PIT_DROP, CELL), _stone)
 	var flag: String = SECRETS.get(Vector2i(c, r), "found_builders")
-	var d := ClueDoor.make(_nav, "secret_%d_%d" % [c, r], p + Vector3.UP * WALL_H * 0.5, Vector3(CELL, WALL_H, CELL), flag,
+	var d := ClueDoor.make(_nav, "secret_%d_%d" % [c, r], p, Vector3(CELL, WALL_H, CELL), flag,
 		"The stone here sounds hollow. Fine cracks run round a block the size of a door, but it won't move.",
 		"You press where the builders marked it. The block grinds back into the dark.")
 	secret_doors.append(d)

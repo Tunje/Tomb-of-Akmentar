@@ -313,6 +313,7 @@ func _spawn_party() -> void:
 # ---------------------------------------------------------------- test bot
 
 var _death_logged := false
+var _still := 0
 
 
 func _process(delta: float) -> void:
@@ -425,7 +426,23 @@ func _auto_escape() -> void:
 		player.yaw = atan2(-d.x, -d.z)
 		Input.action_press("move_forward")
 		Input.action_press("sprint")
+		var was := player.global_position
 		await get_tree().create_timer(0.25).timeout
+		_still = _still + 1 if player.global_position.distance_to(was) < 0.1 else 0
+		if _still >= 4:
+			# Blocked by a fallen block or rubble: into cover on it (E), then over (W+E).
+			_still = 0
+			Input.action_release("sprint")
+			Input.action_release("move_forward")
+			for tap in 2:
+				if tap == 1:
+					Input.action_press("move_forward")
+				Input.action_press("cover")
+				await get_tree().physics_frame
+				await get_tree().physics_frame
+				Input.action_release("cover")
+				await get_tree().create_timer(0.4).timeout
+			await get_tree().create_timer(0.8).timeout
 	Input.action_release("move_forward")
 	Input.action_release("sprint")
 
