@@ -6,7 +6,8 @@ extends Node3D
 ## them to ram. A truck wrecked kills everyone aboard (Game kill). Reach the fort at the end of
 ## the road and it's over. The talk act8_chase plays first.
 ## When it's over `finished` gets the result and Enter goes to `next_scene` (set by the act that
-## sends you here). Test args (after --): --auto (the bot drives, the party shoots),
+## sends you here). Test args (after --): --auto (the bot drives, the party shoots), --gunner (with
+## --auto: a companion drives (GunnerSeat) and the bot shoots from the back),
 ## --party=a,b, --trucks=1|2, --seconds=N, --shots=t1,t2, --shot-dir=path.
 
 signal finished(result: Dictionary)
@@ -64,6 +65,7 @@ func _ready() -> void:
 	add_child(CountdownBars.new())
 	player.hit_confirmed.connect(hud.on_hit)
 	player.damaged.connect(hud.on_damaged)
+	player.seat_swapped.connect(func(text: String): hud.toast(text, 3.0))
 	player.died.connect(func():
 		_running = false
 		hud.show_message("YOU DIED", "Enter to try again"))
@@ -97,7 +99,7 @@ func _convoy() -> void:
 		t.wrecked.connect(_on_wrecked)
 		trucks.append(t)
 		crews[t] = []
-	if args.has("auto"):
+	if args.has("auto") and not args.has("gunner"):
 		_autopilot = Rider.mount(self, trucks[0], DROVER_GLB)  # the bot's hands on the wheel
 		player.visible = false
 		player.set_physics_process(false)
@@ -135,9 +137,14 @@ func _start() -> void:
 				break
 		c.start("act8_chase", player, who)
 		await c.finished
-	hud.toast("Drive! They're coming up behind.", 3.0)
+	hud.toast("Drive! They're coming up behind. (V: hand a companion the wheel and take the gun.)", 4.0)
 	_running = true
 	_road_ahead()
+	if args.has("gunner"):
+		# The gunner bot: a companion takes the wheel (GunnerSeat), the player shoots from the back.
+		var note := GunnerSeat.swap(player)
+		print("RESULT chase gunner swap '%s' seat=%d driver_is_rider=%s armed=%s" % [note, player.gunner_seat,
+			trucks[0].driver != player, player.armed])
 
 
 ## The drover (and the bot) follow the road: points every 25 m to the fort.
@@ -166,6 +173,8 @@ func _set_route(r: Rider, t: Truck) -> void:
 func _physics_process(delta: float) -> void:
 	if not _running or _done:
 		return
+	if args.has("gunner"):
+		_gunner_bot()
 	var lead := _lead()
 	if lead == null:
 		return
@@ -196,8 +205,8 @@ func _physics_process(delta: float) -> void:
 		if t.health <= 0.0:
 			continue
 		for e in crews[t]:
-			if e[0] == "":
-				continue
+			if e[0] == "" or (e[1] as Rider).seat == 0:
+				continue  # the drover, or a companion who has the wheel (the gunner seat)
 			var r: Rider = e[1]
 			_gun_t[r] = float(_gun_t.get(r, 1.0)) - delta
 			if _gun_t[r] > 0.0:
@@ -212,6 +221,50 @@ func _physics_process(delta: float) -> void:
 ## How many chariots come in all (fewer against a lone truck).
 func _total() -> int:
 	return CHARIOTS[mini(trucks.size(), 2) - 1]
+
+
+var _gunner_t := 0.0
+var _swapped_back := false
+var _gunner_hits := 0
+
+
+## --gunner: the player in the back with the gun, aiming at the nearest chariot and firing in
+## bursts; halfway down the road it takes the wheel and hands it back again (the swap both ways).
+func _gunner_bot() -> void:
+	if player.vehicle == null or player.gunner_seat < 0:
+		return
+	if _gunner_t == 0.0:
+		player.hit_confirmed.connect(func(_k: bool, _h: bool): _gunner_hits += 1)
+	_gunner_t += get_physics_process_delta_time()
+	var best: Chariot = null
+	var best_d := 35.0
+	for c in chariots:
+		if is_instance_valid(c) and c.alive:
+			var dist := player.global_position.distance_to(c.global_position)
+			if dist < best_d:
+				best_d = dist
+				best = c
+	if best:
+		var d := best.global_position + Vector3.UP * 1.3 - (player.global_position + Vector3.UP * 1.6)
+		player.yaw = atan2(-d.x, -d.z)
+		player.pitch = clampf(atan2(d.y, Vector2(d.x, d.z).length()), -1.0, 1.0)
+	_hold("aim", best != null)
+	_hold("fire", best != null and fmod(_gunner_t, 0.35) < 0.15)
+	if player.ammo[player.current] <= 0:
+		player.start_reload()
+	if not _swapped_back and trucks[0].global_position.z < -700.0:
+		_swapped_back = true
+		var a := GunnerSeat.swap(player)
+		var at_wheel := player.gunner_seat == -1 and trucks[0].driver == player
+		var b := GunnerSeat.swap(player)
+		print("RESULT chase gunner swap back '%s' at_wheel=%s, and out again '%s' gunner=%s" % [a, at_wheel, b, player.gunner_seat >= 0])
+
+
+func _hold(action: String, on: bool) -> void:
+	if on:
+		Input.action_press(action)
+	else:
+		Input.action_release(action)
 
 
 func _lead() -> Truck:
@@ -277,6 +330,8 @@ func _on_wrecked(t: Truck) -> void:
 		if float(e.get("health", 0)) > 0.0:
 			e["health"] = 0.0  # the first one still on the books is the one lost
 			break
+	if player.vehicle == t and player.gunner_seat >= 0:
+		player.take_damage(1000.0, t.global_position)  # in the back of it with the gun: no way out
 	if t == trucks[0] and args.has("auto"):
 		_running = false
 		print("RESULT chase lost (the player's truck)")
@@ -294,6 +349,8 @@ func _finish() -> void:
 	Game.set_flag("chase_chariots_destroyed", result.destroyed)
 	print("RESULT chase end t=%.0fs destroyed=%d trucks_lost=%d health=%s dead=%s party=%s" % [_t, result.destroyed, result.trucks_lost,
 		trucks.map(func(t): return roundi(t.health)), result.dead, Game.party()])
+	if args.has("gunner"):
+		print("RESULT chase gunner hits=%d (the player's rounds on chariots)" % _gunner_hits)
 	finished.emit(result)
 	hud.show_message("THE FORT GATE", "%d chariots down. %s\n\nEnter  go on" % [result.destroyed,
 		"Everyone made it." if (result.dead as Array).is_empty() else "Lost: %s." % ", ".join((result.dead as Array).map(func(i): return str(i).capitalize()))])

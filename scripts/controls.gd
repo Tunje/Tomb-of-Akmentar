@@ -7,6 +7,7 @@ const KEYS := {
 	"sprint": [KEY_SHIFT], "crouch": [KEY_C, KEY_CTRL], "dodge": [KEY_SPACE],
 	"reload": [KEY_R], "cover": [KEY_E], "holster": [KEY_X], "journal": [KEY_J], "party_order": [KEY_G],
 	"shove": [KEY_F], "weapon_1": [KEY_1], "weapon_2": [KEY_2], "weapon_3": [KEY_3],
+	"swap_seat": [KEY_V],  # in a truck: a companion takes the wheel, you take the gun (GunnerSeat)
 }
 const MOUSE := {
 	"fire": [MOUSE_BUTTON_LEFT], "aim": [MOUSE_BUTTON_RIGHT],

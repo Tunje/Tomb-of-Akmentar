@@ -7,6 +7,8 @@ signal hit_confirmed(killed: bool, headshot: bool)
 signal damaged(amount: float)
 signal died
 signal fired
+## The gunner seat swap happened (V in a truck): a line for the act's HUD.
+signal seat_swapped(text: String)
 
 const WALK := 4.0
 const SPRINT := 6.6
@@ -71,6 +73,8 @@ var armed := true
 var focus: Interactable
 ## The truck we're driving, or null.
 var vehicle: Node3D  # Truck or Horse (same seat / drive interface)
+## In the vehicle: -1 at the wheel, else the passenger seat we stand at with the gun (GunnerSeat).
+var gunner_seat := -1
 var _drive_blend := 0.0
 var _vaulting := false
 var _cover_blend := 0.0
@@ -225,8 +229,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		switch_to((current + weapons.size() - 1) % weapons.size())
 	elif event.is_action_pressed("reload"):
 		start_reload()
+	elif event.is_action_pressed("swap_seat") and vehicle is Truck:
+		var note := GunnerSeat.swap(self)
+		if note != "":
+			seat_swapped.emit(note)
 	elif vehicle:
-		return  # seated: only looking around
+		return  # seated: only looking around (a gunner's aim and fire are read in _gunner_step)
 	elif event.is_action_pressed("dodge"):
 		dodge()
 	elif event.is_action_pressed("holster"):
@@ -255,7 +263,10 @@ func _physics_process(delta: float) -> void:
 			ammo[current] = w.mag_size
 
 	if vehicle:
-		_drive_step(delta)
+		if gunner_seat >= 0:
+			_gunner_step(delta)
+		else:
+			_drive_step(delta)
 		return
 
 	var input := Vector2.ZERO
@@ -378,7 +389,7 @@ func _process(delta: float) -> void:
 	shoulder.position.x = move_toward(shoulder.position.x, want, delta * 6.0) if shoulder.position.x < want else want
 	# In cover the camera comes 0.5 m closer (crouching already lowers it), 0.25 s blend.
 	_cover_blend = move_toward(_cover_blend, 1.0 if cover.in_cover() else 0.0, delta / 0.25)
-	_drive_blend = move_toward(_drive_blend, 1.0 if vehicle else 0.0, delta / 0.4)
+	_drive_blend = move_toward(_drive_blend, 1.0 if vehicle and gunner_seat < 0 else 0.0, delta / 0.4)  # a gunner keeps the shoulder camera
 	arm.spring_length = lerpf(ARM_LEN, AIM_ARM_LEN, e) - 0.5 * _cover_blend * (1.0 - e)
 	arm.spring_length += (3.2 if vehicle is Truck or vehicle == null else 1.4) * _drive_blend  # behind the truck / the horse
 	camera.fov = lerpf(BASE_FOV, w.aim_fov, e)
@@ -543,13 +554,53 @@ func exit_vehicle() -> void:
 		return
 	var t := vehicle
 	t.leave(self)
-	t.idle()
+	if gunner_seat < 0:
+		t.idle()  # (a gunner hops off; whoever has the wheel decides)
+	gunner_seat = -1
 	arm.remove_excluded_object(t.get_rid())
 	vehicle = null
 	global_position = t.exit_point()
 	_shape.disabled = false
 	if explorer:
 		explorer.set_riding(false)  # also leaves the driving pose
+
+
+## To a truck's passenger seat with the gun out (GunnerSeat.swap; a companion has the wheel).
+func take_gunner_seat(s: int) -> void:
+	gunner_seat = s
+	set_armed(true)
+	if explorer:
+		explorer.set_driving(false)  # standing in the bed
+
+
+## Back at the wheel (GunnerSeat.swap).
+func take_wheel() -> void:
+	gunner_seat = -1
+	aiming = false
+	set_armed(false)
+	if explorer:
+		explorer.set_driving(true)
+
+
+## The gunner seat: ride it standing in the bed, aim and fire as on foot (no walking, no cover);
+## E hops off, V (swap_seat) takes the wheel back. The camera rides along at the shoulder.
+func _gunner_step(delta: float) -> void:
+	var seat: Marker3D = vehicle.seats[mini(gunner_seat, vehicle.seats.size() - 1)]
+	global_position = seat.global_position - Vector3.UP * 0.4
+	velocity = Vector3.ZERO
+	if not alive:
+		exit_vehicle()
+		return
+	if controls_enabled and Input.is_action_just_pressed("cover"):
+		exit_vehicle()
+		return
+	var want_fire := controls_enabled and armed and Input.is_action_pressed("fire")
+	aiming = controls_enabled and armed and Input.is_action_pressed("aim")
+	if want_fire:
+		try_fire()
+	bloom = move_toward(bloom, 0.0, delta * (4.0 + bloom * 3.0))
+	_face_aim_t = maxf(_face_aim_t, 0.2)  # a gunner faces where they look
+	_update_facing(delta, Vector3.ZERO)
 
 
 ## Seated: follow the seat, steer with the move keys, E gets out. The camera stays free.
@@ -585,8 +636,10 @@ func set_armed(on: bool) -> void:
 func cover_prompt() -> String:
 	if not alive or not controls_enabled:
 		return ""
+	if vehicle and gunner_seat >= 0:
+		return "V  take the wheel · E  hop off · right mouse  aim"
 	if vehicle:
-		return "E  get out · W/S drive · A/D steer · Space brake"
+		return "E  get out · W/S drive · A/D steer · Space brake" + (" · V  hand a companion the wheel" if vehicle is Truck else "")
 	if focus:
 		return "E  " + focus.prompt
 	if cover.in_cover():

@@ -47,6 +47,19 @@ func _ready() -> void:
 	cs.shape = bs
 	cs.position = Vector3(0, 0.9, -0.6)
 	add_child(cs)
+	# A hitbox the player's rounds find (layer 8, as the mummies' are): cab, driver and team.
+	var hb := StaticBody3D.new()
+	hb.collision_layer = 8
+	hb.collision_mask = 0
+	hb.set_meta("mummy", self)
+	hb.set_meta("part", "body")
+	var hs := CollisionShape3D.new()
+	var hbs := BoxShape3D.new()
+	hbs.size = Vector3(2.2, 2.6, 5.8)
+	hs.shape = hbs
+	hs.position = Vector3(0, 1.3, -0.6)
+	hb.add_child(hs)
+	add_child(hb)
 	var dark := StandardMaterial3D.new()
 	dark.albedo_color = Color(0.16, 0.13, 0.1)
 	var bronze := StandardMaterial3D.new()
@@ -166,11 +179,19 @@ func take_damage(amount: float, _from := Vector3.ZERO) -> bool:
 		alive = false
 		_crash_t = 0.0
 		collision_layer = 0
+		for c in get_children():
+			if c is StaticBody3D:
+				(c as StaticBody3D).collision_layer = 0  # the wreck takes no more rounds
 		Fx.muzzle_flash(get_parent(), global_position + Vector3.UP, Vector3.UP)
 		Sfx.play_at(get_parent(), Sfx.impact(), global_position, 4.0)
 		destroyed.emit(self)
 		return true
 	return false
+
+
+## The player's round (Player._bullet_hit, through the hitbox).
+func take_hit(_part: String, dmg: float, _dir: Vector3, _point: Vector3, _stagger: float, _knock: float) -> Dictionary:
+	return {"killed": take_damage(dmg)}
 
 
 ## Over it goes: the cab tumbles, the team falls, then it's gone.

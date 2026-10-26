@@ -39,6 +39,7 @@ static func mount(parent: Node, m: Node3D, glb: String, seat_index := 0) -> Ride
 
 
 func _ready() -> void:
+	add_to_group("riders")
 	mount_node.board(_seat_holder(), seat)
 	if seat > 0:
 		set_physics_process(false)
@@ -50,6 +51,20 @@ func _ready() -> void:
 		else:
 			body.set_driving(true)
 	_place_body()
+
+
+## Change seats on the same mount (the gunner seat swap): 0 takes the wheel and steers toward
+## `goal` / `path`; a passenger seat just sits.
+func move_to_seat(s: int) -> void:
+	if not is_instance_valid(mount_node):
+		return
+	mount_node.leave(_seat_holder())
+	seat = s
+	mount_node.board(_seat_holder(), seat)
+	path.clear()
+	goal = Vector3.INF
+	set_physics_process(seat == 0)
+	_place_body()  # (passengers sit in the same driving pose)
 
 
 ## Vehicles keep a Node3D as their driver; ours is a marker on the mount.
