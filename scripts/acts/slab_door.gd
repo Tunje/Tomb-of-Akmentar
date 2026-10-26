@@ -75,6 +75,7 @@ func fall() -> void:
 	_falling = true
 	started.emit()
 	Barks.say_any(get_tree(), "slab_falling", global_position)
+	Hints.once("slabs")
 	Sfx.play_at(get_parent(), Sfx.groan(), _floor + Vector3.UP * 3.0, 6.0, 0.0)
 	for i in 4:
 		Fx.impact(get_parent(), _floor + global_basis.x * randf_range(-0.8, 0.8) + Vector3.UP * (_size.y - 0.2),

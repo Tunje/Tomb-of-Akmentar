@@ -172,11 +172,12 @@ func _on_event(name: String) -> void:
 func _brawl() -> void:
 	player.set_armed(false)
 	player.melee.enabled = true
+	Hints.once("brawl")
 	for i in 3:
 		var b := Brawler.new()
 		b.glb = Characters.glb("musa") if i == 0 else GunmanBody.BANDITS[i]
-		b.skill = 0.45
-		b.max_hp = 70.0
+		b.skill = 0.35  # the tutorial brawl (tests/difficulty_test: 0.45 / 70 left the bot on 19% fist health)
+		b.max_hp = 55.0
 		add_child(b)
 		b.global_position = level.open_point(player.global_position + Vector3(cos(i * TAU / 3.0), 0.0, sin(i * TAU / 3.0)) * 3.0)
 		brawlers.append(b)
@@ -221,6 +222,9 @@ func _gunfight() -> void:
 		g.team = Gunman.BANDITS
 		g.glb = GunmanBody.BANDITS[i % GunmanBody.BANDITS.size()]
 		add_child(g)
+		g.damage = 6.0  # the first gunfight: softer than Act 3's bandits (tests/difficulty_test)
+		g.max_health = 80.0
+		g.health = 80.0
 		g.global_position = level.open_point(player.global_position + Vector3(-5.0 + i * 5.0, 0, -10.0))
 		g.target = player
 		men.append(g)

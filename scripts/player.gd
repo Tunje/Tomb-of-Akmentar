@@ -326,6 +326,9 @@ func _physics_process(delta: float) -> void:
 		velocity.z = (cover_move as Vector3).z
 		if cover.state == Cover.State.IN_COVER:
 			want_fire = false  # no blind fire
+			Hints.once("cover")  # first-time hints (-f9's Hints: once, then never again)
+			if Cover.vaultable(cover.piece):
+				Hints.once("vault")
 	elif _dodge_t > 0.0:
 		_dodge_t -= delta
 		var k := clampf(_dodge_t / DODGE_TIME, 0.0, 1.0)
@@ -539,6 +542,10 @@ func enter_vehicle(t: Node3D) -> void:
 	focus = null
 	cover.leave()
 	set_armed(false)
+	if t is Truck:
+		Hints.once("driving")
+		if not (t as Truck).passengers.is_empty():
+			Hints.once("gunner_seat")
 	_shape.disabled = true
 	velocity = Vector3.ZERO
 	arm.add_excluded_object(t.get_rid())
@@ -632,6 +639,8 @@ func set_armed(on: bool) -> void:
 	armed = on
 	gun_pivot.visible = on
 	if on:
+		Hints.once("switch_guns")
+		Hints.once("holster")
 		_switch_t = SWITCH_TIME
 	elif _reload_t > 0.0:
 		_reload_t = 0.0
@@ -672,6 +681,8 @@ func try_fire() -> void:
 		start_reload()
 		return
 	ammo[current] -= 1
+	if ammo[current] <= 2:
+		Hints.once("reload")
 	_fire_cd = w.fire_interval
 	_face_aim_t = 1.2
 	sprinting = false
@@ -783,6 +794,8 @@ func take_damage(amount: float, from: Vector3) -> bool:
 		return false
 	var was := health
 	health = maxf(health - amount, 0.0)
+	Hints.once("dodge")
+	Hints.once("crouch")
 	if was > max_health * 0.3 and health <= max_health * 0.3 and health > 0.0:
 		Barks.say_any(get_tree(), "ally_down", global_position)  # a companion reacts to you going down
 	trauma = minf(trauma + 0.55, 1.0)

@@ -124,6 +124,7 @@ func _sync_party() -> void:
 			npc.queue_free()  # the standing figure becomes the follower
 			level.npcs.erase(id)
 		companions[id] = c
+		Hints.once("orders")  # the first follower: G for hold / follow
 
 
 func _on_event(name: String) -> void:
