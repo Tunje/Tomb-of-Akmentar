@@ -23,7 +23,9 @@ extends Node
 ##                "next": "<id>"}]},
 ##      "<id>": {"branch": [{"if": {...}, "next": "<id>"}, {"next": "<id>"}]},   silent: first match wins
 ##      "<id>": {"end": true, "do": [effects]}}}                                  ends the conversation
-## A node with no next and no (visible) choices also ends it. Conditions and effects: Game's header.
+## A node with no next and no (visible) choices also ends it. Conditions and effects: Game's header,
+## plus one of ours: {"journal": [area, site, "who told you"]} writes that site's clue into the
+## Journal (and sets its clue flag) as if you had found it, e.g. when an ally shares a discovery.
 
 signal finished(end_id: String)
 signal line_started(speaker: String, text: String)
@@ -156,7 +158,7 @@ func _goto(next_id: String, hops := 0) -> void:
 		return
 	node_id = next_id
 	var n: Dictionary = nodes[next_id]
-	Game.apply(n.get("do", []))
+	_apply(n.get("do", []))
 	if n.get("end", false):
 		_finish(next_id)
 		return
@@ -182,7 +184,7 @@ func _line_done() -> void:
 	if state == State.PLAYER_LINE:
 		var c := _pending
 		_pending = {}
-		Game.apply(c.get("do", []))
+		_apply(c.get("do", []))
 		_goto(str(c.get("next", "")))
 		return
 	var n: Dictionary = data.nodes[node_id]
@@ -239,6 +241,29 @@ func _finish(end_id: String) -> void:
 	Input.mouse_mode = _old_mouse
 	finished.emit(end_id)
 	queue_free()
+
+
+## Game.apply, with our "journal" effect handled here (in order with the rest).
+func _apply(effects: Array) -> void:
+	for e: Dictionary in effects:
+		if e.has("journal"):
+			journal_from(e.journal)
+		else:
+			Game.apply([e])
+
+
+## [area, site, source]: the site's clue into the Journal, told by `source`.
+static func journal_from(v: Array) -> void:
+	var area := SiteSpot.load_area(str(v[0]))
+	var site: Dictionary = area.get("sites", {}).get(str(v[1]), {})
+	var c: Dictionary = site.get("clue", {})
+	if c.is_empty():
+		push_warning("Conversation: no clue for %s / %s" % [v[0], v[1]])
+		return
+	var id := str(c.get("id", "clue_" + str(v[1])))
+	Journal.add({"id": id, "place": str(area.get("place", "")), "site": str(site.get("name", v[1])),
+		"title": str(c.get("title", "")), "text": "%s (%s)" % [c.get("text", ""), v[2] if v.size() > 2 else "told by another"]})
+	Game.set_flag(id)
 
 
 # ---------------------------------------------------------------- camera

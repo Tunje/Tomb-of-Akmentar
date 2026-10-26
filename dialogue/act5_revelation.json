@@ -1,0 +1,125 @@
+{
+	"_help": "Act 5, the revelation: after the escape the Keepers of the Veil take the survivors away; Sheikh Rashad al-Khatib explains the Amulet of Altrazin, the barrier and the guardian, and gives the new objective (new_objective = recover_amulet). Bashir Haddad, their raid commander, recognises you if recognized_bandits. Who stole it: the plain flags thieves_americans / thieves_germans / thieves_italians. Standing with Rashad is the stat [rashad, trust].",
+	"speakers": {
+		"player": "You",
+		"rashad": "Sheikh Rashad al-Khatib",
+		"bashir": "Bashir Haddad",
+		"eleanor": "Eleanor Whitmore"
+	},
+	"start": "start",
+	"nodes": {
+		"start": {
+			"branch": [
+				{"if": {"flag": "recognized_bandits"}, "next": "bashir_knows"},
+				{"next": "bashir_new"}
+			]
+		},
+		"bashir_knows": {
+			"speaker": "bashir",
+			"line": "You. I know your face. The town, the river... You killed good men of mine, and still you would not turn back.",
+			"next": "rashad_open"
+		},
+		"bashir_new": {
+			"speaker": "bashir",
+			"line": "This is the one who led them to the door. Sit. The Sheikh will speak to you.",
+			"next": "rashad_open"
+		},
+		"rashad_open": {
+			"speaker": "rashad",
+			"line": "I am Rashad al-Khatib. My family has kept watch over Akmentar for longer than your country has had a name. We are the Keepers of the Veil, and tonight we have failed.",
+			"next": "thief"
+		},
+		"thief": {
+			"branch": [
+				{"if": {"flag": "thieves_americans"}, "next": "thief_americans"},
+				{"if": {"flag": "thieves_germans"}, "next": "thief_germans"},
+				{"if": {"flag": "thieves_italians"}, "next": "thief_italians"},
+				{"next": "thief_unknown"}
+			]
+		},
+		"thief_americans": {
+			"speaker": "rashad",
+			"line": "While you searched the burial chamber, your American partners found the jars and the amulet, and carried them away. They thought they had found a treasure.",
+			"next": "amulet"
+		},
+		"thief_germans": {
+			"speaker": "rashad",
+			"line": "While you searched the burial chamber, your German partners found the jars and the amulet, and carried them away. They thought they had found history.",
+			"next": "amulet"
+		},
+		"thief_italians": {
+			"speaker": "rashad",
+			"line": "While you searched the burial chamber, another expedition came in behind you. Italians. They found the jars and the amulet, and carried them away.",
+			"next": "amulet"
+		},
+		"thief_unknown": {
+			"speaker": "rashad",
+			"line": "While you searched the burial chamber, others found the jars and the amulet, and carried them away.",
+			"next": "amulet"
+		},
+		"amulet": {
+			"speaker": "rashad",
+			"line": "The Amulet of Altrazin is no jewel. It keeps the veil closed, the wall between the living and the dead. The one you woke is not a king. He is its guardian.",
+			"choices": [
+				{"label": "Ask about the guardian", "line": "Then what is that thing, and what does it want?", "if": {"not_flag": "rev_asked_guardian"}, "do": [{"set_flag": "rev_asked_guardian"}], "next": "guardian"},
+				{"label": "Ask why they attacked", "line": "Why didn't you just tell us? You shot at us all the way here.", "if": {"not_flag": "rev_asked_attacks"}, "do": [{"set_flag": "rev_asked_attacks"}], "next": "attacks"},
+				{"label": "Blame them", "line": "If you'd guarded it properly, none of this would have happened. This is on you.", "if": {"not_flag": "rev_blamed"}, "do": [{"set_flag": "rev_blamed"}, {"stat": ["rashad", "trust", -1]}], "next": "blamed"},
+				{"label": "Ask what to do", "line": "Then tell me how we put it right.", "next": "objective"}
+			]
+		},
+		"guardian": {
+			"speaker": "rashad",
+			"line": "He was bound to the amulet when it was laid in the tomb. Now that it is gone, he follows it. He will kill anyone in his way, thief or child, it makes no difference to him.",
+			"next": "guardian_eleanor"
+		},
+		"guardian_eleanor": {
+			"branch": [
+				{"if": {"in_party": "eleanor", "flag": "clue_embalmers"}, "next": "eleanor_embalmers"},
+				{"next": "amulet_menu"}
+			]
+		},
+		"eleanor_embalmers": {
+			"speaker": "eleanor",
+			"line": "The embalmers' instructions... 'so that he may wake if they are ever moved'. They built him to wake. That's what we read down there.",
+			"next": "amulet_menu"
+		},
+		"attacks": {
+			"speaker": "bashir",
+			"line": "We warned you. Every expedition is warned. Those who hear the warning turn back. Those who do not... we stop them, before they do what was done tonight.",
+			"next": "amulet_menu"
+		},
+		"blamed": {
+			"speaker": "rashad",
+			"line": "Perhaps. We guarded it with rifles, because outsiders understand nothing else. But it was outsiders who opened the door, and it is the world that will pay for it.",
+			"next": "amulet_menu"
+		},
+		"amulet_menu": {
+			"speaker": "rashad",
+			"line": "Ask what you must. We do not have long.",
+			"choices": [
+				{"label": "Ask about the guardian", "line": "What is that thing, and what does it want?", "if": {"not_flag": "rev_asked_guardian"}, "do": [{"set_flag": "rev_asked_guardian"}], "next": "guardian"},
+				{"label": "Ask why they attacked", "line": "Why not just tell us? You shot at us all the way here.", "if": {"not_flag": "rev_asked_attacks"}, "do": [{"set_flag": "rev_asked_attacks"}], "next": "attacks"},
+				{"label": "Ask what to do", "line": "Then tell me how we put it right.", "next": "objective"}
+			]
+		},
+		"objective": {
+			"speaker": "rashad",
+			"line": "If the amulet is not returned to its cradle, the veil will open, slowly, and then all at once. The guardian will follow it to Cairo and beyond. Your expedition helped the thieves find it. Your expedition will help us bring it back.",
+			"choices": [
+				{"label": "Accept", "line": "Then we bring it back. Where are they taking it?", "do": [{"set_flag": ["new_objective", "recover_amulet"]}, {"stat": ["rashad", "trust", 1]}], "next": "accepted"},
+				{"label": "Accept, grudgingly", "line": "It doesn't sound like I have a choice.", "do": [{"set_flag": ["new_objective", "recover_amulet"]}], "next": "grudging"}
+			]
+		},
+		"accepted": {
+			"speaker": "rashad",
+			"line": "To Cairo, and then away across the sea if we are slow. Rest tonight. Tomorrow we ride.",
+			"next": "end"
+		},
+		"grudging": {
+			"speaker": "bashir",
+			"line": "You do not. But you will ride with us, and you will see.",
+			"next": "end"
+		},
+		"end": {"end": true}
+	}
+}

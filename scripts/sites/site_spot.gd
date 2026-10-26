@@ -18,6 +18,8 @@ extends Node3D
 ##      ...},
 ##    "draft": {...}}                                 see scripts/boards/site_draft.gd
 ## A site another expedition claimed in the draft (flag "claimed_<site>") can't be inspected.
+## An area with a "budget" block (Act 5 below ground) spends SiteBudget slots, not day actions;
+## see scripts/sites/site_budget.gd. Its ally's picks say so in the prompt.
 
 signal inspected(site_id: String)
 
@@ -82,9 +84,30 @@ func refusal() -> String:
 		return "%s claimed this site." % parties.get(who, {}).get("name", who.capitalize())
 	if not Game.check(site.get("if", {})):
 		return str(site.get("locked_text", "You can't make sense of it yet."))
+	if has_budget():
+		SiteBudget.begin(area, data)
+		return SiteBudget.refusal(area, data, site_id)
 	if Game.actions_left < int(site.get("cost", 1)):
 		return ActionSpot.NO_TIME
 	return ""
+
+
+func has_budget() -> bool:
+	return data.has("budget")
+
+
+## The E prompt: "Inspect <site>", with whose pick it is when an ally insists on it.
+func prompt() -> String:
+	var text := "Inspect " + str(site.get("name", site_id))
+	if has_budget() and SiteBudget.is_ally_site(area, site_id):
+		var who := str(Game.flag("ally", ""))
+		text += " (%s pick)" % {"americans": "the Americans'", "germans": "the Germans'"}.get(who, "your ally's")
+	return text
+
+
+func _process(_delta: float) -> void:
+	if interactable and Engine.get_process_frames() % 30 == 0:
+		interactable.prompt = prompt()
 
 
 func inspect(by: Node) -> bool:
@@ -92,7 +115,10 @@ func inspect(by: Node) -> bool:
 	if why != "":
 		Notice.say(get_parent(), why)
 		return false
-	Game.spend_action(int(site.get("cost", 1)))
+	if has_budget():
+		SiteBudget.spend(area, site_id)
+	else:
+		Game.spend_action(int(site.get("cost", 1)))
 	var c: Dictionary = site.get("clue", {})
 	Journal.add({"id": clue_id(), "place": str(data.get("place", "")), "site": str(site.get("name", site_id)),
 		"title": str(c.get("title", "")), "text": str(c.get("text", ""))})
@@ -102,6 +128,8 @@ func inspect(by: Node) -> bool:
 	inspected.emit(site_id)
 	var card := ClueCard.open(get_parent(), str(site.get("name", site_id)), c, by)
 	card.closed.connect(func() -> void:
-		if Game.actions_left <= 0:
+		if has_budget():
+			SiteBudget.after(area, data)  # the royal tomb's interruption fires here
+		elif Game.actions_left <= 0:
 			DaySummary.open(get_parent(), by))
 	return true

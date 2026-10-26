@@ -1,0 +1,51 @@
+{
+	"_help": "Act 5, Level 2: the nine points under the surface. Investigations come from the budget (SiteBudget: 3, plus the ally's 2 picks), not from day actions. Five discoveries set found_* flags that matter at the royal door and later.",
+	"place": "Akmentar, the second level",
+	"budget": {
+		"slots": 3,
+		"ally_slots": 2,
+		"ally_sites": {
+			"americans": ["treasury", "chariots", "scarab_shrine"],
+			"germans": ["erased_king", "builders", "wards", "embalmers"]
+		},
+		"no_time": "You've spent your time down here. The others are waiting at the royal door."
+	},
+	"sites": {
+		"weeping_stair": {"name": "The Weeping Stair", "desc": "A warning carved where the stair meets the royal door",
+			"do": [{"set_flag": "found_warning"}],
+			"clue": {"id": "clue_weeping_stair", "title": "A warning on the last step",
+				"text": "Water stains run down the stair from a line of text: 'He who forces the seal of the king shall find the roof of the house come down to be his shroud.' Above the royal door the ceiling stones hang on wedges, not mortar."}},
+		"opening_chapel": {"name": "Chapel of the Opening of the Way", "desc": "Priests at a door, in a ritual sequence",
+			"do": [{"set_flag": "found_ritual"}],
+			"clue": {"id": "clue_opening_chapel", "title": "How the priests opened the way",
+				"text": "Four priests stand before a sealed door, each pressing a symbol in turn: the jackal, the eye, the sun below the earth, the closed hand. A thread of sand runs out of the lintel when the last is pressed. Done in this order, the door needs no force at all."}},
+		"embalmers": {"name": "Embalmers' Antechamber", "desc": "Instructions left for those who prepared the burial",
+			"do": [{"set_flag": "found_funerary"}],
+			"clue": {"id": "clue_embalmers", "title": "Instructions for the one who sleeps",
+				"text": "The embalmers' instructions are not for preserving a king. They describe binding a guardian: the heart is not removed, the eyes are not closed, and four jars are to be sealed 'so that he may wake if they are ever moved'."}},
+		"erased_king": {"name": "Hall of the Erased King", "desc": "A history with one name chiselled out of every line",
+			"do": [{"set_flag": "found_history"}],
+			"clue": {"id": "clue_erased_king", "title": "The king nobody may name",
+				"text": "Every line of this history has one name chiselled away. What remains tells of a priest who took the throne, opened a door 'between the living and the hidden', and was stopped by his own servants, who swore to stand watch over the door forever."}},
+		"wards": {"name": "Gallery of Wards", "desc": "Protective symbols, all facing inward",
+			"do": [{"set_flag": "found_symbols"}],
+			"clue": {"id": "clue_wards", "title": "Wards that face the wrong way",
+				"text": "Hundreds of protective eyes line the gallery, and every one faces inward, toward the burial. These wards were never meant to keep robbers out. They were carved to keep something in, and to watch over what lies beside it."}},
+		"treasury": {"name": "Treasury of Offerings", "desc": "Chests of gold and faience, untouched",
+			"do": [{"set_flag": "found_treasury"}, {"item": ["gold_offerings", 1]}],
+			"clue": {"id": "clue_treasury", "title": "Gold left as a bribe",
+				"text": "The chests are full: gold collars, faience, perfume jars still sealed. Each chest is inscribed with the same plea, 'take this and go no further'. The builders left their treasure where thieves would find it first."}},
+		"chariots": {"name": "Hall of Chariots", "desc": "Gilded chariots, and one with its horses' bones",
+			"do": [{"set_flag": "found_chariots"}],
+			"clue": {"id": "clue_chariots", "title": "A chariot ready to leave",
+				"text": "Three gilded chariots stand in a row; the fourth still has its horses, buried in harness. Its wheels point at the royal door, as though someone meant to drive the king away in a hurry if he ever woke."}},
+		"scarab_shrine": {"name": "Shrine of the Scarab Mother", "desc": "A shrine to the scarabs, with soot on the walls",
+			"do": [{"set_flag": "found_scarab_lore"}],
+			"clue": {"id": "clue_scarab_shrine", "title": "Fire for the beetles",
+				"text": "The walls are black with soot round a carving of a great scarab with its brood. The offerings in front are not food but torches, dozens of burnt-out torches. Whoever served here knew the beetles fear fire."}},
+		"builders": {"name": "The Builders' Wall", "desc": "Workers' graffiti on a rough wall",
+			"do": [{"set_flag": "found_builders"}],
+			"clue": {"id": "clue_builders", "title": "The last day's work",
+				"text": "The workmen's marks are counted off in rows: so many blocks, so many days. The last line reads, in a careless hand: 'Today the door is sealed and we are sealed with it. May the watchers remember our names.' No one did."}}
+	}
+}

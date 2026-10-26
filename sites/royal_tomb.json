@@ -1,0 +1,35 @@
+{
+	"_help": "Act 5, the royal tomb: five points. 3 investigations (2 after the German delay), and the investigation is cut off after the 2nd (the 1st with german_delay): SiteBudget applies on_cut then (tomb_interrupted + Game.event royal_tomb_interrupted, for act5.gd to start the awakening).",
+	"place": "Akmentar, the royal tomb",
+	"budget": {
+		"slots": 3,
+		"slots_if": [{"if": {"flag": "german_delay"}, "slots": 2}],
+		"cut_after": 2,
+		"cut_after_if": [{"if": {"flag": "german_delay"}, "cut_after": 1}],
+		"on_cut": [{"set_flag": "tomb_interrupted"}, {"event": "royal_tomb_interrupted"}],
+		"no_time": "There's no time left.",
+		"cut_text": "Something has woken. There's no time for that now!"
+	},
+	"sites": {
+		"sarcophagus": {"name": "Sarcophagus and Dais", "desc": "A black stone sarcophagus on a raised dais",
+			"do": [{"set_flag": "tomb_sarcophagus"}],
+			"clue": {"id": "clue_sarcophagus", "title": "Chained, not buried",
+				"text": "The lid is carved with a figure whose wrists are bound with bronze bands, not crossed in rest. Bronze rings in the dais hold the sarcophagus down. Whoever lies here was not laid to sleep but locked in place, as a guard is posted."}},
+		"canopic": {"name": "Shrine of the Canopic Jars", "desc": "Four niches for the jars, each with its seal",
+			"do": [{"set_flag": "tomb_canopic"}],
+			"clue": {"id": "clue_canopic", "title": "If the jars are moved",
+				"text": "Four jars sit in four niches, each sealed with the closed hand. The shrine's door is inscribed: 'While the four rest here, he rests. Carry one away and he will follow it to the end of the world.'"}},
+		"amulet": {"name": "Cradle of the Amulet", "desc": "A small stone cradle with a gold eye in it",
+			"do": [{"set_flag": "tomb_amulet"}],
+			"clue": {"id": "clue_amulet", "title": "The eye that holds the veil",
+				"text": "In a stone cradle lies the Amulet of Altrazin, a gold eye with a lapis pupil. The cradle reads: 'Here the eye keeps the veil shut between the living and the hidden. Lift it, and the veil begins to open.'"}},
+		"treasure": {"name": "The Treasure Alcove", "desc": "Gold heaped in a side alcove",
+			"do": [{"set_flag": "tomb_treasure"}, {"item": ["royal_gold", 1]}],
+			"clue": {"id": "clue_treasure", "title": "A king's gold",
+				"text": "Gold masks, collars and a small gilded shrine fill the alcove. One gold collar is light enough to carry, and you take it. Behind the heap, a single line on the wall: 'This is what they came for. Let them take it and leave the rest.'"}},
+		"altar": {"name": "Altar of the Guardian Ritual", "desc": "An altar for a ritual that needs two",
+			"do": [{"set_flag": "tomb_altar"}],
+			"clue": {"id": "clue_altar", "title": "The binding needs two",
+				"text": "The altar shows the binding ceremony: two keepers, one at each end, chanting while the amulet is laid back in its cradle. Without two voices, says the text, the guardian cannot be put back to sleep."}}
+	}
+}

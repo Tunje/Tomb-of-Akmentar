@@ -42,5 +42,6 @@ func _init() -> void:
 func _process(delta: float) -> void:
 	_t += delta
 	_label.modulate.a = clampf((_seconds - _t) / 0.5, 0.0, 1.0)
+	_label.visible = Conversation.current == null  # never over a talk's subtitle
 	if _t >= _seconds:
 		queue_free()
