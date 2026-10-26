@@ -76,6 +76,7 @@ const ORDER := ["idle", "walk", "trot", "gallop"]
 ## Most a leg's top joint is dropped to keep the hoof down (m): the shoulder slides, the hip barely.
 const DROP_FRONT := 0.18
 const DROP_HIND := 0.14
+const HIP_SHARE := 0.6       # of a hind leg's swing taken at the hip (the rest at the stifle)
 
 var skeleton: Skeleton3D
 var stand_in := false
@@ -262,8 +263,10 @@ func _pose_leg(leg: String, swing: float, lift: float, idle_w: float, comp := 0.
 		_rot("leg_%s_cannon" % leg, -lift * 1.25, 0.0)   # the knee folds the cannon back
 		_rot("leg_%s_hoof" % leg, -lift * 0.7, 0.0)
 	else:
-		_rot("leg_%s_upper" % leg, from_rest + lift * 0.15, 0.0)
-		_rot("leg_%s_lower" % leg, -lift * 0.55 - rest_hoof * 0.15, 0.0)
+		# The thigh takes only part of the swing and the stifle the rest: the hoof sweeps the same
+		# arc, but the rump skin isn't dragged into a sheet when the leg reaches back (Simon's gallop).
+		_rot("leg_%s_upper" % leg, from_rest * HIP_SHARE + lift * 0.15, 0.0)
+		_rot("leg_%s_lower" % leg, from_rest * (1.0 - HIP_SHARE) - lift * 0.55 - rest_hoof * 0.15, 0.0)
 		_rot("leg_%s_cannon" % leg, lift * 1.0 + rest_hoof * 0.45, 0.0)   # the hock bends the other way
 		_rot("leg_%s_hoof" % leg, -lift * 0.6 - rest_hoof * 0.5, 0.0)
 

@@ -105,6 +105,26 @@ func _physics_process(delta: float) -> void:
 			print("RESULT boat t=%.0f player=%s boat=%s on_deck=%s" % [_t, p.global_position, b.global_position, RiverBoat.deck_under(get_tree(), p.global_position) != null])
 	elif args.get("scenario", "") == "truck":
 		_truck_check()
+	elif args.get("scenario", "") == "horse":
+		# Mount the first horse, gallop (W + sprint) from 1 s; a side camera rides along.
+		var p: Player = game.player
+		var h: Horse = get_tree().get_nodes_in_group("horses")[0]
+		if _t < 0.05:
+			p.global_position = h.global_position + h.global_basis.x * -1.2
+		if _t > 0.5 and _t - delta <= 0.5:
+			h.ride.use(p)
+		_press("move_forward", _t > 1.0)
+		_press("sprint", _t > 1.0 and args.get("gait", "gallop") == "gallop")
+		if _pose_cam == null and _t > 0.6:
+			_pose_cam = Camera3D.new()
+			_pose_cam.fov = 50.0
+			game.add_child(_pose_cam)
+			_pose_cam.current = true
+		if _pose_cam:
+			var c := h.global_position + Vector3.UP * 1.2
+			_pose_cam.look_at_from_position(c + h.global_basis * Vector3(6.5, 0.6, -1.0), c)
+		if fmod(_t, 1.0) < delta:
+			print("RESULT horse t=%.0f gait=%s speed=%.1f" % [_t, h.gait(), h.velocity.length()])
 	elif args.get("scenario", "") == "camp":
 		_camp_check()
 	elif args.get("scenario", "") == "crouch":
