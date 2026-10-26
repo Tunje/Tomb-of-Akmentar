@@ -121,6 +121,11 @@ func _ready() -> void:
 
 ## Night: a low blue moon, dark water and sky; lanterns along the boat.
 func _night() -> void:
+	night(level)
+
+
+## The river at night (static: tests/lighting_shots.gd shows it the same way).
+static func night(level: Level) -> void:
 	var sun: DirectionalLight3D = level.get("_sun")
 	var env: Environment = level.get("_env")
 	if sun:
@@ -140,6 +145,11 @@ func _night() -> void:
 
 
 func _lanterns() -> void:
+	lanterns(boat)
+
+
+## The lanterns along a boat (static: tests/lighting_shots.gd lights the deck the same way).
+static func lanterns(boat: Node3D) -> void:
 	for at in LANTERNS:
 		var l := OmniLight3D.new()
 		l.light_color = Color(1.0, 0.72, 0.4)

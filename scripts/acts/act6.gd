@@ -96,6 +96,11 @@ func _spawn_party() -> void:
 
 ## Level has a sun and sky but only AkmentarSurface / Cairo know night: dim any Level's.
 func _darken(f: float) -> void:
+	darken(level, f)
+
+
+## The night on any Level (static: tests/lighting_shots.gd shows the road the same way).
+static func darken(level: Level, f: float) -> void:
 	if level.has_method("set_night") and not level is Cairo:
 		level.call("set_night", f)
 		return

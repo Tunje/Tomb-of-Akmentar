@@ -794,6 +794,14 @@ func _pick_collapse_points() -> void:
 func _environment() -> void:
 	super._environment()
 	set_indoor(1.0)
+	# A warm fill between the torches: 12 m from a flame the floor and a mummy at 10 m were black
+	# (tests/lighting_shots.gd). Still dark, the torches still carry it.
+	_env.ambient_light_energy = TOMB_FILL
+	_env.ambient_light_color = Color(0.36, 0.28, 0.2)
+	_env.fog_light_color = Color(0.16, 0.11, 0.07)
+
+
+const TOMB_FILL := 0.75
 
 
 ## The royal door slides down into the floor (the act opens it).
