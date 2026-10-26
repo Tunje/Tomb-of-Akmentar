@@ -73,7 +73,7 @@ func _ready() -> void:
 func _to_office() -> void:
 	step = Step.OFFICE
 	var at: Vector3 = level.spots[OFFICE]
-	var umm := Npc.make(level, "umm_sayed", at + Vector3(1.2, 0, 0.6), "", Characters.glb("umm_sayed"))
+	var umm := Npc.make(level, "umm_sayed", level.near_spot(OFFICE, 1.4), "", Characters.glb("umm_sayed"))
 	_office = Interactable.make(level, at, "Freddie's office", "act1_office", 1.4)
 	_office.used.connect(func(_by): _talk("act1_office", umm, _after_office))
 	hud.toast("Find Freddie's office, by the club.", 4.0)
@@ -86,7 +86,7 @@ func _after_office(_end: String) -> void:
 		_office.queue_free()
 	step = Step.COLLECTORS
 	# Finch and his men catch you in the street outside.
-	var at: Vector3 = player.global_position + Vector3(0, 0, 4.0)
+	var at: Vector3 = level.open_point(level.near_spot(OFFICE, 0.0, 4.0))  # out in the street, not inside the club
 	var finch := Npc.make(level, "finch", at, "", Characters.glb("finch"))
 	finch.face_towards(player.global_position)
 	await get_tree().create_timer(1.0).timeout
@@ -104,8 +104,7 @@ func _after_collectors(end: String) -> void:
 ## Back at Freddie's: armed men after him (or after what he left). Talk, pay, or draw.
 func _armed_men() -> void:
 	step = Step.ARMED
-	var at: Vector3 = level.spots[OFFICE]
-	var boss := Npc.make(level, "armed_boss", at + Vector3(0, 0, 6.0), "", GunmanBody.BANDITS[0])
+	var boss := Npc.make(level, "armed_boss", level.open_point(level.near_spot(OFFICE, -1.5, 5.0)), "", GunmanBody.BANDITS[0])
 	boss.face_towards(player.global_position)
 	hud.toast("Back at Freddie's, three men with guns are waiting, and they think you know where he is.", 4.0)
 	await get_tree().create_timer(1.5).timeout
@@ -125,7 +124,7 @@ func _armed_men() -> void:
 func _to_cafe() -> void:
 	step = Step.OFFER
 	var at: Vector3 = level.spots[CAFE]
-	_karim = Npc.make(level, "karim", at + Vector3(-1.0, 0, 0.8), "", Characters.glb("karim"))
+	_karim = Npc.make(level, "karim", level.near_spot(CAFE, -1.4, 0.3), "", Characters.glb("karim"))
 	_cafe = Interactable.make(level, at, "Meet Karim Fahmy", "act1_cafe", 1.4)
 	_cafe.used.connect(func(_by): _talk("act1_offer", _karim, _after_offer))
 	hud.toast("A man called Karim Fahmy left word: he's waiting at the café by the tavern.", 4.0)
@@ -175,7 +174,7 @@ func _brawl() -> void:
 		b.skill = 0.45
 		b.max_hp = 70.0
 		add_child(b)
-		b.global_position = player.global_position + Vector3(cos(i * TAU / 3.0), 0.0, sin(i * TAU / 3.0)) * 3.0
+		b.global_position = level.open_point(player.global_position + Vector3(cos(i * TAU / 3.0), 0.0, sin(i * TAU / 3.0)) * 3.0)
 		brawlers.append(b)
 	hud.toast("Fists! Left mouse punch · right mouse block · F shove", 4.0)
 	if args.has("auto"):
@@ -196,7 +195,7 @@ func _brawl_over(lost: bool) -> void:
 	brawlers.clear()
 	if lost:
 		Game.set_flag("brawl_lost")
-	var musa := Npc.make(level, "musa", player.global_position + Vector3(1.5, 0, 1.0), "", Characters.glb("musa"))
+	var musa := Npc.make(level, "musa", level.open_point(player.global_position + Vector3(1.5, 0, 1.0)), "", Characters.glb("musa"))
 	await get_tree().create_timer(1.0).timeout
 	_talk("act1_after_brawl", musa, func(_e): _armed_men())
 
@@ -211,7 +210,7 @@ func _gunfight() -> void:
 		g.team = Gunman.BANDITS
 		g.glb = GunmanBody.BANDITS[i % GunmanBody.BANDITS.size()]
 		add_child(g)
-		g.global_position = player.global_position + Vector3(-5.0 + i * 5.0, 0, -10.0)
+		g.global_position = level.open_point(player.global_position + Vector3(-5.0 + i * 5.0, 0, -10.0))
 		g.target = player
 		men.append(g)
 	if args.has("auto"):

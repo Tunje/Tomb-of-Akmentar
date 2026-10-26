@@ -1224,3 +1224,37 @@ static func countdown_line() -> String:
 	var t := int(Game.countdowns.get("thieves", 0))
 	var m := int(Game.countdowns.get("mummy", 0))
 	return "The thieves leave in %d day%s. He reaches the city in %d day%s." % [t, "" if t == 1 else "s", m, "" if m == 1 else "s"]
+
+
+## A point by spot `id`'s door for an act to stand someone: `along` metres along the facade (+ =
+## to the right as you face the door from the street) and `out` metres further out into the
+## street than the spot itself. Spots with no facade (bazaar, labour, docks, road_gate) use +Z.
+func near_spot(id: String, along: float, out := 0.0) -> Vector3:
+	var s: Array = SPOTS[id]
+	var f: Vector2 = s[1]
+	var n := Vector3(f.x, 0, f.y) if f != Vector2.ZERO else Vector3(0, 0, 1)
+	var right := Vector3(n.z, 0, -n.x)  # facing the door (-n), +X of that view
+	return (s[0] as Vector3) + right * along + n * out
+
+
+## The nearest open ground to `want` where a person fits: for acts that put people round the
+## player or a door, so nobody stands inside a building. Rings outward, 1 m apart, up to 15 m.
+## (Not the navmesh: baked from collision triangles, it also has unreachable islands on the
+## ground inside every building.)
+func open_point(want: Vector3) -> Vector3:
+	var space := get_world_3d().direct_space_state
+	var q := PhysicsShapeQueryParameters3D.new()
+	var cap := CapsuleShape3D.new()
+	cap.radius = 0.35
+	cap.height = 1.7
+	q.shape = cap
+	q.collision_mask = 1
+	for r in 16:
+		var steps := 1 if r == 0 else 8 + r * 4
+		for k in steps:
+			var a := TAU * k / steps
+			var p := want + Vector3(cos(a), 0, sin(a)) * r
+			q.transform = Transform3D(Basis.IDENTITY, Vector3(p.x, 1.0, p.z))
+			if space.intersect_shape(q, 1).is_empty():
+				return Vector3(p.x, want.y, p.z)
+	return want
