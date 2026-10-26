@@ -1,0 +1,86 @@
+{
+	"_help": "Act 4, dawn after the attack. The surviving leader proposes working together below (they insist on two chambers of their own choosing). Accepting sets ally to americans / germans; refusing or nobody left sets ally to an empty string. Start it with the surviving leader's Npc (or Eleanor / any node when nobody survived).",
+	"speakers": {
+		"player": "You",
+		"whitfield": "Charlie Whitfield",
+		"adler": "Professor Adler",
+		"eleanor": "Eleanor Whitmore"
+	},
+	"start": "start",
+	"nodes": {
+		"start": {
+			"branch": [
+				{"if": {"flag": "americans_alive"}, "next": "americans_up"},
+				{"if": {"flag": "germans_alive"}, "next": "adler_offer"},
+				{"if": {"in_party": "eleanor"}, "next": "grim_eleanor"},
+				{"next": "grim_alone"}
+			]
+		},
+		"americans_up": {
+			"branch": [
+				{"if": {"flag": "germans_alive"}, "next": "both"},
+				{"next": "whitfield_offer"}
+			]
+		},
+		"whitfield_offer": {
+			"speaker": "whitfield",
+			"line": "I owe you my hide, and Charlie Whitfield pays his debts. Let's go below together: your people, my people, my equipment. One condition: when we get down there, I pick two of the chambers. Deal?",
+			"choices": [
+				{"label": "Shake on it", "line": "Deal. Two chambers are yours.", "do": [{"set_flag": ["ally", "americans"]}, {"set_flag": "ally_terms_two_sites"}, {"stat": ["whitfield", "trust", 1]}], "next": "whitfield_yes"},
+				{"label": "Turn him down", "line": "Thanks, Whitfield, but we'll go down on our own.", "do": [{"set_flag": ["ally", ""]}], "next": "whitfield_no"}
+			]
+		},
+		"whitfield_yes": {
+			"speaker": "whitfield",
+			"line": "Ha! Now we're cooking. I'll have Red split up the rifles.",
+			"next": "end_americans"
+		},
+		"whitfield_no": {
+			"speaker": "whitfield",
+			"line": "Suit yourself, pal. The offer stands if you change your mind.",
+			"next": "end_alone"
+		},
+		"adler_offer": {
+			"speaker": "adler",
+			"line": "Without you we would all be dead. I propose that we combine our resources for the next level: our records, your people. I must insist on two chambers for our own study, chosen on scholarly grounds.",
+			"choices": [
+				{"label": "Agree", "line": "Agreed, Professor. Two chambers, and we share what we find.", "do": [{"set_flag": ["ally", "germans"]}, {"set_flag": "ally_terms_two_sites"}, {"stat": ["adler", "trust", 1]}], "next": "adler_yes"},
+				{"label": "Decline", "line": "With respect, Professor, we'll work alone.", "do": [{"set_flag": ["ally", ""]}], "next": "adler_no"}
+			]
+		},
+		"adler_yes": {
+			"speaker": "adler",
+			"line": "Good. Wilhelm will bring you copies of everything we have recorded so far.",
+			"next": "end_germans"
+		},
+		"adler_no": {
+			"speaker": "adler",
+			"line": "As you wish. I hope you will not regret it.",
+			"next": "end_alone"
+		},
+		"both": {
+			"speaker": "player",
+			"line": "Both camps are still standing. Whitfield and Adler each want to join us below, and neither will work with the other.",
+			"choices": [
+				{"label": "Join the Americans", "line": "Whitfield's offer. His equipment, his two chambers.", "do": [{"set_flag": ["ally", "americans"]}, {"set_flag": "ally_terms_two_sites"}], "next": "end_americans"},
+				{"label": "Join the Germans", "line": "Adler's offer. His records, his two chambers.", "do": [{"set_flag": ["ally", "germans"]}, {"set_flag": "ally_terms_two_sites"}], "next": "end_germans"},
+				{"label": "Go alone", "line": "Neither. We go down by ourselves.", "do": [{"set_flag": ["ally", ""]}], "next": "end_alone"}
+			]
+		},
+		"grim_eleanor": {
+			"speaker": "eleanor",
+			"line": "There's nobody left at either camp. Nobody to bury them but us.",
+			"do": [{"set_flag": ["ally", ""]}],
+			"next": "end_alone"
+		},
+		"grim_alone": {
+			"speaker": "player",
+			"line": "Both camps are silent. Whatever's below, we face it alone now.",
+			"do": [{"set_flag": ["ally", ""]}],
+			"next": "end_alone"
+		},
+		"end_americans": {"end": true},
+		"end_germans": {"end": true},
+		"end_alone": {"end": true}
+	}
+}

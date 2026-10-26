@@ -1,0 +1,96 @@
+{
+	"_help": "Act 4, day 1: Professor Friedrich Adler at the German camp. Standing with him is the stat [adler, trust]. A hint about one of the sites his expedition claimed sets hint_<site> only (no clue).",
+	"speakers": {
+		"player": "You",
+		"adler": "Professor Adler"
+	},
+	"start": "greet",
+	"nodes": {
+		"greet": {
+			"branch": [
+				{"if": {"flag": "met_adler"}, "next": "again"},
+				{"next": "first"}
+			]
+		},
+		"first": {
+			"speaker": "adler",
+			"line": "Professor Friedrich Adler, of Berlin. You must be the gentleman who raced us across the desert. I hope you will be as careful here as you were quick getting here.",
+			"do": [{"set_flag": "met_adler"}],
+			"next": "menu"
+		},
+		"again": {
+			"speaker": "adler",
+			"line": "Good day. Please mind the trench; Wilhelm has only just finished drawing it.",
+			"next": "menu"
+		},
+		"menu": {
+			"speaker": "adler",
+			"line": "How may I help you?",
+			"choices": [
+				{"label": "Offer to compare notes", "line": "We're all reading the same walls, Professor. Why not compare what we find?", "if": {"not_flag": "adler_talked"}, "do": [{"stat": ["adler", "trust", 1]}, {"set_flag": "adler_talked"}], "next": "pleased"},
+				{"label": "Ask about treasure", "line": "Found any gold yet?", "if": {"not_flag": "adler_talked"}, "do": [{"stat": ["adler", "trust", -1]}, {"set_flag": "adler_talked"}], "next": "stung"},
+				{"label": "Ask about Krüger", "line": "Your young man with the notebook never seems to stop writing.", "next": "kruger"},
+				{"label": "Leave", "line": "I'll let you get back to work.", "next": "bye"}
+			]
+		},
+		"pleased": {
+			"speaker": "adler",
+			"line": "A sensible proposal. Evidence shared is evidence tested. Very well, one observation of ours...",
+			"next": "hint"
+		},
+		"hint": {
+			"branch": [
+				{"if": {"flag": "claimed_horus_germans"}, "next": "hint_horus"},
+				{"if": {"flag": "claimed_hieroglyphs_germans"}, "next": "hint_hieroglyphs"},
+				{"if": {"flag": "claimed_obelisk_germans"}, "next": "hint_obelisk"},
+				{"if": {"flag": "claimed_astronomer_germans"}, "next": "hint_astronomer"},
+				{"next": "hint_none"}
+			]
+		},
+		"hint_horus": {
+			"speaker": "adler",
+			"line": "The throne beneath the Horus statue was carved for two rulers. One of the names has been removed with a violence I have rarely seen in stone.",
+			"do": [{"set_flag": "hint_horus"}],
+			"next": "menu"
+		},
+		"hint_hieroglyphs": {
+			"speaker": "adler",
+			"line": "The long wall of inscriptions has been plastered over and carved again. Where the plaster has fallen, there is an older text beneath.",
+			"do": [{"set_flag": "hint_hieroglyphs"}],
+			"next": "menu"
+		},
+		"hint_obelisk": {
+			"speaker": "adler",
+			"line": "The broken obelisk counts a king's years and then simply stops counting. No death is recorded. I find that more troubling than any curse.",
+			"do": [{"set_flag": "hint_obelisk"}],
+			"next": "menu"
+		},
+		"hint_astronomer": {
+			"speaker": "adler",
+			"line": "The markings on the platform follow a single star. If Wilhelm's arithmetic is right, it returns this very season.",
+			"do": [{"set_flag": "hint_astronomer"}],
+			"next": "menu"
+		},
+		"hint_none": {
+			"speaker": "adler",
+			"line": "But we have not yet finished our recording. I will not speak before the evidence is complete.",
+			"next": "menu"
+		},
+		"stung": {
+			"speaker": "adler",
+			"line": "This is not a vault, sir. Every object you pull from the sand without recording it is a sentence torn out of history. Please remember that.",
+			"next": "menu"
+		},
+		"kruger": {
+			"speaker": "adler",
+			"line": "Wilhelm Krüger, my epigrapher. Gifted, and impatient. He believes every inscription is speaking to him personally.",
+			"next": "menu"
+		},
+		"bye": {
+			"speaker": "adler",
+			"line": "Good day.",
+			"next": "end"
+		},
+		"end": {"end": true}
+	}
+}

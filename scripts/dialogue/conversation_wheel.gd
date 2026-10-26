@@ -177,7 +177,9 @@ func _process(_delta: float) -> void:
 
 func _center() -> Vector2:
 	var s := _root.size
-	return Vector2(s.x * 0.5, s.y * 0.66)
+	# Lower middle, but always clear of the subtitle (a long line wraps to three rows).
+	var clear := _speaker.position.y - OUTER_R - 34.0 if _speaker.text != "" else s.y
+	return Vector2(s.x * 0.5, minf(s.y * 0.66, clear))
 
 
 func _dir(deg: float) -> Vector2:

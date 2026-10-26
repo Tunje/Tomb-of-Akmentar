@@ -1,5 +1,14 @@
 {
 	"_help": "Display names for people, by id (used in day summaries and grey reasons).",
 	"eleanor": "Eleanor Whitmore",
-	"archivist": "Professor El-Gohary"
+	"archivist": "Professor El-Gohary",
+	"_act4": "Act 4: the rival expeditions (their leaders' standing is the stat [whitfield|adler, trust]).",
+	"whitfield": "Charlie Whitfield",
+	"maggie": "Maggie Sullivan",
+	"callahan": "Red Callahan",
+	"americans": "The Americans",
+	"adler": "Professor Adler",
+	"kruger": "Wilhelm Krüger",
+	"vogel": "Ernst Vogel",
+	"germans": "The Germans"
 }

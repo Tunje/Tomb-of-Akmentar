@@ -1,0 +1,79 @@
+{
+	"_help": "Act 4, the night attack. Eleanor speaks if she's in the party, else you decide alone. With recognized_bandits you name them as the men from before. Sets night_choice to barricade / americans / germans; the end node id says the same (end_barricade, end_americans, end_germans).",
+	"speakers": {
+		"player": "You",
+		"eleanor": "Eleanor Whitmore"
+	},
+	"start": "start",
+	"nodes": {
+		"start": {
+			"branch": [
+				{"if": {"in_party": "eleanor"}, "next": "eleanor_alarm"},
+				{"next": "alone_alarm"}
+			]
+		},
+		"eleanor_alarm": {
+			"speaker": "eleanor",
+			"line": "Gunfire! They're at every camp at once. The Americans, the Germans... There are dozens of them out there!",
+			"next": "recognise"
+		},
+		"alone_alarm": {
+			"speaker": "player",
+			"line": "Gunfire, from every side of the ruins at once. Dozens of them.",
+			"next": "recognise"
+		},
+		"recognise": {
+			"branch": [
+				{"if": {"flag": "recognized_bandits"}, "next": "same_men"},
+				{"next": "decide"}
+			]
+		},
+		"same_men": {
+			"speaker": "player",
+			"line": "Those are the same men from before. The town, the boat... They've been following us all the way here.",
+			"next": "decide"
+		},
+		"decide": {
+			"branch": [
+				{"if": {"in_party": "eleanor"}, "next": "eleanor_asks"},
+				{"next": "alone_decide"}
+			]
+		},
+		"eleanor_asks": {
+			"speaker": "eleanor",
+			"line": "What do we do?",
+			"choices": [
+				{"label": "Barricade the camp", "line": "Everyone behind the wall. We hold here and let the others fight their own battles.", "do": [{"set_flag": ["night_choice", "barricade"]}], "next": "eleanor_barricade"},
+				{"label": "Help the Americans", "line": "Whitfield's camp is closest. Grab your rifles, we're going over there!", "do": [{"set_flag": ["night_choice", "americans"]}], "next": "eleanor_americans"},
+				{"label": "Help the Germans", "line": "Adler's people won't last without help. With me, to the German camp!", "do": [{"set_flag": ["night_choice", "germans"]}], "next": "eleanor_germans"}
+			]
+		},
+		"eleanor_barricade": {
+			"speaker": "eleanor",
+			"line": "They'll be slaughtered out there... No. You're right. Keep your heads down, everyone!",
+			"next": "end_barricade"
+		},
+		"eleanor_americans": {
+			"speaker": "eleanor",
+			"line": "Then go! I'll be right behind you.",
+			"next": "end_americans"
+		},
+		"eleanor_germans": {
+			"speaker": "eleanor",
+			"line": "The Professor's papers... and his people. Go, quickly!",
+			"next": "end_germans"
+		},
+		"alone_decide": {
+			"speaker": "player",
+			"line": "No time to think it over.",
+			"choices": [
+				{"label": "Barricade the camp", "line": "Hold here. Let the others look after themselves.", "do": [{"set_flag": ["night_choice", "barricade"]}], "next": "end_barricade"},
+				{"label": "Help the Americans", "line": "Whitfield's camp. Go!", "do": [{"set_flag": ["night_choice", "americans"]}], "next": "end_americans"},
+				{"label": "Help the Germans", "line": "The German camp. Go!", "do": [{"set_flag": ["night_choice", "germans"]}], "next": "end_germans"}
+			]
+		},
+		"end_barricade": {"end": true},
+		"end_americans": {"end": true},
+		"end_germans": {"end": true}
+	}
+}
