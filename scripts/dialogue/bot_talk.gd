@@ -18,6 +18,8 @@ static func run(parent: Node, id: String, player: Node3D, with: Node3D, avoid: A
 	c.finished.connect(func(e: String) -> void: out[0] = e if e != "" else "<none>")
 	c.start(id, player, with if with else player)
 	var tree := parent.get_tree()
+	var taken := {}  # node/label already picked: menus that loop back (camp talks) get walked once
+	var picks := 0
 	while out[0] == "" and is_instance_valid(c):
 		await tree.process_frame
 		if not is_instance_valid(c):
@@ -25,10 +27,23 @@ static func run(parent: Node, id: String, player: Node3D, with: Node3D, avoid: A
 		if c.state == Conversation.State.LINE or c.state == Conversation.State.PLAYER_LINE:
 			c.wheel.advance.emit()
 		elif c.state == Conversation.State.CHOICES:
-			var pick := 0
+			# A choice not taken yet in this talk; once all are, the last (the data's exit: "Turn in",
+			# "Go on", "Leave"). From -f9: first-choice picking looped forever in grouped camp menus.
+			var pick := -1
+			var allowed: Array[int] = []
 			for k in c.visible_choices.size():
 				if not str(c.visible_choices[k].label) in avoid:
+					allowed.append(k)
+			for k in allowed:
+				var key := "%s/%s" % [c.node_id, c.visible_choices[k].label]
+				if not taken.has(key):
+					taken[key] = true
 					pick = k
 					break
+			if pick < 0:
+				pick = allowed[-1] if not allowed.is_empty() else c.visible_choices.size() - 1
+			picks += 1
+			if picks > 200:
+				pick = c.visible_choices.size() - 1  # never loop forever
 			c.choose(pick)
 	return "" if out[0] == "<none>" else out[0]
