@@ -44,6 +44,7 @@ func _ready() -> void:
 	hud = Hud.new()
 	hud.player = player
 	add_child(hud)
+	add_child(CountdownBars.new())
 	player.hit_confirmed.connect(hud.on_hit)
 	player.damaged.connect(hud.on_damaged)
 	player.died.connect(_on_player_died)
@@ -68,6 +69,16 @@ func _ready() -> void:
 	Npc.make(level, "eleanor", camp + Vector3(-1.5, 0.0, -3.0), "eleanor_meet", NpcBody.SCOUT)
 	ActionSpot.make(level, "cairo_corner", level.player_spawn + Vector3(-3.0, 0.0, -6.0))
 	ActionSpot.make(level, "camp", camp + Vector3(1.2, 0.0, -1.6))
+	# Investigation (step 11): three statues near the tomb doorway, and a sealed slab that only
+	# opens once the Statue of Anubis has been read. Stand-in pillars until real statues exist.
+	var door_z: float = level.player_spawn.z - 12.0
+	for s in [["anubis", Vector3(32.0, 0.0, door_z)], ["horus", Vector3(48.0, 0.0, door_z)], ["ra", Vector3(26.0, 0.0, door_z + 6.0)]]:
+		level._box(level._nav, s[1] + Vector3.UP * 1.2, Vector3(0.9, 2.4, 0.9), level._stone)
+		SiteSpot.make(level, "akmentar_surface", s[0], s[1] + Vector3(0.0, 0.0, 1.0))
+	ClueDoor.make(level._nav, "anubis_door", Vector3(54.0, 1.25, door_z + 6.0), Vector3(2.4, 2.5, 0.5), "clue_anubis",
+		"The slab won't move. Something carved on it matches a statue nearby.", "Pressed in the right order, the slab sinks into the sand.")
+	# Props added above are inside the level's nav region: rebake so paths go round them.
+	level._nav.bake_navigation_mesh(false)
 	# A truck by the camp (Proving Ground step 9).
 	truck = Truck.new()
 	add_child(truck)
@@ -109,7 +120,7 @@ func _sleep_at(spot: String) -> void:
 func _continue() -> void:
 	if not Game.load_game():
 		return
-	DayLog.begin_day()
+	DayLog.ensure()  # the log is saved; begin_day would wipe it
 	var spot: Node3D = level.interactables.get(Game.place)
 	if spot:
 		player.global_position = spot.global_position + Vector3(0, 0, 1.5)
@@ -153,13 +164,22 @@ func _unhandled_input(event: InputEvent) -> void:
 			if not ActionMenu.ui_open():  # talking, menus and the day screen keep the mouse
 				Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 			hud.show_message("")
-	elif event.is_action_pressed("ui_cancel") and started and not over:
+	elif event.is_action_pressed("journal") and started and not over:
+		JournalScreen.toggle(self, player)
+	elif event.is_action_pressed("ui_cancel") and started and not over and not ActionMenu.ui_open():
 		get_tree().paused = true
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		hud.show_message("PAUSED", "Click to resume · Q to quit")
 	elif event is InputEventKey and event.pressed:
 		if event.keycode == KEY_Q and (get_tree().paused or not started or over):
 			get_tree().quit()
+		# Proving Ground: try the board screens (route map, site draft, epilogue).
+		elif event.keycode == KEY_F2 and started and not over:
+			RouteBoard.open(self, "act3_route", player)
+		elif event.keycode == KEY_F3 and started and not over:
+			SiteDraft.open(self, "akmentar_surface", player)
+		elif event.keycode == KEY_F4 and started and not over:
+			EpilogueShow.open(self, "akmentar", player)
 		elif event.keycode == KEY_C and not started and Game.has_save():
 			_continue()
 		elif event.keycode == KEY_ENTER and over:
@@ -284,7 +304,7 @@ func _setup_input() -> void:
 	var keys := {
 		"move_forward": [KEY_W], "move_back": [KEY_S], "move_left": [KEY_A], "move_right": [KEY_D],
 		"sprint": [KEY_SHIFT], "crouch": [KEY_C, KEY_CTRL], "dodge": [KEY_SPACE],
-		"reload": [KEY_R], "cover": [KEY_E], "holster": [KEY_X], "weapon_1": [KEY_1], "weapon_2": [KEY_2], "weapon_3": [KEY_3],
+		"reload": [KEY_R], "cover": [KEY_E], "holster": [KEY_X], "journal": [KEY_J], "weapon_1": [KEY_1], "weapon_2": [KEY_2], "weapon_3": [KEY_3],
 	}
 	var mouse := {
 		"fire": [MOUSE_BUTTON_LEFT], "aim": [MOUSE_BUTTON_RIGHT],
