@@ -88,7 +88,7 @@ func _process(delta: float) -> void:
 		_gun.text = w.display_name + ("   reloading" if player.is_reloading() else "")
 	_count.text = "Mummies: %d" % remaining if remaining > 0 else ""
 	# Only through the player's own eyes (not a test's overview or chase camera).
-	_prompt.text = player.cover_prompt() if player and player.camera and player.camera.current else ""
+	_prompt.text = player.cover_prompt() if player and player.camera and player.camera.current and _title.text == "" else ""
 	_info.text = "Day %d   Actions %s   £%d" % [Game.day, "●".repeat(Game.actions_left) + "○".repeat(maxi(Game.ACTIONS_PER_DAY - Game.actions_left, 0)), Game.money]
 	_toast_t = maxf(_toast_t - delta, 0.0)
 	_toast.modulate.a = clampf(_toast_t, 0.0, 1.0)
@@ -101,9 +101,15 @@ func _draw_overlay() -> void:
 	var c := size * 0.5
 	if _hurt > 0.0:
 		_canvas.draw_rect(Rect2(Vector2.ZERO, size), Color(0.5, 0.0, 0.0, _hurt * 0.35))
+	# A title card gets a dark band behind it: cream text on bright sand or sky was hard to read.
+	var card := _title.text != ""
+	if card:
+		var top := _title.position.y - 24.0
+		var bottom := _sub.position.y + 36.0 + 30.0 * maxi(_sub.get_line_count(), 1)
+		_canvas.draw_rect(Rect2(0, top, size.x, bottom - top), Color(0.05, 0.04, 0.03, 0.5))
 	if not player:
 		return
-	if player.alive and player.controls_enabled and player.armed:
+	if player.alive and player.controls_enabled and player.armed and not card:
 		# Gap shows the real cone the next bullet can land in.
 		var half_fov := deg_to_rad(player.camera.fov * 0.5)
 		var gap := tan(deg_to_rad(player.current_spread())) / tan(half_fov) * size.y * 0.5
