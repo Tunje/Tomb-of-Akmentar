@@ -8,11 +8,21 @@ extends Node3D
 ##   --shot-dir=C:/path   where PNGs go (default user://boat_shots)
 ## Never takes focus or captures the mouse (Simon plays while we test).
 
+## Boat-local places, from RiverBoat's own sizes (the 36 m boat; they move with it if it changes).
+const HZ := RiverBoat.LENGTH * 0.5
+const CABIN_FORE := RiverBoat.CABIN_Z - RiverBoat.CABIN_L * 0.5
+const CABIN_AFT := RiverBoat.CABIN_Z + RiverBoat.CABIN_L * 0.5
+## Down the starboard passage: between the cabin wall and the crates against the rail.
+const LANE := RiverBoat.BEAM * 0.5 - RiverBoat.PASSAGE + 0.65
+const BELL_STAND := Vector3(0.3, 0, -HZ + 4.6)   # 1.6 m aft of the bell, facing the bow
 const ROUTE := [   # boat-local waypoints, bow to stern down the starboard passage
-	Vector3(1.4, 0, -7.0), Vector3(2.4, 0, -5.3), Vector3(2.4, 0, 5.6), Vector3(1.2, 0, 6.9),
-	Vector3(1.2, 0, 8.8), Vector3(3.95, 0, 8.75),  # behind the aft passage crate (against the rail)
+	Vector3(1.2, 0, -HZ + 6.0), Vector3(2.0, 0, CABIN_FORE - 2.0), Vector3(LANE, 0, CABIN_FORE - 0.6),
+	Vector3(LANE, 0, 6.6), Vector3(LANE, 0, CABIN_AFT + 0.8), Vector3(3.95, 0, 12.0), Vector3(3.95, 0, 14.15),
+	Vector3(2.8, 0, 14.15),  # 0.65 m behind the afterdeck crate (2.8, 13.0; 1.2 m across: the passage crates are
+	                         # 0.8 m, under Cover.MIN_EDGE_LENGTH, so they give no cover)
 ]
-const TO_BOW := [Vector3(2.4, 0, -2.5), Vector3(2.4, 0, -5.3), Vector3(1.4, 0, -7.0), Vector3(0.3, 0, -9.2)]
+const TO_BOW := [Vector3(LANE, 0, RiverBoat.PLANK_Z), Vector3(LANE, 0, CABIN_FORE - 0.6), Vector3(2.0, 0, CABIN_FORE - 2.0),
+	Vector3(1.2, 0, -HZ + 6.0), BELL_STAND]
 
 var player: Player
 var boat: RiverBoat
@@ -205,7 +215,7 @@ func _run() -> void:
 	var t0 := Time.get_ticks_msec()
 	var ok := await _walk(ROUTE, 30.0)
 	_check(ok, "walked bow to stern in %.1f s at %.1f m/s boat speed" % [(Time.get_ticks_msec() - t0) / 1000.0, boat.speed])
-	# Into cover behind the stern crate, facing the bow.
+	# Into cover behind the afterdeck crate, facing the bow.
 	player.yaw = _boat_yaw()
 	await _wait(0.2)
 	print("RESULT before cover: local %s, yaw vs boat %.1f deg" % [boat.to_local(player.global_position).snapped(Vector3.ONE * 0.01), rad_to_deg(angle_difference(player.yaw, _boat_yaw()))])
@@ -226,8 +236,10 @@ func _run() -> void:
 
 	# Ballistics on the moving deck: a round down the deck (bow-ward, along the motion) and one
 	# across it; where they land against where they were aimed, in the deck's frame.
-	await _shoot_check("down the deck", boat.to_global(Vector3(2.4, RiverBoat.DECK_Y + 1.5, 8.6)), Vector3(2.4, RiverBoat.DECK_Y + 0.5, -6.45))
-	await _shoot_check("across the deck", boat.to_global(Vector3(2.5, RiverBoat.DECK_Y + 1.6, 9.8)), Vector3(-RiverBoat.BEAM * 0.5 + 0.08, RiverBoat.DECK_Y + 0.5, 9.8))
+	# (down the deck: at the starboard passage crate's aft face; across: behind the cabin, at the port rail)
+	await _shoot_check("down the deck", boat.to_global(Vector3(LANE, RiverBoat.DECK_Y + 1.5, 6.0)), Vector3(3.75, RiverBoat.DECK_Y + 0.5, -5.55))
+	var aft := RiverBoat.CABIN_Z + RiverBoat.CABIN_L * 0.5 + 1.0
+	await _shoot_check("across the deck", boat.to_global(Vector3(2.5, RiverBoat.DECK_Y + 1.6, aft)), Vector3(-RiverBoat.BEAM * 0.5 + 0.08, RiverBoat.DECK_Y + 0.5, aft))
 
 	# Two bandits on the bow.
 	for i in 2:
@@ -235,7 +247,7 @@ func _run() -> void:
 		g.glb = GunmanBody.BANDITS[i]
 		g.name = ["Raider", "Brute"][i]
 		add_child(g)
-		g.global_position = boat.to_global([Vector3(2.4, 1.3, -9.7), Vector3(-0.4, 1.3, -9.8)][i])
+		g.global_position = boat.to_global([Vector3(2.0, 1.3, -HZ + 6.5), Vector3(-0.6, 1.3, -HZ + 7.0)][i])  # on the foredeck
 		g.target = player
 		boat.watch(g)
 		gunmen.append(g)
@@ -460,6 +472,8 @@ func _check(ok: bool, what: String) -> void:
 
 
 func _shot(file: String) -> void:
+	if DisplayServer.get_name() == "headless":
+		return  # nothing is drawn headless: frame_post_draw never comes
 	await RenderingServer.frame_post_draw
 	var path_png := _dir.path_join(file)
 	get_viewport().get_texture().get_image().save_png(path_png)
