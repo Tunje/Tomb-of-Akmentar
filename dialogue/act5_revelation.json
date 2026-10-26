@@ -10,14 +10,29 @@
 	"nodes": {
 		"start": {
 			"branch": [
-				{"if": {"flag": "recognized_bandits"}, "next": "bashir_knows"},
-				{"next": "bashir_new"}
+				{
+					"if": {
+						"flag": "recognized_bandits"
+					},
+					"next": "bashir_knows"
+				},
+				{
+					"next": "bashir_new"
+				}
 			]
 		},
 		"bashir_knows": {
-			"speaker": "bashir",
-			"line": "You. I know your face. The town, the river... You killed good men of mine, and still you would not turn back.",
-			"next": "rashad_open"
+			"branch": [
+				{
+					"if": {
+						"flag": "rode_with_americans"
+					},
+					"next": "bashir_river"
+				},
+				{
+					"next": "bashir_road"
+				}
+			]
 		},
 		"bashir_new": {
 			"speaker": "bashir",
@@ -31,10 +46,27 @@
 		},
 		"thief": {
 			"branch": [
-				{"if": {"flag": "thieves_americans"}, "next": "thief_americans"},
-				{"if": {"flag": "thieves_germans"}, "next": "thief_germans"},
-				{"if": {"flag": "thieves_italians"}, "next": "thief_italians"},
-				{"next": "thief_unknown"}
+				{
+					"if": {
+						"flag": "thieves_americans"
+					},
+					"next": "thief_americans"
+				},
+				{
+					"if": {
+						"flag": "thieves_germans"
+					},
+					"next": "thief_germans"
+				},
+				{
+					"if": {
+						"flag": "thieves_italians"
+					},
+					"next": "thief_italians"
+				},
+				{
+					"next": "thief_unknown"
+				}
 			]
 		},
 		"thief_americans": {
@@ -61,10 +93,57 @@
 			"speaker": "rashad",
 			"line": "The Amulet of Altrazin is no jewel. It keeps the veil closed, the wall between the living and the dead. The one you woke is not a king. He is its guardian.",
 			"choices": [
-				{"label": "Ask about the guardian", "line": "Then what is that thing, and what does it want?", "if": {"not_flag": "rev_asked_guardian"}, "do": [{"set_flag": "rev_asked_guardian"}], "next": "guardian"},
-				{"label": "Ask why they attacked", "line": "Why didn't you just tell us? You shot at us all the way here.", "if": {"not_flag": "rev_asked_attacks"}, "do": [{"set_flag": "rev_asked_attacks"}], "next": "attacks"},
-				{"label": "Blame them", "line": "If you'd guarded it properly, none of this would have happened. This is on you.", "if": {"not_flag": "rev_blamed"}, "do": [{"set_flag": "rev_blamed"}, {"stat": ["rashad", "trust", -1]}], "next": "blamed"},
-				{"label": "Ask what to do", "line": "Then tell me how we put it right.", "next": "objective"}
+				{
+					"label": "Ask about the guardian",
+					"line": "Then what is that thing, and what does it want?",
+					"if": {
+						"not_flag": "rev_asked_guardian"
+					},
+					"do": [
+						{
+							"set_flag": "rev_asked_guardian"
+						}
+					],
+					"next": "guardian"
+				},
+				{
+					"label": "Ask why they attacked",
+					"line": "Why didn't you just tell us? You shot at us all the way here.",
+					"if": {
+						"not_flag": "rev_asked_attacks"
+					},
+					"do": [
+						{
+							"set_flag": "rev_asked_attacks"
+						}
+					],
+					"next": "attacks"
+				},
+				{
+					"label": "Blame them",
+					"line": "If you'd guarded it properly, none of this would have happened. This is on you.",
+					"if": {
+						"not_flag": "rev_blamed"
+					},
+					"do": [
+						{
+							"set_flag": "rev_blamed"
+						},
+						{
+							"stat": [
+								"rashad",
+								"trust",
+								-1
+							]
+						}
+					],
+					"next": "blamed"
+				},
+				{
+					"label": "Ask what to do",
+					"line": "Then tell me how we put it right.",
+					"next": "objective"
+				}
 			]
 		},
 		"guardian": {
@@ -74,8 +153,16 @@
 		},
 		"guardian_eleanor": {
 			"branch": [
-				{"if": {"in_party": "eleanor", "flag": "clue_embalmers"}, "next": "eleanor_embalmers"},
-				{"next": "amulet_menu"}
+				{
+					"if": {
+						"in_party": "eleanor",
+						"flag": "clue_embalmers"
+					},
+					"next": "eleanor_embalmers"
+				},
+				{
+					"next": "amulet_menu"
+				}
 			]
 		},
 		"eleanor_embalmers": {
@@ -97,17 +184,76 @@
 			"speaker": "rashad",
 			"line": "Ask what you must. We do not have long.",
 			"choices": [
-				{"label": "Ask about the guardian", "line": "What is that thing, and what does it want?", "if": {"not_flag": "rev_asked_guardian"}, "do": [{"set_flag": "rev_asked_guardian"}], "next": "guardian"},
-				{"label": "Ask why they attacked", "line": "Why not just tell us? You shot at us all the way here.", "if": {"not_flag": "rev_asked_attacks"}, "do": [{"set_flag": "rev_asked_attacks"}], "next": "attacks"},
-				{"label": "Ask what to do", "line": "Then tell me how we put it right.", "next": "objective"}
+				{
+					"label": "Ask about the guardian",
+					"line": "What is that thing, and what does it want?",
+					"if": {
+						"not_flag": "rev_asked_guardian"
+					},
+					"do": [
+						{
+							"set_flag": "rev_asked_guardian"
+						}
+					],
+					"next": "guardian"
+				},
+				{
+					"label": "Ask why they attacked",
+					"line": "Why not just tell us? You shot at us all the way here.",
+					"if": {
+						"not_flag": "rev_asked_attacks"
+					},
+					"do": [
+						{
+							"set_flag": "rev_asked_attacks"
+						}
+					],
+					"next": "attacks"
+				},
+				{
+					"label": "Ask what to do",
+					"line": "Then tell me how we put it right.",
+					"next": "objective"
+				}
 			]
 		},
 		"objective": {
 			"speaker": "rashad",
 			"line": "If the amulet is not returned to its cradle, the veil will open, slowly, and then all at once. The guardian will follow it to Cairo and beyond. Your expedition helped the thieves find it. Your expedition will help us bring it back.",
 			"choices": [
-				{"label": "Accept", "line": "Then we bring it back. Where are they taking it?", "do": [{"set_flag": ["new_objective", "recover_amulet"]}, {"stat": ["rashad", "trust", 1]}], "next": "accepted"},
-				{"label": "Accept, grudgingly", "line": "It doesn't sound like I have a choice.", "do": [{"set_flag": ["new_objective", "recover_amulet"]}], "next": "grudging"}
+				{
+					"label": "Accept",
+					"line": "Then we bring it back. Where are they taking it?",
+					"do": [
+						{
+							"set_flag": [
+								"new_objective",
+								"recover_amulet"
+							]
+						},
+						{
+							"stat": [
+								"rashad",
+								"trust",
+								1
+							]
+						}
+					],
+					"next": "accepted"
+				},
+				{
+					"label": "Accept, grudgingly",
+					"line": "It doesn't sound like I have a choice.",
+					"do": [
+						{
+							"set_flag": [
+								"new_objective",
+								"recover_amulet"
+							]
+						}
+					],
+					"next": "grudging"
+				}
 			]
 		},
 		"accepted": {
@@ -120,6 +266,18 @@
 			"line": "You do not. But you will ride with us, and you will see.",
 			"next": "end"
 		},
-		"end": {"end": true}
+		"end": {
+			"end": true
+		},
+		"bashir_river": {
+			"speaker": "bashir",
+			"line": "You. I know your face. On the river you killed good men of mine, and still you would not turn back.",
+			"next": "rashad_open"
+		},
+		"bashir_road": {
+			"speaker": "bashir",
+			"line": "You. I know your face. On the road to the town you killed good men of mine, and still you would not turn back.",
+			"next": "rashad_open"
+		}
 	}
 }

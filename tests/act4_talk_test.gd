@@ -109,7 +109,7 @@ func _run() -> void:
 		if pick[1] == "americans":
 			_shoot = "act4_night_choice_wheel.png"
 		r = await _talk("act4_night_choice", [pick[0]])
-		_check(r.speakers.has("eleanor") and _said(r, "same men from before"), "night (%s): Eleanor speaks, you recognise the men" % pick[1])
+		_check(r.speakers.has("eleanor") and _said(r, "same men from the road"), "night (%s): Eleanor speaks, you recognise the men" % pick[1])
 		_check(Game.flag("night_choice") == pick[1] and r.end == "end_" + pick[1], "night: '%s' sets night_choice=%s" % [pick[0], Game.flag("night_choice")])
 	_fresh({})
 	r = await _talk("act4_night_choice", ["Help the Germans"])
@@ -209,6 +209,8 @@ func _check(ok: bool, what: String) -> void:
 
 
 func _shot(file: String) -> void:
+	if DisplayServer.get_name() == "headless":
+		return  # no pictures with the dummy renderer
 	await RenderingServer.frame_post_draw
 	var p := _dir.path_join(file)
 	get_viewport().get_texture().get_image().save_png(p)

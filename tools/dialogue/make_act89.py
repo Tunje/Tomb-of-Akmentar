@@ -160,7 +160,9 @@ TALKS["act8_boat"] = talk(
 TALKS["act8_temple"] = talk(
     "Act 8, the desert route (event temple_battle): the old temple again, and he is waiting there; after this talk, the temple fight (fight_at_temple). With temple_studied, the Egyptologist knows the building (temple_known: act8.gd can open the side passage).",
     SPEAKERS, {
-        "start": L("player", "The temple of the three gods, the same columns as before. This time the sand around it is full of footprints that don't come from horses.", "known"),
+        "start": B(({"flag": "visited_temple"}, "again"), (None, "first")),
+        "again": L("player", "The temple of the three gods, the same columns as before. This time the sand around it is full of footprints that don't come from horses.", "known"),
+        "first": L("player", "The old temple on the desert road, three gods at its gate. We never stopped here on the way out. The sand around it is full of footprints that don't come from horses.", "known"),
         "known": B(({"flag": "temple_studied"}, "know"), (None, "react")),
         "know": first_of(["eleanor", "pembroke", "hassan"], "k", "react"),
         "k_eleanor": L("eleanor", "There's a passage behind the second shrine. I sketched it, remember? If we have to fall back, we fall back there.", "react", do=[flag("temple_known")]),
@@ -294,9 +296,9 @@ FILES["routes/act8_plan.json"] = {
 arrival = {
     "start": L("noura", "You came back. With it. God is merciful after all. I am Noura al-Khatib; this is Omar Saqr. We are what is left of the Keepers at Akmentar.", "omar"),
     "omar": B(({"flag": "recognized_bandits"}, "omar_hates"), (None, "omar_cold")),
-    "omar_hates": L("omar", "I know you. The road, the river. My brothers died on your guns. I will walk beside you because she asks it. Nothing more.", "rashad"),
+    "omar_hates": L("omar", "I know you. You fought my brothers on the way here, and they died on your guns. I will walk beside you because she asks it. Nothing more.", "rashad"),
     "omar_cold": L("omar", "The foreigner who opened the door. Now he wants to close it. Good. Then hurry.", "rashad"),
-    "rashad": L("noura", "My uncle held him for nine days. Then he fell, and most of the others with him. We know the binding rite. We need the amulet, the jars, and our lives, until it is done.", "menu"),
+    "rashad": L("noura", "My uncle's rite held him here as long as it could. When it broke he went after the amulet, and my uncle fell, and most of the others with him. We know the binding rite. We need the amulet, the jars, and our lives, until it is done.", "menu"),
     "menu": L("noura", "Ask, if you must. But walk while you ask.", choices=[
         C("Ask about the rite", "How does it work?", "rite", if_={"not_flag": "act9_asked_rite"}, do=[flag("act9_asked_rite"), trust("noura", 1)]),
         C("Answer Omar", "Your brothers shot first, Omar. But I'm sorry for every one of them.", "omar_answer",
@@ -545,10 +547,12 @@ CARDS = [
     ], ("The road, 1926", "Naguib Sabet died on the road back. Everything was packed for the way out."),
        ("Cairo, 1926", "He went on building toward his own caravan, one contract at a time.")),
     {"who": "whitfield", "name": "Charlie Whitfield", "variants": [
+        V("profiteer", "He sold the curse back to you for a hundred pounds and dined out on it for years. Nobody believed the second half of the story.",
+          "New York, 1927", {"flag": "bought_artifacts"}),
+        V("fought", "He lost the artifacts to you in a gunfight in Cairo and told the newspapers he had been robbed. He was not entirely wrong.",
+          "New York, 1927", {"flag": "thieves_americans", "not_flag": "recovered_peacefully"}),
         V("repentant", "He gave the artifacts back under a black sky and never quite stopped telling people about it. His foundation now pays for excavations it is not allowed to profit from.",
           "New York, 1928", {"flag": "thieves_americans", "not_flag": "bought_artifacts"}),
-        V("profiteer", "He sold the curse back to you for a hundred and fifty pounds and dined out on it for years. Nobody believed the second half of the story.",
-          "New York, 1927", {"flag": "bought_artifacts"}),
         V("celebrated", "His expedition came home alive, thanks to you. He told everyone the wager was a draw, and paid it anyway.",
           "New York, 1927", {"flag": "americans_alive"}),
         V("lost", "The American expedition never came home from its first night at Akmentar.", "Akmentar, 1926"),
@@ -570,7 +574,7 @@ CARDS = [
     ]},
     {"who": "fletcher", "name": "Danny Fletcher", "variants": [
         V("flew", "Danny flew the amulet home and dined out on it for years. His air service still flies the desert route, though never at night.",
-          "Alexandria, 1929", {"flag": "plane_ready"}),
+          "Alexandria, 1929", {"flag": "plane_companion"}),
         V("friend", "Danny delayed a gang of thieves with a misfiled booking and never charged for it. He still says you owe him a drink.",
           "Alexandria, 1928", {"flag": "fletcher_delay"}),
         V("never", "A pilot in Alexandria, who might have been a friend, kept flying mail and questionable cargo.", "Alexandria, 1926"),

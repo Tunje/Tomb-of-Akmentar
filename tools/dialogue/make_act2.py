@@ -364,7 +364,7 @@ TALKS["act2_isabelle"] = talk(
         "who": L("isabelle", "Isabelle Moreau. I find people who don't want to be found, and I keep people alive who don't always deserve it. Sometimes both.", "menu"),
         "test": L("isabelle", "Everyone wants a gun. Not everyone deserves one at their back. Why should I follow you anywhere?", choices=[
             C("Hargreaves vouches for me", "Tom Hargreaves is coming. Ask him about me.", "vouched", if_={"in_party": "hargreaves"}),
-            C("You saw the office fight", "You were across the street when Freddie's creditors came for me. You saw how that ended.", "saw_fight",
+            C("You saw Freddie's office", "You were across the street when those gunmen came for me at Freddie's office. You saw how that ended.", "saw_fight",
               if_={"flag": "act1_gunfight_won"}),
             C("Offer to deal with her trouble", "Those three by the window have been watching you all night. Want me to have a word?", "trouble",
               if_={"flag": "heard_isabelle_trouble"}),
@@ -606,9 +606,11 @@ TALKS["act2_telegraph"] = talk(
     })
 
 TALKS["act2_karim"] = talk(
-    "Act 2, the sponsor's agent at the bank (one action): an advance of 100 (karim_advance), or 50 if you pressed him about the first expedition first (karim_pressed); pressing hard: heard_blackwood_silence.",
+    "Act 2, the sponsor's agent at the bank (one action; the same Karim Fahmy who made Act 1's offer, and he says so): an advance of 100 (karim_advance), or 50 if you pressed him about the first expedition first (karim_pressed); pressing hard: heard_blackwood_silence.",
     {"karim": "Karim Fahmy"}, {
-        "start": L("karim", "Mr. Blackwood has been generous already. What more can the expedition possibly need?", "menu"),
+        "start": B(({"flag": "act1_offer_accepted"}, "again"), (None, "first")),
+        "again": L("karim", "You again, and the fund barely a day old. Sir Reginald has been generous already. What more can the expedition possibly need?", "menu"),
+        "first": L("karim", "Karim Fahmy, Sir Reginald Blackwood's agent. Sir Reginald has been generous already. What more can the expedition possibly need?", "menu"),
         "menu": L("karim", "Well?", choices=[
             C("Ask for more money", "More money. An advance on the reward.", "advance",
               if_={"not_flag": "karim_pressed"}, do=[{"money": 100}, flag("karim_advance")]),
@@ -619,13 +621,13 @@ TALKS["act2_karim"] = talk(
             C("Leave", "Nothing. Good day.", "end"),
         ]),
         "advance": L("karim", "One hundred pounds, against your reward. Sign here, and here.", "end"),
-        "advance_cold": L("karim", "Fifty. And I shall mention your curiosity to Mr. Blackwood.", "end"),
+        "advance_cold": L("karim", "Fifty. And I shall mention your curiosity to Sir Reginald.", "end"),
         "pressed": L("karim", "That is not a matter for the expedition's leader.", choices=[
             C("Push harder", "It's exactly my matter. I'm the one walking into it.", "truth",
               if_={"not_flag": "heard_blackwood_silence"}, do=[flag("heard_blackwood_silence")]),
             C("Drop it", "Fine. Forget I asked.", "menu"),
         ]),
-        "truth": L("karim", "Very well. They found something, and then they stopped answering. Mr. Blackwood sent no one after them. Until you.", "menu"),
+        "truth": L("karim", "Very well. They found something, and then they stopped answering. Sir Reginald sent no one after them. Until you.", "menu"),
         "end": END,
     })
 

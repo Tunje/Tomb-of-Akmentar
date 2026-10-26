@@ -27,7 +27,7 @@
 		},
 		"omar_hates": {
 			"speaker": "omar",
-			"line": "I know you. The road, the river. My brothers died on your guns. I will walk beside you because she asks it. Nothing more.",
+			"line": "I know you. You fought my brothers on the way here, and they died on your guns. I will walk beside you because she asks it. Nothing more.",
 			"next": "rashad"
 		},
 		"omar_cold": {
@@ -37,7 +37,7 @@
 		},
 		"rashad": {
 			"speaker": "noura",
-			"line": "My uncle held him for nine days. Then he fell, and most of the others with him. We know the binding rite. We need the amulet, the jars, and our lives, until it is done.",
+			"line": "My uncle's rite held him here as long as it could. When it broke he went after the amulet, and my uncle fell, and most of the others with him. We know the binding rite. We need the amulet, the jars, and our lives, until it is done.",
 			"next": "menu"
 		},
 		"menu": {

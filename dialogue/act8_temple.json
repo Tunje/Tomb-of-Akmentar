@@ -18,8 +18,26 @@
 	"start": "start",
 	"nodes": {
 		"start": {
+			"branch": [
+				{
+					"if": {
+						"flag": "visited_temple"
+					},
+					"next": "again"
+				},
+				{
+					"next": "first"
+				}
+			]
+		},
+		"again": {
 			"speaker": "player",
 			"line": "The temple of the three gods, the same columns as before. This time the sand around it is full of footprints that don't come from horses.",
+			"next": "known"
+		},
+		"first": {
+			"speaker": "player",
+			"line": "The old temple on the desert road, three gods at its gate. We never stopped here on the way out. The sand around it is full of footprints that don't come from horses.",
 			"next": "known"
 		},
 		"known": {

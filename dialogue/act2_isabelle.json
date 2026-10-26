@@ -96,8 +96,8 @@
 					"next": "vouched"
 				},
 				{
-					"label": "You saw the office fight",
-					"line": "You were across the street when Freddie's creditors came for me. You saw how that ended.",
+					"label": "You saw Freddie's office",
+					"line": "You were across the street when those gunmen came for me at Freddie's office. You saw how that ended.",
 					"if": {
 						"flag": "act1_gunfight_won"
 					},

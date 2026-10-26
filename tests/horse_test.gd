@@ -356,6 +356,8 @@ func _check(ok: bool, what: String) -> void:
 
 
 func _shot(file: String) -> void:
+	if DisplayServer.get_name() == "headless":
+		return  # no pictures with the dummy renderer
 	await RenderingServer.frame_post_draw
 	var p := _dir.path_join(file)
 	get_viewport().get_texture().get_image().save_png(p)

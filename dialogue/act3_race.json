@@ -25,7 +25,7 @@
 		},
 		"rivals": {
 			"speaker": "player",
-			"line": "German trucks to the north, keeping a hard pace, and further back the Americans' column.",
+			"line": "German riders to the north, keeping a hard pace, and further back the Americans' column.",
 			"next": "wager"
 		},
 		"wager": {

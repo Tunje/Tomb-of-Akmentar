@@ -320,7 +320,7 @@ TALKS["act7_telegraph"] = talk(
 hassan = {
     "start": B(({"stat": ["hassan", "trust", 2]}, "confess"), (None, "silent")),
     "silent": L("hassan", "This is my city, and it is frightened. I will help where I can. Ask me, if you need a scholar.", "end"),
-    "confess": L("hassan", "There is something I must tell you before the sky goes dark. The riders on the road, the men at the river, the attack at the ruins. I sent them. I am one of the Keepers of the Veil.", choices=[
+    "confess": L("hassan", "There is something I must tell you before the sky goes dark. The men who stopped you on the way to Akmentar, the attack at the ruins. I sent them. I am one of the Keepers of the Veil.", choices=[
         C("Ask why", "Why? We could have died out there.", "why"),
         C("Condemn him", "Men died because of you.", "condemn", do=[trust("hassan", -1), conv("hassan", -1)]),
         C("Forgive him", "You were trying to stop exactly this. I understand.", "forgive", do=[trust("hassan", 1)]),
@@ -384,8 +384,8 @@ conf["am_refuse"] = L("whitfield", "Weather's weather. I didn't come all this wa
     C("Buy them back", "Then let's talk money.", "am_buy"),
     C("Take them", "Then I'm taking them.", "fight"),
 ])
-conf["am_buy"] = L("whitfield", "A hundred and fifty pounds, and you can have the whole cursed lot. I'll even throw in the crates.", choices=[
-    C("Pay him", "Done.", "am_paid", if_={"money": 150}, do=[pay(150), flag("bought_artifacts")]),
+conf["am_buy"] = L("whitfield", "A hundred pounds, and you can have the whole cursed lot. I'll even throw in the crates.", choices=[
+    C("Pay him", "Done.", "am_paid", if_={"money": 100}, do=[pay(100), flag("bought_artifacts")]),
     C("Take them", "I'm not paying you for stolen goods.", "fight"),
 ])
 conf["am_paid"] = L("whitfield", "Pleasure doing business. Now get them out of my sight.", "recovered")
@@ -420,7 +420,7 @@ conf["recovered"] = L("player", "The jars, four of them, sealed again with wax. 
 conf["end_recovered"] = END
 conf["end_fight"] = END
 TALKS["act7_confront"] = talk(
-    "Act 7, the confrontation with the thieves (from act7_intercept). Americans: with sky_dark and Whitfield's trust >= 2 he yields; he'll also sell for 150 (bought_artifacts). Germans: with sky_dark and Adler's trust >= 2 he yields; with stones_falling Vogel overrules him. Italians: no friendship, but with sickness Sofia Ricci turns Bellini. Otherwise event fight_thieves (end_fight; when won, act7.gd sets artifacts_recovered and starts act7_recovered). Peaceful: artifacts_recovered + recovered_peacefully (end_recovered).",
+    "Act 7, the confrontation with the thieves (from act7_intercept). Americans: with sky_dark and Whitfield's trust >= 2 he yields; he'll also sell for 100 (bought_artifacts). Germans: with sky_dark and Adler's trust >= 2 he yields; with stones_falling Vogel overrules him. Italians: no friendship, but with sickness Sofia Ricci turns Bellini. Otherwise event fight_thieves (end_fight; when won, act7.gd sets artifacts_recovered and starts act7_recovered). Peaceful: artifacts_recovered + recovered_peacefully (end_recovered).",
     dict(T_NAMES), conf)
 
 TALKS["act7_recovered"] = talk(

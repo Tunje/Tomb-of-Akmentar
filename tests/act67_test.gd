@@ -119,7 +119,7 @@ func _run() -> void:
 	Game.set_flag("sky_dark")
 	Game.money = 200
 	r = await _talk("act7_confront", ["Point at the sky", "Buy them back", "Pay him"])
-	_check(r.end == "end_recovered" and Game.money == 50 and Game.flag("bought_artifacts"), "Whitfield sells them for 150")
+	_check(r.end == "end_recovered" and Game.money == 100 and Game.flag("bought_artifacts"), "Whitfield sells them for 100")
 	_fresh([], "germans")
 	Game.set_flag("sky_dark")
 	Game.set_flag("stones_falling")

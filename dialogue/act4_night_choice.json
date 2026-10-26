@@ -8,8 +8,15 @@
 	"nodes": {
 		"start": {
 			"branch": [
-				{"if": {"in_party": "eleanor"}, "next": "eleanor_alarm"},
-				{"next": "alone_alarm"}
+				{
+					"if": {
+						"in_party": "eleanor"
+					},
+					"next": "eleanor_alarm"
+				},
+				{
+					"next": "alone_alarm"
+				}
 			]
 		},
 		"eleanor_alarm": {
@@ -24,28 +31,86 @@
 		},
 		"recognise": {
 			"branch": [
-				{"if": {"flag": "recognized_bandits"}, "next": "same_men"},
-				{"next": "decide"}
+				{
+					"if": {
+						"flag": "recognized_bandits"
+					},
+					"next": "same_men"
+				},
+				{
+					"next": "decide"
+				}
 			]
 		},
 		"same_men": {
-			"speaker": "player",
-			"line": "Those are the same men from before. The town, the boat... They've been following us all the way here.",
-			"next": "decide"
+			"branch": [
+				{
+					"if": {
+						"flag": "rode_with_americans"
+					},
+					"next": "same_men_river"
+				},
+				{
+					"next": "same_men_road"
+				}
+			]
 		},
 		"decide": {
 			"branch": [
-				{"if": {"in_party": "eleanor"}, "next": "eleanor_asks"},
-				{"next": "alone_decide"}
+				{
+					"if": {
+						"in_party": "eleanor"
+					},
+					"next": "eleanor_asks"
+				},
+				{
+					"next": "alone_decide"
+				}
 			]
 		},
 		"eleanor_asks": {
 			"speaker": "eleanor",
 			"line": "What do we do?",
 			"choices": [
-				{"label": "Barricade the camp", "line": "Everyone behind the wall. We hold here and let the others fight their own battles.", "do": [{"set_flag": ["night_choice", "barricade"]}], "next": "eleanor_barricade"},
-				{"label": "Help the Americans", "line": "Whitfield's camp is closest. Grab your rifles, we're going over there!", "do": [{"set_flag": ["night_choice", "americans"]}], "next": "eleanor_americans"},
-				{"label": "Help the Germans", "line": "Adler's people won't last without help. With me, to the German camp!", "do": [{"set_flag": ["night_choice", "germans"]}], "next": "eleanor_germans"}
+				{
+					"label": "Barricade the camp",
+					"line": "Everyone behind the wall. We hold here and let the others fight their own battles.",
+					"do": [
+						{
+							"set_flag": [
+								"night_choice",
+								"barricade"
+							]
+						}
+					],
+					"next": "eleanor_barricade"
+				},
+				{
+					"label": "Help the Americans",
+					"line": "Whitfield's camp is closest. Grab your rifles, we're going over there!",
+					"do": [
+						{
+							"set_flag": [
+								"night_choice",
+								"americans"
+							]
+						}
+					],
+					"next": "eleanor_americans"
+				},
+				{
+					"label": "Help the Germans",
+					"line": "Adler's people won't last without help. With me, to the German camp!",
+					"do": [
+						{
+							"set_flag": [
+								"night_choice",
+								"germans"
+							]
+						}
+					],
+					"next": "eleanor_germans"
+				}
 			]
 		},
 		"eleanor_barricade": {
@@ -67,13 +132,65 @@
 			"speaker": "player",
 			"line": "No time to think it over.",
 			"choices": [
-				{"label": "Barricade the camp", "line": "Hold here. Let the others look after themselves.", "do": [{"set_flag": ["night_choice", "barricade"]}], "next": "end_barricade"},
-				{"label": "Help the Americans", "line": "Whitfield's camp. Go!", "do": [{"set_flag": ["night_choice", "americans"]}], "next": "end_americans"},
-				{"label": "Help the Germans", "line": "The German camp. Go!", "do": [{"set_flag": ["night_choice", "germans"]}], "next": "end_germans"}
+				{
+					"label": "Barricade the camp",
+					"line": "Hold here. Let the others look after themselves.",
+					"do": [
+						{
+							"set_flag": [
+								"night_choice",
+								"barricade"
+							]
+						}
+					],
+					"next": "end_barricade"
+				},
+				{
+					"label": "Help the Americans",
+					"line": "Whitfield's camp. Go!",
+					"do": [
+						{
+							"set_flag": [
+								"night_choice",
+								"americans"
+							]
+						}
+					],
+					"next": "end_americans"
+				},
+				{
+					"label": "Help the Germans",
+					"line": "The German camp. Go!",
+					"do": [
+						{
+							"set_flag": [
+								"night_choice",
+								"germans"
+							]
+						}
+					],
+					"next": "end_germans"
+				}
 			]
 		},
-		"end_barricade": {"end": true},
-		"end_americans": {"end": true},
-		"end_germans": {"end": true}
+		"end_barricade": {
+			"end": true
+		},
+		"end_americans": {
+			"end": true
+		},
+		"end_germans": {
+			"end": true
+		},
+		"same_men_river": {
+			"speaker": "player",
+			"line": "Those are the same men from the river. They've been following us all the way here.",
+			"next": "decide"
+		},
+		"same_men_road": {
+			"speaker": "player",
+			"line": "Those are the same men from the road. They've been following us all the way here.",
+			"next": "decide"
+		}
 	}
 }

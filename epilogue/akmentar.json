@@ -597,6 +597,23 @@
 			"name": "Charlie Whitfield",
 			"variants": [
 				{
+					"id": "profiteer",
+					"if": {
+						"flag": "bought_artifacts"
+					},
+					"caption": "New York, 1927",
+					"text": "He sold the curse back to you for a hundred pounds and dined out on it for years. Nobody believed the second half of the story."
+				},
+				{
+					"id": "fought",
+					"if": {
+						"flag": "thieves_americans",
+						"not_flag": "recovered_peacefully"
+					},
+					"caption": "New York, 1927",
+					"text": "He lost the artifacts to you in a gunfight in Cairo and told the newspapers he had been robbed. He was not entirely wrong."
+				},
+				{
 					"id": "repentant",
 					"if": {
 						"flag": "thieves_americans",
@@ -604,14 +621,6 @@
 					},
 					"caption": "New York, 1928",
 					"text": "He gave the artifacts back under a black sky and never quite stopped telling people about it. His foundation now pays for excavations it is not allowed to profit from."
-				},
-				{
-					"id": "profiteer",
-					"if": {
-						"flag": "bought_artifacts"
-					},
-					"caption": "New York, 1927",
-					"text": "He sold the curse back to you for a hundred and fifty pounds and dined out on it for years. Nobody believed the second half of the story."
 				},
 				{
 					"id": "celebrated",
@@ -694,7 +703,7 @@
 				{
 					"id": "flew",
 					"if": {
-						"flag": "plane_ready"
+						"flag": "plane_companion"
 					},
 					"caption": "Alexandria, 1929",
 					"text": "Danny flew the amulet home and dined out on it for years. His air service still flies the desert route, though never at night."

@@ -387,7 +387,7 @@ TALKS["act3_camp"] = talk(
 
 race = {
     "start": L("player", "The last stretch. Dust on the horizon: we aren't alone out here.", "rivals"),
-    "rivals": L("player", "German trucks to the north, keeping a hard pace, and further back the Americans' column.", "wager"),
+    "rivals": L("player", "German riders to the north, keeping a hard pace, and further back the Americans' column.", "wager"),
     "wager": B(({"flag": "wager_offered"}, "shortcut"), (None, "whit_rides")),
     "whit_rides": L("whitfield", "Hey there, neighbour! Charlie Whitfield. Five hundred dollars says we beat you to the ruins. What do you say?", choices=[
         C("Accept", "You're on.", "whit_yes", do=[flag("wager_accepted"), flag("wager_offered"), flag("met_whitfield"), trust("whitfield", 1)]),
