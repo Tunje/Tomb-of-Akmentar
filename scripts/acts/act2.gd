@@ -168,7 +168,7 @@ func _leave() -> void:
 		egypt = egypt or Game.flag(f, false)
 	if not egypt and FileAccess.file_exists("res://dialogue/act2_hassan_fallback.json"):
 		if args.has("auto"):
-			Game.apply([{"recruit": "hassan"}, {"set_flag": "hired_hassan"}])
+			await BotTalk.run(self, "act2_hassan_fallback", player, level.npcs.get("hassan", player))
 		else:
 			var c := Conversation.new()
 			add_child(c)
@@ -238,7 +238,11 @@ func _shot(file: String) -> void:
 ## Hire one recruit through his spot's talk effects directly, then sleep through the days.
 func _auto() -> void:
 	print("RESULT act2 start money=%d spots=%d npcs=%d" % [Game.money, get_tree().get_nodes_in_group("interactable").size(), level.npcs.size()])
-	Game.apply([{"recruit": "mahmoud"}, {"set_flag": "hired_mahmoud"}])
+	# Through the real talks, fees and all (-f9): the museum (Eleanor, £30), then Mahmoud's crew (£60).
+	Game.spend_action(1)
+	await BotTalk.run(self, "act2_museum", player, level.npcs.get("archivist", player))
+	Game.spend_action(1)
+	await BotTalk.run(self, "act2_mahmoud", player, level.npcs.get("mahmoud", player))
 	await get_tree().create_timer(1.0).timeout
 	print("RESULT act2 party=%s followers=%d" % [Game.party(), companions.size()])
 	for d in int(plan.get("days", 2)):
