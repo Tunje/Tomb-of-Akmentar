@@ -105,14 +105,75 @@ func _draft() -> void:
 	if args.has("auto"):
 		_auto_draft(d)
 	await d.closed
+	_mark_claims()
 	_day()
+
+
+## Simon: claimed sites should show who claimed them. Two of the team's people work at each
+## claimed landmark, beside a pennant in the team's draft colour.
+const CLAIM_LOOK := {
+	"player": {"colour": Color(0.55, 0.36, 0.12), "people": ["mahmoud", "khalil"]},
+	"americans": {"colour": Color(0.45, 0.16, 0.15), "people": ["maggie", "callahan"]},
+	"germans": {"colour": Color(0.28, 0.34, 0.44), "people": ["kruger", "vogel"]},
+}
+
+
+func _mark_claims() -> void:
+	for id in AkmentarSurface.SITES:
+		var team: String = Game.flag("claimed_" + id, "")
+		if not CLAIM_LOOK.has(team):
+			continue
+		var site: Vector3 = AkmentarSurface.SITES[id]
+		var toward: Vector3 = level.camps.party - site
+		toward.y = 0
+		toward = toward.normalized()
+		var side: Vector3 = toward.cross(Vector3.UP)
+		var look: Dictionary = CLAIM_LOOK[team]
+		for k in 2:
+			var who: String = look.people[k]
+			# Our crew foremen: stand-ins until their image-to-3d models exist.
+			var model := Characters.glb(who)
+			var at: Vector3 = site + toward * 2.4 + side * (1.8 if k == 0 else -1.8)
+			Worker.make(level, at, site, model)
+		_pennant(site + toward * 2.8 + side * 3.2, look.colour)
+
+
+func _pennant(at: Vector3, colour: Color) -> void:
+	var pole := MeshInstance3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = 0.03
+	cm.bottom_radius = 0.04
+	cm.height = 3.0
+	pole.mesh = cm
+	var wood := StandardMaterial3D.new()
+	wood.albedo_color = Color(0.3, 0.2, 0.1)
+	pole.material_override = wood
+	level.add_child(pole)
+	pole.global_position = at + Vector3.UP * 1.5
+	var flag := MeshInstance3D.new()
+	var qm := QuadMesh.new()
+	qm.size = Vector2(1.1, 0.7)
+	flag.mesh = qm
+	var cloth := StandardMaterial3D.new()
+	cloth.albedo_color = colour
+	cloth.cull_mode = BaseMaterial3D.CULL_DISABLED
+	flag.material_override = cloth
+	level.add_child(flag)
+	flag.global_position = at + Vector3(0.58, 2.6, 0)
 
 
 func _day() -> void:
 	step = Step.DAY
 	hud.toast("Day 1: inspect the sites you claimed · sleep at camp to end the day", 4.0)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if args.size() > 0 else Input.MOUSE_MODE_CAPTURED
-	if args.has("auto"):
+	if args.has("view"):
+		# Test: stand 9 m in front of a site, looking at it.
+		var site: Vector3 = AkmentarSurface.SITES[args.view]
+		var toward: Vector3 = (level.camps.party - site).normalized()
+		player.global_position = site + toward * 9.0
+		player.yaw = atan2(toward.x, toward.z)
+		player.pitch = 0.05
+	elif args.has("auto"):
 		_auto_day()
 
 
