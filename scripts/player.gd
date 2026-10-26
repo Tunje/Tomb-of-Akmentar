@@ -699,8 +699,8 @@ func _bullet_hit(w: WeaponData, hit: Dictionary, dir: Vector3, travelled: float,
 	var target: Node = col.get_meta("mummy")
 	if not is_instance_valid(target):
 		return
-	if target is Gunman and target.team == Gunman.PARTY:
-		return  # our own people: no damage, no hit marker
+	if target is Gunman and not target.is_hostile(self):
+		return  # our people and allies: no damage, no hit marker
 	var fall := 1.0 - 0.5 * clampf((travelled - w.falloff_start) / maxf(w.range_m - w.falloff_start, 1.0), 0.0, 1.0)
 	var part: String = col.get_meta("part")
 	var res: Dictionary = target.take_hit(part, w.damage * fall, dir, point, w.stagger, w.knockback)
