@@ -60,7 +60,8 @@
 							"set_flag": "promised_mahmoud_credit"
 						}
 					],
-					"next": "fee"
+					"next": "fee",
+					"slot": "ur"
 				},
 				{
 					"label": "I pay, I take the credit",
@@ -74,12 +75,14 @@
 							]
 						}
 					],
-					"next": "fee_cold"
+					"next": "fee_cold",
+					"slot": "lr"
 				},
 				{
 					"label": "Leave",
 					"line": "Not today.",
-					"next": "end_left"
+					"next": "end_left",
+					"slot": "ll"
 				}
 			]
 		},
@@ -98,12 +101,14 @@
 							"money": -60
 						}
 					],
-					"next": "joined"
+					"next": "joined",
+					"slot": "r"
 				},
 				{
 					"label": "Leave",
 					"line": "I can't pay that yet.",
-					"next": "end_left"
+					"next": "end_left",
+					"slot": "ll"
 				}
 			]
 		},
@@ -122,12 +127,14 @@
 							"money": -75
 						}
 					],
-					"next": "joined"
+					"next": "joined",
+					"slot": "r"
 				},
 				{
 					"label": "Leave",
 					"line": "Forget it.",
-					"next": "end_left"
+					"next": "end_left",
+					"slot": "ll"
 				}
 			]
 		},

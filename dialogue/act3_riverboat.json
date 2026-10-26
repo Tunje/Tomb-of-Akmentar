@@ -36,7 +36,8 @@
 							"set_flag": "boat_outfit"
 						}
 					],
-					"next": "outfit"
+					"next": "outfit",
+					"slot": "ul"
 				},
 				{
 					"label": "Ask what he's after",
@@ -49,7 +50,8 @@
 							"set_flag": "boat_after"
 						}
 					],
-					"next": "after"
+					"next": "after",
+					"slot": "l"
 				},
 				{
 					"label": "Hear his bet",
@@ -62,12 +64,14 @@
 							"set_flag": "wager_heard"
 						}
 					],
-					"next": "wager"
+					"next": "wager",
+					"slot": "ur"
 				},
 				{
 					"label": "Excuse yourself",
 					"line": "I'll leave you to your deckchair.",
-					"next": "bye"
+					"next": "bye",
+					"slot": "ll"
 				}
 			]
 		},
@@ -100,12 +104,14 @@
 							]
 						}
 					],
-					"next": "accepted"
+					"next": "accepted",
+					"slot": "ur"
 				},
 				{
 					"label": "Decline",
 					"line": "I don't bet on things I can't control.",
-					"next": "declined"
+					"next": "declined",
+					"slot": "r"
 				}
 			]
 		},

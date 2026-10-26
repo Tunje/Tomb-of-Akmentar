@@ -36,7 +36,8 @@
 				{
 					"label": "Hire him",
 					"line": "I need someone who can keep an expedition fed and moving.",
-					"next": "fee"
+					"next": "fee",
+					"slot": "ur"
 				},
 				{
 					"label": "Ask about supplies",
@@ -49,12 +50,14 @@
 							"set_flag": "farid_supplies"
 						}
 					],
-					"next": "supplies"
+					"next": "supplies",
+					"slot": "ul"
 				},
 				{
 					"label": "Leave",
 					"line": "Not today.",
-					"next": "end_left"
+					"next": "end_left",
+					"slot": "ll"
 				}
 			]
 		},
@@ -91,7 +94,8 @@
 							]
 						}
 					],
-					"next": "joined"
+					"next": "joined",
+					"slot": "r"
 				},
 				{
 					"label": "Let him trade",
@@ -120,12 +124,14 @@
 							]
 						}
 					],
-					"next": "joined"
+					"next": "joined",
+					"slot": "ur"
 				},
 				{
 					"label": "Leave",
 					"line": "I'll manage my own supplies.",
-					"next": "end_left"
+					"next": "end_left",
+					"slot": "ll"
 				}
 			]
 		},

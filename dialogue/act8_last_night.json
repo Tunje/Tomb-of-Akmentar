@@ -28,35 +28,39 @@
 			"choices": [
 				{
 					"label": "Eleanor",
-					"line": "",
+					"line": "Eleanor. Can't sleep either?",
 					"if": {
 						"in_party": "eleanor",
 						"not_flag": "last_eleanor"
 					},
-					"next": "l_eleanor"
+					"next": "l_eleanor",
+					"slot": "r"
 				},
 				{
 					"label": "Pembroke",
-					"line": "",
+					"line": "Pembroke. Can't sleep either?",
 					"if": {
 						"in_party": "pembroke",
 						"not_flag": "last_pembroke"
 					},
-					"next": "l_pembroke"
+					"next": "l_pembroke",
+					"slot": "ur"
 				},
 				{
 					"label": "al-Masri",
-					"line": "",
+					"line": "al-Masri. Can't sleep either?",
 					"if": {
 						"in_party": "hassan",
 						"not_flag": "last_hassan"
 					},
-					"next": "l_hassan"
+					"next": "l_hassan",
+					"slot": "lr"
 				},
 				{
 					"label": "Back",
 					"line": "",
-					"next": "menu"
+					"next": "menu",
+					"slot": "ll"
 				}
 			]
 		},
@@ -113,35 +117,39 @@
 			"choices": [
 				{
 					"label": "Tom",
-					"line": "",
+					"line": "Tom. Can't sleep either?",
 					"if": {
 						"in_party": "hargreaves",
 						"not_flag": "last_hargreaves"
 					},
-					"next": "l_hargreaves"
+					"next": "l_hargreaves",
+					"slot": "r"
 				},
 				{
 					"label": "Idris",
-					"line": "",
+					"line": "Idris. Can't sleep either?",
 					"if": {
 						"in_party": "idris",
 						"not_flag": "last_idris"
 					},
-					"next": "l_idris"
+					"next": "l_idris",
+					"slot": "ur"
 				},
 				{
 					"label": "Isabelle",
-					"line": "",
+					"line": "Isabelle. Can't sleep either?",
 					"if": {
 						"in_party": "isabelle",
 						"not_flag": "last_isabelle"
 					},
-					"next": "l_isabelle"
+					"next": "l_isabelle",
+					"slot": "lr"
 				},
 				{
 					"label": "Back",
 					"line": "",
-					"next": "menu"
+					"next": "menu",
+					"slot": "ll"
 				}
 			]
 		},
@@ -201,35 +209,39 @@
 			"choices": [
 				{
 					"label": "Saleh",
-					"line": "",
+					"line": "Saleh. Can't sleep either?",
 					"if": {
 						"in_party": "saleh",
 						"not_flag": "last_saleh"
 					},
-					"next": "l_saleh"
+					"next": "l_saleh",
+					"slot": "r"
 				},
 				{
 					"label": "Youssef",
-					"line": "",
+					"line": "Youssef. Can't sleep either?",
 					"if": {
 						"in_party": "youssef",
 						"not_flag": "last_youssef"
 					},
-					"next": "l_youssef"
+					"next": "l_youssef",
+					"slot": "ur"
 				},
 				{
 					"label": "Farid",
-					"line": "",
+					"line": "Farid. Can't sleep either?",
 					"if": {
 						"in_party": "farid",
 						"not_flag": "last_farid"
 					},
-					"next": "l_farid"
+					"next": "l_farid",
+					"slot": "lr"
 				},
 				{
 					"label": "Back",
 					"line": "",
-					"next": "menu"
+					"next": "menu",
+					"slot": "ll"
 				}
 			]
 		},
@@ -297,35 +309,39 @@
 			"choices": [
 				{
 					"label": "Mahmoud",
-					"line": "",
+					"line": "Mahmoud. Can't sleep either?",
 					"if": {
 						"in_party": "mahmoud",
 						"not_flag": "last_mahmoud"
 					},
-					"next": "l_mahmoud"
+					"next": "l_mahmoud",
+					"slot": "r"
 				},
 				{
 					"label": "Khalil",
-					"line": "",
+					"line": "Khalil. Can't sleep either?",
 					"if": {
 						"in_party": "khalil",
 						"not_flag": "last_khalil"
 					},
-					"next": "l_khalil"
+					"next": "l_khalil",
+					"slot": "ur"
 				},
 				{
 					"label": "Naguib",
-					"line": "",
+					"line": "Naguib. Can't sleep either?",
 					"if": {
 						"in_party": "naguib",
 						"not_flag": "last_naguib"
 					},
-					"next": "l_naguib"
+					"next": "l_naguib",
+					"slot": "lr"
 				},
 				{
 					"label": "Back",
 					"line": "",
-					"next": "menu"
+					"next": "menu",
+					"slot": "ll"
 				}
 			]
 		},
@@ -387,27 +403,32 @@
 				{
 					"label": "Talk to the scholars",
 					"line": "",
-					"next": "g0"
+					"next": "g0",
+					"slot": "r"
 				},
 				{
 					"label": "Talk to the fighters",
 					"line": "",
-					"next": "g1"
+					"next": "g1",
+					"slot": "ur"
 				},
 				{
 					"label": "Talk to the guides",
 					"line": "",
-					"next": "g2"
+					"next": "g2",
+					"slot": "lr"
 				},
 				{
 					"label": "Talk to the crews",
 					"line": "",
-					"next": "g3"
+					"next": "g3",
+					"slot": "l"
 				},
 				{
 					"label": "Go on",
 					"line": "Get some rest. We go at first light.",
-					"next": "rear"
+					"next": "rear",
+					"slot": "ll"
 				}
 			]
 		},
@@ -437,7 +458,8 @@
 							"set_flag": "rear_held"
 						}
 					],
-					"next": "rear_yes"
+					"next": "rear_yes",
+					"slot": "ur"
 				},
 				{
 					"label": "Refuse",
@@ -451,7 +473,8 @@
 							]
 						}
 					],
-					"next": "rear_no"
+					"next": "rear_no",
+					"slot": "lr"
 				}
 			]
 		},

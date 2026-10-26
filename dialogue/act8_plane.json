@@ -29,7 +29,7 @@
 			"choices": [
 				{
 					"label": "Eleanor",
-					"line": "",
+					"line": "Eleanor, you're with me. The rest of you, stay safe.",
 					"if": {
 						"in_party": "eleanor"
 					},
@@ -51,11 +51,12 @@
 							]
 						}
 					],
-					"next": "chosen"
+					"next": "chosen",
+					"slot": "r"
 				},
 				{
 					"label": "Pembroke",
-					"line": "",
+					"line": "Pembroke, you're with me. The rest of you, stay safe.",
 					"if": {
 						"in_party": "pembroke"
 					},
@@ -77,11 +78,12 @@
 							]
 						}
 					],
-					"next": "chosen"
+					"next": "chosen",
+					"slot": "ur"
 				},
 				{
 					"label": "al-Masri",
-					"line": "",
+					"line": "al-Masri, you're with me. The rest of you, stay safe.",
 					"if": {
 						"in_party": "hassan"
 					},
@@ -103,12 +105,14 @@
 							]
 						}
 					],
-					"next": "chosen"
+					"next": "chosen",
+					"slot": "lr"
 				},
 				{
 					"label": "Back",
 					"line": "",
-					"next": "pick"
+					"next": "pick",
+					"slot": "ll"
 				}
 			]
 		},
@@ -118,7 +122,7 @@
 			"choices": [
 				{
 					"label": "Tom",
-					"line": "",
+					"line": "Tom, you're with me. The rest of you, stay safe.",
 					"if": {
 						"in_party": "hargreaves"
 					},
@@ -140,11 +144,12 @@
 							]
 						}
 					],
-					"next": "chosen"
+					"next": "chosen",
+					"slot": "r"
 				},
 				{
 					"label": "Idris",
-					"line": "",
+					"line": "Idris, you're with me. The rest of you, stay safe.",
 					"if": {
 						"in_party": "idris"
 					},
@@ -166,11 +171,12 @@
 							]
 						}
 					],
-					"next": "chosen"
+					"next": "chosen",
+					"slot": "ur"
 				},
 				{
 					"label": "Isabelle",
-					"line": "",
+					"line": "Isabelle, you're with me. The rest of you, stay safe.",
 					"if": {
 						"in_party": "isabelle"
 					},
@@ -192,12 +198,14 @@
 							]
 						}
 					],
-					"next": "chosen"
+					"next": "chosen",
+					"slot": "lr"
 				},
 				{
 					"label": "Back",
 					"line": "",
-					"next": "pick"
+					"next": "pick",
+					"slot": "ll"
 				}
 			]
 		},
@@ -207,7 +215,7 @@
 			"choices": [
 				{
 					"label": "Saleh",
-					"line": "",
+					"line": "Saleh, you're with me. The rest of you, stay safe.",
 					"if": {
 						"in_party": "saleh"
 					},
@@ -229,11 +237,12 @@
 							]
 						}
 					],
-					"next": "chosen"
+					"next": "chosen",
+					"slot": "r"
 				},
 				{
 					"label": "Youssef",
-					"line": "",
+					"line": "Youssef, you're with me. The rest of you, stay safe.",
 					"if": {
 						"in_party": "youssef"
 					},
@@ -255,11 +264,12 @@
 							]
 						}
 					],
-					"next": "chosen"
+					"next": "chosen",
+					"slot": "ur"
 				},
 				{
 					"label": "Farid",
-					"line": "",
+					"line": "Farid, you're with me. The rest of you, stay safe.",
 					"if": {
 						"in_party": "farid"
 					},
@@ -281,12 +291,14 @@
 							]
 						}
 					],
-					"next": "chosen"
+					"next": "chosen",
+					"slot": "lr"
 				},
 				{
 					"label": "Back",
 					"line": "",
-					"next": "pick"
+					"next": "pick",
+					"slot": "ll"
 				}
 			]
 		},
@@ -296,7 +308,7 @@
 			"choices": [
 				{
 					"label": "Mahmoud",
-					"line": "",
+					"line": "Mahmoud, you're with me. The rest of you, stay safe.",
 					"if": {
 						"in_party": "mahmoud"
 					},
@@ -318,11 +330,12 @@
 							]
 						}
 					],
-					"next": "chosen"
+					"next": "chosen",
+					"slot": "r"
 				},
 				{
 					"label": "Khalil",
-					"line": "",
+					"line": "Khalil, you're with me. The rest of you, stay safe.",
 					"if": {
 						"in_party": "khalil"
 					},
@@ -344,11 +357,12 @@
 							]
 						}
 					],
-					"next": "chosen"
+					"next": "chosen",
+					"slot": "ur"
 				},
 				{
 					"label": "Naguib",
-					"line": "",
+					"line": "Naguib, you're with me. The rest of you, stay safe.",
 					"if": {
 						"in_party": "naguib"
 					},
@@ -370,12 +384,14 @@
 							]
 						}
 					],
-					"next": "chosen"
+					"next": "chosen",
+					"slot": "lr"
 				},
 				{
 					"label": "Back",
 					"line": "",
-					"next": "pick"
+					"next": "pick",
+					"slot": "ll"
 				}
 			]
 		},
@@ -386,22 +402,26 @@
 				{
 					"label": "The scholars",
 					"line": "",
-					"next": "pick_g0"
+					"next": "pick_g0",
+					"slot": "r"
 				},
 				{
 					"label": "The fighters",
 					"line": "",
-					"next": "pick_g1"
+					"next": "pick_g1",
+					"slot": "ur"
 				},
 				{
 					"label": "The guides",
 					"line": "",
-					"next": "pick_g2"
+					"next": "pick_g2",
+					"slot": "lr"
 				},
 				{
 					"label": "The crews",
 					"line": "",
-					"next": "pick_g3"
+					"next": "pick_g3",
+					"slot": "l"
 				},
 				{
 					"label": "Nobody",
@@ -417,7 +437,8 @@
 							"set_flag": "plane_none"
 						}
 					],
-					"next": "chosen"
+					"next": "chosen",
+					"slot": "ul"
 				}
 			]
 		},

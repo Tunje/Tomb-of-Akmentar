@@ -16,7 +16,7 @@
 			"line": "Go on.",
 			"choices": [
 				{
-					"label": "Who's for hire?",
+					"label": "Ask who's for hire",
 					"line": "Who's for hire in here?",
 					"if": {
 						"not_flag": "heard_isabelle_trouble"
@@ -26,10 +26,11 @@
 							"set_flag": "heard_isabelle_trouble"
 						}
 					],
-					"next": "mercs"
+					"next": "mercs",
+					"slot": "ul"
 				},
 				{
-					"label": "Other expeditions?",
+					"label": "Ask about rivals",
 					"line": "Anyone else heading out into the desert?",
 					"if": {
 						"not_flag": "heard_americans_guns"
@@ -42,7 +43,8 @@
 							"set_flag": "heard_americans_boat"
 						}
 					],
-					"next": "rivals"
+					"next": "rivals",
+					"slot": "l"
 				},
 				{
 					"label": "Ask about Akmentar",
@@ -55,12 +57,14 @@
 							"set_flag": "heard_first_expedition"
 						}
 					],
-					"next": "akmentar"
+					"next": "akmentar",
+					"slot": "ur"
 				},
 				{
 					"label": "That's all",
 					"line": "That'll do. Thanks, George.",
-					"next": "bye"
+					"next": "bye",
+					"slot": "ll"
 				}
 			]
 		},

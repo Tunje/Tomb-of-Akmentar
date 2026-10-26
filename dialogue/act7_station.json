@@ -53,7 +53,8 @@
 				{
 					"label": "Leave",
 					"line": "Thank you.",
-					"next": "end"
+					"next": "end",
+					"slot": "ll"
 				}
 			]
 		},

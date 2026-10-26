@@ -21,12 +21,14 @@
 							"set_flag": "heard_italians"
 						}
 					],
-					"next": "rivals"
+					"next": "rivals",
+					"slot": "ul"
 				},
 				{
 					"label": "Leave",
 					"line": "Never mind.",
-					"next": "end"
+					"next": "end",
+					"slot": "ll"
 				}
 			]
 		},
@@ -55,12 +57,14 @@
 							]
 						}
 					],
-					"next": "watch"
+					"next": "watch",
+					"slot": "r"
 				},
 				{
 					"label": "Thank her",
 					"line": "Thank you, madame.",
-					"next": "end"
+					"next": "end",
+					"slot": "ll"
 				}
 			]
 		},

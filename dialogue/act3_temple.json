@@ -57,12 +57,14 @@
 				{
 					"label": "Take his word",
 					"line": "All right. We move on.",
-					"next": "leave_fx"
+					"next": "leave_fx",
+					"slot": "r"
 				},
 				{
 					"label": "Look for yourself",
 					"line": "Humour me. I'll have a look anyway.",
-					"next": "look"
+					"next": "look",
+					"slot": "ul"
 				}
 			]
 		},
@@ -176,12 +178,14 @@
 							]
 						}
 					],
-					"next": "stay"
+					"next": "stay",
+					"slot": "ur"
 				},
 				{
 					"label": "Leave at once",
 					"line": "Sketch what you can in an hour. Then we ride.",
-					"next": "leave_fx"
+					"next": "leave_fx",
+					"slot": "r"
 				}
 			]
 		},

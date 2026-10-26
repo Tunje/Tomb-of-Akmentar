@@ -56,7 +56,8 @@
 				{
 					"label": "Offer her work",
 					"line": "I'm leading an expedition into the desert. I could use you.",
-					"next": "test"
+					"next": "test",
+					"slot": "ur"
 				},
 				{
 					"label": "Ask who she is",
@@ -69,12 +70,14 @@
 							"set_flag": "isabelle_told_who"
 						}
 					],
-					"next": "who"
+					"next": "who",
+					"slot": "ul"
 				},
 				{
 					"label": "Leave",
 					"line": "My mistake.",
-					"next": "end_left"
+					"next": "end_left",
+					"slot": "ll"
 				}
 			]
 		},
@@ -93,7 +96,8 @@
 					"if": {
 						"in_party": "hargreaves"
 					},
-					"next": "vouched"
+					"next": "vouched",
+					"slot": "r"
 				},
 				{
 					"label": "You saw Freddie's office",
@@ -101,7 +105,8 @@
 					"if": {
 						"flag": "act1_gunfight_won"
 					},
-					"next": "saw_fight"
+					"next": "saw_fight",
+					"slot": "ur"
 				},
 				{
 					"label": "Offer to deal with her trouble",
@@ -109,7 +114,8 @@
 					"if": {
 						"flag": "heard_isabelle_trouble"
 					},
-					"next": "trouble"
+					"next": "trouble",
+					"slot": "ul"
 				},
 				{
 					"label": "Shoot a bottle off the bar",
@@ -122,7 +128,8 @@
 							"set_flag": "isabelle_bottle"
 						}
 					],
-					"next": "bottle"
+					"next": "bottle",
+					"slot": "lr"
 				},
 				{
 					"label": "Order her",
@@ -136,12 +143,14 @@
 							]
 						}
 					],
-					"next": "order"
+					"next": "order",
+					"slot": "ll"
 				},
 				{
 					"label": "Leave",
 					"line": "Forget it.",
-					"next": "come_back"
+					"next": "come_back",
+					"slot": "l"
 				}
 			]
 		},
@@ -228,7 +237,8 @@
 							"set_flag": "promised_isabelle_free"
 						}
 					],
-					"next": "joined"
+					"next": "joined",
+					"slot": "ur"
 				},
 				{
 					"label": "Pay, but she takes orders",
@@ -248,12 +258,14 @@
 							]
 						}
 					],
-					"next": "joined_cool"
+					"next": "joined_cool",
+					"slot": "lr"
 				},
 				{
 					"label": "Leave",
 					"line": "I can't pay that today.",
-					"next": "end_left"
+					"next": "end_left",
+					"slot": "ll"
 				}
 			]
 		},

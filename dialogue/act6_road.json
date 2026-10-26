@@ -175,12 +175,14 @@
 							"set_flag": "act6_night_ride"
 						}
 					],
-					"next": "ride_fear_0"
+					"next": "ride_fear_0",
+					"slot": "r"
 				},
 				{
 					"label": "Hold the camp",
 					"line": "Nobody runs. We hold here until morning.",
-					"next": "hold"
+					"next": "hold",
+					"slot": "ur"
 				}
 			]
 		},

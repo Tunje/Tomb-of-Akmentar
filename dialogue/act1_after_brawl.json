@@ -49,7 +49,8 @@
 							]
 						}
 					],
-					"next": "respect"
+					"next": "respect",
+					"slot": "ur"
 				},
 				{
 					"label": "Humiliate him",
@@ -66,7 +67,8 @@
 							]
 						}
 					],
-					"next": "enemy"
+					"next": "enemy",
+					"slot": "lr"
 				}
 			]
 		},

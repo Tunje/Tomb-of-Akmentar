@@ -43,7 +43,8 @@
 				{
 					"label": "Ask for an Egyptologist",
 					"line": "I'm putting together a private expedition. I need an Egyptologist, and they tell me you have the best in Cairo.",
-					"next": "ask"
+					"next": "ask",
+					"slot": "r"
 				},
 				{
 					"label": "Mention Akmentar",
@@ -56,12 +57,14 @@
 							"set_flag": "archivist_myth"
 						}
 					],
-					"next": "myth"
+					"next": "myth",
+					"slot": "ul"
 				},
 				{
 					"label": "Leave",
 					"line": "I'll see myself out.",
-					"next": "bye"
+					"next": "bye",
+					"slot": "ll"
 				}
 			]
 		},
@@ -77,7 +80,8 @@
 				{
 					"label": "Ask about his staff",
 					"line": "Surely not everyone here agrees with you.",
-					"next": "staff"
+					"next": "staff",
+					"slot": "ul"
 				},
 				{
 					"label": "Offer a donation",
@@ -94,17 +98,20 @@
 							"set_flag": "archivist_bribed"
 						}
 					],
-					"next": "bribe"
+					"next": "bribe",
+					"slot": "r"
 				},
 				{
 					"label": "Threaten him",
 					"line": "Find me someone, Professor, or I'll make this your problem. Personally.",
-					"next": "threat"
+					"next": "threat",
+					"slot": "lr"
 				},
 				{
 					"label": "Leave",
 					"line": "Suit yourself.",
-					"next": "bye"
+					"next": "bye",
+					"slot": "ll"
 				}
 			]
 		},
@@ -135,24 +142,27 @@
 			"choices": [
 				{
 					"label": "Approach Miss Whitmore",
-					"line": "",
+					"line": "Miss Whitmore? A word, if you have one.",
 					"if": {
 						"not_flag": "hired_eleanor"
 					},
-					"next": "el_start"
+					"next": "el_start",
+					"slot": "ur"
 				},
 				{
 					"label": "Approach Dr. Pembroke",
-					"line": "",
+					"line": "Dr. Pembroke? A moment of your time.",
 					"if": {
 						"not_flag": "hired_pembroke"
 					},
-					"next": "pe_start"
+					"next": "pe_start",
+					"slot": "r"
 				},
 				{
 					"label": "Leave",
 					"line": "Thank you, Professor. That's all.",
-					"next": "bye"
+					"next": "bye",
+					"slot": "ll"
 				}
 			]
 		},
@@ -219,7 +229,8 @@
 				{
 					"label": "Invite her along",
 					"line": "Then you heard I need an Egyptologist. Come with us.",
-					"next": "el_terms"
+					"next": "el_terms",
+					"slot": "ur"
 				},
 				{
 					"label": "Ask what she knows",
@@ -227,7 +238,8 @@
 					"if": {
 						"not_flag": "heard_forgotten_king"
 					},
-					"next": "el_knows"
+					"next": "el_knows",
+					"slot": "ul"
 				},
 				{
 					"label": "Doubt her",
@@ -247,12 +259,14 @@
 							]
 						}
 					],
-					"next": "el_doubt"
+					"next": "el_doubt",
+					"slot": "lr"
 				},
 				{
 					"label": "Leave",
 					"line": "Sorry to have bothered you, miss.",
-					"next": "end_left"
+					"next": "end_left",
+					"slot": "ll"
 				}
 			]
 		},
@@ -297,7 +311,8 @@
 							"set_flag": "promised_eleanor_publish"
 						}
 					],
-					"next": "el_fee"
+					"next": "el_fee",
+					"slot": "ur"
 				},
 				{
 					"label": "Make no promises",
@@ -311,7 +326,8 @@
 							]
 						}
 					],
-					"next": "el_fee"
+					"next": "el_fee",
+					"slot": "lr"
 				}
 			]
 		},
@@ -337,7 +353,8 @@
 							]
 						}
 					],
-					"next": "el_joined"
+					"next": "el_joined",
+					"slot": "ur"
 				},
 				{
 					"label": "Pay what she asks",
@@ -350,7 +367,8 @@
 							"money": -10
 						}
 					],
-					"next": "el_joined"
+					"next": "el_joined",
+					"slot": "r"
 				},
 				{
 					"label": "Pay nothing yet",
@@ -364,7 +382,8 @@
 							]
 						}
 					],
-					"next": "el_joined_cool"
+					"next": "el_joined_cool",
+					"slot": "lr"
 				}
 			]
 		},
@@ -424,7 +443,8 @@
 				{
 					"label": "Offer him the job",
 					"line": "I want a real archaeologist. Someone who does it properly.",
-					"next": "pe_terms"
+					"next": "pe_terms",
+					"slot": "ur"
 				},
 				{
 					"label": "Ask about his last dig",
@@ -437,12 +457,14 @@
 							"set_flag": "pembroke_told_failure"
 						}
 					],
-					"next": "pe_failure"
+					"next": "pe_failure",
+					"slot": "ul"
 				},
 				{
 					"label": "Leave",
 					"line": "Forget I asked.",
-					"next": "end_left"
+					"next": "end_left",
+					"slot": "ll"
 				}
 			]
 		},
@@ -476,7 +498,8 @@
 							"set_flag": "promised_pembroke_records"
 						}
 					],
-					"next": "pe_joined"
+					"next": "pe_joined",
+					"slot": "ur"
 				},
 				{
 					"label": "Show him the archive papers",
@@ -485,7 +508,8 @@
 						"flag": "researched_akmentar",
 						"money": 50
 					},
-					"next": "pe_homework"
+					"next": "pe_homework",
+					"slot": "r"
 				},
 				{
 					"label": "Haggle",
@@ -505,12 +529,14 @@
 							]
 						}
 					],
-					"next": "pe_haggle"
+					"next": "pe_haggle",
+					"slot": "lr"
 				},
 				{
 					"label": "Admit you can't afford him",
 					"line": "I can't pay that.",
-					"next": "pe_broke"
+					"next": "pe_broke",
+					"slot": "l"
 				}
 			]
 		},

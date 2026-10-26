@@ -22,12 +22,14 @@
 							]
 						}
 					],
-					"next": "terms"
+					"next": "terms",
+					"slot": "ur"
 				},
 				{
 					"label": "Ask what he wants",
 					"line": "Nobody offers for nothing. What's your price?",
-					"next": "terms"
+					"next": "terms",
+					"slot": "ul"
 				}
 			]
 		},
@@ -50,7 +52,8 @@
 							]
 						}
 					],
-					"next": "joined"
+					"next": "joined",
+					"slot": "ur"
 				},
 				{
 					"label": "No promises",
@@ -64,7 +67,8 @@
 							]
 						}
 					],
-					"next": "joined_cool"
+					"next": "joined_cool",
+					"slot": "lr"
 				}
 			]
 		},

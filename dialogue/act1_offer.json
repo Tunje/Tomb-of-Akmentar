@@ -74,7 +74,8 @@
 							"set_flag": "karim_first"
 						}
 					],
-					"next": "first"
+					"next": "first",
+					"slot": "ul"
 				},
 				{
 					"label": "Ask about the reward",
@@ -87,7 +88,8 @@
 							"set_flag": "karim_reward"
 						}
 					],
-					"next": "reward"
+					"next": "reward",
+					"slot": "l"
 				},
 				{
 					"label": "Ask for more up front",
@@ -107,12 +109,14 @@
 							]
 						}
 					],
-					"next": "more"
+					"next": "more",
+					"slot": "r"
 				},
 				{
 					"label": "Accept",
 					"line": "All right. I'll take your expedition.",
-					"next": "accept"
+					"next": "accept",
+					"slot": "ur"
 				},
 				{
 					"label": "Refuse",
@@ -125,7 +129,8 @@
 							"set_flag": "karim_refused"
 						}
 					],
-					"next": "refuse"
+					"next": "refuse",
+					"slot": "lr"
 				}
 			]
 		},
@@ -207,12 +212,14 @@
 							"set_flag": "finch_paid"
 						}
 					],
-					"next": "end_accepted"
+					"next": "end_accepted",
+					"slot": "r"
 				},
 				{
 					"label": "Keep the money",
 					"line": "Finch can wait.",
-					"next": "end_accepted"
+					"next": "end_accepted",
+					"slot": "ur"
 				}
 			]
 		},

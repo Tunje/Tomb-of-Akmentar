@@ -36,7 +36,8 @@
 				{
 					"label": "Offer him the job",
 					"line": "I'm leading an expedition into the desert, Tom. I need someone who can keep people alive.",
-					"next": "question"
+					"next": "question",
+					"slot": "ur"
 				},
 				{
 					"label": "Catch up",
@@ -49,12 +50,14 @@
 							"set_flag": "hargreaves_caught_up"
 						}
 					],
-					"next": "catchup"
+					"next": "catchup",
+					"slot": "ul"
 				},
 				{
 					"label": "Leave",
 					"line": "Just passing through. Good to see you, Tom.",
-					"next": "end_left"
+					"next": "end_left",
+					"slot": "ll"
 				}
 			]
 		},
@@ -79,12 +82,14 @@
 							]
 						}
 					],
-					"next": "q_right"
+					"next": "q_right",
+					"slot": "ur"
 				},
 				{
 					"label": "It depends",
 					"line": "Depends what's coming for us.",
-					"next": "q_honest"
+					"next": "q_honest",
+					"slot": "r"
 				},
 				{
 					"label": "Leave them, if I must",
@@ -105,7 +110,8 @@
 							]
 						}
 					],
-					"next": "q_wrong"
+					"next": "q_wrong",
+					"slot": "lr"
 				}
 			]
 		},
@@ -139,7 +145,8 @@
 							"money": -60
 						}
 					],
-					"next": "joined"
+					"next": "joined",
+					"slot": "ur"
 				},
 				{
 					"label": "Half now, half later",
@@ -158,12 +165,14 @@
 							]
 						}
 					],
-					"next": "joined_owed"
+					"next": "joined_owed",
+					"slot": "r"
 				},
 				{
 					"label": "Leave",
 					"line": "Too rich for me, Tom.",
-					"next": "too_rich"
+					"next": "too_rich",
+					"slot": "ll"
 				}
 			]
 		},

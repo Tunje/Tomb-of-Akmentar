@@ -137,7 +137,8 @@
 							"set_flag": "fork_temple"
 						}
 					],
-					"next": "temple_fx_0"
+					"next": "temple_fx_0",
+					"slot": "ur"
 				},
 				{
 					"label": "The town",
@@ -147,7 +148,8 @@
 							"set_flag": "fork_town"
 						}
 					],
-					"next": "town_fx_0"
+					"next": "town_fx_0",
+					"slot": "r"
 				}
 			]
 		},

@@ -10,24 +10,68 @@
 	"nodes": {
 		"start": {
 			"branch": [
-				{"if": {"flag": "ally_is_americans"}, "next": "am_open"},
-				{"if": {"flag": "ally_is_germans"}, "next": "ge_open"},
-				{"next": "alone_open"}
+				{
+					"if": {
+						"flag": "ally_is_americans"
+					},
+					"next": "am_open"
+				},
+				{
+					"if": {
+						"flag": "ally_is_germans"
+					},
+					"next": "ge_open"
+				},
+				{
+					"next": "alone_open"
+				}
 			]
 		},
 		"am_open": {
 			"speaker": "whitfield",
 			"line": "That's it, the king's own door! We've poked around long enough. Red, bring the crowbars. We're going in now.",
 			"choices": [
-				{"label": "Show him the warning", "line": "Read this first, Whitfield. 'He who forces the seal shall find the roof come down to be his shroud.' Look up: those ceiling stones are hanging on wedges.", "if": {"flag": "found_warning"}, "next": "am_backs_down"},
-				{"label": "Tell him to wait", "line": "Hold on. We don't know what's on the other side of that door.", "next": "am_ignores"},
-				{"label": "Let him", "line": "Go ahead. It's your crowbar.", "next": "am_forces"}
+				{
+					"label": "Show him the warning",
+					"line": "Read this first, Whitfield. 'He who forces the seal shall find the roof come down to be his shroud.' Look up: those ceiling stones are hanging on wedges.",
+					"if": {
+						"flag": "found_warning"
+					},
+					"next": "am_backs_down",
+					"slot": "r"
+				},
+				{
+					"label": "Tell him to wait",
+					"line": "Hold on. We don't know what's on the other side of that door.",
+					"next": "am_ignores",
+					"slot": "ur"
+				},
+				{
+					"label": "Let him",
+					"line": "Go ahead. It's your crowbar.",
+					"next": "am_forces",
+					"slot": "lr"
+				}
 			]
 		},
 		"am_backs_down": {
 			"speaker": "whitfield",
 			"line": "Huh. Well... I didn't get rich by getting buried. All right, we do it your way. Red, put those down.",
-			"do": [{"set_flag": ["door_forced", false]}, {"stat": ["whitfield", "trust", 1]}],
+			"do": [
+				{
+					"set_flag": [
+						"door_forced",
+						false
+					]
+				},
+				{
+					"stat": [
+						"whitfield",
+						"trust",
+						1
+					]
+				}
+			],
 			"next": "safe_open"
 		},
 		"am_ignores": {
@@ -38,13 +82,27 @@
 		"am_forces": {
 			"speaker": "whitfield",
 			"line": "Heave! It's giving! It's...",
-			"do": [{"set_flag": ["door_forced", true]}],
+			"do": [
+				{
+					"set_flag": [
+						"door_forced",
+						true
+					]
+				}
+			],
 			"next": "forced_eleanor"
 		},
 		"forced_eleanor": {
 			"branch": [
-				{"if": {"in_party": "eleanor"}, "next": "forced_eleanor_line"},
-				{"next": "end_forced"}
+				{
+					"if": {
+						"in_party": "eleanor"
+					},
+					"next": "forced_eleanor_line"
+				},
+				{
+					"next": "end_forced"
+				}
 			]
 		},
 		"forced_eleanor_line": {
@@ -56,15 +114,47 @@
 			"speaker": "adler",
 			"line": "The royal seal. We will document every symbol and test every stone before we touch it. It will take some hours, but there is no other responsible way.",
 			"choices": [
-				{"label": "Show him the ritual", "line": "Professor, the chapel shows how the priests opened it: jackal, eye, the sun below the earth, the closed hand. No force, no hours of digging.", "if": {"flag": "found_ritual"}, "next": "ge_convinced"},
-				{"label": "Urge him to hurry", "line": "Hours? We don't have hours, Professor.", "next": "ge_refuses"},
-				{"label": "Agree", "line": "Very well. Do it properly.", "next": "ge_delay"}
+				{
+					"label": "Show him the ritual",
+					"line": "Professor, the chapel shows how the priests opened it: jackal, eye, the sun below the earth, the closed hand. No force, no hours of digging.",
+					"if": {
+						"flag": "found_ritual"
+					},
+					"next": "ge_convinced",
+					"slot": "r"
+				},
+				{
+					"label": "Urge him to hurry",
+					"line": "Hours? We don't have hours, Professor.",
+					"next": "ge_refuses",
+					"slot": "ur"
+				},
+				{
+					"label": "Agree",
+					"line": "Very well. Do it properly.",
+					"next": "ge_delay",
+					"slot": "ul"
+				}
 			]
 		},
 		"ge_convinced": {
 			"speaker": "adler",
 			"line": "The opening of the way... Of course. Wilhelm, the sequence, quickly. Remarkable. We have saved half a day.",
-			"do": [{"set_flag": ["german_delay", false]}, {"stat": ["adler", "trust", 1]}],
+			"do": [
+				{
+					"set_flag": [
+						"german_delay",
+						false
+					]
+				},
+				{
+					"stat": [
+						"adler",
+						"trust",
+						1
+					]
+				}
+			],
 			"next": "safe_open"
 		},
 		"ge_refuses": {
@@ -75,13 +165,27 @@
 		"ge_delay": {
 			"speaker": "adler",
 			"line": "Wilhelm, the drawing board. We begin with the lintel.",
-			"do": [{"set_flag": ["german_delay", true]}],
+			"do": [
+				{
+					"set_flag": [
+						"german_delay",
+						true
+					]
+				}
+			],
 			"next": "delay_eleanor"
 		},
 		"delay_eleanor": {
 			"branch": [
-				{"if": {"in_party": "eleanor"}, "next": "delay_eleanor_line"},
-				{"next": "end_delay"}
+				{
+					"if": {
+						"in_party": "eleanor"
+					},
+					"next": "delay_eleanor_line"
+				},
+				{
+					"next": "end_delay"
+				}
 			]
 		},
 		"delay_eleanor_line": {
@@ -93,8 +197,21 @@
 			"speaker": "player",
 			"line": "No one to argue with now. Just the door, and what we know about it.",
 			"choices": [
-				{"label": "Use the ritual", "line": "Jackal, eye, the sun below the earth, the closed hand. Gently.", "if": {"flag": "found_ritual"}, "next": "safe_open"},
-				{"label": "Open it carefully", "line": "Slowly. Watch the ceiling.", "next": "safe_open"}
+				{
+					"label": "Use the ritual",
+					"line": "Jackal, eye, the sun below the earth, the closed hand. Gently.",
+					"if": {
+						"flag": "found_ritual"
+					},
+					"next": "safe_open",
+					"slot": "r"
+				},
+				{
+					"label": "Open it carefully",
+					"line": "Slowly. Watch the ceiling.",
+					"next": "safe_open",
+					"slot": "ur"
+				}
 			]
 		},
 		"safe_open": {
@@ -102,8 +219,14 @@
 			"line": "The seal gives with a sigh of old air. The royal tomb is open.",
 			"next": "end_safe"
 		},
-		"end_forced": {"end": true},
-		"end_delay": {"end": true},
-		"end_safe": {"end": true}
+		"end_forced": {
+			"end": true
+		},
+		"end_delay": {
+			"end": true
+		},
+		"end_safe": {
+			"end": true
+		}
 	}
 }

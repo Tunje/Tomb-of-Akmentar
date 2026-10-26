@@ -35,7 +35,8 @@
 							"set_flag": "booked_riverboat"
 						}
 					],
-					"next": "booked"
+					"next": "booked",
+					"slot": "ur"
 				},
 				{
 					"label": "Ask about the river",
@@ -48,12 +49,14 @@
 							"set_flag": "heard_river_warning"
 						}
 					],
-					"next": "river"
+					"next": "river",
+					"slot": "ul"
 				},
 				{
 					"label": "Leave",
 					"line": "I'll think about it.",
-					"next": "bye"
+					"next": "bye",
+					"slot": "ll"
 				}
 			]
 		},

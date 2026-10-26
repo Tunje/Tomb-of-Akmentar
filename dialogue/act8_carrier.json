@@ -28,7 +28,7 @@
 			"choices": [
 				{
 					"label": "Eleanor",
-					"line": "",
+					"line": "Eleanor, you carry it. Keep it close.",
 					"if": {
 						"in_party": "eleanor"
 					},
@@ -50,11 +50,12 @@
 							]
 						}
 					],
-					"next": "carried"
+					"next": "carried",
+					"slot": "r"
 				},
 				{
 					"label": "Pembroke",
-					"line": "",
+					"line": "Pembroke, you carry it. Keep it close.",
 					"if": {
 						"in_party": "pembroke"
 					},
@@ -76,11 +77,12 @@
 							]
 						}
 					],
-					"next": "carried"
+					"next": "carried",
+					"slot": "ur"
 				},
 				{
 					"label": "al-Masri",
-					"line": "",
+					"line": "al-Masri, you carry it. Keep it close.",
 					"if": {
 						"in_party": "hassan"
 					},
@@ -102,12 +104,14 @@
 							]
 						}
 					],
-					"next": "carried"
+					"next": "carried",
+					"slot": "lr"
 				},
 				{
 					"label": "Back",
 					"line": "",
-					"next": "pick"
+					"next": "pick",
+					"slot": "ll"
 				}
 			]
 		},
@@ -117,7 +121,7 @@
 			"choices": [
 				{
 					"label": "Tom",
-					"line": "",
+					"line": "Tom, you carry it. Keep it close.",
 					"if": {
 						"in_party": "hargreaves"
 					},
@@ -139,11 +143,12 @@
 							]
 						}
 					],
-					"next": "carried"
+					"next": "carried",
+					"slot": "r"
 				},
 				{
 					"label": "Idris",
-					"line": "",
+					"line": "Idris, you carry it. Keep it close.",
 					"if": {
 						"in_party": "idris"
 					},
@@ -165,11 +170,12 @@
 							]
 						}
 					],
-					"next": "carried"
+					"next": "carried",
+					"slot": "ur"
 				},
 				{
 					"label": "Isabelle",
-					"line": "",
+					"line": "Isabelle, you carry it. Keep it close.",
 					"if": {
 						"in_party": "isabelle"
 					},
@@ -191,12 +197,14 @@
 							]
 						}
 					],
-					"next": "carried"
+					"next": "carried",
+					"slot": "lr"
 				},
 				{
 					"label": "Back",
 					"line": "",
-					"next": "pick"
+					"next": "pick",
+					"slot": "ll"
 				}
 			]
 		},
@@ -206,7 +214,7 @@
 			"choices": [
 				{
 					"label": "Saleh",
-					"line": "",
+					"line": "Saleh, you carry it. Keep it close.",
 					"if": {
 						"in_party": "saleh"
 					},
@@ -228,11 +236,12 @@
 							]
 						}
 					],
-					"next": "carried"
+					"next": "carried",
+					"slot": "r"
 				},
 				{
 					"label": "Youssef",
-					"line": "",
+					"line": "Youssef, you carry it. Keep it close.",
 					"if": {
 						"in_party": "youssef"
 					},
@@ -254,11 +263,12 @@
 							]
 						}
 					],
-					"next": "carried"
+					"next": "carried",
+					"slot": "ur"
 				},
 				{
 					"label": "Farid",
-					"line": "",
+					"line": "Farid, you carry it. Keep it close.",
 					"if": {
 						"in_party": "farid"
 					},
@@ -280,12 +290,14 @@
 							]
 						}
 					],
-					"next": "carried"
+					"next": "carried",
+					"slot": "lr"
 				},
 				{
 					"label": "Back",
 					"line": "",
-					"next": "pick"
+					"next": "pick",
+					"slot": "ll"
 				}
 			]
 		},
@@ -295,7 +307,7 @@
 			"choices": [
 				{
 					"label": "Mahmoud",
-					"line": "",
+					"line": "Mahmoud, you carry it. Keep it close.",
 					"if": {
 						"in_party": "mahmoud"
 					},
@@ -317,11 +329,12 @@
 							]
 						}
 					],
-					"next": "carried"
+					"next": "carried",
+					"slot": "r"
 				},
 				{
 					"label": "Khalil",
-					"line": "",
+					"line": "Khalil, you carry it. Keep it close.",
 					"if": {
 						"in_party": "khalil"
 					},
@@ -343,11 +356,12 @@
 							]
 						}
 					],
-					"next": "carried"
+					"next": "carried",
+					"slot": "ur"
 				},
 				{
 					"label": "Naguib",
-					"line": "",
+					"line": "Naguib, you carry it. Keep it close.",
 					"if": {
 						"in_party": "naguib"
 					},
@@ -369,12 +383,14 @@
 							]
 						}
 					],
-					"next": "carried"
+					"next": "carried",
+					"slot": "lr"
 				},
 				{
 					"label": "Back",
 					"line": "",
-					"next": "pick"
+					"next": "pick",
+					"slot": "ll"
 				}
 			]
 		},
@@ -385,22 +401,26 @@
 				{
 					"label": "The scholars",
 					"line": "",
-					"next": "pick_g0"
+					"next": "pick_g0",
+					"slot": "r"
 				},
 				{
 					"label": "The fighters",
 					"line": "",
-					"next": "pick_g1"
+					"next": "pick_g1",
+					"slot": "ur"
 				},
 				{
 					"label": "The guides",
 					"line": "",
-					"next": "pick_g2"
+					"next": "pick_g2",
+					"slot": "lr"
 				},
 				{
 					"label": "The crews",
 					"line": "",
-					"next": "pick_g3"
+					"next": "pick_g3",
+					"slot": "l"
 				},
 				{
 					"label": "Carry it yourself",
@@ -416,7 +436,8 @@
 							"set_flag": "carrier_player"
 						}
 					],
-					"next": "carried"
+					"next": "carried",
+					"slot": "ul"
 				}
 			]
 		},

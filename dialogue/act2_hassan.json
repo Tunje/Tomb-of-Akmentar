@@ -73,12 +73,14 @@
 							"set_flag": "hassan_heard_greed"
 						}
 					],
-					"next": "greed"
+					"next": "greed",
+					"slot": "r"
 				},
 				{
 					"label": "For the job",
 					"line": "I'm paid to get people there and back. That's all.",
-					"next": "job"
+					"next": "job",
+					"slot": "ur"
 				},
 				{
 					"label": "To see what's really there",
@@ -92,7 +94,8 @@
 							]
 						}
 					],
-					"next": "curious"
+					"next": "curious",
+					"slot": "lr"
 				},
 				{
 					"label": "Ask about the legend",
@@ -108,12 +111,14 @@
 							"set_flag": "heard_forgotten_king"
 						}
 					],
-					"next": "legend"
+					"next": "legend",
+					"slot": "ul"
 				},
 				{
 					"label": "Leave",
 					"line": "Another time.",
-					"next": "end_left"
+					"next": "end_left",
+					"slot": "ll"
 				}
 			]
 		},
@@ -168,7 +173,8 @@
 							"set_flag": "promised_hassan_listen"
 						}
 					],
-					"next": "joined"
+					"next": "joined",
+					"slot": "ur"
 				},
 				{
 					"label": "Promise, but no money",
@@ -178,7 +184,8 @@
 							"set_flag": "promised_hassan_listen"
 						}
 					],
-					"next": "joined_poor"
+					"next": "joined_poor",
+					"slot": "r"
 				},
 				{
 					"label": "Pay, but no promises",
@@ -205,12 +212,14 @@
 							]
 						}
 					],
-					"next": "joined_cool"
+					"next": "joined_cool",
+					"slot": "lr"
 				},
 				{
 					"label": "Leave",
 					"line": "I'll think about it.",
-					"next": "end_left"
+					"next": "end_left",
+					"slot": "ll"
 				}
 			]
 		},

@@ -19,7 +19,8 @@
 				{
 					"label": "Refuse",
 					"line": "No. They go back where they came from.",
-					"next": "refuse"
+					"next": "refuse",
+					"slot": "lr"
 				},
 				{
 					"label": "Confront him",
@@ -27,7 +28,8 @@
 					"if": {
 						"flag": "clue_cairo_first_report"
 					},
-					"next": "confront"
+					"next": "confront",
+					"slot": "r"
 				},
 				{
 					"label": "Confront him",
@@ -36,7 +38,8 @@
 						"flag": "heard_blackwood_silence",
 						"not_flag": "clue_cairo_first_report"
 					},
-					"next": "confront"
+					"next": "confront",
+					"slot": "ur"
 				},
 				{
 					"label": "Explain the danger",
@@ -49,7 +52,8 @@
 							"set_flag": "bw_danger"
 						}
 					],
-					"next": "danger"
+					"next": "danger",
+					"slot": "l"
 				}
 			]
 		},

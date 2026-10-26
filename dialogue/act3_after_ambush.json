@@ -98,7 +98,8 @@
 				{
 					"label": "Question him",
 					"line": "Who paid you?",
-					"next": "answer"
+					"next": "answer",
+					"slot": "r"
 				},
 				{
 					"label": "Threaten him",
@@ -108,7 +109,8 @@
 							"set_flag": "threatened_prisoner"
 						}
 					],
-					"next": "answer"
+					"next": "answer",
+					"slot": "lr"
 				},
 				{
 					"label": "Let him go",
@@ -118,7 +120,8 @@
 							"set_flag": "freed_prisoner"
 						}
 					],
-					"next": "hassan"
+					"next": "hassan",
+					"slot": "ur"
 				}
 			]
 		},

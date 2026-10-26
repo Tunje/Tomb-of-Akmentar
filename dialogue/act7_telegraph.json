@@ -18,7 +18,8 @@
 						"flag": "fletcher_wired",
 						"not_flag": "fletcher_delay"
 					},
-					"next": "fletcher"
+					"next": "fletcher",
+					"slot": "r"
 				},
 				{
 					"label": "Ask about their wires",
@@ -31,12 +32,14 @@
 							"set_flag": "nabil_asked"
 						}
 					],
-					"next": "nabil"
+					"next": "nabil",
+					"slot": "ul"
 				},
 				{
 					"label": "Leave",
 					"line": "Nothing today.",
-					"next": "end"
+					"next": "end",
+					"slot": "ll"
 				}
 			]
 		},

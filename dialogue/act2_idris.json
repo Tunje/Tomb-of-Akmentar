@@ -36,7 +36,8 @@
 				{
 					"label": "Hire him",
 					"line": "I need a man who can shoot and keep his head. Interested?",
-					"next": "fee"
+					"next": "fee",
+					"slot": "ur"
 				},
 				{
 					"label": "Ask about the city",
@@ -49,12 +50,14 @@
 							"set_flag": "idris_contacts"
 						}
 					],
-					"next": "underworld"
+					"next": "underworld",
+					"slot": "ul"
 				},
 				{
 					"label": "Leave",
 					"line": "Maybe later.",
-					"next": "end_left"
+					"next": "end_left",
+					"slot": "ll"
 				}
 			]
 		},
@@ -85,7 +88,8 @@
 							]
 						}
 					],
-					"next": "joined"
+					"next": "joined",
+					"slot": "ur"
 				},
 				{
 					"label": "Pay more for his family",
@@ -108,7 +112,8 @@
 							"set_flag": "idris_paid_well"
 						}
 					],
-					"next": "joined_well"
+					"next": "joined_well",
+					"slot": "r"
 				},
 				{
 					"label": "Offer less",
@@ -131,12 +136,14 @@
 							"set_flag": "idris_underpaid"
 						}
 					],
-					"next": "joined_cool"
+					"next": "joined_cool",
+					"slot": "lr"
 				},
 				{
 					"label": "Leave",
 					"line": "Can't afford you today.",
-					"next": "end_left"
+					"next": "end_left",
+					"slot": "ll"
 				}
 			]
 		},

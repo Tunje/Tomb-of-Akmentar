@@ -61,7 +61,8 @@
 					"caption": "Cairo, 1927",
 					"text": "You came back to Cairo and told the story exactly once, to a room that laughed. You never again showed much interest in ancient tombs, and you never sold the map."
 				}
-			]
+			],
+			"portrait": "res://assets/portraits/explorer.png"
 		},
 		{
 			"who": "eleanor",
@@ -116,7 +117,8 @@
 					"caption": "Cairo Museum, 1926",
 					"text": "She stayed in the reading room, cataloguing other people's discoveries. She still keeps a rubbing of an erased cartouche in her desk drawer."
 				}
-			]
+			],
+			"portrait": "res://assets/portraits/eleanor.png"
 		},
 		{
 			"who": "pembroke",
@@ -156,7 +158,8 @@
 					"caption": "Cairo Museum, 1927",
 					"text": "He stayed at the museum, still waiting for the discovery that would put Wadi Natrun behind him."
 				}
-			]
+			],
+			"portrait": "res://assets/portraits/pembroke.png"
 		},
 		{
 			"who": "hassan",
@@ -206,7 +209,8 @@
 					"caption": "Cairo, 1926",
 					"text": "He kept to Yacoub's back room and his books, and kept his secret. Nobody asked him again about Akmentar."
 				}
-			]
+			],
+			"portrait": "res://assets/portraits/hassan.png"
 		},
 		{
 			"who": "hargreaves",
@@ -246,7 +250,8 @@
 					"caption": "Cairo, 1926",
 					"text": "He stayed at the club, telling the same stories to younger officers."
 				}
-			]
+			],
+			"portrait": "res://assets/portraits/hargreaves.png"
 		},
 		{
 			"who": "idris",
@@ -295,7 +300,8 @@
 					"caption": "Cairo, 1926",
 					"text": "He kept escorting merchants south, and never heard what happened at Akmentar."
 				}
-			]
+			],
+			"portrait": "res://assets/portraits/idris.png"
 		},
 		{
 			"who": "isabelle",
@@ -344,7 +350,8 @@
 					"caption": "Cairo, 1926",
 					"text": "She finished her business with the bounty men and left Cairo on the next boat."
 				}
-			]
+			],
+			"portrait": "res://assets/portraits/isabelle.png"
 		},
 		{
 			"who": "saleh",
@@ -384,7 +391,8 @@
 					"caption": "Cairo, 1926",
 					"text": "He kept guiding caravans, and kept his record: everyone came home."
 				}
-			]
+			],
+			"portrait": "res://assets/portraits/saleh.png"
 		},
 		{
 			"who": "youssef",
@@ -438,7 +446,8 @@
 					"caption": "Cairo, 1926",
 					"text": "He kept waiting at the caravanserai for the expedition that would make his name."
 				}
-			]
+			],
+			"portrait": "res://assets/portraits/youssef.png"
 		},
 		{
 			"who": "farid",
@@ -474,7 +483,8 @@
 					"caption": "Cairo, 1926",
 					"text": "He kept moving goods between Cairo and twelve towns that are not on any map."
 				}
-			]
+			],
+			"portrait": "res://assets/portraits/farid.png"
 		},
 		{
 			"who": "mahmoud",
@@ -510,7 +520,8 @@
 					"caption": "Cairo, 1926",
 					"text": "They were hired by the next expedition through Cairo, as they always were."
 				}
-			]
+			],
+			"portrait": "res://assets/portraits/mahmoud.png"
 		},
 		{
 			"who": "khalil",
@@ -550,7 +561,8 @@
 					"caption": "Cairo, 1926",
 					"text": "They waited on the docks for work that came less and less often."
 				}
-			]
+			],
+			"portrait": "res://assets/portraits/khalil.png"
 		},
 		{
 			"who": "naguib",
@@ -590,7 +602,8 @@
 					"caption": "Cairo, 1926",
 					"text": "He went on building toward his own caravan, one contract at a time."
 				}
-			]
+			],
+			"portrait": "res://assets/portraits/naguib.png"
 		},
 		{
 			"who": "whitfield",
@@ -635,7 +648,8 @@
 					"caption": "Akmentar, 1926",
 					"text": "The American expedition never came home from its first night at Akmentar."
 				}
-			]
+			],
+			"portrait": "res://assets/portraits/whitfield.png"
 		},
 		{
 			"who": "adler",
@@ -675,7 +689,8 @@
 					"caption": "Akmentar, 1926",
 					"text": "The German expedition did not survive its first night at Akmentar."
 				}
-			]
+			],
+			"portrait": "res://assets/portraits/adler.png"
 		},
 		{
 			"who": "bellini",
@@ -694,7 +709,8 @@
 					"caption": "Genoa, 1927",
 					"text": "Bellini's trucks carried the survivors out of Akmentar. He took the credit, and for once deserved some of it."
 				}
-			]
+			],
+			"portrait": "res://assets/portraits/bellini.png"
 		},
 		{
 			"who": "fletcher",
@@ -721,7 +737,8 @@
 					"caption": "Alexandria, 1926",
 					"text": "A pilot in Alexandria, who might have been a friend, kept flying mail and questionable cargo."
 				}
-			]
+			],
+			"portrait": "res://assets/portraits/fletcher.png"
 		},
 		{
 			"who": "archivist",
@@ -748,7 +765,8 @@
 					"caption": "Cairo, 1938",
 					"text": "He went to his grave insisting that Akmentar was a camel drivers' story, and that whatever you found there was something else."
 				}
-			]
+			],
+			"portrait": "res://assets/portraits/archivist.png"
 		},
 		{
 			"who": "blackwood",
@@ -775,7 +793,8 @@
 					"caption": "London, 1935",
 					"text": "He kept his first expedition's secret to the end. It was found among his papers."
 				}
-			]
+			],
+			"portrait": "res://assets/portraits/blackwood.png"
 		},
 		{
 			"who": "keepers",
@@ -794,7 +813,8 @@
 					"caption": "Akmentar, 1927",
 					"text": "The Keepers were all but destroyed. The few who remain still watch the road west."
 				}
-			]
+			],
+			"portrait": "res://assets/portraits/rashad.png"
 		},
 		{
 			"who": "noura",
@@ -823,7 +843,8 @@
 					"caption": "Akmentar, 1926",
 					"text": "Noura al-Khatib kept the ceremonies, as her family always had, far from any foreigner's eyes."
 				}
-			]
+			],
+			"portrait": "res://assets/portraits/noura.png"
 		},
 		{
 			"who": "omar",
@@ -866,7 +887,8 @@
 					"caption": "Akmentar, 1926",
 					"text": "Omar Saqr went on riding with the Keepers, hating foreigners a little less than before, or a little more."
 				}
-			]
+			],
+			"portrait": "res://assets/portraits/omar.png"
 		},
 		{
 			"who": "freddie",
@@ -893,7 +915,8 @@
 					"caption": "Somewhere, 1927",
 					"text": "Freddie vanished again. Postcards arrive from time to time, never with a return address."
 				}
-			]
+			],
+			"portrait": "res://assets/portraits/freddie.png"
 		}
 	]
 }

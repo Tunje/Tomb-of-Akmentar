@@ -48,12 +48,14 @@
 				{
 					"label": "Hire the porters",
 					"line": "How much for your men?",
-					"next": "fee"
+					"next": "fee",
+					"slot": "ur"
 				},
 				{
 					"label": "Leave",
 					"line": "Not today.",
-					"next": "end_left"
+					"next": "end_left",
+					"slot": "ll"
 				}
 			]
 		},
@@ -82,7 +84,8 @@
 							"set_flag": "promised_naguib_loads"
 						}
 					],
-					"next": "joined"
+					"next": "joined",
+					"slot": "ur"
 				},
 				{
 					"label": "I decide the loads",
@@ -102,12 +105,14 @@
 							]
 						}
 					],
-					"next": "joined"
+					"next": "joined",
+					"slot": "lr"
 				},
 				{
 					"label": "Leave",
 					"line": "Too much.",
-					"next": "end_left"
+					"next": "end_left",
+					"slot": "ll"
 				}
 			]
 		},

@@ -36,7 +36,8 @@
 				{
 					"label": "Hire him",
 					"line": "All right. You're hired.",
-					"next": "fee"
+					"next": "fee",
+					"slot": "ur"
 				},
 				{
 					"label": "Ask how far he's been",
@@ -49,12 +50,14 @@
 							"set_flag": "youssef_honest"
 						}
 					],
-					"next": "honest"
+					"next": "honest",
+					"slot": "ul"
 				},
 				{
 					"label": "Leave",
 					"line": "Not today, lad.",
-					"next": "end_left"
+					"next": "end_left",
+					"slot": "ll"
 				}
 			]
 		},
@@ -95,7 +98,8 @@
 							"set_flag": "promised_youssef_credit"
 						}
 					],
-					"next": "joined"
+					"next": "joined",
+					"slot": "ur"
 				},
 				{
 					"label": "Pay, no promises",
@@ -108,12 +112,14 @@
 							"money": -25
 						}
 					],
-					"next": "joined"
+					"next": "joined",
+					"slot": "r"
 				},
 				{
 					"label": "Leave",
 					"line": "Can't spare it.",
-					"next": "end_left"
+					"next": "end_left",
+					"slot": "ll"
 				}
 			]
 		},

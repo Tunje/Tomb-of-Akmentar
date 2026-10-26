@@ -31,7 +31,8 @@
 							"set_flag": "abdel_roads"
 						}
 					],
-					"next": "roads"
+					"next": "roads",
+					"slot": "ul"
 				},
 				{
 					"label": "Ask about the guides",
@@ -44,12 +45,14 @@
 							"set_flag": "abdel_guides"
 						}
 					],
-					"next": "guides"
+					"next": "guides",
+					"slot": "l"
 				},
 				{
 					"label": "Thank him",
 					"line": "That's all. Thank you.",
-					"next": "bye"
+					"next": "bye",
+					"slot": "ll"
 				}
 			]
 		},

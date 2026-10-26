@@ -31,35 +31,39 @@
 			"choices": [
 				{
 					"label": "Eleanor",
-					"line": "",
+					"line": "Eleanor, got a minute?",
 					"if": {
 						"in_party": "eleanor",
 						"not_flag": "camp3_eleanor"
 					},
-					"next": "c_eleanor"
+					"next": "c_eleanor",
+					"slot": "r"
 				},
 				{
 					"label": "Pembroke",
-					"line": "",
+					"line": "Dr. Pembroke, got a minute?",
 					"if": {
 						"in_party": "pembroke",
 						"not_flag": "camp3_pembroke"
 					},
-					"next": "c_pembroke"
+					"next": "c_pembroke",
+					"slot": "ur"
 				},
 				{
 					"label": "al-Masri",
-					"line": "",
+					"line": "Dr. al-Masri, got a minute?",
 					"if": {
 						"in_party": "hassan",
 						"not_flag": "camp3_hassan"
 					},
-					"next": "c_hassan"
+					"next": "c_hassan",
+					"slot": "lr"
 				},
 				{
 					"label": "Back",
 					"line": "",
-					"next": "menu"
+					"next": "menu",
+					"slot": "ll"
 				}
 			]
 		},
@@ -82,7 +86,8 @@
 							"set_flag": "camp3_eleanor"
 						}
 					],
-					"next": "c_eleanor_a"
+					"next": "c_eleanor_a",
+					"slot": "ur"
 				},
 				{
 					"label": "Say it's a payday",
@@ -106,7 +111,8 @@
 							"set_flag": "camp3_eleanor"
 						}
 					],
-					"next": "c_eleanor_b"
+					"next": "c_eleanor_b",
+					"slot": "r"
 				}
 			]
 		},
@@ -139,7 +145,8 @@
 							"set_flag": "camp3_pembroke"
 						}
 					],
-					"next": "c_pembroke_a"
+					"next": "c_pembroke_a",
+					"slot": "ur"
 				},
 				{
 					"label": "Mock him",
@@ -156,7 +163,8 @@
 							"set_flag": "camp3_pembroke"
 						}
 					],
-					"next": "c_pembroke_b"
+					"next": "c_pembroke_b",
+					"slot": "lr"
 				}
 			]
 		},
@@ -192,7 +200,8 @@
 							"set_flag": "camp3_hassan"
 						}
 					],
-					"next": "c_hassan_a"
+					"next": "c_hassan_a",
+					"slot": "ul"
 				},
 				{
 					"label": "Save it for later",
@@ -209,7 +218,8 @@
 							"set_flag": "camp3_hassan"
 						}
 					],
-					"next": "c_hassan_b"
+					"next": "c_hassan_b",
+					"slot": "r"
 				}
 			]
 		},
@@ -229,35 +239,39 @@
 			"choices": [
 				{
 					"label": "Tom",
-					"line": "",
+					"line": "Tom, got a minute?",
 					"if": {
 						"in_party": "hargreaves",
 						"not_flag": "camp3_hargreaves"
 					},
-					"next": "c_hargreaves"
+					"next": "c_hargreaves",
+					"slot": "r"
 				},
 				{
 					"label": "Idris",
-					"line": "",
+					"line": "Idris, got a minute?",
 					"if": {
 						"in_party": "idris",
 						"not_flag": "camp3_idris"
 					},
-					"next": "c_idris"
+					"next": "c_idris",
+					"slot": "ur"
 				},
 				{
 					"label": "Isabelle",
-					"line": "",
+					"line": "Isabelle, got a minute?",
 					"if": {
 						"in_party": "isabelle",
 						"not_flag": "camp3_isabelle"
 					},
-					"next": "c_isabelle"
+					"next": "c_isabelle",
+					"slot": "lr"
 				},
 				{
 					"label": "Back",
 					"line": "",
-					"next": "menu"
+					"next": "menu",
+					"slot": "ll"
 				}
 			]
 		},
@@ -283,7 +297,8 @@
 							"set_flag": "camp3_hargreaves"
 						}
 					],
-					"next": "c_hargreaves_a"
+					"next": "c_hargreaves_a",
+					"slot": "ur"
 				},
 				{
 					"label": "Let them rest",
@@ -300,7 +315,8 @@
 							"set_flag": "camp3_hargreaves"
 						}
 					],
-					"next": "c_hargreaves_b"
+					"next": "c_hargreaves_b",
+					"slot": "r"
 				}
 			]
 		},
@@ -333,7 +349,8 @@
 							"set_flag": "camp3_idris"
 						}
 					],
-					"next": "c_idris_a"
+					"next": "c_idris_a",
+					"slot": "ur"
 				},
 				{
 					"label": "Keep him on the job",
@@ -350,7 +367,8 @@
 							"set_flag": "camp3_idris"
 						}
 					],
-					"next": "c_idris_b"
+					"next": "c_idris_b",
+					"slot": "lr"
 				}
 			]
 		},
@@ -383,7 +401,8 @@
 							"set_flag": "camp3_isabelle"
 						}
 					],
-					"next": "c_isabelle_a"
+					"next": "c_isabelle_a",
+					"slot": "ur"
 				},
 				{
 					"label": "Ask if she would",
@@ -400,7 +419,8 @@
 							"set_flag": "camp3_isabelle"
 						}
 					],
-					"next": "c_isabelle_b"
+					"next": "c_isabelle_b",
+					"slot": "ul"
 				}
 			]
 		},
@@ -420,35 +440,39 @@
 			"choices": [
 				{
 					"label": "Saleh",
-					"line": "",
+					"line": "Saleh, got a minute?",
 					"if": {
 						"in_party": "saleh",
 						"not_flag": "camp3_saleh"
 					},
-					"next": "c_saleh"
+					"next": "c_saleh",
+					"slot": "r"
 				},
 				{
 					"label": "Youssef",
-					"line": "",
+					"line": "Youssef, got a minute?",
 					"if": {
 						"in_party": "youssef",
 						"not_flag": "camp3_youssef"
 					},
-					"next": "c_youssef"
+					"next": "c_youssef",
+					"slot": "ur"
 				},
 				{
 					"label": "Farid",
-					"line": "",
+					"line": "Farid, got a minute?",
 					"if": {
 						"in_party": "farid",
 						"not_flag": "camp3_farid"
 					},
-					"next": "c_farid"
+					"next": "c_farid",
+					"slot": "lr"
 				},
 				{
 					"label": "Back",
 					"line": "",
-					"next": "menu"
+					"next": "menu",
+					"slot": "ll"
 				}
 			]
 		},
@@ -474,7 +498,8 @@
 							"set_flag": "camp3_saleh"
 						}
 					],
-					"next": "c_saleh_a"
+					"next": "c_saleh_a",
+					"slot": "ur"
 				},
 				{
 					"label": "Overrule him",
@@ -491,7 +516,8 @@
 							"set_flag": "camp3_saleh"
 						}
 					],
-					"next": "c_saleh_b"
+					"next": "c_saleh_b",
+					"slot": "lr"
 				}
 			]
 		},
@@ -531,7 +557,8 @@
 							"set_flag": "camp3_youssef"
 						}
 					],
-					"next": "c_youssef_a"
+					"next": "c_youssef_a",
+					"slot": "ur"
 				},
 				{
 					"label": "Keep him close",
@@ -548,7 +575,8 @@
 							"set_flag": "camp3_youssef"
 						}
 					],
-					"next": "c_youssef_b"
+					"next": "c_youssef_b",
+					"slot": "r"
 				}
 			]
 		},
@@ -588,7 +616,8 @@
 							"set_flag": "camp3_farid"
 						}
 					],
-					"next": "c_farid_a"
+					"next": "c_farid_a",
+					"slot": "ur"
 				},
 				{
 					"label": "No side deals",
@@ -605,7 +634,8 @@
 							"set_flag": "camp3_farid"
 						}
 					],
-					"next": "c_farid_b"
+					"next": "c_farid_b",
+					"slot": "lr"
 				}
 			]
 		},
@@ -625,35 +655,39 @@
 			"choices": [
 				{
 					"label": "Mahmoud",
-					"line": "",
+					"line": "Mahmoud, got a minute?",
 					"if": {
 						"in_party": "mahmoud",
 						"not_flag": "camp3_mahmoud"
 					},
-					"next": "c_mahmoud"
+					"next": "c_mahmoud",
+					"slot": "r"
 				},
 				{
 					"label": "Khalil",
-					"line": "",
+					"line": "Khalil, got a minute?",
 					"if": {
 						"in_party": "khalil",
 						"not_flag": "camp3_khalil"
 					},
-					"next": "c_khalil"
+					"next": "c_khalil",
+					"slot": "ur"
 				},
 				{
 					"label": "Naguib",
-					"line": "",
+					"line": "Naguib, got a minute?",
 					"if": {
 						"in_party": "naguib",
 						"not_flag": "camp3_naguib"
 					},
-					"next": "c_naguib"
+					"next": "c_naguib",
+					"slot": "lr"
 				},
 				{
 					"label": "Back",
 					"line": "",
-					"next": "menu"
+					"next": "menu",
+					"slot": "ll"
 				}
 			]
 		},
@@ -676,7 +710,8 @@
 							"set_flag": "camp3_mahmoud"
 						}
 					],
-					"next": "c_mahmoud_a"
+					"next": "c_mahmoud_a",
+					"slot": "r"
 				},
 				{
 					"label": "The expedition's",
@@ -693,7 +728,8 @@
 							"set_flag": "camp3_mahmoud"
 						}
 					],
-					"next": "c_mahmoud_b"
+					"next": "c_mahmoud_b",
+					"slot": "ur"
 				}
 			]
 		},
@@ -733,11 +769,12 @@
 							"set_flag": "camp3_khalil"
 						}
 					],
-					"next": "c_khalil_a"
+					"next": "c_khalil_a",
+					"slot": "ur"
 				},
 				{
 					"label": "They'll toughen up",
-					"line": "They'll toughen up.",
+					"line": "They're grown men. They'll toughen up.",
 					"do": [
 						{
 							"stat": [
@@ -750,7 +787,8 @@
 							"set_flag": "camp3_khalil"
 						}
 					],
-					"next": "c_khalil_b"
+					"next": "c_khalil_b",
+					"slot": "lr"
 				}
 			]
 		},
@@ -783,7 +821,8 @@
 							"set_flag": "camp3_naguib"
 						}
 					],
-					"next": "c_naguib_a"
+					"next": "c_naguib_a",
+					"slot": "ur"
 				},
 				{
 					"label": "Push on",
@@ -800,7 +839,8 @@
 							"set_flag": "camp3_naguib"
 						}
 					],
-					"next": "c_naguib_b"
+					"next": "c_naguib_b",
+					"slot": "lr"
 				}
 			]
 		},
@@ -821,27 +861,32 @@
 				{
 					"label": "Talk to the scholars",
 					"line": "",
-					"next": "group_0"
+					"next": "group_0",
+					"slot": "r"
 				},
 				{
 					"label": "Talk to the fighters",
 					"line": "",
-					"next": "group_1"
+					"next": "group_1",
+					"slot": "ur"
 				},
 				{
 					"label": "Talk to the guides",
 					"line": "",
-					"next": "group_2"
+					"next": "group_2",
+					"slot": "lr"
 				},
 				{
 					"label": "Talk to the crews",
 					"line": "",
-					"next": "group_3"
+					"next": "group_3",
+					"slot": "l"
 				},
 				{
 					"label": "Turn in",
 					"line": "Get some sleep. Long day tomorrow.",
-					"next": "end"
+					"next": "end",
+					"slot": "ll"
 				}
 			]
 		}

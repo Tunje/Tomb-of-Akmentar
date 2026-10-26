@@ -8,20 +8,38 @@
 	"nodes": {
 		"greet": {
 			"branch": [
-				{"if": {"flag": "met_whitfield"}, "next": "again"},
-				{"next": "first"}
+				{
+					"if": {
+						"flag": "met_whitfield"
+					},
+					"next": "again"
+				},
+				{
+					"next": "first"
+				}
 			]
 		},
 		"first": {
 			"speaker": "whitfield",
 			"line": "Well, look who made it! Charlie Whitfield, and that's my outfit you're admiring. Biggest camp on the site, and the best coffee this side of the Nile.",
-			"do": [{"set_flag": "met_whitfield"}],
+			"do": [
+				{
+					"set_flag": "met_whitfield"
+				}
+			],
 			"next": "wager"
 		},
 		"wager": {
 			"branch": [
-				{"if": {"flag": "wager_accepted"}, "next": "wager_on"},
-				{"next": "wager_off"}
+				{
+					"if": {
+						"flag": "wager_accepted"
+					},
+					"next": "wager_on"
+				},
+				{
+					"next": "wager_off"
+				}
 			]
 		},
 		"wager_on": {
@@ -43,10 +61,60 @@
 			"speaker": "whitfield",
 			"line": "So, what can I do for you?",
 			"choices": [
-				{"label": "Congratulate him", "line": "That was some arrival, Whitfield. If anyone finds a king's ransom out here, it'll be you.", "if": {"not_flag": "whitfield_talked"}, "do": [{"stat": ["whitfield", "trust", 1]}, {"set_flag": "whitfield_talked"}], "next": "pleased"},
-				{"label": "Needle him", "line": "Whatever's down there belongs in a museum, not in your parlour back in New York.", "if": {"not_flag": "whitfield_talked"}, "do": [{"stat": ["whitfield", "trust", -1]}, {"set_flag": "whitfield_talked"}], "next": "stung"},
-				{"label": "Ask about his men", "line": "You've brought a lot of rifles for a dig.", "next": "men"},
-				{"label": "Leave", "line": "Enjoy your coffee.", "next": "bye"}
+				{
+					"label": "Congratulate him",
+					"line": "That was some arrival, Whitfield. If anyone finds a king's ransom out here, it'll be you.",
+					"if": {
+						"not_flag": "whitfield_talked"
+					},
+					"do": [
+						{
+							"stat": [
+								"whitfield",
+								"trust",
+								1
+							]
+						},
+						{
+							"set_flag": "whitfield_talked"
+						}
+					],
+					"next": "pleased",
+					"slot": "ur"
+				},
+				{
+					"label": "Needle him",
+					"line": "Whatever's down there belongs in a museum, not in your parlour back in New York.",
+					"if": {
+						"not_flag": "whitfield_talked"
+					},
+					"do": [
+						{
+							"stat": [
+								"whitfield",
+								"trust",
+								-1
+							]
+						},
+						{
+							"set_flag": "whitfield_talked"
+						}
+					],
+					"next": "stung",
+					"slot": "lr"
+				},
+				{
+					"label": "Ask about his men",
+					"line": "You've brought a lot of rifles for a dig.",
+					"next": "men",
+					"slot": "ul"
+				},
+				{
+					"label": "Leave",
+					"line": "Enjoy your coffee.",
+					"next": "bye",
+					"slot": "ll"
+				}
 			]
 		},
 		"pleased": {
@@ -56,28 +124,57 @@
 		},
 		"hint": {
 			"branch": [
-				{"if": {"flag": "claimed_anubis_americans"}, "next": "hint_anubis"},
-				{"if": {"flag": "claimed_scarabs_americans"}, "next": "hint_scarabs"},
-				{"if": {"flag": "claimed_storeroom_americans"}, "next": "hint_storeroom"},
-				{"next": "hint_none"}
+				{
+					"if": {
+						"flag": "claimed_anubis_americans"
+					},
+					"next": "hint_anubis"
+				},
+				{
+					"if": {
+						"flag": "claimed_scarabs_americans"
+					},
+					"next": "hint_scarabs"
+				},
+				{
+					"if": {
+						"flag": "claimed_storeroom_americans"
+					},
+					"next": "hint_storeroom"
+				},
+				{
+					"next": "hint_none"
+				}
 			]
 		},
 		"hint_anubis": {
 			"speaker": "whitfield",
 			"line": "My boys were poking round that jackal statue. Something under its feet rings hollow when you knock on it. Don't tell anyone I said so.",
-			"do": [{"set_flag": "hint_anubis"}],
+			"do": [
+				{
+					"set_flag": "hint_anubis"
+				}
+			],
 			"next": "menu"
 		},
 		"hint_scarabs": {
 			"speaker": "whitfield",
 			"line": "That wall of green beetles? Maggie swears one of them is the wrong way round. Two hundred scarabs and she counts them. That's what I pay her for.",
-			"do": [{"set_flag": "hint_scarabs"}],
+			"do": [
+				{
+					"set_flag": "hint_scarabs"
+				}
+			],
 			"next": "menu"
 		},
 		"hint_storeroom": {
 			"speaker": "whitfield",
 			"line": "We cracked the seal on that storeroom. Whoever closed it up did it from the inside. Gave Red the creeps, and nothing gives Red the creeps.",
-			"do": [{"set_flag": "hint_storeroom"}],
+			"do": [
+				{
+					"set_flag": "hint_storeroom"
+				}
+			],
 			"next": "menu"
 		},
 		"hint_none": {
@@ -100,6 +197,8 @@
 			"line": "See you at the finish line!",
 			"next": "end"
 		},
-		"end": {"end": true}
+		"end": {
+			"end": true
+		}
 	}
 }

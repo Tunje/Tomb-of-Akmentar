@@ -387,7 +387,8 @@
 							"set_flag": "act5_pressed"
 						}
 					],
-					"next": "americans_press"
+					"next": "americans_press",
+					"slot": "lr"
 				},
 				{
 					"label": "Challenge him",
@@ -408,7 +409,8 @@
 							]
 						}
 					],
-					"next": "americans_challenged"
+					"next": "americans_challenged",
+					"slot": "r"
 				},
 				{
 					"label": "Ask Eleanor",
@@ -422,12 +424,14 @@
 							"set_flag": "act5_asked_eleanor"
 						}
 					],
-					"next": "americans_eleanor"
+					"next": "americans_eleanor",
+					"slot": "ul"
 				},
 				{
 					"label": "Let it go",
 					"line": "Fine. Let's get moving.",
-					"next": "americans_bye"
+					"next": "americans_bye",
+					"slot": "ur"
 				}
 			]
 		},
@@ -995,7 +999,8 @@
 							"set_flag": "act5_pressed"
 						}
 					],
-					"next": "germans_press"
+					"next": "germans_press",
+					"slot": "lr"
 				},
 				{
 					"label": "Challenge him",
@@ -1016,7 +1021,8 @@
 							]
 						}
 					],
-					"next": "germans_challenged"
+					"next": "germans_challenged",
+					"slot": "r"
 				},
 				{
 					"label": "Ask Eleanor",
@@ -1030,12 +1036,14 @@
 							"set_flag": "act5_asked_eleanor"
 						}
 					],
-					"next": "germans_eleanor"
+					"next": "germans_eleanor",
+					"slot": "ul"
 				},
 				{
 					"label": "Let it go",
 					"line": "Fine. Let's get moving.",
-					"next": "germans_bye"
+					"next": "germans_bye",
+					"slot": "ur"
 				}
 			]
 		},

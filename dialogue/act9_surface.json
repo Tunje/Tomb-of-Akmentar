@@ -22,7 +22,8 @@
 							"set_flag": "act9_greeted"
 						}
 					],
-					"next": "o_0"
+					"next": "o_0",
+					"slot": "r"
 				},
 				{
 					"label": "Take the obelisk passage",
@@ -35,7 +36,8 @@
 							"set_flag": "act9_obelisk_path"
 						}
 					],
-					"next": "o_1"
+					"next": "o_1",
+					"slot": "ur"
 				},
 				{
 					"label": "Raise Anubis's sign",
@@ -48,12 +50,14 @@
 							"set_flag": "act9_anubis_ward"
 						}
 					],
-					"next": "o_2"
+					"next": "o_2",
+					"slot": "lr"
 				},
 				{
 					"label": "Fight through",
 					"line": "Then we go straight through them.",
-					"next": "fight"
+					"next": "fight",
+					"slot": "ll"
 				}
 			]
 		},

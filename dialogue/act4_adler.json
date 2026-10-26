@@ -8,14 +8,25 @@
 	"nodes": {
 		"greet": {
 			"branch": [
-				{"if": {"flag": "met_adler"}, "next": "again"},
-				{"next": "first"}
+				{
+					"if": {
+						"flag": "met_adler"
+					},
+					"next": "again"
+				},
+				{
+					"next": "first"
+				}
 			]
 		},
 		"first": {
 			"speaker": "adler",
 			"line": "Professor Friedrich Adler, of Berlin. You must be the gentleman who raced us across the desert. I hope you will be as careful here as you were quick getting here.",
-			"do": [{"set_flag": "met_adler"}],
+			"do": [
+				{
+					"set_flag": "met_adler"
+				}
+			],
 			"next": "menu"
 		},
 		"again": {
@@ -27,10 +38,60 @@
 			"speaker": "adler",
 			"line": "How may I help you?",
 			"choices": [
-				{"label": "Offer to compare notes", "line": "We're all reading the same walls, Professor. Why not compare what we find?", "if": {"not_flag": "adler_talked"}, "do": [{"stat": ["adler", "trust", 1]}, {"set_flag": "adler_talked"}], "next": "pleased"},
-				{"label": "Ask about treasure", "line": "Found any gold yet?", "if": {"not_flag": "adler_talked"}, "do": [{"stat": ["adler", "trust", -1]}, {"set_flag": "adler_talked"}], "next": "stung"},
-				{"label": "Ask about Krüger", "line": "Your young man with the notebook never seems to stop writing.", "next": "kruger"},
-				{"label": "Leave", "line": "I'll let you get back to work.", "next": "bye"}
+				{
+					"label": "Offer to compare notes",
+					"line": "We're all reading the same walls, Professor. Why not compare what we find?",
+					"if": {
+						"not_flag": "adler_talked"
+					},
+					"do": [
+						{
+							"stat": [
+								"adler",
+								"trust",
+								1
+							]
+						},
+						{
+							"set_flag": "adler_talked"
+						}
+					],
+					"next": "pleased",
+					"slot": "ur"
+				},
+				{
+					"label": "Ask about treasure",
+					"line": "Found any gold yet?",
+					"if": {
+						"not_flag": "adler_talked"
+					},
+					"do": [
+						{
+							"stat": [
+								"adler",
+								"trust",
+								-1
+							]
+						},
+						{
+							"set_flag": "adler_talked"
+						}
+					],
+					"next": "stung",
+					"slot": "ul"
+				},
+				{
+					"label": "Ask about Krüger",
+					"line": "Your young man with the notebook never seems to stop writing.",
+					"next": "kruger",
+					"slot": "l"
+				},
+				{
+					"label": "Leave",
+					"line": "I'll let you get back to work.",
+					"next": "bye",
+					"slot": "ll"
+				}
 			]
 		},
 		"pleased": {
@@ -40,35 +101,73 @@
 		},
 		"hint": {
 			"branch": [
-				{"if": {"flag": "claimed_horus_germans"}, "next": "hint_horus"},
-				{"if": {"flag": "claimed_hieroglyphs_germans"}, "next": "hint_hieroglyphs"},
-				{"if": {"flag": "claimed_obelisk_germans"}, "next": "hint_obelisk"},
-				{"if": {"flag": "claimed_astronomer_germans"}, "next": "hint_astronomer"},
-				{"next": "hint_none"}
+				{
+					"if": {
+						"flag": "claimed_horus_germans"
+					},
+					"next": "hint_horus"
+				},
+				{
+					"if": {
+						"flag": "claimed_hieroglyphs_germans"
+					},
+					"next": "hint_hieroglyphs"
+				},
+				{
+					"if": {
+						"flag": "claimed_obelisk_germans"
+					},
+					"next": "hint_obelisk"
+				},
+				{
+					"if": {
+						"flag": "claimed_astronomer_germans"
+					},
+					"next": "hint_astronomer"
+				},
+				{
+					"next": "hint_none"
+				}
 			]
 		},
 		"hint_horus": {
 			"speaker": "adler",
 			"line": "The throne beneath the Horus statue was carved for two rulers. One of the names has been removed with a violence I have rarely seen in stone.",
-			"do": [{"set_flag": "hint_horus"}],
+			"do": [
+				{
+					"set_flag": "hint_horus"
+				}
+			],
 			"next": "menu"
 		},
 		"hint_hieroglyphs": {
 			"speaker": "adler",
 			"line": "The long wall of inscriptions has been plastered over and carved again. Where the plaster has fallen, there is an older text beneath.",
-			"do": [{"set_flag": "hint_hieroglyphs"}],
+			"do": [
+				{
+					"set_flag": "hint_hieroglyphs"
+				}
+			],
 			"next": "menu"
 		},
 		"hint_obelisk": {
 			"speaker": "adler",
 			"line": "The broken obelisk counts a king's years and then simply stops counting. No death is recorded. I find that more troubling than any curse.",
-			"do": [{"set_flag": "hint_obelisk"}],
+			"do": [
+				{
+					"set_flag": "hint_obelisk"
+				}
+			],
 			"next": "menu"
 		},
 		"hint_astronomer": {
 			"speaker": "adler",
 			"line": "The markings on the platform follow a single star. If Wilhelm's arithmetic is right, it returns this very season.",
-			"do": [{"set_flag": "hint_astronomer"}],
+			"do": [
+				{
+					"set_flag": "hint_astronomer"
+				}
+			],
 			"next": "menu"
 		},
 		"hint_none": {
@@ -91,6 +190,8 @@
 			"line": "Good day.",
 			"next": "end"
 		},
-		"end": {"end": true}
+		"end": {
+			"end": true
+		}
 	}
 }

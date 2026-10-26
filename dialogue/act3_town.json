@@ -27,7 +27,8 @@
 							"set_flag": "town_riders"
 						}
 					],
-					"next": "riders"
+					"next": "riders",
+					"slot": "ul"
 				},
 				{
 					"label": "Resupply",
@@ -36,7 +37,8 @@
 						"flag": "supplies_lost",
 						"money": 15
 					},
-					"next": "resupply"
+					"next": "resupply",
+					"slot": "r"
 				},
 				{
 					"label": "Buy water",
@@ -59,7 +61,8 @@
 							"set_flag": "town_water"
 						}
 					],
-					"next": "water"
+					"next": "water",
+					"slot": "ur"
 				},
 				{
 					"label": "Ask the way",
@@ -72,12 +75,14 @@
 							"set_flag": "town_way"
 						}
 					],
-					"next": "way"
+					"next": "way",
+					"slot": "l"
 				},
 				{
 					"label": "Move on",
 					"line": "Thank you. We'll be on our way.",
-					"next": "bye"
+					"next": "bye",
+					"slot": "ll"
 				}
 			]
 		},

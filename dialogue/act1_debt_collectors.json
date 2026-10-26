@@ -27,7 +27,8 @@
 							"set_flag": "finch_dont_know"
 						}
 					],
-					"next": "dont_know"
+					"next": "dont_know",
+					"slot": "r"
 				},
 				{
 					"label": "Give up Freddie",
@@ -35,12 +36,14 @@
 					"if": {
 						"flag": "freddie_note"
 					},
-					"next": "betray"
+					"next": "betray",
+					"slot": "lr"
 				},
 				{
 					"label": "Promise to pay",
 					"line": "I'll have work soon. I'll pay you part of his debt from it.",
-					"next": "promise"
+					"next": "promise",
+					"slot": "ur"
 				},
 				{
 					"label": "Pay part now",
@@ -62,17 +65,20 @@
 							]
 						}
 					],
-					"next": "paid"
+					"next": "paid",
+					"slot": "l"
 				},
 				{
 					"label": "Insult him",
 					"line": "Get out of my way, Finch, before your bruiser needs a doctor.",
-					"next": "provoke"
+					"next": "provoke",
+					"slot": "ll"
 				},
 				{
 					"label": "Hit him",
-					"line": "",
-					"next": "fight"
+					"line": "Enough talking.",
+					"next": "fight",
+					"slot": "ul"
 				}
 			]
 		},

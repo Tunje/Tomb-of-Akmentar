@@ -8,17 +8,63 @@
 	"nodes": {
 		"greet": {
 			"branch": [
-				{"if": {"flag": "eleanor_story_1"}, "next": "later"},
-				{"next": "story_1"}
+				{
+					"if": {
+						"flag": "eleanor_story_1"
+					},
+					"next": "later"
+				},
+				{
+					"next": "story_1"
+				}
 			]
 		},
 		"story_1": {
 			"speaker": "eleanor",
 			"line": "Look at this rubbing. The cartouche has been chiselled away, but the chisel marks are older than the paint around them.",
-			"do": [{"set_flag": "eleanor_story_1"}],
+			"do": [
+				{
+					"set_flag": "eleanor_story_1"
+				}
+			],
 			"choices": [
-				{"label": "Ask what it means", "line": "Older? So someone erased him while he was still alive?", "do": [{"stat": ["eleanor", "trust", 1]}, {"stat": ["eleanor", "conviction", 1]}], "next": "means"},
-				{"label": "Tell her to sleep", "line": "It's a scratch on a rock. Get some sleep, we ride at dawn.", "do": [{"stat": ["eleanor", "trust", -1]}], "next": "brushed"}
+				{
+					"label": "Ask what it means",
+					"line": "Older? So someone erased him while he was still alive?",
+					"do": [
+						{
+							"stat": [
+								"eleanor",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"eleanor",
+								"conviction",
+								1
+							]
+						}
+					],
+					"next": "means",
+					"slot": "ul"
+				},
+				{
+					"label": "Tell her to sleep",
+					"line": "It's a scratch on a rock. Get some sleep, we ride at dawn.",
+					"do": [
+						{
+							"stat": [
+								"eleanor",
+								"trust",
+								-1
+							]
+						}
+					],
+					"next": "brushed",
+					"slot": "ur"
+				}
 			]
 		},
 		"means": {
@@ -36,6 +82,8 @@
 			"line": "I'm still working on that cartouche. Ask me again when I've slept on it.",
 			"next": "end_talked"
 		},
-		"end_talked": {"end": true}
+		"end_talked": {
+			"end": true
+		}
 	}
 }

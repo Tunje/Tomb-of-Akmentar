@@ -47,7 +47,8 @@
 							"set_flag": "armed_talked"
 						}
 					],
-					"next": "talk_try"
+					"next": "talk_try",
+					"slot": "r"
 				},
 				{
 					"label": "Give them the note",
@@ -61,7 +62,8 @@
 							"set_flag": "freddie_betrayed"
 						}
 					],
-					"next": "note"
+					"next": "note",
+					"slot": "lr"
 				},
 				{
 					"label": "Offer what you have",
@@ -78,12 +80,14 @@
 							"set_flag": "armed_took_money"
 						}
 					],
-					"next": "pocketed"
+					"next": "pocketed",
+					"slot": "ur"
 				},
 				{
 					"label": "Draw",
-					"line": "",
-					"next": "draw"
+					"line": "Have it your way.",
+					"next": "draw",
+					"slot": "ll"
 				}
 			]
 		},
@@ -130,7 +134,8 @@
 							"set_flag": "armed_talked"
 						}
 					],
-					"next": "talk_try"
+					"next": "talk_try",
+					"slot": "r"
 				},
 				{
 					"label": "Give them the note",
@@ -144,7 +149,8 @@
 							"set_flag": "freddie_betrayed"
 						}
 					],
-					"next": "note"
+					"next": "note",
+					"slot": "lr"
 				},
 				{
 					"label": "Offer what you have",
@@ -161,12 +167,14 @@
 							"set_flag": "armed_took_money"
 						}
 					],
-					"next": "pocketed"
+					"next": "pocketed",
+					"slot": "ur"
 				},
 				{
 					"label": "Draw",
-					"line": "",
-					"next": "draw"
+					"line": "Have it your way.",
+					"next": "draw",
+					"slot": "ll"
 				}
 			]
 		},

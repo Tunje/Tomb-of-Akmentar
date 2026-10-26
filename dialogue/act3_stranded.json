@@ -109,12 +109,14 @@
 							]
 						}
 					],
-					"next": "together"
+					"next": "together",
+					"slot": "ur"
 				},
 				{
 					"label": "Go on alone",
 					"line": "Thanks, but we'll make our own way.",
-					"next": "alone"
+					"next": "alone",
+					"slot": "r"
 				}
 			]
 		},

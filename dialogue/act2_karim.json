@@ -47,7 +47,8 @@
 							"set_flag": "karim_advance"
 						}
 					],
-					"next": "advance"
+					"next": "advance",
+					"slot": "r"
 				},
 				{
 					"label": "Ask for more money",
@@ -63,7 +64,8 @@
 							"set_flag": "karim_advance"
 						}
 					],
-					"next": "advance_cold"
+					"next": "advance_cold",
+					"slot": "ur"
 				},
 				{
 					"label": "Ask about the first expedition",
@@ -83,12 +85,14 @@
 							]
 						}
 					],
-					"next": "pressed"
+					"next": "pressed",
+					"slot": "ul"
 				},
 				{
 					"label": "Leave",
 					"line": "Nothing. Good day.",
-					"next": "end"
+					"next": "end",
+					"slot": "ll"
 				}
 			]
 		},
@@ -117,12 +121,14 @@
 							"set_flag": "heard_blackwood_silence"
 						}
 					],
-					"next": "truth"
+					"next": "truth",
+					"slot": "lr"
 				},
 				{
 					"label": "Drop it",
 					"line": "Fine. Forget I asked.",
-					"next": "menu"
+					"next": "menu",
+					"slot": "ll"
 				}
 			]
 		},

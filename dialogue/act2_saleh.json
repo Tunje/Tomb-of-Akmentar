@@ -31,12 +31,14 @@
 				{
 					"label": "Akmentar",
 					"line": "West, past the last well. Akmentar.",
-					"next": "where"
+					"next": "where",
+					"slot": "r"
 				},
 				{
 					"label": "Leave",
 					"line": "Just asking around.",
-					"next": "end_left"
+					"next": "end_left",
+					"slot": "ll"
 				}
 			]
 		},
@@ -56,7 +58,8 @@
 							]
 						}
 					],
-					"next": "fee"
+					"next": "fee",
+					"slot": "ur"
 				},
 				{
 					"label": "As fast as we can",
@@ -70,7 +73,8 @@
 							]
 						}
 					],
-					"next": "fast"
+					"next": "fast",
+					"slot": "r"
 				}
 			]
 		},
@@ -93,12 +97,14 @@
 							"set_flag": "promised_saleh_listen"
 						}
 					],
-					"next": "fee"
+					"next": "fee",
+					"slot": "ur"
 				},
 				{
 					"label": "Find another guide",
 					"line": "Then I'll find someone who can keep up.",
-					"next": "refer"
+					"next": "refer",
+					"slot": "ll"
 				}
 			]
 		},
@@ -122,7 +128,8 @@
 							"money": -70
 						}
 					],
-					"next": "joined"
+					"next": "joined",
+					"slot": "ur"
 				},
 				{
 					"label": "Haggle",
@@ -135,12 +142,14 @@
 							"set_flag": "saleh_haggled"
 						}
 					],
-					"next": "haggle"
+					"next": "haggle",
+					"slot": "r"
 				},
 				{
 					"label": "Leave",
 					"line": "Not today.",
-					"next": "end_left"
+					"next": "end_left",
+					"slot": "ll"
 				}
 			]
 		},

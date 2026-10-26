@@ -22,7 +22,8 @@
 							"set_flag": "act9_door_opened"
 						}
 					],
-					"next": "o_0"
+					"next": "o_0",
+					"slot": "r"
 				},
 				{
 					"label": "Use the scarab mechanism",
@@ -35,7 +36,8 @@
 							"set_flag": "act9_scarab_passage"
 						}
 					],
-					"next": "o_1"
+					"next": "o_1",
+					"slot": "ur"
 				},
 				{
 					"label": "Take the storeroom route",
@@ -48,7 +50,8 @@
 							"set_flag": "act9_storeroom_route"
 						}
 					],
-					"next": "o_2"
+					"next": "o_2",
+					"slot": "lr"
 				},
 				{
 					"label": "Read the souls inscription",
@@ -61,7 +64,8 @@
 							"set_flag": "act9_spirits_repelled"
 						}
 					],
-					"next": "o_3"
+					"next": "o_3",
+					"slot": "l"
 				},
 				{
 					"label": "Align the stars",
@@ -74,12 +78,14 @@
 							"set_flag": "act9_aligned"
 						}
 					],
-					"next": "o_4"
+					"next": "o_4",
+					"slot": "ul"
 				},
 				{
 					"label": "Force it",
 					"line": "Stand back. We force it.",
-					"next": "fight"
+					"next": "fight",
+					"slot": "ll"
 				}
 			]
 		},

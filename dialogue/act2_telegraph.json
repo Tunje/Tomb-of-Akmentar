@@ -21,7 +21,8 @@
 							"set_flag": "fletcher_wired"
 						}
 					],
-					"next": "fletcher"
+					"next": "fletcher",
+					"slot": "r"
 				},
 				{
 					"label": "Wire Blackwood's office",
@@ -34,7 +35,8 @@
 							"set_flag": "london_wired"
 						}
 					],
-					"next": "london"
+					"next": "london",
+					"slot": "ur"
 				},
 				{
 					"label": "Ask what's come in",
@@ -54,12 +56,14 @@
 							]
 						}
 					],
-					"next": "south"
+					"next": "south",
+					"slot": "ul"
 				},
 				{
 					"label": "Leave",
 					"line": "Nothing today.",
-					"next": "end"
+					"next": "end",
+					"slot": "ll"
 				}
 			]
 		},

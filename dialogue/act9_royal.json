@@ -22,7 +22,8 @@
 							"set_flag": "act9_horus_phrase"
 						}
 					],
-					"next": "o_0"
+					"next": "o_0",
+					"slot": "r"
 				},
 				{
 					"label": "Show them Ra's sun",
@@ -35,7 +36,8 @@
 							"set_flag": "act9_ra_symbol"
 						}
 					],
-					"next": "o_1"
+					"next": "o_1",
+					"slot": "ur"
 				},
 				{
 					"label": "Make the offering",
@@ -48,7 +50,8 @@
 							"set_flag": "act9_offering"
 						}
 					],
-					"next": "o_2"
+					"next": "o_2",
+					"slot": "lr"
 				},
 				{
 					"label": "Strike where they were cut",
@@ -61,7 +64,8 @@
 							"set_flag": "act9_weakness"
 						}
 					],
-					"next": "o_3"
+					"next": "o_3",
+					"slot": "l"
 				},
 				{
 					"label": "Use the opening rite",
@@ -74,12 +78,14 @@
 							"set_flag": "act9_royal_opened"
 						}
 					],
-					"next": "o_4"
+					"next": "o_4",
+					"slot": "ul"
 				},
 				{
 					"label": "Fight to the door",
 					"line": "Then we fight our way to the door.",
-					"next": "fight"
+					"next": "fight",
+					"slot": "ll"
 				}
 			]
 		},

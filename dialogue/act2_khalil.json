@@ -48,12 +48,14 @@
 				{
 					"label": "Hire the crew",
 					"line": "I need strong backs. How much?",
-					"next": "fee"
+					"next": "fee",
+					"slot": "ur"
 				},
 				{
 					"label": "Leave",
 					"line": "Not today.",
-					"next": "end_left"
+					"next": "end_left",
+					"slot": "ll"
 				}
 			]
 		},
@@ -79,7 +81,8 @@
 							]
 						}
 					],
-					"next": "joined"
+					"next": "joined",
+					"slot": "ur"
 				},
 				{
 					"label": "Half now, half later",
@@ -105,12 +108,14 @@
 							]
 						}
 					],
-					"next": "joined_owed"
+					"next": "joined_owed",
+					"slot": "r"
 				},
 				{
 					"label": "Leave",
 					"line": "I'll come back.",
-					"next": "end_left"
+					"next": "end_left",
+					"slot": "ll"
 				}
 			]
 		},

@@ -29,7 +29,8 @@
 				{
 					"label": "Go down into the tomb",
 					"line": "We take it home ourselves. Into the tomb.",
-					"next": "descend"
+					"next": "descend",
+					"slot": "ur"
 				},
 				{
 					"label": "Send the others away",
@@ -37,12 +38,14 @@
 					"if": {
 						"not_flag": "companions_sent_away"
 					},
-					"next": "send_refuse"
+					"next": "send_refuse",
+					"slot": "r"
 				},
 				{
 					"label": "Walk out to him",
 					"line": "I'll take it to him myself.",
-					"next": "surrender"
+					"next": "surrender",
+					"slot": "ul"
 				}
 			]
 		},

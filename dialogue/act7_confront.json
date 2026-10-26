@@ -49,17 +49,20 @@
 					"if": {
 						"flag": "sky_dark"
 					},
-					"next": "am_sky"
+					"next": "am_sky",
+					"slot": "r"
 				},
 				{
 					"label": "Buy them back",
 					"line": "Name your price for the jars and the amulet.",
-					"next": "am_buy"
+					"next": "am_buy",
+					"slot": "ur"
 				},
 				{
 					"label": "Take them",
 					"line": "I'm taking them. Now.",
-					"next": "fight"
+					"next": "fight",
+					"slot": "lr"
 				}
 			]
 		},
@@ -97,12 +100,14 @@
 				{
 					"label": "Buy them back",
 					"line": "Then let's talk money.",
-					"next": "am_buy"
+					"next": "am_buy",
+					"slot": "r"
 				},
 				{
 					"label": "Take them",
 					"line": "Then I'm taking them.",
-					"next": "fight"
+					"next": "fight",
+					"slot": "lr"
 				}
 			]
 		},
@@ -124,12 +129,14 @@
 							"set_flag": "bought_artifacts"
 						}
 					],
-					"next": "am_paid"
+					"next": "am_paid",
+					"slot": "ur"
 				},
 				{
 					"label": "Take them",
 					"line": "I'm not paying you for stolen goods.",
-					"next": "fight"
+					"next": "fight",
+					"slot": "lr"
 				}
 			]
 		},
@@ -148,7 +155,8 @@
 					"if": {
 						"flag": "sky_dark"
 					},
-					"next": "ge_sky"
+					"next": "ge_sky",
+					"slot": "r"
 				},
 				{
 					"label": "Appeal to Vogel",
@@ -156,12 +164,14 @@
 					"if": {
 						"flag": "stones_falling"
 					},
-					"next": "ge_vogel"
+					"next": "ge_vogel",
+					"slot": "ur"
 				},
 				{
 					"label": "Take them",
 					"line": "I'm not asking, Professor.",
-					"next": "fight"
+					"next": "fight",
+					"slot": "lr"
 				}
 			]
 		},
@@ -199,7 +209,8 @@
 				{
 					"label": "Take them",
 					"line": "Then I'm taking them.",
-					"next": "fight"
+					"next": "fight",
+					"slot": "lr"
 				}
 			]
 		},
@@ -235,7 +246,8 @@
 					"if": {
 						"flag": "sickness"
 					},
-					"next": "it_sofia"
+					"next": "it_sofia",
+					"slot": "r"
 				},
 				{
 					"label": "Point at the sky",
@@ -249,12 +261,14 @@
 							"set_flag": "it_sky_tried"
 						}
 					],
-					"next": "it_sky"
+					"next": "it_sky",
+					"slot": "ur"
 				},
 				{
 					"label": "Take them",
 					"line": "Business is over.",
-					"next": "fight"
+					"next": "fight",
+					"slot": "lr"
 				}
 			]
 		},

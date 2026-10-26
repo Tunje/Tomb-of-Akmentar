@@ -32,7 +32,8 @@
 							"set_flag": "office_owes"
 						}
 					],
-					"next": "owes"
+					"next": "owes",
+					"slot": "r"
 				},
 				{
 					"label": "Search his desk",
@@ -40,7 +41,8 @@
 					"if": {
 						"not_flag": "freddie_note"
 					},
-					"next": "search"
+					"next": "search",
+					"slot": "ur"
 				},
 				{
 					"label": "Ask who else came",
@@ -53,12 +55,14 @@
 							"set_flag": "office_others"
 						}
 					],
-					"next": "others"
+					"next": "others",
+					"slot": "ul"
 				},
 				{
 					"label": "Leave",
 					"line": "Thank you. I'll find him.",
-					"next": "bye"
+					"next": "bye",
+					"slot": "ll"
 				}
 			]
 		},

@@ -97,6 +97,9 @@ doc = {
     "start": "start",
     "nodes": nodes,
 }
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from wheel import assign_slots
+assign_slots(doc)  # Mass Effect positions by tone (tools/dialogue/wheel.py)
 out = pathlib.Path(sys.argv[1]) / "dialogue/act5_morning.json"
 out.write_text(json.dumps(doc, indent="\t", ensure_ascii=False) + "\n", encoding="utf-8", newline="\n")
 print("wrote", out, len(nodes), "nodes")

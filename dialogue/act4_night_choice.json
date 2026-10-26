@@ -83,7 +83,8 @@
 							]
 						}
 					],
-					"next": "eleanor_barricade"
+					"next": "eleanor_barricade",
+					"slot": "r"
 				},
 				{
 					"label": "Help the Americans",
@@ -96,7 +97,8 @@
 							]
 						}
 					],
-					"next": "eleanor_americans"
+					"next": "eleanor_americans",
+					"slot": "ur"
 				},
 				{
 					"label": "Help the Germans",
@@ -109,7 +111,8 @@
 							]
 						}
 					],
-					"next": "eleanor_germans"
+					"next": "eleanor_germans",
+					"slot": "ul"
 				}
 			]
 		},
@@ -143,7 +146,8 @@
 							]
 						}
 					],
-					"next": "end_barricade"
+					"next": "end_barricade",
+					"slot": "r"
 				},
 				{
 					"label": "Help the Americans",
@@ -156,7 +160,8 @@
 							]
 						}
 					],
-					"next": "end_americans"
+					"next": "end_americans",
+					"slot": "ur"
 				},
 				{
 					"label": "Help the Germans",
@@ -169,7 +174,8 @@
 							]
 						}
 					],
-					"next": "end_germans"
+					"next": "end_germans",
+					"slot": "ul"
 				}
 			]
 		},

@@ -359,7 +359,7 @@ CAMP = {
                 ("The expedition's", "The expedition's. That's how it works.", [trust("mahmoud", -1)], "That is how it always works.")),
     "khalil": ("Two of my men are sick from the water.",
                ("Give them your share", "Give them clean water from my ration.", [trust("khalil", 2), fear("khalil", -1)], "They will not forget this. Neither will I."),
-               ("They'll toughen up", "They'll toughen up.", [trust("khalil", -2)], "They are men, not mules.")),
+               ("They'll toughen up", "They're grown men. They'll toughen up.", [trust("khalil", -2)], "They are men, not mules.")),
     "naguib": ("The camels are carrying too much. Lighten the loads, or we lose one by the end of the week.",
                ("Lighten the loads", "Do it. Leave the spare crates.", [trust("naguib", 1)], "A wise choice. The camels thank you."),
                ("Push on", "We need everything. Push on.", [trust("naguib", -1)], "Then pray for cool nights.")),
@@ -372,7 +372,8 @@ for k, (label, ids) in enumerate(GROUPS):
     gid = "group_%d" % k
     menu.append(C(label, "", gid))
     camp[gid] = L("player", "Who's still up?", choices=[
-        C(SPEAKERS[i].split(" ")[0] if not SPEAKERS[i].startswith("Dr.") else SPEAKERS[i].split(" ")[2], "", "c_" + i,
+        C(SPEAKERS[i].split(" ")[0] if not SPEAKERS[i].startswith("Dr.") else SPEAKERS[i].split(" ")[2],
+          "%s, got a minute?" % (SPEAKERS[i].split(" ")[0] if not SPEAKERS[i].startswith("Dr.") else SPEAKERS[i].split(" ")[0] + " " + SPEAKERS[i].split(" ")[-1]), "c_" + i,
           if_={"in_party": i, "not_flag": "camp3_" + i}) for i in ids] + [C("Back", "", "menu")])
     for i in ids:
         camp.update(camp_entry(i, *CAMP[i]))

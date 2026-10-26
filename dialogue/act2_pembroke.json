@@ -36,7 +36,8 @@
 				{
 					"label": "Offer him the job",
 					"line": "I want a real archaeologist. Someone who does it properly.",
-					"next": "terms"
+					"next": "terms",
+					"slot": "ur"
 				},
 				{
 					"label": "Ask about his last dig",
@@ -49,12 +50,14 @@
 							"set_flag": "pembroke_told_failure"
 						}
 					],
-					"next": "failure"
+					"next": "failure",
+					"slot": "ul"
 				},
 				{
 					"label": "Leave",
 					"line": "Forget I asked.",
-					"next": "end_left"
+					"next": "end_left",
+					"slot": "ll"
 				}
 			]
 		},
@@ -88,7 +91,8 @@
 							"set_flag": "promised_pembroke_records"
 						}
 					],
-					"next": "joined"
+					"next": "joined",
+					"slot": "ur"
 				},
 				{
 					"label": "Show him the archive papers",
@@ -97,7 +101,8 @@
 						"flag": "researched_akmentar",
 						"money": 50
 					},
-					"next": "homework"
+					"next": "homework",
+					"slot": "r"
 				},
 				{
 					"label": "Haggle",
@@ -117,12 +122,14 @@
 							]
 						}
 					],
-					"next": "haggle"
+					"next": "haggle",
+					"slot": "lr"
 				},
 				{
 					"label": "Admit you can't afford him",
 					"line": "I can't pay that.",
-					"next": "broke"
+					"next": "broke",
+					"slot": "l"
 				}
 			]
 		},

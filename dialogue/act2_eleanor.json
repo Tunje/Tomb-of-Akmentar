@@ -36,7 +36,8 @@
 				{
 					"label": "Invite her along",
 					"line": "Then you heard I need an Egyptologist. Come with us.",
-					"next": "terms"
+					"next": "terms",
+					"slot": "ur"
 				},
 				{
 					"label": "Ask what she knows",
@@ -44,7 +45,8 @@
 					"if": {
 						"not_flag": "heard_forgotten_king"
 					},
-					"next": "knows"
+					"next": "knows",
+					"slot": "ul"
 				},
 				{
 					"label": "Doubt her",
@@ -64,12 +66,14 @@
 							]
 						}
 					],
-					"next": "doubt"
+					"next": "doubt",
+					"slot": "lr"
 				},
 				{
 					"label": "Leave",
 					"line": "Sorry to have bothered you, miss.",
-					"next": "end_left"
+					"next": "end_left",
+					"slot": "ll"
 				}
 			]
 		},
@@ -114,7 +118,8 @@
 							"set_flag": "promised_eleanor_publish"
 						}
 					],
-					"next": "fee"
+					"next": "fee",
+					"slot": "ur"
 				},
 				{
 					"label": "Make no promises",
@@ -128,7 +133,8 @@
 							]
 						}
 					],
-					"next": "fee"
+					"next": "fee",
+					"slot": "lr"
 				}
 			]
 		},
@@ -154,7 +160,8 @@
 							]
 						}
 					],
-					"next": "joined"
+					"next": "joined",
+					"slot": "ur"
 				},
 				{
 					"label": "Pay what she asks",
@@ -167,7 +174,8 @@
 							"money": -10
 						}
 					],
-					"next": "joined"
+					"next": "joined",
+					"slot": "r"
 				},
 				{
 					"label": "Pay nothing yet",
@@ -181,7 +189,8 @@
 							]
 						}
 					],
-					"next": "joined_cool"
+					"next": "joined_cool",
+					"slot": "lr"
 				}
 			]
 		},

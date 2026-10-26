@@ -35,7 +35,8 @@
 				{
 					"label": "Ask why",
 					"line": "Why? We could have died out there.",
-					"next": "why"
+					"next": "why",
+					"slot": "ul"
 				},
 				{
 					"label": "Condemn him",
@@ -56,7 +57,8 @@
 							]
 						}
 					],
-					"next": "condemn"
+					"next": "condemn",
+					"slot": "lr"
 				},
 				{
 					"label": "Forgive him",
@@ -70,7 +72,8 @@
 							]
 						}
 					],
-					"next": "forgive"
+					"next": "forgive",
+					"slot": "ur"
 				}
 			]
 		},

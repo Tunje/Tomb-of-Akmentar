@@ -8,14 +8,25 @@
 	"nodes": {
 		"greet": {
 			"branch": [
-				{"if": {"flag": "met_archivist"}, "next": "again"},
-				{"next": "first"}
+				{
+					"if": {
+						"flag": "met_archivist"
+					},
+					"next": "again"
+				},
+				{
+					"next": "first"
+				}
 			]
 		},
 		"first": {
 			"speaker": "archivist",
 			"line": "Another treasure hunter. This is a museum, sir, not a hiring hall. State your business, and be brief.",
-			"do": [{"set_flag": "met_archivist"}],
+			"do": [
+				{
+					"set_flag": "met_archivist"
+				}
+			],
 			"next": "menu"
 		},
 		"again": {
@@ -27,9 +38,24 @@
 			"speaker": "archivist",
 			"line": "Well?",
 			"choices": [
-				{"label": "Ask for an Egyptologist", "line": "I'm putting together a private expedition. I need an Egyptologist, and they tell me you have the best in Cairo.", "next": "ask"},
-				{"label": "Mention Akmentar", "line": "We're going after the tombs of Akmentar.", "next": "myth"},
-				{"label": "Leave", "line": "I'll see myself out.", "next": "bye"}
+				{
+					"label": "Ask for an Egyptologist",
+					"line": "I'm putting together a private expedition. I need an Egyptologist, and they tell me you have the best in Cairo.",
+					"next": "ask",
+					"slot": "r"
+				},
+				{
+					"label": "Mention Akmentar",
+					"line": "We're going after the tombs of Akmentar.",
+					"next": "myth",
+					"slot": "ul"
+				},
+				{
+					"label": "Leave",
+					"line": "I'll see myself out.",
+					"next": "bye",
+					"slot": "ll"
+				}
 			]
 		},
 		"myth": {
@@ -41,24 +67,77 @@
 			"speaker": "archivist",
 			"line": "Absolutely not. No scholar of this museum will be seen chasing fairy tales with a hired gun.",
 			"choices": [
-				{"label": "Ask about his staff", "line": "Surely not everyone here agrees with you.", "if": {"not_flag": "knows_eleanor"}, "do": [{"set_flag": "knows_eleanor"}], "next": "staff"},
-				{"label": "Offer a donation", "line": "The museum could use a generous donation. Shall we say fifty pounds?", "if": {"money": 50}, "do": [{"money": -50}, {"set_flag": "archivist_bribed"}], "next": "bribe"},
-				{"label": "Threaten him", "line": "Find me someone, Professor, or I'll make this your problem. Personally.", "next": "threat"},
-				{"label": "Leave", "line": "Suit yourself.", "next": "bye"}
+				{
+					"label": "Ask about his staff",
+					"line": "Surely not everyone here agrees with you.",
+					"if": {
+						"not_flag": "knows_eleanor"
+					},
+					"do": [
+						{
+							"set_flag": "knows_eleanor"
+						}
+					],
+					"next": "staff",
+					"slot": "ul"
+				},
+				{
+					"label": "Offer a donation",
+					"line": "The museum could use a generous donation. Shall we say fifty pounds?",
+					"if": {
+						"money": 50
+					},
+					"do": [
+						{
+							"money": -50
+						},
+						{
+							"set_flag": "archivist_bribed"
+						}
+					],
+					"next": "bribe",
+					"slot": "r"
+				},
+				{
+					"label": "Threaten him",
+					"line": "Find me someone, Professor, or I'll make this your problem. Personally.",
+					"next": "threat",
+					"slot": "lr"
+				},
+				{
+					"label": "Leave",
+					"line": "Suit yourself.",
+					"next": "bye",
+					"slot": "ll"
+				}
 			]
 		},
 		"staff": {
 			"speaker": "archivist",
 			"line": "There is a Miss Whitmore in the reading room who believes every legend she translates. She has been listening at that door the whole time.",
 			"choices": [
-				{"label": "Ask for Miss Whitmore", "line": "Then send her in. If she wants to come, she comes.", "next": "recruit"},
-				{"label": "Thank him", "line": "That's all I needed. Good day, Professor.", "next": "bye"}
+				{
+					"label": "Ask for Miss Whitmore",
+					"line": "Then send her in. If she wants to come, she comes.",
+					"next": "recruit",
+					"slot": "r"
+				},
+				{
+					"label": "Thank him",
+					"line": "That's all I needed. Good day, Professor.",
+					"next": "bye",
+					"slot": "ll"
+				}
 			]
 		},
 		"recruit": {
 			"speaker": "archivist",
 			"line": "Take her, and her theories with her. When you both come back empty-handed, do not come to me.",
-			"do": [{"recruit": "eleanor"}],
+			"do": [
+				{
+					"recruit": "eleanor"
+				}
+			],
 			"next": "end_recruited"
 		},
 		"bribe": {
@@ -69,7 +148,11 @@
 		"threat": {
 			"speaker": "archivist",
 			"line": "You dare threaten me in my own museum? Guards! Remove this man!",
-			"do": [{"event": "fight_museum_guards"}],
+			"do": [
+				{
+					"event": "fight_museum_guards"
+				}
+			],
 			"next": "end_fight"
 		},
 		"bye": {
@@ -77,8 +160,14 @@
 			"line": "Good day.",
 			"next": "end_left"
 		},
-		"end_recruited": {"end": true},
-		"end_fight": {"end": true},
-		"end_left": {"end": true}
+		"end_recruited": {
+			"end": true
+		},
+		"end_fight": {
+			"end": true
+		},
+		"end_left": {
+			"end": true
+		}
 	}
 }

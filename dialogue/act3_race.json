@@ -66,7 +66,8 @@
 							]
 						}
 					],
-					"next": "whit_yes"
+					"next": "whit_yes",
+					"slot": "ur"
 				},
 				{
 					"label": "Decline",
@@ -79,7 +80,8 @@
 							"set_flag": "met_whitfield"
 						}
 					],
-					"next": "whit_no"
+					"next": "whit_no",
+					"slot": "r"
 				}
 			]
 		},
@@ -119,7 +121,8 @@
 							"set_flag": "shortcut_taken"
 						}
 					],
-					"next": "shortcut_try"
+					"next": "shortcut_try",
+					"slot": "ur"
 				},
 				{
 					"label": "Stay on the track",
@@ -133,7 +136,8 @@
 							]
 						}
 					],
-					"next": "arrive"
+					"next": "arrive",
+					"slot": "r"
 				}
 			]
 		},
