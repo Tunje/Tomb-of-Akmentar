@@ -408,6 +408,7 @@ func _arm_slabs() -> void:
 				hud.toast("Stone grinds overhead: the slab is coming down. Get under it!", 3.0))
 	if level.neck_slab:
 		level.neck_slab.drop_after = NECK_SLAB_AFTER
+		level.neck_slab.target = null  # only its timer brings it down: running at it mustn't cut off the companions behind you
 		level.neck_slab.started.connect(func():
 			hud.toast("Far off, a deep grinding: the way to the main stairs is closing.", 3.5))
 	# Scarab vents in the corridor walls: each pours once as you pass.

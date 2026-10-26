@@ -784,10 +784,11 @@ func _build_surface() -> void:
 	_pick_collapse_points()
 
 
-## Two rubble points on the way out: across the antechamber's neck and the south hall's neck.
+## Two rubble points on the way out: across the antechamber's neck, and down the east side passage
+## (kept away from the stairs' neck slab, which the companions must get under in time).
 func _pick_collapse_points() -> void:
-	for r in [ANTE.end.y + 1, SOUTH.position.y - 2]:
-		collapse_points.append(_cell(r, 23) + Vector3(CELL * 0.5, 0, 0))
+	collapse_points.append(_cell(ANTE.end.y + 1, 23) + Vector3(CELL * 0.5, 0, 0))
+	collapse_points.append(_cell(22, 43) + Vector3(CELL * 0.5, 0, 0))
 
 
 func _environment() -> void:
