@@ -47,6 +47,8 @@ var _gust := 0.0                    # rad/s pushing the roll now
 var _gust_left := 0.0
 var _phase_t := 0.0
 var _storm_z := 0.0
+var _look_back_t := 0.0             # s left of a look back at the storm
+var _looked_mid := false
 var _t := 0.0
 var _shots: Array[float] = []
 var _done := false
@@ -189,6 +191,12 @@ func _process(delta: float) -> void:
 
 ## Behind and above the plane, swaying with it; the storm shakes it.
 func _follow_cam(delta: float) -> void:
+	if _look_back_t > 0.0:
+		# The look back: from ahead of the plane, past it, at the wall of sand coming on.
+		_look_back_t -= delta
+		_cam.global_position = plane.global_transform * Vector3(6.0, 7.0, -24.0)
+		_cam.look_at(plane.global_position + plane.global_basis.z * 60.0 + Vector3.UP * 25.0, Vector3.UP)
+		return
 	var behind := plane.global_transform * Vector3(0, 4.0, 13.0)
 	var shake := Vector3.ZERO
 	if step == Step.STORM:
@@ -209,9 +217,12 @@ func _fly(delta: float) -> void:
 		return
 	# The storm: it gains on the plane; its gusts roll it; you hold it level.
 	var p := (_phase_t - CALM_SECS) / STORM_SECS
-	_storm_z = lerpf(plane.global_position.z + 900.0, plane.global_position.z + 4.0, p)
-	_storm.global_position = Vector3(plane.global_position.x, 0, _storm_z)
-	_storm.scale.y = lerpf(0.4, 1.0, minf(p * 2.0, 1.0))
+	if p > 0.55 and not _looked_mid:
+		_looked_mid = true
+		_look_back_t = 3.0  # it's much closer now
+	_storm_z = lerpf(plane.global_position.z + 650.0, plane.global_position.z + 4.0, p)
+	_storm.scale.y = lerpf(0.35, 1.0, minf(p * 2.0, 1.0))
+	_storm.global_position = Vector3(plane.global_position.x, 300.0 * _storm.scale.y, _storm_z)  # rising from the ground
 	level._env.fog_density = lerpf(0.0015, 0.02, p * p)
 	level._env.fog_light_color = level._env.fog_light_color.lerp(Color(0.55, 0.38, 0.22), delta)
 	_gust_t -= delta
@@ -268,16 +279,18 @@ func _storm_begin() -> void:
 	step = Step.STORM
 	_storm = MeshInstance3D.new()
 	var bm := BoxMesh.new()
-	bm.size = Vector3(3000, 260, 60)
+	bm.size = Vector3(3000, 600, 80)  # a wall of sand far taller than the plane flies
 	_storm.mesh = bm
 	_storm_mat = StandardMaterial3D.new()
 	_storm_mat.albedo_color = Color(0.5, 0.36, 0.22, 0.85)
 	_storm_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	_storm_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_storm_mat.disable_fog = true  # the fog would hide it at a distance
 	_storm.mesh.surface_set_material(0, _storm_mat)
 	add_child(_storm)
-	_storm.position = Vector3(0, 130, plane.global_position.z + 900.0)
+	_storm.position = Vector3(0, 105, plane.global_position.z + 650.0)
 	hud.toast("Behind you, the horizon is rising: a wall of sand, and it's gaining. A / D to hold her level.", 5.0)
+	_look_back_t = 4.5
 	print("RESULT flight storm")
 
 

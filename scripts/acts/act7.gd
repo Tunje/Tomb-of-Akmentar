@@ -455,7 +455,9 @@ func _sync_party() -> void:
 		if c == null:
 			continue
 		add_child(c)
-		c.global_position = player.global_position + Vector3(1.5 + companions.size(), 0, 2.0)
+		# Out to the sides, a step ahead: never behind you in the camera's lens.
+		var i := companions.size()
+		c.global_position = player.global_position + Vector3((1.0 if i % 2 == 0 else -1.0) * (2.4 + (i / 2) * 1.2), 0, -1.0).rotated(Vector3.UP, player.yaw)
 		companions[id] = c
 
 

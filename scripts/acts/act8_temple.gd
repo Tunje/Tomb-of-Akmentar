@@ -66,7 +66,8 @@ func _ready() -> void:
 		var c := Gunman.make_companion(id, player, Characters.glb(id))
 		if c:
 			add_child(c)
-			c.global_position = player.global_position + Vector3(i * 1.4 - 1.4, 0, 2.5)
+			# Out to the sides, a step ahead: never behind you in the camera's lens.
+			c.global_position = player.global_position + Vector3((1.0 if i % 2 == 0 else -1.0) * (2.4 + (i / 2) * 1.2), 0, -1.0).rotated(Vector3.UP, player.yaw)
 			companions[id] = c
 			i += 1
 	level.interactables["temple_relief"].used.connect(func(_by): _relief())

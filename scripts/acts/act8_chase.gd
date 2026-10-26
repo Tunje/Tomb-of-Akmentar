@@ -141,7 +141,7 @@ func _start() -> void:
 				break
 		c.start("act8_chase", player, who)
 		await c.finished
-	hud.toast("Drive! They're coming up behind. (V: hand a companion the wheel and take the gun.)", 4.0)
+	hud.toast("Drive! They're coming up behind. (C: look back · V: hand a companion the wheel and take the gun.)", 4.0)
 	_running = true
 	_road_ahead()
 	Barks.say_any(get_tree(), "truck_ride")
@@ -382,8 +382,44 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_tree().quit()
 
 
+var _looking_back := false
+var _warn_t := 0.0
+
+
+## Driving, you only see a chariot once it's level with you: C (held) looks over your shoulder,
+## and one closing from behind gets a word, which side it's on.
+func _look_back(delta: float) -> void:
+	var t := player.vehicle as Truck
+	if t == null or player.gunner_seat >= 0:
+		_looking_back = false
+		return
+	var ahead := -t.global_basis.z
+	ahead.y = 0.0
+	ahead = ahead.normalized()
+	var want := Input.is_action_pressed("crouch")
+	if want:
+		player.yaw = atan2(ahead.x, ahead.z)  # facing back down the road
+	elif _looking_back:
+		player.yaw = atan2(-ahead.x, -ahead.z)  # and forward again
+	_looking_back = want
+	_warn_t -= delta
+	if _warn_t > 0.0 or not _running:
+		return
+	for c in chariots:
+		if not is_instance_valid(c) or not c.alive:
+			continue
+		var rel := c.global_position - t.global_position
+		rel.y = 0.0
+		if rel.length() < 35.0 and rel.length() > 7.0 and ahead.dot(rel.normalized()) < -0.5:
+			var right := ahead.cross(Vector3.UP)
+			hud.toast("A chariot behind you, %s! (hold C to look back)" % ("right" if rel.dot(right) > 0.0 else "left"), 2.5)
+			_warn_t = 7.0
+			break
+
+
 func _process(delta: float) -> void:
 	_t += delta
+	_look_back(delta)
 	if _autopilot and trucks[0].health > 0.0:
 		player.global_position = trucks[0].global_position  # the hidden bot rides along (HUD)
 		var back := trucks[0].global_basis.z
