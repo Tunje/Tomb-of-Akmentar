@@ -18,7 +18,7 @@ enum Step { KEEPERS, BOARD, ROAD, ARRIVAL, END, OVER }
 const PLAN := "res://routes/act6_plan.json"
 const NEXT_ACT := "res://act7.tscn"
 const RIVALS := ["americans", "germans"]   # the expeditions that can lend horses (if alive)
-const SERVANTS := 5                        # mummies at the night camp
+const SERVANTS := 10                       # mummies at the night camp
 
 var level: Level
 var player: Player
@@ -75,12 +75,20 @@ func _use_level(l: Level, at: Vector3, yaw: float) -> void:
 	player.global_position = at
 	player.velocity = Vector3.ZERO
 	player.yaw = yaw
+	hud.toast("", 0.0)  # the last map's line doesn't fade over the next one
 	var i := 0
 	for id in companions:
 		var c: Node3D = companions[id]
 		if is_instance_valid(c):
-			c.global_position = at + Vector3(i * 1.4 - 1.4, 0, 2.5).rotated(Vector3.UP, yaw)
+			c.global_position = _party_spot(i, at, yaw)
 		i += 1
+
+
+## Where the i-th companion stands: out to the sides, a step ahead (as act3 / act5 do), so
+## nobody stands in the camera's lens behind you.
+func _party_spot(i: int, at: Vector3, yaw: float) -> Vector3:
+	var side := 1.0 if i % 2 == 0 else -1.0
+	return at + Vector3(side * (2.4 + (i / 2) * 1.2), 0, -1.0).rotated(Vector3.UP, yaw)
 
 
 func _spawn_party() -> void:
@@ -90,7 +98,7 @@ func _spawn_party() -> void:
 		var c := Gunman.make_companion(id, player, Characters.glb(id))
 		if c:
 			add_child(c)
-			c.global_position = player.global_position + Vector3(companions.size() * 1.4 - 1.4, 0, 2.5)
+			c.global_position = _party_spot(companions.size(), player.global_position, player.yaw)
 			companions[id] = c
 
 
@@ -261,38 +269,55 @@ func _camp(at: Vector3) -> void:
 		level._prop(level, "prop_bedroll.glb", at + Vector3(cos(a), 0, sin(a)) * 2.6, a)
 
 
-## The guardian's servants come out of the dark at the camp: hold until they're down.
+## The guardian's servants come out of the dark at the camp, not all at once: three from
+## different sides, then one every few seconds from wherever the dark is (about half a minute in
+## all). Held when every one of them has come and is down (act6_camp_held).
 func _servants(camp: Vector3) -> void:
 	player.set_armed(true)
 	hud.toast("Shapes in the dark, wrapped and silent. Hold the fire!", 3.0)
 	var down := [0]
-	for i in SERVANTS:
-		var a := TAU * i / SERVANTS + randf_range(-0.2, 0.2)
-		var m := Mummy.new()
-		m.priest = i == 0
-		add_child(m)
-		var p := camp + Vector3(cos(a), 0, sin(a)) * randf_range(16.0, 22.0)
-		p.y = DesertRoute.ground_y(p.z)
-		m.global_position = p
-		m.target = player
-		m.wake()
-		m.killed.connect(func(_m): down[0] += 1)
-		servants.append(m)
-	print("RESULT act6 servants=%d" % servants.size())
-	if args.has("auto"):
-		await get_tree().create_timer(1.5).timeout
-		for m in servants:
-			if is_instance_valid(m):
-				m._die(Vector3.FORWARD, false)  # as a fatal shot would
-	while down[0] < servants.size() and player.alive:
-		await get_tree().create_timer(0.5).timeout
+	var spawned := 0
+	var t := 0.0
+	var next_t := 0.0
+	var first_a := randf() * TAU
+	var t0 := Time.get_ticks_msec()
+	while player.alive:
+		if spawned < SERVANTS and t >= next_t:
+			for k in (3 if spawned == 0 else 1):
+				var a := first_a + TAU * k / 3.0 if spawned < 3 else randf() * TAU
+				_servant(camp, a, spawned == 0, down)
+				spawned += 1
+			next_t = t + randf_range(3.0, 5.0)
+		if spawned >= SERVANTS and down[0] >= SERVANTS:
+			break
+		await get_tree().create_timer(0.25).timeout
+		t += 0.25
 	if not player.alive:
 		return
+	print("RESULT act6 servants=%d over %.0f s" % [servants.size(), (Time.get_ticks_msec() - t0) / 1000.0])
 	player.set_armed(false)
 	Game.set_flag("act6_camp_held")
 	print("RESULT act6 camp_held")
 	hud.toast("The last of them falls into the fire. Nobody sleeps.", 3.0)
 	await get_tree().create_timer(2.0).timeout
+
+
+## One servant out of the dark at bearing `a` from the camp.
+func _servant(camp: Vector3, a: float, priest: bool, down: Array) -> void:
+	var m := Mummy.new()
+	m.priest = priest
+	add_child(m)
+	var p := camp + Vector3(cos(a), 0, sin(a)) * randf_range(11.0, 15.0)  # out of the dark close by (16-22 m: shot down before they arrived)
+	p.y = DesertRoute.ground_y(p.z)
+	m.global_position = p
+	m.target = player
+	m.wake()
+	m.killed.connect(func(_m): down[0] += 1)
+	servants.append(m)
+	if args.has("auto") and not args.has("skill-bot"):  # --skill-bot: tests/difficulty_test fights them
+		get_tree().create_timer(1.0).timeout.connect(func():
+			if is_instance_valid(m) and m.is_active():
+				m._die(Vector3.FORWARD, false))  # as a fatal shot would
 
 
 # ---------------------------------------------------------------- Cairo
