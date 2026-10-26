@@ -75,7 +75,7 @@ func _ready() -> void:
 	player.died.connect(func(): hud.show_message("YOU DIED", "Enter to try again"))
 	for s in str(args.get("shots", "")).split(",", false):
 		_shots.append(float(s))
-	if args.has("party") or (args.has("auto") and Game.party().is_empty()):
+	if args.has("party") or ((args.has("auto") or Game.flag("quickstart_act", false)) and Game.party().is_empty()):
 		for id in str(args.get("party", "mahmoud,khalil")).split(",", false):
 			Game.companion(id)["recruited"] = true  # test runs: who comes along
 	_spawn_party()
