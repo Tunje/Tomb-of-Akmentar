@@ -237,6 +237,11 @@ func _physics_process(_delta: float) -> void:
 	var roll := global_basis.y.cross(Vector3.UP).dot(fwd)  # sin of the roll angle, signed
 	var roll_rate := angular_velocity.dot(fwd)
 	apply_torque(fwd * (roll * ANTI_ROLL - roll_rate * ANTI_ROLL_DAMP) * mass)
+	# Nobody at the wheel (and no GunnerSeat companion steering): engine off, brakes on, so a truck
+	# you jump out of doesn't roll away at speed.
+	if driver == null and not has_node("GunnerSeat"):
+		engine_force = 0.0
+		brake = BRAKE * 0.6
 	# Crashes hurt: a sudden loss of speed above walking pace.
 	var speed := Vector2(linear_velocity.x, linear_velocity.z).length()  # bounces aren't crashes
 	var lost := _last_speed - speed
