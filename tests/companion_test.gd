@@ -359,6 +359,8 @@ func _report() -> void:
 
 
 func _screenshot(base: String) -> void:
+	if DisplayServer.get_name() == "headless":  # frame_post_draw never fires headless
+		return
 	await RenderingServer.frame_post_draw
 	_save(base + "_play.png")
 	_cam.look_at_from_position(Vector3(0, 34, 22), Vector3(0, 0, 2))

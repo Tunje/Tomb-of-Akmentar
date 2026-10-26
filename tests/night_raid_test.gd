@@ -288,6 +288,8 @@ func _on_finished(result: Dictionary) -> void:
 
 
 func _screenshot(base: String) -> void:
+	if DisplayServer.get_name() == "headless":  # frame_post_draw never fires headless
+		return
 	await RenderingServer.frame_post_draw
 	_save(base + "_play.png")
 	_cam.look_at_from_position(_here + Vector3(0, 30, 34), _here + Vector3(0, 0, -6))

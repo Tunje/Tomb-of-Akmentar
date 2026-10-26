@@ -139,6 +139,8 @@ func _press(action: String, on: bool) -> void:
 
 
 func _shot(file: String) -> void:
+	if DisplayServer.get_name() == "headless":  # frame_post_draw never fires headless
+		return
 	await RenderingServer.frame_post_draw
 	if DisplayServer.get_name() == "headless":
 		return
