@@ -94,7 +94,7 @@ func _spawn_party() -> void:
 		var c := Gunman.make_companion(id, player, Characters.glb(id))
 		if c:
 			add_child(c)
-			c.global_position = player.global_position + Vector3(i * 1.4 - 1.4, 0, 2.5)
+			c.global_position = player.global_position + Vector3((2.4 + i * 1.2) * (1 if i % 2 == 0 else -1), 0, -1.0)  # to the sides, not in the lens
 			companions[id] = c
 			i += 1
 
@@ -113,10 +113,14 @@ func _set_out() -> void:
 	if args.has("auto"):
 		await get_tree().create_timer(0.4).timeout
 		var want := str(args.get("route", ""))
+		var picked := false
 		for i in b.options().size():
-			if (want == "" and b.reason(i) == "") or str(b.options()[i].get("id", "")) == want:
-				b.choose(i)
+			if str(b.options()[i].get("id", "")) == want and b.reason(i) == "":
+				picked = b.choose(i)
 				break
+		for i in b.options().size():  # wanted route locked (no plane arranged...): the first open one
+			if not picked and b.reason(i) == "":
+				picked = b.choose(i)
 	while not closed[0]:
 		await get_tree().process_frame
 	for e in _events:
@@ -165,7 +169,7 @@ func _to_the_road(returned := false) -> void:
 	var i := 0
 	for c in companions.values():
 		if is_instance_valid(c):
-			(c as Node3D).global_position = player.global_position + Vector3(i * 1.4 - 1.4, 0, 2.5)
+			(c as Node3D).global_position = player.global_position + Vector3((2.4 + i * 1.2) * (1 if i % 2 == 0 else -1), 0, -1.0)
 			i += 1
 	if not returned:
 		await _talk(FIGHT_EVENTS.get(_route_event, ""))
