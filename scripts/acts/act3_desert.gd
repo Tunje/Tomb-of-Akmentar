@@ -7,6 +7,9 @@ extends Node3D
 ## Afterwards a talk with a companion (-f9's dialogue/act3_after_ambush.json: who were they?), then
 ## on to the town and its elder, Rashid Amin (act3_town.json). The talks are skipped in --auto runs
 ## unless --talk is given, and when their files are missing.
+## The coast road (Route C -> town, coast = true: act3_coast.tscn, or --route=coast) is the same
+## road and ambush by truck: you drive the lead truck with up to three companions aboard (they
+## stay aboard if you drive through, and climb down when you get out), the drover the second.
 ## Test args after "--": --auto (a bot plays it)  --plan=fight|ride (the bot's choice, default
 ## fight)  --party=mahmoud,khalil  --shots=t1,t2  --shot-dir=path  --cam=overview (shots from
 ## above the wadi)  --seconds=N  --seed=N.
@@ -19,6 +22,9 @@ enum Step { ROAD, AMBUSH, AFTER, TOWN, END }
 
 static var next_scene := "res://act4.tscn"
 
+## The coast road by truck instead of the desert by horse.
+@export var coast := false
+
 const DROVER_GLB := "res://assets/characters/explorer/explorer.glb"  # crew stand-in
 
 var level: DesertRoute
@@ -27,8 +33,10 @@ var hud: Hud
 var step := Step.ROAD
 var args := {}
 var ambush: RoadAmbush
-var horse: Horse                  # the player's
-var truck: Truck
+var horse: Horse                  # the player's (desert)
+var own_truck: Truck              # the player's (coast)
+var truck: Truck                  # the supply truck, the drover's
+var passengers := {}              # companion id -> Rider aboard own_truck
 var drover: Rider
 var riders := {}                  # companion id -> Rider, while they ride
 var result := {}
@@ -53,9 +61,11 @@ func _ready() -> void:
 	if args.has("seed"):
 		seed(int(args.seed))
 	Game.act = 3
-	Game.set_flag("route", "desert")
+	coast = coast or args.get("route", "") == "coast"
+	Game.set_flag("route", "coast" if coast else "desert")
 	Game.set_flag("route_branch", "town")
 	level = DesertRoute.new()
+	level.coast = coast
 	add_child(level)
 	player = Player.new()
 	add_child(player)
@@ -107,22 +117,39 @@ func _unhandled_input(event: InputEvent) -> void:
 
 # ---------------------------------------------------------------- the convoy
 
-## The player in the saddle at the head, each companion on a horse behind, the truck at the back.
+## Desert: the player in the saddle at the head, each companion on a horse behind, the truck at
+## the back. Coast: the player at the wheel of the lead truck with companions aboard, the
+## supply truck behind (anyone who doesn't fit rides on it).
 func _convoy() -> void:
 	var z := DesertRoute.START_Z
-	horse = Horse.make(level, "bay", level.start_point)
-	player.enter_vehicle(horse)
+	if coast:
+		own_truck = _truck("LeadTruck", level.start_point)
+		player.enter_vehicle(own_truck)
+	else:
+		horse = Horse.make(level, "bay", level.start_point)
+		player.enter_vehicle(horse)
+	truck = _truck("SupplyTruck", DesertRoute.road_point(z + _truck_gap()))
+	drover = Rider.mount(self, truck, DROVER_GLB)
 	var i := 0
 	for id in Game.party():
-		var slot := _slot(z, i)
-		var h := Horse.make(level, "horse_" + str(id), slot)
-		riders[id] = Rider.mount(self, h, Characters.glb(id))
+		if coast:
+			# Three seats behind the driver in each truck.
+			if i < own_truck.seats.size() - 1:
+				passengers[id] = Rider.mount(self, own_truck, Characters.glb(id), i + 1)
+			else:
+				riders[id] = Rider.mount(self, truck, Characters.glb(id), i - own_truck.seats.size() + 2)
+		else:
+			var h := Horse.make(level, "horse_" + str(id), _slot(z, i))
+			riders[id] = Rider.mount(self, h, Characters.glb(id))
 		i += 1
-	truck = Truck.new()
-	truck.name = "SupplyTruck"
-	level.add_child(truck)
-	truck.global_position = DesertRoute.road_point(z + _truck_gap()) + Vector3.UP * 0.3
-	drover = Rider.mount(self, truck, DROVER_GLB)
+
+
+func _truck(n: String, at: Vector3) -> Truck:
+	var t := Truck.new()
+	t.name = n
+	level.add_child(t)
+	t.global_position = at + Vector3.UP * 0.3
+	return t
 
 
 ## Where companion `i` rides: behind the player, alternating sides of the road.
@@ -133,17 +160,17 @@ func _slot(z: float, i: int) -> Vector3:
 
 
 func _truck_gap() -> float:
-	return 8.0 + 3.5 * riders.size()
+	return 12.0 if coast else 8.0 + 3.5 * riders.size()
 
 
 ## While the convoy rides: everyone keeps their place behind the player.
 func _keep_formation() -> void:
 	var z := player.global_position.z
-	var lead_speed := horse.speed if is_instance_valid(horse) else 0.0
+	var lead_speed := _lead_speed()
 	var i := 0
 	for id in riders:
 		var r: Rider = riders[id]
-		if not is_instance_valid(r):
+		if not is_instance_valid(r) or r.seat > 0:
 			continue
 		var slot := _slot(z, i)
 		var behind := slot.distance_to(r.mount_node.global_position)
@@ -156,14 +183,26 @@ func _keep_formation() -> void:
 		drover.want_speed = clampf(maxf(lead_speed, 1.5) + (slot.distance_to(truck.global_position) - 1.0) * 0.5, 0.0, 9.0)
 
 
+func _lead_speed() -> float:
+	var v := player.vehicle
+	if v is Horse:
+		return (v as Horse).speed
+	if v is Truck:
+		return -((v as Truck).global_basis.inverse() * (v as Truck).linear_velocity).z
+	return 0.0
+
+
 # ---------------------------------------------------------------- the act
 
 func _road() -> void:
 	step = Step.ROAD
-	hud.show_message("THE DESERT ROAD", "Three days across the sand to the town. Akmentar lies beyond.")
+	if coast:
+		hud.show_message("THE COAST ROAD", "Along the sea, then inland to the town. Akmentar lies beyond.")
+	else:
+		hud.show_message("THE DESERT ROAD", "Three days across the sand to the town. Akmentar lies beyond.")
 	await get_tree().create_timer(2.5).timeout
 	hud.show_message("")
-	hud.toast("W / S speed up and slow down · A / D steer · E get down", 4.0)
+	hud.toast("W / S speed up and slow down · A / D steer · E get %s" % ("out" if coast else "down"), 4.0)
 
 
 func _ambush() -> void:
@@ -175,10 +214,11 @@ func _ambush() -> void:
 		"centre": level.ambush_centre, "posts": level.bandit_posts,
 		"rider_from": level.rider_from, "rider_to": level.rider_to,
 		"finish_z": DesertRoute.FINISH_Z,
-	}, {"truck": truck, "drover": drover, "riders": all_riders, "player_horse": horse},
+	}, {"truck": truck, "drover": drover, "riders": all_riders, "player_horse": horse,
+		"passengers": passengers, "player_truck": own_truck},
 		int(args.get("seed", "-1")))
 	ambush.riders_coming.connect(func(): hud.toast("Riders! Coming down the wadi from the east!", 3.0))
-	hud.toast("Ambush! Get down into cover (E) or ride on through!", 4.0)
+	hud.toast("Ambush! Get out into cover (E) or drive on through!" if coast else "Ambush! Get down into cover (E) or ride on through!", 4.0)
 	result = await ambush.finished
 	_after()
 
@@ -191,10 +231,10 @@ func _after() -> void:
 	Game.set_flag("supplies_lost", rode)  # the stalled truck is left behind on the road
 	Game.set_flag("race_step", 4)
 	Game.set_flag("ambush_prisoners", int(result.get("surrendered", 0)))
-	# The Keepers' horses aren't ours (Horse records every horse in Game.transport).
-	Game.transport["horses"] = (Game.transport.get("horses", []) as Array).filter(func(e):
-		return not (e is Dictionary and str(e.get("id", "")).begins_with("keeper_")))
-	hud.toast("You broke through. The truck and its supplies stay behind in the wadi." if rode
+	if coast:  # Game.transport: the lead truck as it came through, the supply truck lost if left
+		Game.transport["trucks"] = [{"id": "lead_truck", "health": own_truck.health if is_instance_valid(own_truck) else 0.0},
+			{"id": "supply_truck", "health": 0.0 if rode or not is_instance_valid(truck) else truck.health}]
+	hud.toast("You broke through. The supply truck stays behind in the wadi." if rode
 		else "The attackers are gone. Whoever sent them wanted you off this road.", 4.0)
 	await get_tree().create_timer(3.0).timeout
 	await _talk("act3_after_ambush", _nearest_companion())
@@ -203,7 +243,7 @@ func _after() -> void:
 
 ## Who the after-ambush talk is with: the nearest companion still standing, else the truck.
 func _nearest_companion() -> Node3D:
-	var best: Node3D = truck if is_instance_valid(truck) else player
+	var best: Node3D = player.vehicle if player.vehicle else (truck if is_instance_valid(truck) else player)
 	var bd := INF
 	for c in ambush.companions.values():
 		if is_instance_valid(c) and (c as Gunman).is_active():
@@ -223,6 +263,7 @@ func _on_to_town() -> void:
 		# The bot skips the ride: the party is at the edge of town.
 		if player.vehicle:
 			player.exit_vehicle()
+		ambush.passengers_down()
 		player.global_position = DesertRoute.road_point(DesertRoute.TOWN_Z + 18.0)
 		var i := 0
 		for c in ambush.companions.values():
@@ -252,7 +293,7 @@ func _end() -> void:
 	step = Step.END
 	var lost: Array = result.get("party_losses", [])
 	var lines := [
-		"You %s." % ("rode through the ambush" if result.get("result", "") == "drove_through" else "fought off the ambush"),
+		"You %s." % (("drove" if coast else "rode") + " through the ambush" if result.get("result", "") == "drove_through" else "fought off the ambush"),
 		"Attackers killed: %d, gave up: %d, fled: %d." % [result.get("bandits_killed", 0), result.get("surrendered", 0), result.get("withdrew", 0)],
 		"Companions lost: %s." % (", ".join(lost.map(func(id): return str(id).capitalize())) if not lost.is_empty() else "none"),
 		"Horses lost: %d." % (result.get("horses_lost", []) as Array).size(),
@@ -282,8 +323,11 @@ func _physics_process(delta: float) -> void:
 		_keep_formation()
 		if player.global_position.z < DesertRoute.AMBUSH_Z:
 			_ambush()
-	elif step == Step.TOWN and player.global_position.z < DesertRoute.TOWN_Z + 14.0:
-		_town()
+	elif step == Step.TOWN:
+		if player.vehicle == null and not (ambush.convoy.get("passengers", {}) as Dictionary).is_empty():
+			ambush.passengers_down()  # drove through with them aboard; out they get with you
+		if player.global_position.z < DesertRoute.TOWN_Z + 14.0:
+			_town()
 	if args.has("auto"):
 		_bot(delta)
 
@@ -333,14 +377,15 @@ func _bot_ride(gallop: bool) -> void:
 	var z := player.global_position.z
 	var ahead := DesertRoute.road_point(z - 12.0)
 	var d := ahead - player.global_position
-	var fwd := -horse.global_basis.z
+	var fwd := -player.vehicle.global_basis.z
 	var err := Vector3(fwd.x, 0, fwd.z).normalized().signed_angle_to(Vector3(d.x, 0, d.z).normalized(), Vector3.UP)
 	_press("move_left", err > 0.06)
 	_press("move_right", err < -0.06)
-	_press("move_forward", gallop or horse.speed < 3.4)
+	var speed := _lead_speed()
+	_press("move_forward", gallop or speed < (6.0 if coast else 3.4))
 	if args.has("trace") and fmod(_t, 1.0) < get_physics_process_delta_time():
-		print("TRACE ride z=%.1f x=%.1f road_x=%.1f speed=%.1f target=%.1f wall=%s err=%.2f" % [z, player.global_position.x,
-			DesertRoute.road_x(z), horse.speed, horse.target_speed, horse.is_on_wall(), err])
+		print("TRACE ride z=%.1f x=%.1f road_x=%.1f speed=%.1f err=%.2f" % [z, player.global_position.x,
+			DesertRoute.road_x(z), speed, err])
 
 
 ## On foot: shoot the nearest bandit in sight; with none in sight for a while, walk toward the

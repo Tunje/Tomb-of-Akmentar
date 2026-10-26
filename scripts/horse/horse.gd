@@ -28,6 +28,9 @@ const STIRRUP_OUT := 0.09     # the stirrup hangs this far outside the barrel (a
 const REINS := Vector3(-0.11, 0.3, -0.4)
 
 @export var id := "horse"
+## Recorded in Game.transport.horses (an expedition resource); false for anyone else's horse
+## (the Keepers' riders in Act 3).
+var tracked := true
 var health := MAX_HEALTH
 var alive := true
 var speed := 0.0              # m/s along the body (negative = backing)
@@ -49,11 +52,12 @@ var _stirrup := STIRRUP
 var _legs_shape: CollisionShape3D
 
 
-static func make(parent: Node3D, horse_id: String, pos: Vector3, glb := "") -> Horse:
+static func make(parent: Node3D, horse_id: String, pos: Vector3, glb := "", is_tracked := true) -> Horse:
 	var h := Horse.new()
 	h.id = horse_id
 	h.name = "Horse_" + horse_id
 	h._glb = glb
+	h.tracked = is_tracked
 	parent.add_child(h)
 	h.global_position = pos
 	return h
@@ -242,6 +246,8 @@ func _die() -> void:
 
 ## Keep Game.transport.horses in step: {"id", "health"} (health 0 = lost).
 func _sync_transport() -> void:
+	if not tracked:
+		return
 	var list: Array = Game.transport.get("horses", [])
 	for e in list:
 		if e is Dictionary and e.get("id", "") == id:

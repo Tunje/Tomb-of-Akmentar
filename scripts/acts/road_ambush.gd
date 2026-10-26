@@ -13,6 +13,10 @@ extends Node3D
 ##   var a := RoadAmbush.start(level, player, {"centre": ..., "posts": [...], "rider_from": ...,
 ##       "rider_to": ..., "finish_z": 120.0}, convoy)
 ##   a.finished.connect(func(result): ...)
+## On the coast road the party comes by truck: companions riding as `passengers` stay aboard
+## while the player drives (they ride through with him) and climb down once he gets out or the
+## truck is wrecked. Rounds at a truck you're driving can't touch you (you're not a body then), so
+## each shot fired at you there is a chance of a hit on the truck and a graze on you.
 ## result = {result, bandits_killed, surrendered, withdrew, party_losses: [ids], horses_lost: [ids],
 ## truck_health, t}. If the player dies, `finished` never fires (the death screen takes over).
 
@@ -29,6 +33,9 @@ const WITHDRAW_UNSEEN := 25.0
 const TIME_LIMIT := 150.0         # after the riders arrive, whoever's left withdraws by then
 const END_DELAY := 3.0
 const RIDER_HURT_SHARE := 0.5     # a round that hits your horse is half in you
+const CAB_HIT := 0.4              # a shot at you in the cab hits the truck this often
+const CAB_TRUCK_DMG := 4.0
+const CAB_PLAYER_DMG := 3.0
 ## Stand-ins until the Keepers have their own models: the robed-looking two of image-to-3d's four.
 const KEEPER_GLB := ["res://assets/characters/bandits/bandit_scout.glb",
 	"res://assets/characters/bandits/bandit_raider.glb"]
@@ -38,7 +45,7 @@ const HIRED_GLB := ["res://assets/characters/bandits/bandit_brute.glb",
 var player: Player
 var zone := {}
 ## What the convoy brings: {"truck": Truck, "drover": Rider, "riders": {companion id: Rider},
-## "player_horse": Horse}.
+## "player_horse": Horse, "passengers": {companion id: Rider}, "player_truck": Truck}.
 var convoy := {}
 var bandits: Array[Gunman] = []
 var companions := {}  # id -> Gunman, once they're down off their horses
@@ -56,6 +63,7 @@ var _party_start: Array[String] = []
 var _end_t := -1.0
 var _status_t := 0.0
 var _done := false
+var _shots_seen := {}  # Gunman -> shots_fired already counted (cab hits)
 
 
 static func start(parent: Node3D, p: Player, ambush_zone: Dictionary, the_convoy: Dictionary, seed := -1) -> RoadAmbush:
@@ -115,6 +123,39 @@ func _companions_down() -> void:
 		_party_start.append(id)
 
 
+## The player's out of the truck (or it's wrecked): everyone aboard climbs down and fights.
+func passengers_down() -> void:
+	var list: Dictionary = convoy.passengers
+	convoy.passengers = {}
+	for id in list:
+		var r: Rider = list[id]
+		if not is_instance_valid(r):
+			continue
+		var at := r.dismount()
+		var c := Gunman.make_companion(id, player, Characters.glb(id))
+		if c == null:
+			continue
+		add_child(c)
+		c.global_position = _on_navmesh(at)
+		companions[id] = c
+		if not _party_start.has(id):
+			_party_start.append(id)
+
+
+func _cab_hits() -> void:
+	var t := player.vehicle as Truck
+	for b in bandits:
+		if not is_instance_valid(b):
+			continue
+		var n: int = _shots_seen.get(b, b.shots_fired)
+		if t and b.target == player:
+			for k in b.shots_fired - n:
+				if rng.randf() < CAB_HIT:
+					t.damage(CAB_TRUCK_DMG)
+					player.take_damage(CAB_PLAYER_DMG, b.global_position)
+		_shots_seen[b] = b.shots_fired
+
+
 func _spawn_hired() -> void:
 	var posts: Array = (zone.posts as Array).duplicate()
 	posts.shuffle()
@@ -151,7 +192,7 @@ func _send_riders() -> void:
 	for i in RIDERS:
 		var lane := (float(i) - (RIDERS - 1) * 0.5) * 2.6
 		var start := from + across * lane - (to - from).normalized() * float(i % 2) * 4.0
-		var h := Horse.make(get_parent(), "keeper_%d" % (i + 1), start)
+		var h := Horse.make(get_parent(), "keeper_%d" % (i + 1), start, "", false)
 		h.look_at(Vector3(to.x, h.global_position.y, to.z) + across * lane, Vector3.UP)
 		var r := Rider.mount(self, h, KEEPER_GLB[i % KEEPER_GLB.size()])
 		r.goal = to + across * lane
@@ -192,6 +233,11 @@ func _physics_process(delta: float) -> void:
 		return
 	if _riders_t < 0.0 and (_t > RIDERS_AFTER or _fighting(_hired) <= RIDERS_WHEN):
 		_send_riders()
+	if not (convoy.get("passengers", {}) as Dictionary).is_empty():
+		var t: Truck = convoy.get("player_truck")
+		if player.vehicle != t or t == null or t.health <= 0.0:
+			passengers_down()
+	_cab_hits()
 	for r in _keeper_riders.duplicate():
 		if is_instance_valid(r) and (r.arrived or _t - _riders_t > 20.0):
 			_get_down(r)
@@ -259,7 +305,7 @@ func _finish() -> void:
 			lost.append(id)
 	var horses_lost: Array[String] = []
 	for e in Game.transport.get("horses", []):
-		if e is Dictionary and float(e.get("health", 1.0)) <= 0.0 and not str(e.get("id", "")).begins_with("keeper_"):
+		if e is Dictionary and float(e.get("health", 1.0)) <= 0.0:
 			horses_lost.append(str(e.id))
 	var surrendered := 0
 	for g in bandits:

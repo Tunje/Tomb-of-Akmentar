@@ -25,6 +25,9 @@ const AMBUSH_Z := 218.0
 const FINISH_Z := 120.0
 const TOWN_Z := 30.0
 
+## The coast road (Route C -> town): the sea beyond the west edge, a beach, the wadi running
+## out into it. Set before adding to the tree.
+var coast := false
 var start_point := Vector3.ZERO
 ## Where the ambush happens: the road in the wadi bed.
 var ambush_centre := Vector3.ZERO
@@ -65,11 +68,34 @@ func _ready() -> void:
 	ambush_centre = road_point(bed_z)
 	rider_from = Vector3(W - 8.0, -WADI_DEPTH, bed_z)
 	rider_to = Vector3(road_x(bed_z) + 30.0, -WADI_DEPTH, bed_z)
+	if coast:
+		_sea()
 	_environment()
 	_sun.rotation = Vector3(deg_to_rad(-30), deg_to_rad(-120), 0)  # late afternoon, long shadows
 	_env.fog_density = 0.003
 	_env.fog_light_color = Color(0.8, 0.66, 0.48)
 	_nav.bake_navigation_mesh(false)
+
+
+# ---------------------------------------------------------------- the coast
+
+## The Mediterranean to the west: a pale beach falling into the sea past the edge wall.
+func _sea() -> void:
+	var water := RiverWater.make(self, Vector2(600, L + 600.0), -0.6, Vector3(-312.0, 0, L * 0.5))
+	var m := water.material_override as ShaderMaterial
+	m.set_shader_parameter("deep", Color(0.06, 0.22, 0.34))
+	m.set_shader_parameter("shallow", Color(0.2, 0.46, 0.52))
+	m.set_shader_parameter("flow", Vector2(0.3, 0.0))
+	var beach := MeshInstance3D.new()
+	var pm := PlaneMesh.new()
+	pm.size = Vector2(30.0, L + 600.0)
+	beach.mesh = pm
+	var sand := _sand.duplicate() as StandardMaterial3D
+	sand.albedo_texture = _noise_tex(Color(0.8, 0.7, 0.52), Color(0.9, 0.82, 0.64), 0.03, false)
+	beach.material_override = sand
+	add_child(beach)
+	beach.position = Vector3(-25.0, -0.9, L * 0.5)
+	beach.rotation.z = deg_to_rad(4.5)  # down to the waterline, westward
 
 
 # ---------------------------------------------------------------- the lie of the land
@@ -113,7 +139,7 @@ func _ground() -> void:
 	shape.backface_collision = true
 	cs.shape = shape
 	body.add_child(cs)
-	for span in [[-300.0, 0.0], [0.0, W], [W, W + 300.0]]:
+	for span in ([[-12.0, 0.0], [0.0, W], [W, W + 300.0]] if coast else [[-300.0, 0.0], [0.0, W], [W, W + 300.0]]):
 		var st := SurfaceTool.new()
 		st.begin(Mesh.PRIMITIVE_TRIANGLES)
 		for v in _sheet(span[0], span[1]):
@@ -194,7 +220,7 @@ func _edges() -> void:
 		far.position = Vector3(W * 0.5, -0.03, z)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 3301
-	for side in [-1.0, 1.0]:
+	for side in ([1.0] if coast else [-1.0, 1.0]):  # no dunes in the sea
 		for i in 22:
 			var z := -60.0 + i * (L + 120.0) / 21.0 + rng.randf_range(-8, 8)
 			if z > WADI_N - 14.0 and z < WADI_S + 14.0:

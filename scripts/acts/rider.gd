@@ -14,6 +14,8 @@ const STEER_GAIN := 2.2
 const ARRIVE := 2.5
 
 var mount_node: Node3D  # Horse or Truck
+## 0 = the driver's seat / saddle (this Rider steers); higher = a truck's passenger (it just sits).
+var seat := 0
 var body: ExplorerBody
 ## Where to ride (INF = hold still) and how fast (m/s; a horse settles into the nearest gait).
 var goal := Vector3.INF
@@ -26,9 +28,10 @@ var _glb := ""
 
 ## Puts a rider with `glb`'s look on `m` (a Horse or Truck) and returns its controller (added
 ## under `parent`).
-static func mount(parent: Node, m: Node3D, glb: String) -> Rider:
+static func mount(parent: Node, m: Node3D, glb: String, seat_index := 0) -> Rider:
 	var r := Rider.new()
-	r.name = "Rider_" + m.name
+	r.name = "Rider_%s_%d" % [m.name, seat_index]
+	r.seat = seat_index
 	r.mount_node = m
 	r._glb = glb
 	parent.add_child(r)
@@ -36,7 +39,9 @@ static func mount(parent: Node, m: Node3D, glb: String) -> Rider:
 
 
 func _ready() -> void:
-	mount_node.board(_seat_holder(), 0)
+	mount_node.board(_seat_holder(), seat)
+	if seat > 0:
+		set_physics_process(false)
 	body = RiderBody.make(_glb)
 	if body:
 		mount_node.add_child(body)
@@ -62,8 +67,8 @@ func _seat_holder() -> Node3D:
 func _place_body() -> void:
 	if body == null or not is_instance_valid(mount_node):
 		return
-	var seat: Marker3D = mount_node.seats[0]
-	body.global_position = seat.global_position - Vector3.UP * 0.55
+	var m: Marker3D = mount_node.seats[mini(seat, mount_node.seats.size() - 1)]
+	body.global_position = m.global_position - Vector3.UP * 0.55
 	body.rotation = Vector3.ZERO
 
 
@@ -113,6 +118,8 @@ func _speed() -> float:
 ## Off the mount: the body goes, the seat is free. Returns where the rider now stands.
 func dismount() -> Vector3:
 	var at: Vector3 = mount_node.exit_point() if is_instance_valid(mount_node) else Vector3.ZERO
+	if seat > 0 and is_instance_valid(mount_node):  # passengers climb down each side, front to back
+		at = mount_node.global_transform * Vector3(1.6 if seat % 2 == 1 else -1.6, 0.2, 0.4 + seat * 0.6)
 	if is_instance_valid(mount_node):
 		mount_node.leave(_holder)
 		mount_node.idle()
