@@ -68,7 +68,9 @@ func _physics_process(delta: float) -> void:
 		var streak: MeshInstance3D = b.streak
 		if hit:
 			var travelled: float = b.done + pos.distance_to(hit.position)
-			(b.on_hit as Callable).call(hit, vel.normalized(), travelled)
+			var on_hit: Callable = b.on_hit
+			if on_hit.is_valid():  # its shooter may be gone (withdrawn, freed) with the round in flight
+				on_hit.call(hit, vel.normalized(), travelled)
 			streak.queue_free()
 			_live.remove_at(i)
 			continue
