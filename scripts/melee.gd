@@ -82,6 +82,8 @@ var _block_t := 0.0
 var _push := Vector3.ZERO
 var _anims := false
 var _stagger_time := STAGGER_TIME
+var _down_time := DOWN_TIME
+var _getup_time := GETUP_TIME
 
 
 func _ready() -> void:
@@ -211,7 +213,7 @@ func _physics_process(delta: float) -> void:
 			if _t >= _stagger_time:
 				_enter(State.READY)
 		State.DOWN:
-			if _t >= DOWN_TIME:
+			if _t >= _down_time:
 				if hp <= 0.0:
 					_enter(State.KO)
 					ko.emit()
@@ -221,9 +223,9 @@ func _physics_process(delta: float) -> void:
 					_enter(State.GETUP)
 					_play_state("getup")
 					if _anims:
-						_tree().set("parameters/m_getup_ts/scale", RiggedBody.clip_length("ual2/LayToIdle") / GETUP_TIME)
+						_tree().set("parameters/m_getup_ts/scale", RiggedBody.clip_length("ual2/LayToIdle") / _getup_time)
 		State.GETUP:
-			if _t >= GETUP_TIME:
+			if _t >= _getup_time:
 				_enter(State.READY)
 				_play_state("up")
 				got_up.emit()
@@ -342,7 +344,16 @@ func _stagger(seconds: float) -> void:
 		_tree().set("parameters/m_stagger/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 
 
-func _knock_down() -> void:
+## Floored by something outside a brawl (the guardian's slam): down for `down` s, up over `getup` s,
+## with `push` (world, m/s) flinging the body. The owner can't move meanwhile (move_scale() 0).
+func knock_down(down := DOWN_TIME, getup := GETUP_TIME, push := Vector3.ZERO) -> void:
+	_push += push
+	_knock_down(down, getup)
+
+
+func _knock_down(down := DOWN_TIME, getup := GETUP_TIME) -> void:
+	_down_time = down
+	_getup_time = getup
 	knockdowns += 1
 	_down_pts = 0.0
 	_stagger_pts = 0.0

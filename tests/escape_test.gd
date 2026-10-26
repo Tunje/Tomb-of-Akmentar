@@ -6,6 +6,8 @@ extends Node3D
 ## Args after "--":
 ##   --scenario=escape|trap   escape (default), or trap: the forced royal door's traps on two
 ##                            American gunmen standing before it (prints who died)
+##                            slam: the player stands in the corridor till the guardian reaches him;
+##                            --roll=yes: once up again he rolls away and runs (should live)
 ##   --help=yes|no      help the stumbling companion (default yes)
 ##   --god              the player can't die
 ##   --seconds=90       quit after this long
@@ -86,6 +88,9 @@ func _ready() -> void:
 	await get_tree().physics_frame
 	if args.get("scenario", "escape") == "trap":
 		_trap_scenario()
+		return
+	if args.get("scenario", "escape") == "slam":
+		_slam_scenario()
 		return
 	guardian = Guardian.new()
 	add_child(guardian)
@@ -212,7 +217,7 @@ func _mat(c: Color) -> StandardMaterial3D:
 # ---------------------------------------------------------------- the run
 
 func _physics_process(delta: float) -> void:
-	if _done or guardian == null:
+	if _done or guardian == null or args.get("scenario", "escape") != "escape":
 		return
 	_t += delta
 	_phase_t += delta
@@ -357,6 +362,51 @@ func _press(action: String, on: bool) -> void:
 
 static func _flat(v: Vector3) -> Vector3:
 	return Vector3(v.x, 0, v.z)
+
+
+# ---------------------------------------------------------------- the slam
+
+func _slam_scenario() -> void:
+	eleanor.global_position = Vector3(0, 0, -80)
+	eleanor.set_order("hold")
+	player.global_position = Vector3(0, 0, -6)
+	player.yaw = PI  # facing it, back down the corridor
+	guardian = Guardian.new()
+	add_child(guardian)
+	guardian.global_position = Vector3(0, 0, 4)
+	guardian.target = player
+	guardian._awake_t = Guardian.GRAB_GRACE  # no head start needed here
+	guardian.awaken(0.2)
+	var roll: bool = args.get("roll", "yes") == "yes"
+	print("RESULT start slam roll=%s" % roll)
+	var slammed_at := -1.0
+	var t := 0.0
+	var shot := false
+	var got_away := -1.0
+	while t < 20.0 and player.alive and got_away < 0.0:
+		await get_tree().physics_frame
+		t += get_physics_process_delta_time()
+		if slammed_at < 0.0 and guardian.slams > 0:
+			slammed_at = t
+			print("RESULT slammed t=%.1f hp=%d down=%s" % [t, int(player.health), Melee.State.keys()[player.melee.state]])
+		if slammed_at >= 0.0 and not shot and t - slammed_at > 0.6:
+			shot = true
+			_screenshot("slam")
+		if roll and slammed_at >= 0.0 and not player.melee.busy():
+			# Up again: roll away from it, then run.
+			player.yaw = 0.0
+			_press("move_forward", true)
+			_press("sprint", t - slammed_at > Guardian.SLAM_DOWN + Guardian.SLAM_GETUP + 0.7)
+			if t - slammed_at < Guardian.SLAM_DOWN + Guardian.SLAM_GETUP + 0.4:
+				player.dodge()
+			if guardian.global_position.distance_to(player.global_position) > 12.0:
+				got_away = t
+	var gap := guardian.global_position.distance_to(player.global_position)
+	print("RESULT slam roll=%s slams=%d catches=%d player alive=%s hp=%d gap_at_end=%.1f got_away=%s" % [roll, guardian.slams,
+		guardian.catches, player.alive, int(player.health), gap, ("%.1f s after the slam" % (got_away - slammed_at)) if got_away > 0.0 else "no"])
+	await get_tree().create_timer(0.5).timeout
+	_done = true
+	get_tree().quit(0)
 
 
 # ---------------------------------------------------------------- the door trap

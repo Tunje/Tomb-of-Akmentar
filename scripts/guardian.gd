@@ -3,8 +3,9 @@ extends CharacterBody3D
 ## Akmentar's guardian, awake (Act 5's escape): a big, slow, relentless mummy that follows the
 ## player through the tomb on the navmesh. It can't be killed. Every hit slows it for a while and
 ## builds stagger (it reels, then comes on again), so shooting buys time, not victory. Close in
-## it raises its arms (WINDUP) and grabs: caught is death for the player or a companion down on
-## the floor; a dodge roll's i-frames slip it. Companions in its way are shoved aside and hurt,
+## it raises its arms (WINDUP) and grabs: the first grab on the player slams him (heavy damage,
+## flung and floored, while it recovers long enough to get up and roll away); the next kills, as
+## does any grab on a companion down on the floor. A dodge roll's i-frames slip it. Companions in its way are shoved aside and hurt,
 ## not killed. It climbs over rubble (Hop). pause() holds it at a threshold so the escape can be
 ## paced; resume() lets it come on.
 ##   Guardian.spawn(level, sarcophagus_point, player)   # (or new() + target + awaken())
@@ -31,6 +32,12 @@ const SLOW_PER_POINT := 0.1      # share of its speed a point of stagger takes o
 const SLOW_MAX := 0.65
 const SLOW_RECOVER := 0.25       # ...and how fast that wears off (per second)
 const GRAB_GRACE := 4.0          # no grab this long after it wakes: a head start to run
+const SLAMS := 1                 # grabs on the player that slam (hurt, floor) before one kills
+const SLAM_DAMAGE := 40.0
+const SLAM_PUSH := 7.0           # flung this hard (m/s): 1-2 m away
+const SLAM_DOWN := 1.3           # on the floor...
+const SLAM_GETUP := 0.8          # ...getting up...
+const SLAM_RECOVER := 2.6        # ...while it recovers this long: time to get up and roll away
 const SHOVE_RANGE := 1.7
 const SHOVE_DAMAGE := 12.0
 const SHOVE_PUSH := 6.0
@@ -43,6 +50,9 @@ var state := State.DORMANT
 var hits_taken := 0
 var staggers := 0
 var catches := 0
+var slams := 0
+## Slams left before a grab on the player kills (Simon: the first grab slams, the second kills).
+var slams_left := SLAMS
 
 var rig: MummyBody
 var model: Node3D
@@ -62,6 +72,8 @@ var _stuck_at := Vector3.ZERO
 var _stuck_t := 0.0
 var _hitboxes: Array[StaticBody3D] = []
 var _awake_t := 0.0
+var _nav_iter := 0
+var _recover_time := RECOVER
 var stuck_events := 0
 var climbs := 0
 ## --guardian-trace (after "--"): a line every 2 s and on every catch / climb / unstick.
@@ -161,6 +173,8 @@ func is_active() -> bool:
 func _enter(s: State) -> void:
 	state = s
 	_t = 0.0
+	if s == State.WINDUP:
+		_recover_time = RECOVER  # (a slam stretches it)
 	if rig:
 		match s:
 			State.WINDUP:
@@ -218,7 +232,7 @@ func _physics_process(delta: float) -> void:
 				_grab(dist, to)
 				_enter(State.RECOVER)
 		State.RECOVER:
-			if _t >= RECOVER:
+			if _t >= _recover_time:
 				_enter(State.CHASE)
 		State.STAGGER:
 			if _t >= STAGGER_TIME:
@@ -242,6 +256,12 @@ func _replan() -> void:
 
 
 func _path_dir(delta: float) -> Vector3:
+	# The navmesh was rebaked (a slab door shut): find the way round now.
+	var iter := NavigationServer3D.map_get_iteration_id(get_world_3d().navigation_map)
+	if iter != _nav_iter:
+		_nav_iter = iter
+		_repath = 0.0
+		_agent.target_position = target.global_position + Vector3(0.01, 0, 0)
 	_repath -= delta
 	if _repath <= 0.0:
 		_repath = 0.3
@@ -333,10 +353,31 @@ func _grab(dist: float, to: Vector3) -> void:
 		print("GUARDIAN grabs %s at %s; it is at %s moving %.1f m/s controls=%s" % [target.name, global_position.snapped(Vector3.ONE * 0.1),
 			target.global_position.snapped(Vector3.ONE * 0.1), Vector2(tv.x, tv.z).length(),
 			str(target.get("controls_enabled")) if target is Player else "-"])
+	if target is Player and slams_left > 0:
+		_slam(target as Player, to)
+		return
 	if target.call("take_damage", 100000.0, global_position):
 		catches += 1
 		Sfx.play_at(get_parent(), Sfx.groan(), global_position + Vector3.UP * 2.0, 3.0, 0.05)
 		caught.emit(target)
+
+
+## The first grab on the player: a slam. Heavy damage, flung back and floored, while it takes its
+## time recovering; the next grab kills.
+func _slam(p: Player, to: Vector3) -> void:
+	var dir := to.normalized() if to.length() > 0.01 else -global_basis.z
+	if not p.take_damage(SLAM_DAMAGE, global_position):
+		return  # rolled clear (i-frames)
+	slams_left -= 1
+	slams += 1
+	_recover_time = SLAM_RECOVER
+	p.trauma = minf(p.trauma + 0.8, 1.0)
+	if p.melee:
+		p.melee.knock_down(SLAM_DOWN, SLAM_GETUP, dir * SLAM_PUSH)
+	Sfx.play_at(get_parent(), Sfx.gunshot(0.3), p.global_position + Vector3.UP * 0.3, 4.0, 0.05)
+	Sfx.play_at(get_parent(), Sfx.groan(), global_position + Vector3.UP * 2.0, 3.0, 0.05)
+	if _trace:
+		print("GUARDIAN slams %s (hp %d), %d slam(s) left" % [p.name, int(p.health), slams_left])
 
 
 ## Companions in its way are flung aside (hurt, not killed); one down on the floor is caught.
