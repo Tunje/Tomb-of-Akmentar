@@ -91,7 +91,20 @@ static func fires(tree: SceneTree) -> Array[Dictionary]:
 	return out
 
 
+## Which way out of the carpet for someone at `pos` (flat, unit), or ZERO if no swarm is on them.
+static func way_out(tree: SceneTree, pos: Vector3, margin := 0.6) -> Vector3:
+	for n in tree.get_nodes_in_group("scarabs"):
+		var s := n as ScarabSwarm
+		if s._state == "drain":
+			continue
+		var off := Vector3(pos.x - s._centre.x, 0, pos.z - s._centre.z)
+		if off.length() < RADIUS + margin and absf(pos.y - s._floor_y) < 1.2:
+			return off.normalized() if off.length() > 0.05 else s.normal
+	return Vector3.ZERO
+
+
 func _ready() -> void:
+	add_to_group("scarabs")
 	top_level = true
 	global_transform = Transform3D.IDENTITY
 	_rng.randomize()

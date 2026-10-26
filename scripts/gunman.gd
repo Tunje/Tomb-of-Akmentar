@@ -736,9 +736,15 @@ func _follow(delta: float) -> Vector3:
 	var move := Vector3.ZERO
 	var sees_leader := _clear(global_position + Vector3.UP * STAND_EYE, leader.global_position + Vector3.UP * 1.2)
 	var near := ESCAPE_NEAR if escape else FOLLOW_NEAR
+	# Scarabs on him (they hunt whoever is nearest: the one trailing behind): never stand in the
+	# carpet. Sprint on after the leader, through it if need be (running away from it leads back
+	# down the passage, the carpet between him and the way out, till a wall stops him).
+	var on_scarabs := escape and ScarabSwarm.way_out(get_tree(), global_position) != Vector3.ZERO
+	if on_scarabs:
+		_following = true
 	if d > (ESCAPE_FAR if escape else FOLLOW_FAR) or not sees_leader:
 		_following = true  # also round a wall: don't wait out of sight in the next room
-	elif d < near + 0.5:
+	elif d < near + 0.5 and not on_scarabs:
 		_following = false
 	if _following:
 		var lead_speed := _flat((leader as CharacterBody3D).velocity).length() if leader is CharacterBody3D else 0.0
@@ -746,6 +752,9 @@ func _follow(delta: float) -> Vector3:
 		if escape:
 			speed = maxf(speed, minf(lead_speed * 1.1, ESCAPE_SPEED))  # keep up with a sprinting leader
 		var dest := leader.global_position - to.normalized() * near
+		if on_scarabs:
+			speed = ESCAPE_SPEED
+			dest = leader.global_position + to.normalized() * 1.5  # on past him, out of it
 		move = _move_to(dest, speed, delta, true)
 		# Rubble across the way: climb it.
 		# (Into the wall itself: the move may already be turned along it by the detour.)
@@ -1293,7 +1302,13 @@ func take_shot(part: String, dmg: float, dir: Vector3, shooter: Node3D) -> Dicti
 func take_damage(amount: float, from: Vector3) -> bool:
 	if state == State.DEAD:
 		return false
-	_hurt("torso", amount, _flat(global_position - from).normalized(), 1.0, 1.0)
+	if _ctrace:
+		print("COMPANION %s takes %.0f from %s (hp %d): %s" % [name, amount, from.snapped(Vector3.ONE * 0.1), int(health),
+			" < ".join(Array(get_stack()).slice(1, 3).map(func(f): return "%s:%d" % [str(f.source).get_file(), f.line]))])
+	# Stagger by how hard it hits: a full one from a mummy's swipe (20); scarab bites (5 every
+	# 0.5 s) never add up to one, or they'd hold him in the carpet till it ate him.
+	var k := clampf(amount / 20.0, 0.0, 1.0)
+	_hurt("torso", amount, _flat(global_position - from).normalized(), k, k)
 	return true
 
 
