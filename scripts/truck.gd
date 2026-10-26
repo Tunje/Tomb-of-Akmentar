@@ -11,6 +11,8 @@ const ENGINE := 5200.0
 const BRAKE := 60.0
 const STEER := 0.55
 const STEER_SPEED := 2.5
+const ANTI_ROLL := 5.0       # righting torque per unit of roll, per kg
+const ANTI_ROLL_DAMP := 2.5
 const MAX_HEALTH := 100.0
 const MODEL := "res://assets/props/vehicle_truck.glb"
 const WHEEL_Z := 1.655  # half the model's wheelbase
@@ -37,7 +39,7 @@ func _ready() -> void:
 	collision_layer = 1
 	collision_mask = 1 | 4  # not the player: overlapping on exit kicked the truck
 	center_of_mass_mode = RigidBody3D.CENTER_OF_MASS_MODE_CUSTOM
-	center_of_mass = Vector3(0, 0.35, 0)
+	center_of_mass = Vector3(0, 0.1, 0)  # low: the engine and chassis, not the canvas top
 	_build()
 	contact_monitor = true
 	max_contacts_reported = 4
@@ -79,6 +81,9 @@ func _build() -> void:
 			w.damping_compression = 0.9
 			w.damping_relaxation = 1.4
 			w.wheel_friction_slip = 2.6
+			# Cornering grip mostly turns the truck instead of rolling it (Simon: "any turn and you
+			# risk a tipover"); 1.0, the default, applies it all at the wheel and flips it.
+			w.wheel_roll_influence = 0.08
 			w.use_as_steering = z < 0.0
 			w.use_as_traction = z > 0.0
 			add_child(w)
@@ -195,6 +200,11 @@ func _process(delta: float) -> void:
 
 
 func _physics_process(_delta: float) -> void:
+	# Anti-roll bar: lean against the body's roll and damp it, so a hard turn leans, not flips.
+	var fwd := -global_basis.z
+	var roll := global_basis.y.cross(Vector3.UP).dot(fwd)  # sin of the roll angle, signed
+	var roll_rate := angular_velocity.dot(fwd)
+	apply_torque(fwd * (roll * ANTI_ROLL - roll_rate * ANTI_ROLL_DAMP) * mass)
 	# Crashes hurt: a sudden loss of speed above walking pace.
 	var speed := Vector2(linear_velocity.x, linear_velocity.z).length()  # bounces aren't crashes
 	var lost := _last_speed - speed
