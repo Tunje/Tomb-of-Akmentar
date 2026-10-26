@@ -51,6 +51,7 @@ var _curse_tween: Tween
 var _stone_t := 2.0
 var _t := 0.0
 var _shots: Array[float] = []
+var _city_bark := 0.0
 
 
 func _ready() -> void:
@@ -190,6 +191,7 @@ func _update_signs(instant := false) -> void:
 		print("RESULT act7 sign %s (mummy %d)" % [f, m])
 		if f != "mummy_in_cairo" and not instant:
 			hud.toast(str(s.get("text", "")).split(": ", true, 1)[-1], 5.0)
+			Barks.say_any(get_tree(), "act7_curse")  # a companion reacts to the new sign
 	var crowd := 1.0
 	for f in CROWD:
 		if Game.flag(f, false):
@@ -492,6 +494,9 @@ func _save(where: String) -> void:
 
 func _process(delta: float) -> void:
 	_t += delta
+	if _t - _city_bark > 40.0 and not _over and not _done:  # a companion's word now and then in the streets
+		_city_bark = _t
+		Barks.say_any(get_tree(), "idle_city", player.global_position)
 	if Game.flag("stones_falling", false) and not _over and not _done and not get_tree().paused:
 		_stone_t -= delta
 		if _stone_t <= 0.0:

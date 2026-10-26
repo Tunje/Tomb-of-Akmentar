@@ -122,6 +122,9 @@ func _convoy() -> void:
 		var r := Rider.mount(self, t, Characters.glb(party[k]), seat)
 		crews[t].append([str(party[k]), r])
 		_gun_t[r] = randf_range(0.5, 1.5)
+		if r.body:  # riding, they still talk (Barks finds the "party" group)
+			r.body.add_to_group("party")
+			r.body.set_meta("bark_id", str(party[k]))
 
 
 func _start() -> void:
@@ -141,6 +144,7 @@ func _start() -> void:
 	hud.toast("Drive! They're coming up behind. (V: hand a companion the wheel and take the gun.)", 4.0)
 	_running = true
 	_road_ahead()
+	Barks.say_any(get_tree(), "truck_ride")
 	if args.has("gunner"):
 		# The gunner bot: a companion takes the wheel (GunnerSeat), the player shoots from the back.
 		var note := GunnerSeat.swap(player)
@@ -319,6 +323,8 @@ func _on_wrecked(t: Truck) -> void:
 	for e in crews.get(t, []):
 		var r: Rider = e[1]
 		if is_instance_valid(r):
+			if r.body:
+				r.body.remove_from_group("party")
 			r.kill()
 		if e[0] != "":
 			Game.apply([{"kill": e[0]}])
