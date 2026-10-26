@@ -93,7 +93,7 @@ func _ready() -> void:
 	RiverWater.make(level, Vector2(500.0, Level.RIVER_W), RiverBoat.WATER_Y, Vector3(40.0, RiverBoat.WATER_Y, bank + Level.RIVER_W * 0.5))
 	var river := Path3D.new()
 	river.curve = Curve3D.new()
-	var cz := bank + 16.1  # the plank's end meets the pier's end
+	var cz := bank + 10.0 + RiverBoat.BEAM * 0.5 + 3.1  # the plank's end meets the pier's end
 	for p in [Vector3(42.5, 0.0, cz), Vector3(10.0, 0.0, cz + 2.0), Vector3(-40.0, 0.0, cz + 8.0),
 			Vector3(-90.0, 0.0, cz + 4.0), Vector3(-150.0, 0.0, cz + 10.0)]:
 		river.curve.add_point(p)

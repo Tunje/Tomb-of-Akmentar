@@ -1,6 +1,6 @@
 class_name RiverBoat
 extends AnimatableBody3D
-## A 1920s Nile stern-wheel paddle steamer, ~22 m, built from boxes until image-to-3d's cabin,
+## A 1920s Nile stern-wheel paddle steamer, 36 m (Simon: the 22 m one was "too small"), built from boxes until image-to-3d's cabin,
 ## funnel and wheelhouse arrive. One AnimatableBody3D (sync_to_physics) holds every solid part,
 ## so CharacterBody3D players and gunmen standing on it are carried by move_and_slide's platform
 ## support. It follows a Path3D along the river:
@@ -19,11 +19,15 @@ signal fell_overboard(body: Node3D)
 
 enum State { DOCKED, SAILING }
 
-const LENGTH := 22.0
-const BEAM := 6.0
-const DECK_Y := 1.2           # lower deck top, above the waterline
-const CABIN_H := 2.25
-const UPPER_Y := 3.6          # upper deck top
+const LENGTH := 36.0
+const BEAM := 9.0
+const DECK_Y := 1.2           # lower deck top, above the waterline (the pier's gangplank meets it)
+const CABIN_H := 2.6
+const UPPER_Y := 4.0          # upper deck top
+const PASSAGE := 2.2          # the side passages round the cabin: room for the camera and a fight
+const CABIN_L := 18.0
+const CABIN_Z := 1.0          # the cabin's centre (a longer foredeck than afterdeck)
+const UPPER_L := CABIN_L + 2.0
 const RAIL_H := 1.0
 const PLANK_Z := -2.5         # where the gangplank meets the starboard side
 const CRUISE := 4.0           # m/s (~8 knots)
@@ -41,7 +45,7 @@ var speed := 0.0
 var cruise := CRUISE
 var sail_after := -1.0        # >= 0: casts off by itself after this many seconds docked
 var falls := 0
-var deck_spawn := Vector3(0, DECK_Y + 0.05, -8.0)   # local: where fallen players come back
+var deck_spawn := Vector3(0, DECK_Y + 0.05, -13.0)   # local: where fallen players come back
 var water_rect := Rect2()     # world XZ of the river; empty = anywhere with no floor below
 
 var _yaw := 0.0
@@ -214,7 +218,7 @@ func _set_docked(on: bool) -> void:
 
 func _board(by: Node) -> void:
 	if by is Node3D:
-		(by as Node3D).global_position = to_global(Vector3(1.9, DECK_Y + 0.05, PLANK_Z))
+		(by as Node3D).global_position = to_global(Vector3(BEAM * 0.5 - 1.1, DECK_Y + 0.05, PLANK_Z))
 		if by is CharacterBody3D:
 			(by as CharacterBody3D).velocity = Vector3.ZERO
 
@@ -261,59 +265,75 @@ func _build() -> void:
 	_plank_shape = plank[0]
 	_plank_mesh = plank[1]
 	# Cabin you walk round, its roof the upper deck (overhanging the side passages).
-	_part(Vector3(3.6, CABIN_H, 9.0), Vector3(0, DECK_Y + CABIN_H * 0.5, 0.5), "cabin")
-	for k in 4:  # windows, looks only
+	var cw := BEAM - PASSAGE * 2.0
+	var uw := BEAM - 0.6
+	var up_bow := CABIN_Z - UPPER_L * 0.5
+	var up_stern := CABIN_Z + UPPER_L * 0.5
+	_part(Vector3(cw, CABIN_H, CABIN_L), Vector3(0, DECK_Y + CABIN_H * 0.5, CABIN_Z), "cabin")
+	var n := int(CABIN_L / 2.4)
+	for k in n:  # windows, looks only
+		var z := CABIN_Z - CABIN_L * 0.5 + 1.4 + k * (CABIN_L - 2.8) / float(n - 1)
 		for side in [-1.0, 1.0]:
-			_part(Vector3(0.04, 0.7, 1.0), Vector3(side * 1.81, DECK_Y + 1.35, -3.0 + k * 2.2), "window", false)
-	_part(Vector3(5.2, 0.15, 11.0), Vector3(0, UPPER_Y - 0.075, 0.5), "roof")
+			_part(Vector3(0.04, 0.8, 1.1), Vector3(side * (cw * 0.5 + 0.01), DECK_Y + 1.5, z), "window", false)
+	_part(Vector3(uw, 0.15, UPPER_L), Vector3(0, UPPER_Y - 0.075, CABIN_Z), "roof")
 	# Upper deck rails (a gap at the stern for the stairs).
-	_rail(Vector3(-2.55, UPPER_Y - DECK_Y, 0.5), 11.0, true)
-	_rail(Vector3(2.55, UPPER_Y - DECK_Y, 0.5), 11.0, true)
-	_rail(Vector3(0, UPPER_Y - DECK_Y, -4.95), 5.2, false)
-	_rail(Vector3(0.6, UPPER_Y - DECK_Y, 5.95), 4.0, false)
-	_rail(Vector3(-2.4, UPPER_Y - DECK_Y, 5.95), 0.3, false)
-	# Stairs: a ramp for the feet (characters have no step-up), steps for the eye.
 	var rise := UPPER_Y - DECK_Y
-	var run := 3.6
+	_rail(Vector3(-(uw * 0.5 - 0.05), rise, CABIN_Z), UPPER_L, true)
+	_rail(Vector3(uw * 0.5 - 0.05, rise, CABIN_Z), UPPER_L, true)
+	_rail(Vector3(0, rise, up_bow + 0.05), uw, false)
+	var ramp_x := -1.6
+	var gap_l := ramp_x - 0.65
+	var gap_r := ramp_x + 0.65
+	_rail(Vector3((-uw * 0.5 + gap_l) * 0.5, rise, up_stern - 0.05), gap_l + uw * 0.5, false)
+	_rail(Vector3((gap_r + uw * 0.5) * 0.5, rise, up_stern - 0.05), uw * 0.5 - gap_r, false)
+	# Stairs: a ramp for the feet (characters have no step-up), steps for the eye.
+	var run := rise * 1.4
 	var ang := atan2(rise, run)
 	var ramp_len := sqrt(rise * rise + run * run)
-	var ramp_x := -1.0
-	_part(Vector3(1.2, 0.12, ramp_len), Vector3(ramp_x, DECK_Y + rise * 0.5 - 0.06, 6.0 + run * 0.5), "deck", true, Vector3(ang, 0, 0))
-	for k in 12:
-		var f := (k + 0.5) / 12.0
-		_part(Vector3(1.2, 0.06, 0.3), Vector3(ramp_x, DECK_Y + rise * (1.0 - f) + 0.02, 6.0 + run * f), "trim", false)
+	_part(Vector3(1.2, 0.12, ramp_len), Vector3(ramp_x, DECK_Y + rise * 0.5 - 0.06, up_stern + run * 0.5), "deck", true, Vector3(ang, 0, 0))
+	for k in 14:
+		var f := (k + 0.5) / 14.0
+		_part(Vector3(1.2, 0.06, 0.3), Vector3(ramp_x, DECK_Y + rise * (1.0 - f) + 0.02, up_stern + run * f), "trim", false)
 	for side in [-0.65, 0.65]:
-		_part(Vector3(0.06, 0.9, ramp_len), Vector3(ramp_x + side, DECK_Y + rise * 0.5 + 0.45, 6.0 + run * 0.5), "rail", false, Vector3(ang, 0, 0))
-	# Wheelhouse, funnel, paddle wheel.
-	_part(Vector3(2.2, 2.0, 2.0), Vector3(0, UPPER_Y + 1.0, -3.8), "cabin")
-	_part(Vector3(2.5, 0.12, 2.3), Vector3(0, UPPER_Y + 2.06, -3.8), "roof", false)
+		_part(Vector3(0.06, 0.9, ramp_len), Vector3(ramp_x + side, DECK_Y + rise * 0.5 + 0.45, up_stern + run * 0.5), "rail", false, Vector3(ang, 0, 0))
+	# Wheelhouse (forward on the upper deck), funnel, paddle wheel.
+	var wz := up_bow + 2.2
+	_part(Vector3(3.2, 2.3, 2.8), Vector3(0, UPPER_Y + 1.15, wz), "cabin")
+	_part(Vector3(3.6, 0.14, 3.2), Vector3(0, UPPER_Y + 2.37, wz), "roof", false)
 	for side in [-1.0, 1.0]:
-		_part(Vector3(0.04, 0.6, 1.4), Vector3(side * 1.11, UPPER_Y + 1.3, -3.8), "window", false)
-	_part(Vector3(1.6, 0.6, 0.04), Vector3(0, UPPER_Y + 1.3, -4.81), "window", false)
-	_cylinder(0.42, 4.2, Vector3(0, UPPER_Y + 2.1, -1.5), "funnel")
-	_cylinder(0.46, 0.4, Vector3(0, UPPER_Y + 4.1, -1.5), "funnel_top", false)
+		_part(Vector3(0.04, 0.7, 2.0), Vector3(side * 1.61, UPPER_Y + 1.5, wz), "window", false)
+	_part(Vector3(2.4, 0.7, 0.04), Vector3(0, UPPER_Y + 1.5, wz - 1.41), "window", false)
+	_cylinder(0.6, 5.5, Vector3(0, UPPER_Y + 2.75, wz + 3.4), "funnel")
+	_cylinder(0.66, 0.5, Vector3(0, UPPER_Y + 5.4, wz + 3.4), "funnel_top", false)
 	_wheel = Node3D.new()
-	_wheel.position = Vector3(0, 0.9, hz + 1.4)
+	_wheel.position = Vector3(0, 1.1, hz + 1.9)
 	add_child(_wheel)
-	for k in 8:
+	for k in 10:
 		var blade := MeshInstance3D.new()
 		var bm := BoxMesh.new()
-		bm.size = Vector3(BEAM - 0.6, 0.12, 1.5)
+		bm.size = Vector3(BEAM - 0.8, 0.14, 2.0)
 		blade.mesh = bm
 		blade.material_override = _mat("wheel")
-		blade.rotation.x = TAU * k / 8.0
+		blade.rotation.x = TAU * k / 10.0
 		_wheel.add_child(blade)
-	_part(Vector3(BEAM - 0.4, 0.2, 2.6), Vector3(0, 2.75, hz + 1.4), "roof", false)  # wheel housing roof
-	# Cargo: cover crates on the lower deck (low ones you shoot over, a tall stack you lean round).
-	_crate(Vector3(-1.5, 0, -8.2), Vector3(1.4, 1.0, 1.0))   # bow, port
-	_crate(Vector3(2.4, 0, -6.9), Vector3(1.0, 1.0, 0.9))    # bow, starboard passage
-	_crate(Vector3(2.4, 0, 7.5), Vector3(1.0, 1.0, 0.9))     # stern, starboard passage
-	_crate(Vector3(-2.25, 0, 8.6), Vector3(1.1, 1.8, 1.0))   # stern, port (tall)
-	_crate(Vector3(1.5, UPPER_Y - DECK_Y, 2.0), Vector3(1.0, 1.0, 1.0))  # upper deck
+	_part(Vector3(BEAM - 0.4, 0.22, 3.4), Vector3(0, 3.3, hz + 1.9), "roof", false)  # wheel housing roof
+	# Cargo: cover crates (low ones you shoot over, tall stacks you lean round) on the foredeck, down
+	# the side passages, on the afterdeck and up top.
+	var px := cw * 0.5 + PASSAGE * 0.5  # middle of a side passage
+	_crate(Vector3(-2.6, 0, -12.5), Vector3(1.6, 1.0, 1.1))   # foredeck, port
+	_crate(Vector3(2.2, 0, -14.6), Vector3(1.1, 1.8, 1.1))    # foredeck, starboard (tall)
+	_crate(Vector3(0.4, 0, -10.2), Vector3(1.2, 1.0, 1.0))    # foredeck, middle
+	_crate(Vector3(px, 0, -6.0), Vector3(1.0, 1.0, 0.9))      # starboard passage
+	_crate(Vector3(-px, 0, 2.0), Vector3(1.0, 1.0, 0.9))      # port passage
+	_crate(Vector3(px, 0, 7.5), Vector3(1.0, 1.0, 0.9))       # starboard passage, aft
+	_crate(Vector3(2.8, 0, 13.0), Vector3(1.2, 1.0, 1.0))     # afterdeck
+	_crate(Vector3(-3.2, 0, 15.6), Vector3(1.1, 1.8, 1.0))    # afterdeck, port (tall)
+	_crate(Vector3(2.0, rise, CABIN_Z + 3.0), Vector3(1.0, 1.0, 1.0))   # upper deck
+	_crate(Vector3(-2.2, rise, CABIN_Z - 2.5), Vector3(1.2, 1.0, 1.0))  # upper deck
 	# The bell (cast off) and the gangplank's two ends.
-	_part(Vector3(0.3, 0.35, 0.3), Vector3(0.0, DECK_Y + 1.55, -10.3), "brass", false)
-	_part(Vector3(0.06, 1.4, 0.06), Vector3(0.0, DECK_Y + 0.7, -10.3), "trim", false)
-	_usable(Vector3(0, DECK_Y + 0.9, -9.9), "Ring the bell (cast off)", "bell", 1.0).used.connect(func(_by: Node) -> void: sail())
+	_part(Vector3(0.3, 0.35, 0.3), Vector3(0.0, DECK_Y + 1.55, -hz + 2.6), "brass", false)
+	_part(Vector3(0.06, 1.4, 0.06), Vector3(0.0, DECK_Y + 0.7, -hz + 2.6), "trim", false)
+	_usable(Vector3(0, DECK_Y + 0.9, -hz + 3.0), "Ring the bell (cast off)", "bell", 1.0).used.connect(func(_by: Node) -> void: sail())
 	_usable(Vector3(hx - 0.6, DECK_Y + 0.9, PLANK_Z), "Go ashore", "ashore", 0.9).used.connect(_ashore)
 	_usable(Vector3(hx + 3.4, DECK_Y + 0.6, PLANK_Z), "Board the riverboat", "board", 1.2).used.connect(_board)
 
