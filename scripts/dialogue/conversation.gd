@@ -261,7 +261,10 @@ func _frame(speaker: String) -> void:
 	var d := Vector3(to.x - from.x, 0, to.z - from.z)
 	d = d.normalized() if d.length() > 0.01 else Vector3.FORWARD
 	var right := d.cross(Vector3.UP)
-	var pos := from - d * SHOT_BACK + right * SHOT_SIDE + Vector3.UP * SHOT_UP
+	# Standing close, the listener's shoulder would hide the talker: swing further out.
+	var dist := Vector2(to.x - from.x, to.z - from.z).length()
+	var side := SHOT_SIDE + maxf(0.0, 2.6 - dist) * 0.4
+	var pos := from - d * SHOT_BACK + right * side + Vector3.UP * SHOT_UP
 	# Keep the camera out of walls: stop short of anything between the head and the shot.
 	var q := PhysicsRayQueryParameters3D.create(from, pos, 1)
 	var hit := _npc.get_world_3d().direct_space_state.intersect_ray(q)

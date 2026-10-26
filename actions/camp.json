@@ -1,0 +1,12 @@
+{
+	"_help": "Travel-stop actions: companion talks, offered only for companions in the party.",
+	"name": "Expedition camp",
+	"prompt": "Sit with the expedition",
+	"empty": "Nobody wants to talk right now.",
+	"actions": [
+		{"id": "talk_eleanor", "label": "Talk with Eleanor", "cost": 1, "daily": true,
+			"if": {"in_party": "eleanor"}, "hide_if_locked": true,
+			"conversation": "camp_eleanor", "with": "eleanor",
+			"log": "Talked with Eleanor by the fire"}
+	]
+}

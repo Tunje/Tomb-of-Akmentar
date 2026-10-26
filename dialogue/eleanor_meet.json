@@ -1,0 +1,61 @@
+{
+	"_help": "Meeting Eleanor in the museum reading room (recruits her).",
+	"speakers": {
+		"player": "You",
+		"eleanor": "Eleanor Whitmore"
+	},
+	"start": "greet",
+	"nodes": {
+		"greet": {
+			"branch": [
+				{"if": {"in_party": "eleanor"}, "next": "already"},
+				{"next": "first"}
+			]
+		},
+		"already": {
+			"speaker": "eleanor",
+			"line": "I've packed my notebooks twice already. Tell me we leave soon.",
+			"next": "end_left"
+		},
+		"first": {
+			"speaker": "eleanor",
+			"line": "You're the one asking about Akmentar. I heard every word through the Professor's door.",
+			"choices": [
+				{"label": "Invite her along", "line": "Then you heard I need an Egyptologist. Come with us.", "next": "terms"},
+				{"label": "Ask what she knows", "line": "What do you know about Akmentar that he doesn't?", "next": "knows"},
+				{"label": "Leave", "line": "Sorry to have bothered you, miss.", "next": "end_left"}
+			]
+		},
+		"knows": {
+			"speaker": "eleanor",
+			"line": "Three papyri in our own basement name a king who appears on no list. Someone went to a great deal of trouble to forget him.",
+			"do": [{"set_flag": "heard_forgotten_king"}],
+			"choices": [
+				{"label": "Invite her along", "line": "Then come and help me find him.", "next": "terms"},
+				{"label": "Leave", "line": "Interesting. Good day.", "next": "end_left"}
+			]
+		},
+		"terms": {
+			"speaker": "eleanor",
+			"line": "On one condition. Whatever we find, I publish it, under my own name.",
+			"choices": [
+				{"label": "Promise", "line": "Your name, your work. You have my word.", "do": [{"stat": ["eleanor", "trust", 1]}], "next": "joined"},
+				{"label": "Make no promises", "line": "Let's find it first, then argue about the credit.", "do": [{"stat": ["eleanor", "trust", -1]}], "next": "joined_cool"}
+			]
+		},
+		"joined": {
+			"speaker": "eleanor",
+			"line": "Then I'm coming. I'll fetch my things before the Professor finds out.",
+			"do": [{"recruit": "eleanor"}],
+			"next": "end_recruited"
+		},
+		"joined_cool": {
+			"speaker": "eleanor",
+			"line": "Fine. But I'm keeping my own notes.",
+			"do": [{"recruit": "eleanor"}],
+			"next": "end_recruited"
+		},
+		"end_recruited": {"end": true},
+		"end_left": {"end": true}
+	}
+}
