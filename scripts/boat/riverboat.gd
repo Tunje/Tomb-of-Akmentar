@@ -319,13 +319,15 @@ func _build() -> void:
 	_part(Vector3(BEAM - 0.4, 0.22, 3.4), Vector3(0, 3.3, hz + 1.9), "roof", false)  # wheel housing roof
 	# Cargo: cover crates (low ones you shoot over, tall stacks you lean round) on the foredeck, down
 	# the side passages, on the afterdeck and up top.
-	var px := cw * 0.5 + PASSAGE * 0.5  # middle of a side passage
 	_crate(Vector3(-2.6, 0, -12.5), Vector3(1.6, 1.0, 1.1))   # foredeck, port
 	_crate(Vector3(2.2, 0, -14.6), Vector3(1.1, 1.8, 1.1))    # foredeck, starboard (tall)
 	_crate(Vector3(0.4, 0, -10.2), Vector3(1.2, 1.0, 1.0))    # foredeck, middle
-	_crate(Vector3(px, 0, -6.0), Vector3(1.0, 1.0, 0.9))      # starboard passage
-	_crate(Vector3(-px, 0, 2.0), Vector3(1.0, 1.0, 0.9))      # port passage
-	_crate(Vector3(px, 0, 7.5), Vector3(1.0, 1.0, 0.9))       # starboard passage, aft
+	# The passage crates stand against the rail, 0.8 m across, leaving 1.25 m open by the cabin
+	# (in the middle they cut the decks into islands nobody but the player could vault between).
+	var rx := hx - 0.12 - 0.4
+	_crate(Vector3(rx, 0, -6.0), Vector3(0.8, 1.0, 0.9))      # starboard passage
+	_crate(Vector3(-rx, 0, 2.0), Vector3(0.8, 1.0, 0.9))      # port passage
+	_crate(Vector3(rx, 0, 7.5), Vector3(0.8, 1.0, 0.9))       # starboard passage, aft
 	_crate(Vector3(2.8, 0, 13.0), Vector3(1.2, 1.0, 1.0))     # afterdeck
 	_crate(Vector3(-3.2, 0, 15.6), Vector3(1.1, 1.8, 1.0))    # afterdeck, port (tall)
 	_crate(Vector3(2.0, rise, CABIN_Z + 3.0), Vector3(1.0, 1.0, 1.0))   # upper deck

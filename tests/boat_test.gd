@@ -10,7 +10,7 @@ extends Node3D
 
 const ROUTE := [   # boat-local waypoints, bow to stern down the starboard passage
 	Vector3(1.4, 0, -7.0), Vector3(2.4, 0, -5.3), Vector3(2.4, 0, 5.6), Vector3(1.2, 0, 6.9),
-	Vector3(1.2, 0, 8.8), Vector3(2.35, 0, 8.75),
+	Vector3(1.2, 0, 8.8), Vector3(3.95, 0, 8.75),  # behind the aft passage crate (against the rail)
 ]
 const TO_BOW := [Vector3(2.4, 0, -2.5), Vector3(2.4, 0, -5.3), Vector3(1.4, 0, -7.0), Vector3(0.3, 0, -9.2)]
 
