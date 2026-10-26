@@ -1,8 +1,8 @@
 extends Node3D
 ## Act 1 data test: every act1 dialogue validates, and the Act 1 talks run through the real
 ## Conversation: Freddie's office (the note, the warning), the debt collectors (give Freddie up,
-## promise, fight), the brawl's aftermath (Musa's respect), and the offer with the armed men talked
-## down by Musa, fought (then resumed), and Finch paid off from the advance.
+## promise, fight), the brawl's aftermath (Musa's respect), the armed men at Freddie's (Musa, the note, a fight)
+## and Karim's offer, a talk only, with Finch paid off from the advance.
 ## Prints RESULT lines; exits 0 when every check passed.
 ##   --shot-dir=C:/path   where PNGs go (default user://act1_shots)
 ## Never takes focus or captures the mouse (Simon plays while we test).
@@ -68,19 +68,27 @@ func _run() -> void:
 	_check(r.end == "end_fight" and "fight_debt_collectors" in _events, "collectors: the brawl")
 	r = await _talk("act1_after_brawl", ["Help him up"])
 	_check(Game.flag("musa_respect") and r.speakers.has("finch"), "after the brawl: Musa helped up")
+	r = await _talk("act1_armed_men", [])
+	_check(r.end == "end_avoided" and Game.flag("act1_gunfight_avoided") and Game.flag("act1_confrontation_done") and r.speakers.has("musa"),
+		"armed men at Freddie's: Musa won't shoot")
 	r = await _talk("act1_offer", ["Accept", "Pay Finch off"])
-	_check(r.end == "end_accepted" and Game.flag("act1_gunfight_avoided") and r.speakers.has("musa") and Game.flag("clue_fragment")
-		and Game.flag("finch_paid") and Game.money == 25, "offer: Musa won't shoot, accepted, Finch paid (%d)" % Game.money)
+	_check(r.end == "end_accepted" and Game.flag("clue_fragment") and Game.flag("finch_paid") and Game.money == 25
+		and r.speakers == ["karim", "player"], "offer: a talk only, accepted, Finch paid (%d)" % Game.money)
 
-	# No friends among the gunmen and no warning: the talk fails, you draw; after the win it resumes.
+	# No friends among the gunmen and no warning: the talk fails and you draw; Karim has heard.
 	_fresh([])
 	Game.apply(plan.start)
-	r = await _talk("act1_offer", ["Talk him down", "Draw"])
-	_check(r.end == "end_fight" and "fight_armed_men" in _events and not Game.flag("act1_offer_accepted"), "offer: the gunfight")
+	r = await _talk("act1_armed_men", ["Talk him down", "Draw"])
+	_check(r.end == "end_fight" and "fight_armed_men" in _events and not Game.flag("act1_gunfight_avoided"), "armed men: the gunfight")
 	Game.set_flag("act1_gunfight_won")
 	Game.set_flag("act1_confrontation_done")
 	r = await _talk("act1_offer", ["Ask for more up front", "Accept"])
-	_check(r.end == "end_accepted" and Game.money == 100 and not r.speakers.has("gunman"), "offer resumed: 75 advance (%d)" % Game.money)
+	_check(r.end == "end_accepted" and Game.money == 100 and not r.speakers.has("gunman"), "offer after the gunfight: 75 advance (%d)" % Game.money)
+	# The note buys them off too (and gives Freddie away).
+	_fresh([])
+	Game.set_flag("freddie_note")
+	r = await _talk("act1_armed_men", ["Give them the note"])
+	_check(r.end == "end_avoided" and Game.flag("freddie_betrayed"), "armed men: Freddie's note sends them to Alexandria")
 
 
 func _fresh(party: Array) -> void:

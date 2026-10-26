@@ -9,12 +9,13 @@
 		"arrival: you step off the train / riverboat with a suitcase, a revolver and little money",
 		"act1_office: Umm Sayed at Freddie's office (freddie_gone; freddie_note; warned_finch)",
 		"act1_debt_collectors: on the stairs or in the street; end_fight -> event fight_debt_collectors (brawl, maybe a chase through the market) -> act1_after_brawl (set brawl_lost first if you lost)",
-		"act1_offer: Karim Fahmy at a cafe; armed men; end_fight -> event fight_armed_men (the gunfight; on a win set act1_gunfight_won + act1_confrontation_done and start act1_offer again)",
+		"act1_armed_men: still at Freddie's office, armed men looking for him; end_avoided (act1_gunfight_avoided), or end_fight -> event fight_armed_men (the gunfight; on a win set act1_gunfight_won + act1_confrontation_done)",
+		"act1_offer: Karim Fahmy at a cafe, a talk only",
 		"end_accepted -> Act 2 (actions/act2_plan.json adds the expedition fund)"
 	],
 	"events": {
 		"fight_debt_collectors": "Finch's men: Musa Kamal and one or two more, fists only",
-		"fight_armed_men": "three hired gunmen after Karim's case: pistols, cover, reloading"
+		"fight_armed_men": "three hired gunmen at Freddie's office, after Freddie: pistols, cover, reloading"
 	},
 	"flags_for_later": [
 		"act1_gunfight_won (Isabelle's proof in Act 2)",

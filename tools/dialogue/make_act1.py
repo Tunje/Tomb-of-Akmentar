@@ -6,7 +6,7 @@ Conversation.validate.
 
 Edit here, not in the JSON. Design: gameplan/primaryact.md (Act 1), gameplan/character.md (Freddie
 Mallory, Harold Finch, Musa Kamal, Karim Fahmy). Encounter A (the debt collectors) can be talked
-out of, paid off or fought (the brawl tutorial); encounter B (armed men at the meeting) can be
+out of, paid off or fought (the brawl tutorial); encounter B (armed men at Freddie's office) can be
 talked down or fought (the gun tutorial; act1_gunfight_won)."""
 
 import os
@@ -85,37 +85,53 @@ TALKS["act1_after_brawl"] = talk(
     })
 
 
-# ---------------------------------------------------------------- encounter B and the offer
+# ---------------------------------------------------------------- encounter B: armed men at Freddie's
 
-offer = {
-    "start": B(({"flag": "act1_confrontation_done"}, "resume"), (None, "intro")),
-    "intro": L("karim", "Karim Fahmy. I represent Sir Reginald Blackwood. He has heard you are a man who keeps expeditions alive. Please, sit.", "case"),
-    "case": L("karim", "In this case is the reason I asked for you. But first...", "armed"),
-    "armed": L("gunman", "Nobody move. The case, effendi. Slide it over, and nobody has to bleed on the tablecloth.", "standoff"),
+armed = {
+    "start": L("gunman", "Nobody move. You're Mallory's friend. Where is he? He took something that belongs to our employer, and we think you know where.", "standoff"),
     "standoff": B(({"flag": "musa_respect"}, "musa_there"), (None, "talk_down")),
-    "musa_there": L("musa", "Wait. This one... this one helped me stand up. I do not shoot him.", "musa_leaves"),
-    "musa_leaves": L("gunman", "Musa! Idiot! ...Fine. Fine! This isn't finished, Fahmy.", "avoided"),
-    "talk_down": L("player", "Three of them. Pistols out. The leader's hand isn't steady.", choices=[
-        C("Talk him down", "You don't want this. Look around: one shot and every policeman in Cairo comes running. Walk away.", "talk_try"),
-        C("Offer him money", "Twenty pounds to forget you ever saw this case.", "bribe", if_={"money": 20}, do=[pay(20)]),
+    "musa_there": L("musa", "Wait. This one... this one helped me stand up. He knows nothing. I do not shoot him.", "musa_leaves"),
+    "musa_leaves": L("gunman", "Musa! You fool! ...Fine. Fine! Tell Mallory we're still looking.", "avoided"),
+    "talk_down": L("player", "Three of them in Freddie's doorway. Pistols out. The leader's hand isn't steady.", choices=[
+        C("Talk him down", "You don't want this. This is Finch's building, and the police watch everything Finch owns. One shot and they're on the stairs. Walk away.", "talk_try"),
+        C("Give them the note", "He's in Alexandria. Here's his note. Go and ask him yourself.", "note",
+          if_={"flag": "freddie_note", "not_flag": "freddie_betrayed"}, do=[flag("freddie_betrayed")]),
+        C("Offer them money", "Twenty pounds to forget you ever climbed these stairs.", "bribe", if_={"money": 20}, do=[pay(20)]),
         C("Draw", "", "draw"),
     ]),
     "talk_try": B(({"flag": "warned_finch"}, "talk_works"), (None, "talk_fails")),
-    "talk_works": L("gunman", "...Police. Right. You're Finch's problem anyway, not mine. Let's go.", "avoided"),
-    "talk_fails": L("gunman", "Nice speech. The case. Now.", choices=[
+    "talk_works": L("gunman", "...Police. Right. Finch's building. You're Finch's problem, not ours. Let's go.", "avoided"),
+    "talk_fails": L("gunman", "Nice speech. Where's Mallory? Last time I ask.", choices=[
         C("Draw", "", "draw"),
-        C("Offer him money", "All right, all right. Twenty pounds, and you walk.", "bribe", if_={"money": 20}, do=[pay(20)]),
+        C("Offer them money", "All right, all right. Twenty pounds, and you walk.", "bribe", if_={"money": 20}, do=[pay(20)]),
     ]),
-    "bribe": L("gunman", "Twenty, and the case stays. Generous man. Enjoy your lunch.", "avoided", do=[trust("karim", -1)]),
+    "note": L("gunman", "Alexandria. There, that wasn't so hard. Come on.", "avoided"),
+    "bribe": L("gunman", "Twenty. Generous man. If Mallory comes back, you never saw us.", "avoided"),
     "draw": L("gunman", "Kill him!", "end_fight", do=[{"event": "fight_armed_men"}]),
-    "avoided": L("karim", "...Well. Mr. Blackwood was right about you.", "offer", do=[flag("act1_confrontation_done"), flag("act1_gunfight_avoided")]),
-    "resume": L("karim", "My hands are still shaking. Mr. Blackwood was right about you. Now, the case.", "offer"),
+    "avoided": L("player", "Footsteps going down the stairs. My hand's still on the revolver.", "end_avoided",
+                 do=[flag("act1_confrontation_done"), flag("act1_gunfight_avoided")]),
+    "end_fight": END,
+    "end_avoided": END,
+}
+TALKS["act1_armed_men"] = talk(
+    "Act 1, encounter B, at Freddie's office after the debt collectors: armed men looking for Freddie (or what he left) think you're in on it. With musa_respect, Musa is one of them and won't shoot; talking them down works if Umm Sayed warned you about Finch (warned_finch: the police watch Finch's building); giving them Freddie's note (freddie_note) sends them to Alexandria (freddie_betrayed); 20 buys them off. Any of those: act1_confrontation_done + act1_gunfight_avoided (end_avoided). Drawing: event fight_armed_men (end_fight; the gun tutorial): on a win act1.gd sets act1_gunfight_won + act1_confrontation_done.",
+    {"gunman": "Hired gunman", "musa": "Musa Kamal"}, armed)
+
+
+# ---------------------------------------------------------------- the offer (a talk, no fight)
+
+offer = {
+    "start": B(({"flag": "act1_gunfight_won"}, "heard_fight"), ({"flag": "act1_gunfight_avoided"}, "heard_talk"), (None, "intro")),
+    "heard_fight": L("karim", "Karim Fahmy. I represent Sir Reginald Blackwood. I heard about the shooting at Mr. Mallory's office. Three armed men, and you walked out. That is why I am here. Please, sit.", "case"),
+    "heard_talk": L("karim", "Karim Fahmy. I represent Sir Reginald Blackwood. I heard three armed men left Mr. Mallory's office without firing a shot, because of you. That is why I am here. Please, sit.", "case"),
+    "intro": L("karim", "Karim Fahmy. I represent Sir Reginald Blackwood. He has heard you are a man who keeps expeditions alive. Please, sit.", "case"),
+    "case": L("karim", "In this case is the reason I asked for you.", "offer"),
     "offer": L("karim", "A fragment of an inscription, and part of a map. Sir Reginald believes they lead to the tombs of Akmentar. He wants you to lead the expedition.", "menu",
                do=[{"journal": ["act1_cairo", "fragment", "Karim Fahmy's case"]}]),
     "menu": L("karim", "Fifty pounds now, for your... present difficulties. A great deal more if the tombs are found.", choices=[
         C("Ask about the first expedition", "This isn't Blackwood's first try, is it?", "first", if_={"not_flag": "karim_first"}, do=[flag("karim_first")]),
         C("Ask about the reward", "How much is a great deal?", "reward", if_={"not_flag": "karim_reward"}, do=[flag("karim_reward")]),
-        C("Ask for more up front", "Fifty doesn't cover the men who just pointed guns at me.", "more",
+        C("Ask for more up front", "Fifty doesn't cover the trouble Freddie left me.", "more",
           if_={"not_flag": "karim_more"}, do=[flag("karim_more"), trust("karim", -1)]),
         C("Accept", "All right. I'll take your expedition.", "accept"),
         C("Refuse", "Find another fool.", "refuse", if_={"not_flag": "karim_refused"}, do=[flag("karim_refused")]),
@@ -124,7 +140,7 @@ offer = {
                do=[flag("knows_first_expedition_lost")]),
     "reward": L("karim", "Five thousand pounds when the tombs are found and documented. Enough to make Mr. Mallory's debts look very small.", "menu"),
     "more": L("karim", "...Seventy-five, then. And Sir Reginald will hear that you drive a hard bargain.", "menu", do=[{"money": 25}]),
-    "refuse": L("karim", "Then consider this: the men who came for this case today will not stop at me. They know your face now.", "menu"),
+    "refuse": L("karim", "Then consider this: whoever is hunting Freddie Mallory already knows your face. Cairo is not kind to a man without friends, or money.", "menu"),
     "accept": L("karim", "Excellent. The expedition fund will be at the bank in the morning. You leave Cairo in two days, ready or not.", "debts",
                 do=[{"money": 50}, flag("act1_offer_accepted")]),
     "debts": B(({"flag": "owe_finch", "money": 50}, "pay_finch"), (None, "end_accepted")),
@@ -132,12 +148,11 @@ offer = {
         C("Pay Finch off", "Might as well start the job with a clean slate.", "end_accepted", do=[pay(50), flag("owe_finch", 0), flag("finch_paid")]),
         C("Keep the money", "Finch can wait.", "end_accepted"),
     ]),
-    "end_fight": END,
     "end_accepted": END,
 }
 TALKS["act1_offer"] = talk(
-    "Act 1, the offer, with encounter B: Karim Fahmy meets you; armed men burst in for his case. With musa_respect, Musa is one of them and won't shoot; talking them down works if Umm Sayed warned you about Finch (warned_finch: you know the police watch him); 20 buys them off; drawing: event fight_armed_men (end_fight). When act1.gd wins that fight it sets act1_gunfight_won and act1_confrontation_done and starts this talk again, which resumes at the offer. Accepting: +50 (75 if you pushed), act1_offer_accepted, the fragment's journal clue (end_accepted). Then Act 2.",
-    {"karim": "Karim Fahmy", "gunman": "Hired gunman", "musa": "Musa Kamal"}, offer)
+    "Act 1, the offer: Karim Fahmy at the cafe (a talk only, no fight). He opens on how Freddie's office went (act1_gunfight_won / act1_gunfight_avoided). The fragment's journal clue, the lost first expedition (knows_first_expedition_lost), the reward. Accepting: +50 (75 if you pushed), act1_offer_accepted (end_accepted); with owe_finch you can pay Finch off from it. Then Act 2.",
+    {"karim": "Karim Fahmy"}, offer)
 
 
 # ---------------------------------------------------------------- plan and clues
@@ -162,11 +177,12 @@ FILES["actions/act1_plan.json"] = {
         "arrival: you step off the train / riverboat with a suitcase, a revolver and little money",
         "act1_office: Umm Sayed at Freddie's office (freddie_gone; freddie_note; warned_finch)",
         "act1_debt_collectors: on the stairs or in the street; end_fight -> event fight_debt_collectors (brawl, maybe a chase through the market) -> act1_after_brawl (set brawl_lost first if you lost)",
-        "act1_offer: Karim Fahmy at a cafe; armed men; end_fight -> event fight_armed_men (the gunfight; on a win set act1_gunfight_won + act1_confrontation_done and start act1_offer again)",
+        "act1_armed_men: still at Freddie's office, armed men looking for him; end_avoided (act1_gunfight_avoided), or end_fight -> event fight_armed_men (the gunfight; on a win set act1_gunfight_won + act1_confrontation_done)",
+        "act1_offer: Karim Fahmy at a cafe, a talk only",
         "end_accepted -> Act 2 (actions/act2_plan.json adds the expedition fund)",
     ],
     "events": {"fight_debt_collectors": "Finch's men: Musa Kamal and one or two more, fists only",
-               "fight_armed_men": "three hired gunmen after Karim's case: pistols, cover, reloading"},
+               "fight_armed_men": "three hired gunmen at Freddie's office, after Freddie: pistols, cover, reloading"},
     "flags_for_later": ["act1_gunfight_won (Isabelle's proof in Act 2)", "act1_gunfight_avoided", "musa_respect", "musa_enemy",
                         "freddie_note", "freddie_betrayed", "owe_finch", "finch_paid", "debt_paid_part",
                         "knows_first_expedition_lost", "act1_offer_accepted"],
