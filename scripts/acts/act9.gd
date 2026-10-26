@@ -67,6 +67,7 @@ func _ready() -> void:
 		_quickstart()
 	level = AkmentarBelow.new()
 	add_child(level)
+	_light_the_surface()
 	Ambience.play(self, "tomb")
 	_points()
 	player = Player.new()
@@ -321,9 +322,27 @@ func _spawn_party() -> void:
 		var c := Gunman.make_companion(id, player, Characters.glb(id))
 		if c:
 			add_child(c)
-			c.global_position = player.global_position + Vector3(i * 1.4 - 0.7, 0, 2.5)
+			c.global_position = player.global_position + _beside(i)
 			companions[id] = c
 			i += 1
+
+
+## The i-th place out to the side of the player and a step ahead, alternating left and right, so
+## nobody stands between the camera and the view (x ±(2.4 + k·1.2), z −1 in the player's frame).
+func _beside(i: int) -> Vector3:
+	var side := -1.0 if i % 2 == 0 else 1.0
+	var local := Vector3(side * (2.4 + (i / 2) * 1.2), 0, -1.0)
+	return Basis(Vector3.UP, player.yaw) * local
+
+
+## At the stairs' top the low sun stood behind the Keepers and the party were black shapes against
+## it: light them from behind the camera instead (the player starts facing north), with more fill.
+func _light_the_surface() -> void:
+	if level._sun:
+		level._sun.rotation = Vector3(deg_to_rad(-48), 0.0, 0.0)  # pointing north and down
+		level._sun.light_energy = maxf(level._sun.light_energy, 1.3)
+	if level._env:
+		level._env.ambient_light_energy = maxf(level._env.ambient_light_energy, 0.7)
 
 
 ## The last two guardians: party fighters who follow you down, and whose lives are the rite's.
@@ -340,7 +359,7 @@ func _spawn_singers() -> void:
 		g.health = SINGER_HEALTH
 		g.can_surrender = false
 		add_child(g)
-		g.global_position = player.global_position + Vector3(i * 1.6 - 0.8, 0, 1.2)
+		g.global_position = player.global_position + Basis(Vector3.UP, player.yaw) * Vector3(1.6 if i == 0 else -1.6, 0, -2.4)
 		g.killed.connect(func(_g: Gunman): _fell(id))
 		singers[id] = g
 		Game.set_flag(id + "_alive")

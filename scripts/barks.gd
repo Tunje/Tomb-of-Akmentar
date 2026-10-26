@@ -5,7 +5,8 @@ extends RefCounted
 ##   Barks.say(gunman, "reloading")             a companion (its companion_id) says a fitting line
 ##   Barks.say(node, "mummy_seen", "eleanor")    or name the speaker
 ##   Barks.say_any(get_tree(), "enemy_down", at) the nearest party member to `at` (or any) says it
-## A line shows as a floating label over the speaker for a few seconds and is printed ("BARK ...").
+## A line shows as a floating label over the speaker for a few seconds and is printed ("BARK ...");
+## over a companion it sits just above his name tag (Gunman._tag, wherever _stack_tag lifted it).
 ## Pacing: nobody barks within GAP s of the last bark; a speaker waits SPEAKER_GAP s between
 ## barks and COOLDOWN s before repeating a situation; nothing during a conversation. Lines whose
 ## condition passes (trust, fear, story flags) are preferred; the same line isn't used twice running.
@@ -131,7 +132,7 @@ static func _now() -> float:
 static func _show(who: Node3D, text: String) -> void:
 	if not who.is_inside_tree():
 		return
-	var l := Label3D.new()
+	var l := BarkLabel.new()
 	l.text = text
 	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	l.no_depth_test = true
@@ -142,9 +143,34 @@ static func _show(who: Node3D, text: String) -> void:
 	l.modulate = Color(1.0, 0.94, 0.8)
 	l.outline_modulate = Color(0, 0, 0, 0.85)
 	l.position = Vector3(0, HEIGHT, 0)
+	l.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM  # it grows upward from its point
 	l.add_to_group("bark")
 	who.add_child(l)
+	l.follow()
 	var tw := l.create_tween()
 	tw.tween_interval(SHOW_SECS - 0.6)
 	tw.tween_property(l, "modulate:a", 0.0, 0.6)
 	tw.tween_callback(l.queue_free)
+
+
+## A bark's label: over a companion with a visible name tag, it rides just above the tag (the tag
+## is centred on its point and LINE_PX tall per line, in the same fixed screen size).
+class BarkLabel extends Label3D:
+	const LINE_PX := 34.0
+	const GAP_PX := 10.0
+
+	func _process(_delta: float) -> void:
+		follow()
+
+	func follow() -> void:
+		var tag: Variant = get_parent().get("_tag") if get_parent() else null
+		if tag is Label3D and (tag as Label3D).visible:
+			var t := tag as Label3D
+			position.y = t.position.y
+			# The tag's half height, in its pixels, turned into ours (pixel sizes differ a little).
+			var lines := t.text.count(char(10)) + 1
+			offset.y = (lines * LINE_PX * 0.5 + GAP_PX) * t.pixel_size / pixel_size
+		else:
+			position.y = HEIGHT
+			offset.y = 0.0
+

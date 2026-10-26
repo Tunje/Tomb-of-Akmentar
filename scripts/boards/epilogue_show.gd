@@ -92,7 +92,7 @@ func _draw_screen() -> void:
 	root.draw_rect(Rect2(Vector2.ZERO, s), Color(0.06, 0.045, 0.03))
 	if cards.is_empty():
 		return
-	var a := clampf(t / 0.6, 0.0, 1.0)
+	var a := clampf(t / 0.3, 0.0, 1.0)
 	text(title, Vector2(s.x * 0.5, 70), 30, Color(GOLD, a), HORIZONTAL_ALIGNMENT_CENTER)
 	var c: Dictionary = cards[index]
 	# The album page: a photo on the left with its corners, the story on the right.
