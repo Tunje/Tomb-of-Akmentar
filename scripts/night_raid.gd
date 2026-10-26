@@ -230,6 +230,9 @@ func _finish() -> void:
 		for i in (f.deaths as Array).size():
 			_far_death(team)
 		(f.deaths as Array).clear()
+		if f.wiped:  # planned wiped means nobody's left standing, however many were spawned
+			while _alive(team):
+				_far_death(team)
 	var lost: Array[String] = []
 	for id in _party_start:
 		if not Game.in_party(id):

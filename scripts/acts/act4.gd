@@ -16,6 +16,7 @@ var hud: Hud
 var step := Step.ARRIVE
 var args := {}
 var npcs := {}
+var _team_people := {"americans": [], "germans": []}  # everyone a rival team has about the place
 var companions := {}
 var raid: Node
 var _t := 0.0
@@ -53,8 +54,8 @@ func _ready() -> void:
 	npcs["whitfield"] = Npc.make(level, "whitfield", level.camps.americans + Vector3(1.5, 0, 2.0), "act4_whitfield", Characters.glb("whitfield"))
 	npcs["adler"] = Npc.make(level, "adler", level.camps.germans + Vector3(-1.5, 0, 2.0), "act4_adler", Characters.glb("adler"))
 	# Their people about the camps (no talk yet), and the rivals' gunmen in the raid.
-	Npc.make(level, "maggie", level.camps.americans + Vector3(-2.5, 0, 1.0), "", Characters.glb("maggie"))
-	Npc.make(level, "kruger", level.camps.germans + Vector3(2.5, 0, 1.0), "", Characters.glb("kruger"))
+	_team_people.americans = [npcs.whitfield, Npc.make(level, "maggie", level.camps.americans + Vector3(-2.5, 0, 1.0), "", Characters.glb("maggie"))]
+	_team_people.germans = [npcs.adler, Npc.make(level, "kruger", level.camps.germans + Vector3(2.5, 0, 1.0), "", Characters.glb("kruger"))]
 	if ResourceLoader.exists(NIGHT_RAID):
 
 		NightRaid.rival_glb = {"americans": Characters.glb("callahan"), "germans": Characters.glb("vogel")}
@@ -72,7 +73,9 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if args.size() > 0:
 		return
-	if event.is_action_pressed("journal"):
+	if step == Step.END and event is InputEventKey and event.pressed and event.keycode in [KEY_ENTER, KEY_KP_ENTER]:
+		get_tree().change_scene_to_file("res://act5.tscn")  # Game (the party, the ally) carries over
+	elif event.is_action_pressed("journal"):
 		JournalScreen.toggle(self, player)
 	elif event.is_action_pressed("party_order"):
 		hud.toast("Companions: " + str(Gunman.toggle_party_order(get_tree())))
@@ -134,7 +137,9 @@ func _mark_claims() -> void:
 			# Our crew foremen: stand-ins until their image-to-3d models exist.
 			var model := Characters.glb(who)
 			var at: Vector3 = site + toward * 2.4 + side * (1.8 if k == 0 else -1.8)
-			Worker.make(level, at, site, model)
+			var w := Worker.make(level, at, site, model)
+			if _team_people.has(team):
+				(_team_people[team] as Array).append(w)
 		_pennant(site + toward * 2.8 + side * 3.2, look.colour)
 
 
@@ -247,10 +252,13 @@ func _dawn() -> void:
 	var americans: bool = Game.flag("americans_alive", false)
 	var germans: bool = Game.flag("germans_alive", false)
 	Game.set_flag("ally", "americans" if americans else ("germans" if germans else ""))
-	if not americans and is_instance_valid(npcs.get("whitfield")):
-		npcs.whitfield.queue_free()
-	if not germans and is_instance_valid(npcs.get("adler")):
-		npcs.adler.queue_free()
+	# A camp that was wiped out is gone: its leader, its people in camp and its workers at the statues
+	# (Simon: one of the Germans was still standing in their camp after the night).
+	for team in _team_people:
+		if not Game.flag(team + "_alive", false):
+			for n in _team_people[team]:
+				if is_instance_valid(n):
+					(n as Node).queue_free()
 	if FileAccess.file_exists("res://dialogue/act4_dawn.json") and not args.has("auto"):
 		var leader: Node3D = npcs.get("whitfield") if americans else npcs.get("adler")
 		var c := Conversation.new()
@@ -263,16 +271,22 @@ func _dawn() -> void:
 func _end() -> void:
 	step = Step.END
 	Game.end_day()
+	Game.flags.erase("quickstart_act")  # Act 5 takes the party Act 4 leaves, not a default one
 	_save()
+	Game.place = "act4_end"  # a continue from this save goes below, into Act 5
+	Game.save_game()
 	var lines := ["The Americans %s." % ("survived" if Game.flag("americans_alive", false) else "were wiped out"),
 		"The Germans %s." % ("survived" if Game.flag("germans_alive", false) else "were wiped out"),
 		"Ally: %s." % (str(Game.flag("ally", "")).capitalize() if Game.flag("ally", "") != "" else "none"),
 		"Clues found: %d." % _clue_count()]
-	hud.show_message("THE FIRST NIGHT", "\n".join(lines) + "\n\nThe way below waits. (Act 5 comes next.)")
+	hud.show_message("THE FIRST NIGHT", "\n".join(lines) + "\n\nThe way below waits.\nEnter  go down into Akmentar (Act 5)")
 	print("RESULT act4 end choice=%s americans=%s germans=%s ally=%s clues=%d" % [Game.flag("night_choice", ""),
 		Game.flag("americans_alive", false), Game.flag("germans_alive", false), Game.flag("ally", ""), _clue_count()])
 	if args.has("auto"):
 		await get_tree().create_timer(1.5).timeout
+		if args.has("chain"):  # test the hand-over: on into Act 5 with what Act 4 left
+			get_tree().change_scene_to_file("res://act5.tscn")
+			return
 		get_tree().quit(0)
 
 

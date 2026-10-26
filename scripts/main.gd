@@ -153,6 +153,11 @@ func _sleep_at(spot: String) -> void:
 func _continue() -> void:
 	if not Game.load_game():
 		return
+	# A save made in an act goes back to that act (the end of one, into the next).
+	var scene: String = {"act4_end": "res://act5.tscn", "act4_camp": "res://act4.tscn", "act5_end": "res://act5.tscn"}.get(Game.place, "")
+	if scene != "":
+		get_tree().change_scene_to_file(scene)
+		return
 	DayLog.ensure()  # the log is saved; begin_day would wipe it
 	var spot: Node3D = level.interactables.get(Game.place)
 	if spot:

@@ -168,6 +168,6 @@ static func _hole(parent: Node, pos: Vector3, normal: Vector3) -> void:
 	mi.rotate_object_local(Vector3.UP, PI)  # quads face +Z
 	_holes.append(mi)
 	while _holes.size() > MAX_HOLES:
-		var old: Node3D = _holes.pop_front()
+		var old: Variant = _holes.pop_front()  # holes from a level since unloaded are already freed
 		if is_instance_valid(old):
-			old.queue_free()
+			(old as Node3D).queue_free()

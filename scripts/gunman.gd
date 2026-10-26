@@ -867,6 +867,40 @@ static func spots(pieces: Array) -> Array:
 	return out
 
 
+## Whether a body fits at spot `s` (and, for a tall piece, at its lean-out): a spot on one piece's
+## face can be inside a piece that touches it (a block against a wall, wall runs meeting at a
+## corner), and a gunman sent there stood chest-deep in stone. Low pieces lose any blocked
+## lean-round points. Checked once per spot.
+static var _free := {}  # spot key -> [fits: bool, alts that fit]
+
+func _spot_free(s: Dictionary) -> bool:
+	if s.exposed or s.key == "":
+		return true
+	if not _free.has(s.key):
+		var ok: bool = _fits(s.pos) and (not s.tall or _fits(s.peek))
+		var alts: Array = []
+		for q: Vector3 in s.get("alts", []):
+			if _fits(q):
+				alts.append(q)
+		_free[s.key] = [ok, alts]
+	var entry: Array = _free[s.key]
+	if s.has("alts"):
+		s.alts = entry[1]
+	return entry[0]
+
+
+## A person-sized capsule (0.2 - 1.7 m up) at `feet` touches no world geometry.
+func _fits(feet: Vector3) -> bool:
+	var q := PhysicsShapeQueryParameters3D.new()
+	var cap := CapsuleShape3D.new()
+	cap.radius = 0.28
+	cap.height = 1.5
+	q.shape = cap
+	q.transform = Transform3D(Basis.IDENTITY, feet + Vector3.UP * 0.95)
+	q.collision_mask = 1
+	return get_world_3d().direct_space_state.intersect_shape(q, 1).is_empty()
+
+
 ## The piece is between this spot and a target at `feet`, and blocks his view of us crouched.
 func _protects(s: Dictionary, feet: Vector3) -> bool:
 	if s.exposed:
@@ -894,6 +928,8 @@ func _pick(mode: String) -> void:
 		if holder != null and holder != self and is_instance_valid(holder) and (holder as Gunman).is_active():
 			continue
 		if _now() - float(_bad_spots.get(s.key, -100.0)) < BAD_SPOT_TIME:
+			continue
+		if not _spot_free(s):
 			continue
 		var pos: Vector3 = s.pos
 		var d := _flat(p - pos).length()
@@ -983,6 +1019,8 @@ func _firing_point(p: Vector3) -> Dictionary:
 	var best := Vector3.INF
 	var best_d := MAX_TRAVEL
 	for s: Dictionary in spots(get_tree().get_nodes_in_group("cover")):
+		if not _spot_free(s):
+			continue
 		var points: Array = [s.peek]
 		points.append_array(s.get("alts", []))
 		for q: Vector3 in points:
