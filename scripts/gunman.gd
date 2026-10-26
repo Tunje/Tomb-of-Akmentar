@@ -169,6 +169,8 @@ var _surrendered_at := 0.0
 var _flank_try := -100.0  # last time this one looked for a flank (found or not)
 var _deck: RiverBoat
 var _deck_xf := Transform3D()
+var _deck_path := PackedVector3Array()  # boat-local (DeckNav): a world path goes stale as she sails
+var _deck_repath := 0.0
 
 var model: Node3D
 var rig: GunmanBody
@@ -181,6 +183,8 @@ var _tag: Label3D  # companions: name and health over the head
 var _help: Interactable  # "Help <name> up" while stumbled
 ## --companion-trace (after "--"): escape-mode companions print a line every 0.5 s.
 var _ctrace := "--companion-trace" in OS.get_cmdline_user_args()
+## --gunman-trace: every gunman prints a line every 2 s (state, where, spot, target).
+var _gtrace := "--gunman-trace" in OS.get_cmdline_user_args()
 var _ctrace_t := 0.0
 var _hop: Hop
 
@@ -469,6 +473,14 @@ func _enter(s: State) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if _gtrace and state != State.DEAD:
+		_ctrace_t += delta
+		if _ctrace_t >= 2.0:
+			_ctrace_t = 0.0
+			var where := _deck.to_local(global_position).snapped(Vector3.ONE * 0.1) if is_instance_valid(_deck) else global_position.snapped(Vector3.ONE * 0.1)
+			print("GUNMAN %s %s %s hp=%d %s=%s spot=%s target=%s sees=%s stuck=%d path=%d" % [name, team, State.keys()[state], int(health),
+				"deck" if is_instance_valid(_deck) else "at", where, _spot.get("key", ""),
+				target.name if is_instance_valid(target) else "-", _sees, stuck_count, _deck_path.size()])
 	if _ctrace and escape and team == PARTY and leader:
 		_ctrace_t += delta
 		if _ctrace_t >= 0.5:
@@ -619,6 +631,9 @@ func _ride_deck() -> void:
 	if deck != _deck:
 		_deck = deck
 		_deck_xf = deck.global_transform if deck else Transform3D()
+		_deck_path.clear()
+		if deck:
+			DeckNav.attach(deck)  # once per boat: the deck's own navmesh
 	elif deck:
 		var d := deck.global_transform * _deck_xf.affine_inverse()
 		_deck_xf = deck.global_transform
@@ -1127,7 +1142,11 @@ func _move_to(dest: Vector3, speed: float, delta: float, path: bool) -> Vector3:
 	if to.length() < 0.04:
 		return Vector3.ZERO
 	var dir := to.normalized()
-	if path and to.length() > 1.2:
+	if path and to.length() > 1.2 and is_instance_valid(_deck) and _deck.has_meta("deck_nav"):
+		var next := _deck_next(dest, delta)
+		if next != Vector3.ZERO:
+			dir = next
+	elif path and to.length() > 1.2:
 		_repath -= delta
 		if _repath <= 0.0:
 			_repath = 0.3
@@ -1150,6 +1169,23 @@ func _move_to(dest: Vector3, speed: float, delta: float, path: bool) -> Vector3:
 			_detour_t = 0.6
 			dir = _detour
 	return dir * minf(speed, to.length() / maxf(delta, 0.001) * 0.5)
+
+
+## On a boat's deck (DeckNav): the way to `dest`, the path kept in the boat's frame so it sails
+## with her (the agent's world path would lag a metre behind at cruise). ZERO when there's none.
+func _deck_next(dest: Vector3, delta: float) -> Vector3:
+	_deck_repath -= delta
+	if _deck_repath <= 0.0 or _deck_path.is_empty():
+		_deck_repath = 0.3
+		_deck_path.clear()
+		for p in NavigationServer3D.map_get_path(get_world_3d().navigation_map, global_position, dest, true):
+			_deck_path.append(_deck.to_local(p))
+	while _deck_path.size() > 1 and _flat(_deck.to_global(_deck_path[0]) - global_position).length() < 0.5:
+		_deck_path.remove_at(0)
+	if _deck_path.is_empty():
+		return Vector3.ZERO
+	var d := _flat(_deck.to_global(_deck_path[0]) - global_position)
+	return d.normalized() if d.length() > 0.05 else Vector3.ZERO
 
 
 ## True when moving has made under 0.4 m of progress in STUCK_TIME.
