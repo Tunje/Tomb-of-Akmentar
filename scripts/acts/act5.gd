@@ -16,9 +16,8 @@ const TOMB_SITES := "res://sites/royal_tomb.json"
 ## than that and it's one of the side shafts.
 const NECK_SLAB_AFTER := 45.0
 const WAIT_AT_TOP := 8.0  # how long the survivors at the top wait for the rest
-## The allied expedition runs out with you: its leader and two of its people.
+## The allied expedition (the thieves) running out ahead of you: its leader and two of its people.
 const ALLY_TEAMS := {"americans": ["whitfield", "maggie", "callahan"], "germans": ["adler", "kruger", "vogel"]}
-const ALLY_STUMBLE := 0.4  # each of them may trip on the way (help them up, or they're caught)
 
 var level: AkmentarBelow
 var player: Player
@@ -289,23 +288,28 @@ func _escape() -> void:
 	_revelation()
 
 
-## The allied expedition runs for it too: on your side, following you out (escape mode, like the
-## companions). Any of them may trip on the way; the guardian finishes whoever is left on the floor,
-## the scarabs eat the slow, a slab can cut them off. Whoever gets out decides who the thieves are.
+## The allied expedition are the thieves: at the awakening they bolt for the nearest way out with
+## what they took, ahead of you, and don't wait for anyone. They follow a runner that takes the
+## navmesh path to the exit (round any shut slab); at the top they're gone. Simon: "those allies
+## should leave before you as they are the thieves".
 func _ally_run() -> void:
 	var ally: String = Game.flag("ally", "")
 	if not ALLY_TEAMS.has(ally):
 		return
-	var from := _ally_npc.global_position if _ally_npc and not args.has("auto") else player.global_position + Vector3(0, 0, 3.0)
+	var from := _ally_npc.global_position if _ally_npc else player.global_position + Vector3(0, 0, 3.0)
 	if _ally_npc:
 		_ally_npc.queue_free()
 		_ally_npc = null
+	var runner := Node3D.new()
+	runner.name = "AllyRunner"
+	add_child(runner)
+	runner.global_position = from
 	var i := 0
 	for id in ALLY_TEAMS[ally]:
 		var g := Gunman.new()
 		g.name = str(id).capitalize()
 		g.team = Gunman.PARTY
-		g.leader = player
+		g.leader = runner
 		g.glb = Characters.glb(id)
 		g.max_health = 120.0
 		g.health = 120.0
@@ -314,10 +318,44 @@ func _ally_run() -> void:
 		g.escape = true
 		_ally_team[id] = g
 		i += 1
-		if randf() < ALLY_STUMBLE:
-			get_tree().create_timer(randf_range(8.0, 30.0)).timeout.connect(func():
-				if is_instance_valid(g) and g.alive and step == Step.ESCAPE:
-					g.stumble())
+	var who: String = ALLY_TEAMS[ally][0]
+	hud.toast("%s's people are running for it, and they've got something wrapped in sacking." % who.capitalize(), 4.0)
+	_ally_flee(runner)
+
+
+func _ally_flee(runner: Node3D) -> void:
+	const SPEED := 6.0
+	var map := get_world_3d().navigation_map
+	while step == Step.ESCAPE or step == Step.AWAKENING:
+		var path := PackedVector3Array()
+		var best := INF
+		for e in level.exits:
+			var p := NavigationServer3D.map_get_path(map, runner.global_position, e + Vector3(0, 0, 1.0), true)
+			var len := 0.0
+			for k in range(1, p.size()):
+				len += p[k].distance_to(p[k - 1])
+			if p.size() > 1 and len < best:
+				best = len
+				path = p
+		if path.size() < 2 or best < 1.5:
+			break  # out
+		var step_len := SPEED * get_physics_process_delta_time()
+		var to := path[1] - runner.global_position
+		runner.global_position += to.normalized() * minf(step_len, to.length())
+		# Don't leave the slow ones too far behind: the runner waits for the pack.
+		var lag := 0.0
+		for g in _ally_team.values():
+			if is_instance_valid(g) and g.alive:
+				lag = maxf(lag, g.global_position.distance_to(runner.global_position))
+		if lag > 6.0:
+			runner.global_position -= to.normalized() * minf(step_len, to.length())
+		await get_tree().physics_frame
+	# Up and away: gone before you get there.
+	for g in _ally_team.values():
+		if is_instance_valid(g):
+			g.queue_free()
+	runner.queue_free()
+	Game.set_flag("thieves_fled", true)
 
 
 ## Drop-slabs: each sinks when you run at it; the stairs' neck on a timer. A shut slab changes the
@@ -386,7 +424,7 @@ func _wait_for_companions() -> void:
 	var waiting := true
 	while waiting and t < WAIT_AT_TOP:
 		waiting = false
-		for c in companions.values() + _ally_team.values():
+		for c in companions.values():
 			if is_instance_valid(c) and c.alive and not _out(c):
 				waiting = true
 		if waiting:
@@ -400,14 +438,6 @@ func _wait_for_companions() -> void:
 		if not is_instance_valid(c) or not c.alive or not _out(c):
 			lost.append(id)
 	Game.set_flag("act5_casualties", lost)
-	var saved: Array = []
-	for id in _ally_team:
-		var g: Gunman = _ally_team[id]
-		if is_instance_valid(g) and g.alive and _out(g):
-			saved.append(id)
-		else:
-			lost.append(id)
-	Game.set_flag("act5_ally_survivors", saved)
 	if not lost.is_empty():
 		hud.toast("%s didn't come out." % ", ".join(lost.map(func(id): return str(id).capitalize())), 4.0)
 
@@ -415,9 +445,7 @@ func _wait_for_companions() -> void:
 func _revelation() -> void:
 	step = Step.REVELATION
 	var ally: String = Game.flag("ally", "")
-	# The thieves: your allies if any of them came out with you; otherwise the Italians.
-	var survivors: Array = Game.flag("act5_ally_survivors", [])
-	var thieves: String = ally if ally != "" and not survivors.is_empty() else "italians"
+	var thieves: String = ally if ally != "" else "italians"
 	Game.set_flag("thieves", thieves)
 	Game.set_flag("thieves_" + thieves)  # plain flag the revelation talk can test
 	hud.toast("Daylight, and men in indigo all around you.", 3.0)
@@ -438,9 +466,9 @@ func _end() -> void:
 	var lines := ["The guardian is awake.", "The amulet is gone: the %s took it." % str(Game.flag("thieves", "")).capitalize(),
 		"The Keepers want it back, and so must you."]
 	hud.show_message("THE AWAKENING", "\n".join(lines) + "\n\n(Act 6 comes next.)")
-	print("RESULT act5 end ally=%s forced=%s delay=%s studied_tomb=%d escaped=%s exit=%s lost=%s allies_out=%s thieves=%s t=%.0f" % [
+	print("RESULT act5 end ally=%s forced=%s delay=%s studied_tomb=%d escaped=%s exit=%s lost=%s fled=%s thieves=%s t=%.0f" % [
 		Game.flag("ally", ""), Game.flag("door_forced", false), Game.flag("german_delay", false), _tomb_done,
-		Game.flag("escaped", false), Game.flag("escape_exit", ""), Game.flag("act5_casualties", []), Game.flag("act5_ally_survivors", []),
+		Game.flag("escaped", false), Game.flag("escape_exit", ""), Game.flag("act5_casualties", []), Game.flag("thieves_fled", false),
 		Game.flag("thieves", ""), _t])
 	if args.has("auto"):
 		await get_tree().create_timer(1.5).timeout
