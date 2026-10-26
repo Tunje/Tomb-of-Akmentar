@@ -1,0 +1,19 @@
+{
+	"_help": "Act 2: the military club. See scripts/actions/action_spot.gd for the format.",
+	"name": "The Officers' Club",
+	"prompt": "Go into the club",
+	"actions": [
+		{
+			"id": "hire_hargreaves",
+			"label": "Look up Tom Hargreaves",
+			"cost": 1,
+			"if": {
+				"not_flag": "hired_hargreaves"
+			},
+			"hide_if_locked": true,
+			"conversation": "act2_hargreaves",
+			"with": "hargreaves",
+			"log": "Talked terms with Tom Hargreaves"
+		}
+	]
+}

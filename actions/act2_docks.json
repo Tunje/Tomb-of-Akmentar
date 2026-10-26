@@ -1,0 +1,15 @@
+{
+	"_help": "Act 2: the docks. Free; booking passage here (booked_riverboat) pays for Act 3's river route in advance. See scripts/actions/action_spot.gd for the format.",
+	"name": "The Docks",
+	"prompt": "Find the riverboat captain",
+	"actions": [
+		{
+			"id": "hamdi",
+			"label": "Ask Captain Hamdi about passage upriver",
+			"cost": 0,
+			"conversation": "act2_hamdi",
+			"with": "hamdi",
+			"log": "Asked about passage upriver"
+		}
+	]
+}

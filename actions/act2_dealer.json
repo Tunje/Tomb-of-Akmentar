@@ -1,0 +1,43 @@
+{
+	"_help": "Act 2: the antiquities dealer in the old quarter. Hassan is the reliable Egyptologist. See scripts/actions/action_spot.gd for the format.",
+	"name": "Yacoub Ben-Ami, Antiquities",
+	"prompt": "Step into the dealer's office",
+	"actions": [
+		{
+			"id": "hire_hassan",
+			"label": "Ask after the independent scholar",
+			"cost": 1,
+			"if": {
+				"not_flag": "hired_hassan"
+			},
+			"hide_if_locked": true,
+			"conversation": "act2_hassan",
+			"with": "hassan",
+			"log": "Visited Dr. Hassan al-Masri at Yacoub's"
+		},
+		{
+			"id": "survey_map",
+			"label": "An old survey map of the western desert (£15)",
+			"cost": 0,
+			"if": {
+				"money": 15
+			},
+			"do": [
+				{
+					"money": -15
+				},
+				{
+					"item": [
+						"survey_map",
+						1
+					]
+				},
+				{
+					"set_flag": "has_survey_map"
+				}
+			],
+			"log": "Bought: an old survey map of the western desert",
+			"once": true
+		}
+	]
+}

@@ -1,0 +1,145 @@
+{
+	"_help": "Act 2: the gunsmith. Single purchases are free (money only); fitting out the whole expedition with good rifles takes an action (party_armed). See scripts/actions/action_spot.gd for the format.",
+	"name": "Ahmed Zaki, Gunsmith",
+	"prompt": "Look at the guns",
+	"actions": [
+		{
+			"id": "revolver_ammo",
+			"label": "Revolver cartridges, 24 (£3)",
+			"cost": 0,
+			"if": {
+				"money": 3
+			},
+			"do": [
+				{
+					"money": -3
+				},
+				{
+					"item": [
+						"revolver_ammo",
+						24
+					]
+				}
+			],
+			"log": "Bought: revolver cartridges, 24"
+		},
+		{
+			"id": "rifle",
+			"label": "A lever rifle and 20 cartridges (£25)",
+			"cost": 0,
+			"if": {
+				"money": 25
+			},
+			"do": [
+				{
+					"money": -25
+				},
+				{
+					"item": [
+						"rifle",
+						1
+					]
+				},
+				{
+					"item": [
+						"rifle_ammo",
+						20
+					]
+				}
+			],
+			"log": "Bought: a lever rifle and 20 cartridges",
+			"once": true
+		},
+		{
+			"id": "rifle_ammo",
+			"label": "Rifle cartridges, 20 (£4)",
+			"cost": 0,
+			"if": {
+				"money": 4
+			},
+			"do": [
+				{
+					"money": -4
+				},
+				{
+					"item": [
+						"rifle_ammo",
+						20
+					]
+				}
+			],
+			"log": "Bought: rifle cartridges, 20"
+		},
+		{
+			"id": "shotgun",
+			"label": "A double shotgun and 12 shells (£20)",
+			"cost": 0,
+			"if": {
+				"money": 20
+			},
+			"do": [
+				{
+					"money": -20
+				},
+				{
+					"item": [
+						"shotgun",
+						1
+					]
+				},
+				{
+					"item": [
+						"shotgun_shells",
+						12
+					]
+				}
+			],
+			"log": "Bought: a double shotgun and 12 shells",
+			"once": true
+		},
+		{
+			"id": "shotgun_shells",
+			"label": "Shotgun shells, 12 (£3)",
+			"cost": 0,
+			"if": {
+				"money": 3
+			},
+			"do": [
+				{
+					"money": -3
+				},
+				{
+					"item": [
+						"shotgun_shells",
+						12
+					]
+				}
+			],
+			"log": "Bought: shotgun shells, 12"
+		},
+		{
+			"id": "arm_party",
+			"label": "Have Zaki arm the whole expedition (£40)",
+			"cost": 1,
+			"once": true,
+			"if": {
+				"money": 40
+			},
+			"do": [
+				{
+					"money": -40
+				},
+				{
+					"set_flag": "party_armed"
+				},
+				{
+					"item": [
+						"rifle_ammo",
+						60
+					]
+				}
+			],
+			"log": "Had Ahmed Zaki fit the expedition with good rifles"
+		}
+	]
+}

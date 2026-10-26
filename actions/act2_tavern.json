@@ -1,0 +1,40 @@
+{
+	"_help": "Act 2: the tavern. Isabelle needs proof of you; McKenna's rumours give one way. See scripts/actions/action_spot.gd for the format.",
+	"name": "McKenna's",
+	"prompt": "Go into the tavern",
+	"actions": [
+		{
+			"id": "rumours",
+			"label": "Gather rumours from George McKenna",
+			"cost": 1,
+			"once": true,
+			"conversation": "act2_mckenna",
+			"with": "mckenna",
+			"log": "Gathered rumours at McKenna's"
+		},
+		{
+			"id": "hire_idris",
+			"label": "Talk to Idris Mahjoub (gunman)",
+			"cost": 1,
+			"if": {
+				"not_flag": "hired_idris"
+			},
+			"hide_if_locked": true,
+			"conversation": "act2_idris",
+			"with": "idris",
+			"log": "Talked terms with Idris Mahjoub"
+		},
+		{
+			"id": "hire_isabelle",
+			"label": "Talk to Isabelle Moreau (gunwoman)",
+			"cost": 1,
+			"if": {
+				"not_flag": "hired_isabelle"
+			},
+			"hide_if_locked": true,
+			"conversation": "act2_isabelle",
+			"with": "isabelle",
+			"log": "Talked to Isabelle Moreau"
+		}
+	]
+}

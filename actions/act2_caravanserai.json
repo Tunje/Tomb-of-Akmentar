@@ -1,0 +1,52 @@
+{
+	"_help": "Act 2: the caravanserai, the three desert guides. See scripts/actions/action_spot.gd for the format.",
+	"name": "The Caravanserai",
+	"prompt": "Enter the caravanserai",
+	"actions": [
+		{
+			"id": "abdel",
+			"label": "Ask Abdel Rahman about the roads west",
+			"cost": 0,
+			"once": true,
+			"conversation": "act2_abdel",
+			"with": "abdel",
+			"log": "Asked Abdel Rahman about the roads"
+		},
+		{
+			"id": "hire_saleh",
+			"label": "Talk to Saleh al-Rashidi (veteran guide)",
+			"cost": 1,
+			"if": {
+				"not_flag": "hired_saleh"
+			},
+			"hide_if_locked": true,
+			"conversation": "act2_saleh",
+			"with": "saleh",
+			"log": "Talked terms with Saleh al-Rashidi"
+		},
+		{
+			"id": "hire_youssef",
+			"label": "Talk to Youssef Nabil (young scout)",
+			"cost": 1,
+			"if": {
+				"not_flag": "hired_youssef"
+			},
+			"hide_if_locked": true,
+			"conversation": "act2_youssef",
+			"with": "youssef",
+			"log": "Talked to Youssef Nabil"
+		},
+		{
+			"id": "hire_farid",
+			"label": "Talk to Farid Mansour (caravan merchant)",
+			"cost": 1,
+			"if": {
+				"not_flag": "hired_farid"
+			},
+			"hide_if_locked": true,
+			"conversation": "act2_farid",
+			"with": "farid",
+			"log": "Talked business with Farid Mansour"
+		}
+	]
+}

@@ -1,0 +1,16 @@
+{
+	"_help": "Act 2: the hotel (the bed, save and end of day are hotel_bed, in cairo.gd). See scripts/actions/action_spot.gd for the format.",
+	"name": "Hotel Beaumont",
+	"prompt": "Speak to the proprietor",
+	"actions": [
+		{
+			"id": "clara",
+			"label": "Ask Clara Beaumont about her other guests",
+			"cost": 1,
+			"once": true,
+			"conversation": "act2_clara",
+			"with": "clara",
+			"log": "Learned where the rival expeditions are staying"
+		}
+	]
+}

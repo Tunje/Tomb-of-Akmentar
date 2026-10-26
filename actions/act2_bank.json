@@ -1,0 +1,16 @@
+{
+	"_help": "Act 2: the sponsor's agent. See scripts/actions/action_spot.gd for the format.",
+	"name": "The Bank: Blackwood's Agent",
+	"prompt": "Call on Karim Fahmy",
+	"actions": [
+		{
+			"id": "funds",
+			"label": "Negotiate more funds with Karim Fahmy",
+			"cost": 1,
+			"once": true,
+			"conversation": "act2_karim",
+			"with": "karim",
+			"log": "Negotiated with Karim Fahmy"
+		}
+	]
+}

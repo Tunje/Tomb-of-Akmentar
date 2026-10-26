@@ -1,0 +1,57 @@
+{
+	"_help": "Act 2: the museum. The first visit (archivist) can recruit Eleanor OR Pembroke in the same action; the other costs a later visit. See scripts/actions/action_spot.gd for the format.",
+	"name": "The Cairo Museum",
+	"prompt": "Enter the museum",
+	"actions": [
+		{
+			"id": "archivist",
+			"label": "Ask the chief archivist for an Egyptologist",
+			"cost": 1,
+			"if": {
+				"not_flag": "museum_staff_known"
+			},
+			"hide_if_locked": true,
+			"conversation": "act2_museum",
+			"with": "archivist",
+			"log": "Asked Professor El-Gohary for an Egyptologist"
+		},
+		{
+			"id": "hire_eleanor",
+			"label": "Find Miss Whitmore in the reading room",
+			"cost": 1,
+			"if": {
+				"not_flag": "hired_eleanor",
+				"flag": "knows_eleanor"
+			},
+			"hide_if_locked": true,
+			"conversation": "act2_eleanor",
+			"with": "eleanor",
+			"log": "Spoke with Eleanor Whitmore"
+		},
+		{
+			"id": "hire_pembroke",
+			"label": "Find Dr. Pembroke in his office",
+			"cost": 1,
+			"if": {
+				"not_flag": "hired_pembroke",
+				"flag": "knows_pembroke"
+			},
+			"hide_if_locked": true,
+			"conversation": "act2_pembroke",
+			"with": "pembroke",
+			"log": "Spoke with Dr. Pembroke"
+		},
+		{
+			"id": "archive",
+			"label": "Research Akmentar in the archive",
+			"cost": 1,
+			"once": true,
+			"if": {
+				"not_flag": "archivist_hostile"
+			},
+			"locked_text": "The archivist has had you banned",
+			"conversation": "act2_archive",
+			"log": "Researched Akmentar in the museum archive"
+		}
+	]
+}

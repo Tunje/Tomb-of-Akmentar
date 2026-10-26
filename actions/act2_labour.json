@@ -1,0 +1,43 @@
+{
+	"_help": "Act 2: the labour market, the three crews (one action each), through the broker Fatima el-Sayed. See scripts/actions/action_spot.gd for the format.",
+	"name": "The Labour Market",
+	"prompt": "Look over the labour market",
+	"actions": [
+		{
+			"id": "hire_mahmoud",
+			"label": "Hire Mahmoud Fawzi's excavators",
+			"cost": 1,
+			"if": {
+				"not_flag": "hired_mahmoud"
+			},
+			"hide_if_locked": true,
+			"conversation": "act2_mahmoud",
+			"with": "mahmoud",
+			"log": "Talked terms with Mahmoud Fawzi's crew"
+		},
+		{
+			"id": "hire_khalil",
+			"label": "Hire Khalil Darwish's labourers",
+			"cost": 1,
+			"if": {
+				"not_flag": "hired_khalil"
+			},
+			"hide_if_locked": true,
+			"conversation": "act2_khalil",
+			"with": "khalil",
+			"log": "Talked terms with Khalil Darwish's crew"
+		},
+		{
+			"id": "hire_naguib",
+			"label": "Hire Naguib Sabet's porters",
+			"cost": 1,
+			"if": {
+				"not_flag": "hired_naguib"
+			},
+			"hide_if_locked": true,
+			"conversation": "act2_naguib",
+			"with": "naguib",
+			"log": "Talked terms with Naguib Sabet's porters"
+		}
+	]
+}

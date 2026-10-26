@@ -1,0 +1,16 @@
+{
+	"_help": "Act 2: the telegraph office, one wire a day. See scripts/actions/action_spot.gd for the format.",
+	"name": "The Telegraph Office",
+	"prompt": "Go into the telegraph office",
+	"actions": [
+		{
+			"id": "wire",
+			"label": "Send a telegram",
+			"cost": 1,
+			"daily": true,
+			"conversation": "act2_telegraph",
+			"with": "nabil",
+			"log": "Sent a telegram"
+		}
+	]
+}

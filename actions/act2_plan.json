@@ -1,0 +1,185 @@
+{
+	"_help": "Act 2 (Cairo recruitment) overview for act2.gd, written by tools/dialogue/make_act2.py. Not an ActionSpot file.",
+	"days": 2,
+	"actions_per_day": 3,
+	"start": [
+		{
+			"money": 300
+		}
+	],
+	"spots": {
+		"museum": "act2_museum",
+		"dealer": "act2_dealer",
+		"club": "act2_club",
+		"tavern": "act2_tavern",
+		"caravanserai": "act2_caravanserai",
+		"labour": "act2_labour",
+		"gunsmith": "act2_gunsmith",
+		"outfitter": "act2_outfitter",
+		"bazaar": "act2_bazaar",
+		"telegraph": "act2_telegraph",
+		"bank": "act2_bank",
+		"hotel": "act2_hotel",
+		"docks": "act2_docks"
+	},
+	"egyptologist_flags": [
+		"hired_eleanor",
+		"hired_pembroke",
+		"hired_hassan"
+	],
+	"_egyptologist": "Required. If none of egyptologist_flags is set when the expedition leaves (after day 2), start dialogue act2_hassan_fallback (Hassan joins for free).",
+	"recruits": {
+		"eleanor": {
+			"role": "egyptologist",
+			"spot": "museum",
+			"fee": "0, 10 or 30",
+			"strength": "Ancient languages and obscure texts; romance",
+			"talk": "act2_eleanor",
+			"flag": "hired_eleanor"
+		},
+		"pembroke": {
+			"role": "egyptologist",
+			"spot": "museum",
+			"fee": "70 (50 with researched_akmentar)",
+			"strength": "Excavation method, identifying artifacts",
+			"talk": "act2_pembroke",
+			"flag": "hired_pembroke"
+		},
+		"hassan": {
+			"role": "egyptologist",
+			"spot": "dealer",
+			"fee": "30 or nothing",
+			"strength": "Religion, forgotten dynasties; the fallback; secretly a Keeper",
+			"talk": "act2_hassan",
+			"flag": "hired_hassan"
+		},
+		"hargreaves": {
+			"role": "gunman",
+			"spot": "club",
+			"fee": "60 (or 30 + 30 owed)",
+			"strength": "Rifle fire, discipline",
+			"talk": "act2_hargreaves",
+			"flag": "hired_hargreaves"
+		},
+		"idris": {
+			"role": "gunman",
+			"spot": "tavern",
+			"fee": "20, 35 or 50",
+			"strength": "Close range, Cairo's underworld",
+			"talk": "act2_idris",
+			"flag": "hired_idris"
+		},
+		"isabelle": {
+			"role": "gunman",
+			"spot": "tavern",
+			"fee": "45 after you prove yourself",
+			"strength": "Pistols, fast reactions; romance",
+			"talk": "act2_isabelle",
+			"flag": "hired_isabelle"
+		},
+		"saleh": {
+			"role": "guide",
+			"spot": "caravanserai",
+			"fee": "70",
+			"strength": "Navigation, water",
+			"talk": "act2_saleh",
+			"flag": "hired_saleh"
+		},
+		"youssef": {
+			"role": "guide",
+			"spot": "caravanserai",
+			"fee": "25",
+			"strength": "Scouting, other routes",
+			"talk": "act2_youssef",
+			"flag": "hired_youssef"
+		},
+		"farid": {
+			"role": "guide",
+			"spot": "caravanserai",
+			"fee": "40 (20 if he trades)",
+			"strength": "Logistics, supplies (brings 10 rations)",
+			"talk": "act2_farid",
+			"flag": "hired_farid"
+		},
+		"mahmoud": {
+			"role": "crew",
+			"spot": "labour",
+			"fee": "60 (75 if you keep the credit)",
+			"strength": "Experienced excavators",
+			"talk": "act2_mahmoud",
+			"flag": "hired_mahmoud"
+		},
+		"khalil": {
+			"role": "crew",
+			"spot": "labour",
+			"fee": "25 (or 13 + 12 owed)",
+			"strength": "Local labourers, cheap",
+			"talk": "act2_khalil",
+			"flag": "hired_khalil"
+		},
+		"naguib": {
+			"role": "crew",
+			"spot": "labour",
+			"fee": "45",
+			"strength": "Professional porters, carrying",
+			"talk": "act2_naguib",
+			"flag": "hired_naguib"
+		}
+	},
+	"hosts": {
+		"museum": "archivist",
+		"dealer": "yacoub",
+		"tavern": "mckenna",
+		"caravanserai": "abdel",
+		"labour": "fatima",
+		"gunsmith": "zaki",
+		"outfitter": "samira",
+		"bazaar": "rafiq",
+		"telegraph": "nabil",
+		"bank": "karim",
+		"hotel": "clara",
+		"docks": "hamdi"
+	},
+	"items": {
+		"revolver_ammo": "Revolver cartridges",
+		"rifle": "Lever rifle",
+		"rifle_ammo": "Rifle cartridges",
+		"shotgun": "Double shotgun",
+		"shotgun_shells": "Shotgun shells",
+		"rations": "Rations (party-days)",
+		"water": "Water (party-days)",
+		"tents": "Tents and bedding",
+		"tools": "Digging tools",
+		"lanterns": "Lanterns and oil",
+		"rope": "Rope",
+		"medicine": "Medical kit",
+		"dynamite": "Dynamite",
+		"flares": "Signal flares",
+		"survey_map": "Old survey map"
+	},
+	"events": {
+		"fight_museum_guards": "threatening the archivist (museum guards brawl)",
+		"fight_bounty_hunters": "Isabelle's three bounty men at the tavern; when won set isabelle_trouble_settled and start act2_isabelle (free)"
+	},
+	"flags_for_later": [
+		"heard_americans_boat",
+		"heard_americans_guns",
+		"booked_riverboat",
+		"heard_routes",
+		"heard_italians",
+		"heard_rival_rooms",
+		"clara_watching",
+		"idris_contacts",
+		"fletcher_wired",
+		"heard_desert_warnings",
+		"heard_river_warning",
+		"heard_blackwood_silence",
+		"party_armed",
+		"well_supplied",
+		"has_survey_map",
+		"owe_hargreaves",
+		"owe_khalil",
+		"farid_trading",
+		"promised_*"
+	]
+}

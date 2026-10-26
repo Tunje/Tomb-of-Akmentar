@@ -1,0 +1,84 @@
+{
+	"_help": "Act 2: the bazaar. Unusual equipment and a paid informant (heard_italians). See scripts/actions/action_spot.gd for the format.",
+	"name": "The Khan Bazaar",
+	"prompt": "Wander into the bazaar",
+	"actions": [
+		{
+			"id": "cheap_rations",
+			"label": "Cheap rations, a week (of doubtful age) (£6)",
+			"cost": 0,
+			"if": {
+				"money": 6
+			},
+			"do": [
+				{
+					"money": -6
+				},
+				{
+					"item": [
+						"rations",
+						7
+					]
+				}
+			],
+			"log": "Bought: cheap rations, a week (of doubtful age)"
+		},
+		{
+			"id": "bargains",
+			"label": "Hunt the bazaar with Rafiq el-Tayeb (£15)",
+			"cost": 1,
+			"once": true,
+			"if": {
+				"money": 15
+			},
+			"do": [
+				{
+					"money": -15
+				},
+				{
+					"set_flag": "bazaar_bargains"
+				},
+				{
+					"item": [
+						"dynamite",
+						4
+					]
+				},
+				{
+					"item": [
+						"flares",
+						3
+					]
+				},
+				{
+					"item": [
+						"rifle_ammo",
+						20
+					]
+				}
+			],
+			"log": "Found dynamite, flares and cheap cartridges with Rafiq el-Tayeb"
+		},
+		{
+			"id": "salim",
+			"label": "Pay Salim Farouk for a lead (£10)",
+			"cost": 1,
+			"once": true,
+			"if": {
+				"money": 10
+			},
+			"do": [
+				{
+					"money": -10
+				},
+				{
+					"set_flag": "heard_italians"
+				},
+				{
+					"set_flag": "salim_lead"
+				}
+			],
+			"log": "Salim Farouk: an Italian collector is quietly buying maps of the west"
+		}
+	]
+}

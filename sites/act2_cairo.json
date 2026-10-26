@@ -1,0 +1,33 @@
+{
+	"_help": "Act 2: journal clues found in Cairo (not walk-up sites; the Act 2 talks write them with the journal effect).",
+	"place": "Cairo",
+	"sites": {
+		"archive": {
+			"name": "The Museum Archive",
+			"desc": "Boxes nobody has opened since before the war",
+			"clue": {
+				"id": "clue_cairo_archive",
+				"title": "The Akmentar papers",
+				"text": "The travellers' accounts agree on little, but three of them mention a temple of three gods, Anubis, Horus and Ra, standing before the tomb, and a king 'whose name the priests cut from the walls'. A burned map puts the site west of the river, beyond the last well."
+			}
+		},
+		"archive_extra": {
+			"name": "The Locked Cabinet",
+			"desc": "A field report that was never published",
+			"clue": {
+				"id": "clue_cairo_first_report",
+				"title": "Blackwood's first expedition",
+				"text": "A field report from Sir Reginald Blackwood's first expedition: 'We found the door. Mr. Ashby insists that something followed us back to camp. Two of the workers have gone.' The report stops there."
+			}
+		},
+		"first_expedition": {
+			"name": "The Telegraph Office",
+			"desc": "A wire from London",
+			"clue": {
+				"id": "clue_cairo_last_telegram",
+				"title": "The last telegram",
+				"text": "Blackwood's London office answers your wire. The first expedition's last telegram came from a desert town on the coast road: 'Site found. Sending for more men. Do not tell the museum.' Nothing came after it."
+			}
+		}
+	}
+}

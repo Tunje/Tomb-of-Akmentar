@@ -1,0 +1,210 @@
+{
+	"_help": "Act 2: the general outfitter. Single purchases are free; a full outfit at a better price takes an action (well_supplied). See scripts/actions/action_spot.gd for the format.",
+	"name": "Samira Haddad, Outfitter",
+	"prompt": "Look at the supplies",
+	"actions": [
+		{
+			"id": "rations",
+			"label": "Rations, a week for the party (£10)",
+			"cost": 0,
+			"if": {
+				"money": 10
+			},
+			"do": [
+				{
+					"money": -10
+				},
+				{
+					"item": [
+						"rations",
+						7
+					]
+				}
+			],
+			"log": "Bought: rations, a week for the party"
+		},
+		{
+			"id": "water",
+			"label": "Water casks, a week (£6)",
+			"cost": 0,
+			"if": {
+				"money": 6
+			},
+			"do": [
+				{
+					"money": -6
+				},
+				{
+					"item": [
+						"water",
+						7
+					]
+				}
+			],
+			"log": "Bought: water casks, a week"
+		},
+		{
+			"id": "tents",
+			"label": "Tents and bedding (£12)",
+			"cost": 0,
+			"if": {
+				"money": 12
+			},
+			"do": [
+				{
+					"money": -12
+				},
+				{
+					"item": [
+						"tents",
+						1
+					]
+				}
+			],
+			"log": "Bought: tents and bedding",
+			"once": true
+		},
+		{
+			"id": "tools",
+			"label": "Digging tools (£10)",
+			"cost": 0,
+			"if": {
+				"money": 10
+			},
+			"do": [
+				{
+					"money": -10
+				},
+				{
+					"item": [
+						"tools",
+						1
+					]
+				}
+			],
+			"log": "Bought: digging tools",
+			"once": true
+		},
+		{
+			"id": "lanterns",
+			"label": "Lanterns and oil (£5)",
+			"cost": 0,
+			"if": {
+				"money": 5
+			},
+			"do": [
+				{
+					"money": -5
+				},
+				{
+					"item": [
+						"lanterns",
+						1
+					]
+				}
+			],
+			"log": "Bought: lanterns and oil",
+			"once": true
+		},
+		{
+			"id": "rope",
+			"label": "Rope, a hundred feet (£2)",
+			"cost": 0,
+			"if": {
+				"money": 2
+			},
+			"do": [
+				{
+					"money": -2
+				},
+				{
+					"item": [
+						"rope",
+						1
+					]
+				}
+			],
+			"log": "Bought: rope, a hundred feet"
+		},
+		{
+			"id": "medicine",
+			"label": "A medical kit (£8)",
+			"cost": 0,
+			"if": {
+				"money": 8
+			},
+			"do": [
+				{
+					"money": -8
+				},
+				{
+					"item": [
+						"medicine",
+						1
+					]
+				}
+			],
+			"log": "Bought: a medical kit"
+		},
+		{
+			"id": "outfit",
+			"label": "Order a full expedition outfit (£45)",
+			"cost": 1,
+			"once": true,
+			"if": {
+				"money": 45
+			},
+			"do": [
+				{
+					"money": -45
+				},
+				{
+					"set_flag": "well_supplied"
+				},
+				{
+					"item": [
+						"rations",
+						14
+					]
+				},
+				{
+					"item": [
+						"water",
+						14
+					]
+				},
+				{
+					"item": [
+						"tents",
+						1
+					]
+				},
+				{
+					"item": [
+						"tools",
+						1
+					]
+				},
+				{
+					"item": [
+						"lanterns",
+						1
+					]
+				},
+				{
+					"item": [
+						"rope",
+						1
+					]
+				},
+				{
+					"item": [
+						"medicine",
+						2
+					]
+				}
+			],
+			"log": "Samira Haddad outfitted the expedition"
+		}
+	]
+}
