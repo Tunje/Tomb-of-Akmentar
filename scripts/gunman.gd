@@ -1,22 +1,32 @@
 class_name Gunman
 extends CharacterBody3D
-## A human enemy with a gun (bandits / the guardian order, rival expedition gunmen). Fights from
-## the same cover pieces as the player (group "cover", Cover.edges):
-##   MOVE ──► COVER (crouched behind a face that blocks the player's line of sight)
-##   COVER ──[wait, a free shooter slot, the player in view]──► AIM (pop up over a low piece or
+## A human with a gun, on a team: bandits (the guardian order), rival expedition gunmen, or the
+## player's companions (team PARTY). Fights from the same cover pieces as the player (group
+## "cover", Cover.edges):
+##   MOVE ──► COVER (crouched behind a face that blocks the target's line of sight)
+##   COVER ──[wait, a free shooter slot, the target in view]──► AIM (pop up over a low piece or
 ##     lean round the end of a tall one; each shot is telegraphed by a short aim and a glint)
-##   AIM ──[burst done / player hidden too long / flinch]──► COVER ──[mag empty]──► RELOAD
-##   COVER ──[player camps]──► MOVE to a flank spot that sees him behind his cover (one at a time)
+##   AIM ──[burst done / target hidden too long / flinch]──► COVER ──[mag empty]──► RELOAD
+##   COVER ──[target camps]──► MOVE to a flank spot that sees him behind his cover (one at a time)
 ##   hurt below RETREAT_AT ──► MOVE (sprint) to cover farther away;  hits ──► flinch / STAGGER
+## Targets: enemies start once `target` is set (main sets the player) and then pick the nearest
+## visible of the player and the companions. Companions pick the nearest engaged enemy gunman or
+## awake mummy; with none they follow the player (or hold where they were told) and keep their
+## cover within LEASH of him. Mummies are shot in the open, backing off when they get close.
 ## Body-part hitboxes on layer 8 with meta "mummy" / "part", like the mummies, so the player's
-## bullets need no changes. Visuals under $Model: GunmanBody, or capsules when assets are missing.
+## bullets need no changes (they don't hurt companions). Visuals under $Model: GunmanBody, or
+## capsules when assets are missing.
 
 signal killed(gunman: Gunman)
 
 enum State { IDLE, MOVE, COVER, AIM, RELOAD, STAGGER, DEAD }
 
+const BANDITS := "bandits"
+const PARTY := "party"
+
 const PART_MULT := {"head": 2.5, "torso": 1.0, "arm_l": 0.6, "arm_r": 0.6, "leg_l": 0.7, "leg_r": 0.7}
 const MAX_HEALTH := 100.0
+const WALK := 1.8
 const RUN := 3.6
 const SPRINT := 5.2
 const STEP_OUT := 2.5            # pop / lean-out speed
@@ -31,44 +41,71 @@ const MAG := 6
 const RELOAD := 2.2
 const FIRST_AIM := 0.6           # telegraph after popping up
 const NEXT_AIM := 0.38           # telegraph between the shots of a burst
-const HOLD_AIM := 1.2            # keep aiming at the cover the player ducked behind
+const HOLD_AIM := 1.2            # keep aiming at the cover the target ducked behind
 const SPREAD := 1.8              # degrees standing still, at 0 m
 const SPREAD_PER_M := 0.16
 const SPREAD_MOVE := 3.0         # added at RUN speed
-const SPREAD_TARGET_MOVE := 1.5  # a moving player is harder to hit
-const MAX_SHOOTERS := 2          # aiming at once: the player gets gaps to pop up in
-const CAMP_TIME := 7.0           # player this long in one place -> someone flanks
+const SPREAD_TARGET_MOVE := 1.0  # a moving target is harder to hit
+const MAX_SHOOTERS := 2          # enemies aiming at once: the player gets gaps to pop up in
+const CAMP_TIME := 7.0           # target this long in one place -> someone flanks
 const FLANK_COOLDOWN := 6.0
 const RETREAT_AT := 40.0
 const STAGGER_AT := 2.0
 const STAGGER_TIME := 0.6
 const GRAVITY := 20.0
 const MASK_WORLD := 1
-const MASK_SHOT := 1 | 2         # world + player
-const SEARCH := 30.0             # only spots this close to the player are considered
+const MASK_SHOT := 1 | 2 | 8     # world, player, hitboxes
+const BULLET_SPEED := 220.0      # m/s, a revolver round (Bullets adds the drop)
+const BULLET_RANGE := 80.0
+const SEARCH := 30.0             # only spots this close to the target are considered
 const MAX_TRAVEL := 14.0         # cover farther than this isn't worth the run (flanks, retreats: twice)
-const MOVE_FIRE_GAP := 4.0       # a gunman on the move who sees the player stops for a burst
+const MOVE_FIRE_GAP := 4.0       # a gunman on the move who sees the target stops for a burst
 const STUCK_TIME := 1.2          # no progress this long while moving = stuck
 const BAD_SPOT_TIME := 20.0      # a spot we got stuck going to is skipped this long
+const SIGHT := 35.0              # targets are picked within this
+const RETARGET := 0.5
+# Companions
+const FOLLOW_NEAR := 3.5         # stop this close behind the player
+const FOLLOW_FAR := 6.0          # start walking again past this
+const CATCH_UP := 10.0           # sprint past this
+const LEASH := 12.0              # their cover stays this close to the player (or the hold point)
+const MUMMY_BACK_OFF := 4.0      # step away from a mummy closer than this
 
 ## Cover spot key -> the Gunman holding it.
 static var _claims := {}
 static var _last_flank := -100.0
 
-var target: Player
+## Who they're shooting at (Player, Gunman or Mummy). Enemies wait until it's first set.
+var target: Node3D
+var team := BANDITS
 var state := State.IDLE
 var health := MAX_HEALTH
+var max_health := MAX_HEALTH
+var damage := DAMAGE
 var ammo := MAG
 ## Another GLB on the Armour 01 rig (set before adding to the tree); "" = GunmanBody's default.
 var glb := ""
 var flanking := false
 var retreating := false
+## Crouched in cover now (others aim lower at him).
+var crouched := false
+## Companions: Game companion id, who they follow, and "follow" / "hold".
+var companion_id := ""
+var leader: Node3D
+var order := "follow"
+var hold_at := Vector3.ZERO
 ## Counters for tests and the HUD.
 var shots_fired := 0
 var shots_hit := 0
 var cover_time := 0.0
 var alive_time := 0.0
 var flanks := 0
+var stuck_count := 0
+
+## For mummies and anything else that asks `target.alive`.
+var alive: bool:
+	get:
+		return state != State.DEAD
 
 var _t := 0.0
 var _spot := {}  # {key, pos, peek, normal, tall, exposed}
@@ -80,6 +117,7 @@ var _wait := 1.0
 var _seen_t := 99.0
 var _sees := false
 var _think := 0.0
+var _retarget := 0.0
 var _spot_age := 0.0
 var _camp_anchor := Vector3.ZERO
 var _camp_t := 0.0
@@ -94,6 +132,7 @@ var _detour := Vector3.ZERO
 var _detour_t := 0.0
 var _last_burst := -100.0
 var _bad_spots := {}  # spot key -> time it proved unreachable
+var _following := false
 
 var model: Node3D
 var rig: GunmanBody
@@ -101,12 +140,49 @@ var muzzle: Node3D
 var _agent: NavigationAgent3D
 var _glint: MeshInstance3D
 var _hitboxes: Array[StaticBody3D] = []
+var _exclude: Array[RID] = []
+
+
+## A companion for the player, or null when `id` isn't in the party (recruited and alive).
+## Add it to the tree, then place it; it follows `leader`.
+static func make_companion(id: String, leader_node: Node3D, glb_path := "") -> Gunman:
+	if not Game.in_party(id):
+		return null
+	var g := Gunman.new()
+	g.name = "Companion_" + id
+	g.team = PARTY
+	g.companion_id = id
+	g.leader = leader_node
+	g.glb = glb_path
+	g.max_health = 150.0
+	g.health = 150.0
+	g.damage = 14.0
+	return g
+
+
+## Orders every companion to hold where they stand, or to follow again. Returns the new order.
+static func toggle_party_order(tree: SceneTree) -> String:
+	var party := tree.get_nodes_in_group("party")
+	var to := "follow"
+	for c in party:
+		if (c as Gunman).order == "follow":
+			to = "hold"
+	for c in party:
+		(c as Gunman).set_order(to)
+	return to
+
+
+func set_order(o: String) -> void:
+	order = o
+	hold_at = global_position
 
 
 func _ready() -> void:
 	collision_layer = 4
 	collision_mask = 1 | 2 | 4
 	add_to_group("gunmen")
+	if team == PARTY:
+		add_to_group("party")
 	var shape := CollisionShape3D.new()
 	var cap := CapsuleShape3D.new()
 	cap.radius = 0.35
@@ -120,7 +196,11 @@ func _ready() -> void:
 	_agent.target_desired_distance = 0.3
 	add_child(_agent)
 	_build_model()
+	_exclude.append(get_rid())
+	for box in _hitboxes:
+		_exclude.append(box.get_rid())
 	_camp_anchor = global_position
+	hold_at = global_position
 
 
 func _build_model() -> void:
@@ -194,6 +274,103 @@ func is_active() -> bool:
 	return state != State.DEAD
 
 
+## Whether `n` is someone this gunman should shoot.
+func is_hostile(n: Node) -> bool:
+	if n == null or n == self or not is_instance_valid(n):
+		return false
+	if n is Player:
+		return team != PARTY
+	if n is Gunman:
+		return (n as Gunman).team != team
+	if n is Mummy:
+		return team == PARTY
+	return false
+
+
+# ---------------------------------------------------------------- targets
+
+static func _target_alive(n: Node3D) -> bool:
+	if n == null or not is_instance_valid(n):
+		return false
+	if n is Player:
+		return (n as Player).alive
+	if n.has_method("is_active"):
+		return n.call("is_active")
+	return true
+
+
+## Picks the nearest hostile it can see (keeping the current one unless another is much nearer).
+## Enemies only start once something set `target`; companions look all the time.
+func _choose_target() -> void:
+	if team != PARTY and target == null:
+		return
+	# Look from where we'd shoot: over / round the cover, not from the crouch.
+	var eye := _peek_eye() if not _spot.get("exposed", true) else _eye()
+	var keep := _target_alive(target) and _seen_t < 3.0
+	var best: Node3D = target if keep else null
+	var best_d := global_position.distance_to(target.global_position) - 5.0 if keep else SIGHT
+	var unseen: Node3D = null  # companions: the nearest enemy in the fight, seen or not
+	var unseen_d := SIGHT
+	for n in _candidates():
+		if n == target and keep:
+			continue
+		var d := global_position.distance_to(n.global_position)
+		if d < best_d and _clear(eye, _point_on(n)):
+			best = n
+			best_d = d
+		elif team == PARTY and d < unseen_d:
+			unseen = n
+			unseen_d = d
+	if best == null and unseen and not _target_alive(target):
+		best = unseen  # join the fight: take cover against it and look for a shot
+	if best:
+		if best != target:
+			_seen_t = 0.0
+		target = best
+	elif team == PARTY and not _target_alive(target):
+		target = null
+
+
+func _candidates() -> Array[Node3D]:
+	var out: Array[Node3D] = []
+	if team == PARTY:
+		for g in get_tree().get_nodes_in_group("gunmen"):
+			var m := g as Gunman
+			# Only enemies already in the fight: companions don't start one.
+			if is_hostile(m) and m.is_active() and m.target != null:
+				out.append(m)
+		for m in get_tree().get_nodes_in_group("mummies"):
+			if m is Mummy and (m as Mummy).is_active() and not (m as Mummy).state in [Mummy.State.DORMANT, Mummy.State.RISING]:
+				out.append(m)
+	else:
+		if target is Player:
+			out.append(target)
+		for c in get_tree().get_nodes_in_group("party"):
+			if is_hostile(c) and (c as Gunman).is_active():
+				out.append(c)
+		for g in get_tree().get_nodes_in_group("party"):
+			var leader_node: Node3D = (g as Gunman).leader
+			if leader_node and is_hostile(leader_node) and not out.has(leader_node):
+				out.append(leader_node)
+	var alive_only: Array[Node3D] = []
+	for n in out:
+		if _target_alive(n):
+			alive_only.append(n)
+	return alive_only
+
+
+## Where to aim on `n`: the chest, lower when it crouches or crawls.
+static func _point_on(n: Node3D) -> Vector3:
+	var h := 1.0
+	if n is Player:
+		h = 0.85 if (n as Player).crouching else 1.25
+	elif n is Gunman:
+		h = 0.9 if (n as Gunman).crouched else 1.3
+	elif n is Mummy:
+		h = 0.5 if (n as Mummy).crawling else 1.2
+	return n.global_position + Vector3.UP * h
+
+
 # ---------------------------------------------------------------- tick
 
 func _enter(s: State) -> void:
@@ -202,6 +379,8 @@ func _enter(s: State) -> void:
 	match s:
 		State.COVER:
 			_wait = randf_range(0.6, 1.6) if _seen_t < 4.0 else randf_range(0.3, 0.8)
+			if team == PARTY:
+				_wait *= 0.6  # companions shoot more freely
 		State.MOVE:
 			_progress_at = global_position
 			_progress_t = 0.0
@@ -234,7 +413,12 @@ func _physics_process(delta: float) -> void:
 	alive_time += delta
 	_seen_t += delta
 	_stagger_pts = maxf(_stagger_pts - delta * 1.2, 0.0)
-	var has_target := target != null and is_instance_valid(target) and target.alive
+
+	_retarget -= delta
+	if _retarget <= 0.0:
+		_retarget = RETARGET
+		_choose_target()
+	var has_target := _target_alive(target)
 
 	_think -= delta
 	if _think <= 0.0 and has_target:
@@ -249,12 +433,19 @@ func _physics_process(delta: float) -> void:
 		else:
 			_camp_t += 0.2
 
+	# Companions with nothing to shoot at go back to following / holding.
+	if team == PARTY and not has_target and state in [State.MOVE, State.COVER, State.AIM]:
+		_set_spot({"key": ""})
+		_enter(State.IDLE)
+
 	var move := Vector3.ZERO
-	var crouched := false
+	crouched = false
 	match state:
 		State.IDLE:
 			if has_target:
 				_pick("hold")
+			elif team == PARTY:
+				move = _follow(delta)
 		State.MOVE:
 			var speed := SPRINT if retreating and _t < 4.0 else RUN
 			move = _move_to(_spot.pos, speed, delta, true)
@@ -270,6 +461,7 @@ func _physics_process(delta: float) -> void:
 			elif _stuck(delta) or _t > 15.0:
 				# Something the navmesh doesn't know about is in the way (it misses props, the
 				# truck, other gunmen): give this spot up for a while and choose again.
+				stuck_count += 1
 				if _spot.key != "":
 					_bad_spots[_spot.key] = _now()
 				_pick("hold")
@@ -319,7 +511,7 @@ func _cover_think(has_target: bool) -> void:
 		return
 	if _think > 0.19:  # just re-thought this tick
 		if not _protects(_spot, target.global_position):
-			_pick("hold")  # the player walked round us
+			_pick("hold")  # the target walked round us
 			return
 		if _wants_flank():
 			_pick("flank")
@@ -338,6 +530,9 @@ func _cover_think(has_target: bool) -> void:
 func _aim_step(delta: float, has_target: bool) -> void:
 	if not has_target:
 		_enter(State.COVER if not _spot.exposed else State.IDLE)
+		return
+	if target is Mummy and _flat(target.global_position - global_position).length() < MUMMY_BACK_OFF:
+		_pick("hold")  # too close: back off first
 		return
 	var at_peek := _flat(_spot.peek - global_position).length() < 0.25
 	if _sees and at_peek:
@@ -380,24 +575,76 @@ func _after_burst() -> void:
 
 
 func _wants_flank() -> bool:
-	if flanking or _camp_t < CAMP_TIME or _seen_t < 1.5:
+	if team == PARTY or flanking or _camp_t < CAMP_TIME or _seen_t < 1.5:
 		return false
 	if _now() - _last_flank < FLANK_COOLDOWN:
 		return false
 	if _clear(_peek_eye(), target.global_position + Vector3.UP * 0.8):
 		return false  # this spot already sees him behind his cover
 	for g in get_tree().get_nodes_in_group("gunmen"):
-		if g != self and (g as Gunman).flanking:
+		if g != self and (g as Gunman).team == team and (g as Gunman).flanking:
 			return false
 	return true
 
 
+## Teammates aiming right now (companions aren't limited).
 func _shooters() -> int:
+	if team == PARTY:
+		return 0
 	var n := 0
 	for g in get_tree().get_nodes_in_group("gunmen"):
-		if g != self and (g as Gunman).state == State.AIM:
+		if g != self and (g as Gunman).team == team and (g as Gunman).state == State.AIM:
 			n += 1
 	return n
+
+
+# ---------------------------------------------------------------- following (companions)
+
+## Out of combat: keep FOLLOW_NEAR..FOLLOW_FAR from the leader along the navmesh, sprint to catch
+## up, step out of his way when he walks into us; or stand at the hold point.
+func _follow(delta: float) -> Vector3:
+	if order == "hold" or leader == null or not is_instance_valid(leader):
+		return _move_to(hold_at, RUN, delta, true) if not _arrived(hold_at) else Vector3.ZERO
+	var to := _flat(leader.global_position - global_position)
+	var d := to.length()
+	var move := Vector3.ZERO
+	var sees_leader := _clear(global_position + Vector3.UP * STAND_EYE, leader.global_position + Vector3.UP * 1.2)
+	if d > FOLLOW_FAR or not sees_leader:
+		_following = true  # also round a wall: don't wait out of sight in the next room
+	elif d < FOLLOW_NEAR + 0.5:
+		_following = false
+	if _following:
+		var lead_speed := _flat((leader as CharacterBody3D).velocity).length() if leader is CharacterBody3D else 0.0
+		var speed := SPRINT if d > CATCH_UP else maxf(WALK * 1.5, minf(lead_speed * 1.15, SPRINT))
+		var dest := leader.global_position - to.normalized() * FOLLOW_NEAR
+		move = _move_to(dest, speed, delta, true)
+		if move.length() > 0.5 and _stuck(delta):
+			stuck_count += 1
+			_progress_t = 0.0
+	else:
+		_progress_at = global_position
+		_progress_t = 0.0
+	# Doorways: the leader walking straight at us -> step aside.
+	var lv := _flat((leader as CharacterBody3D).velocity) if leader is CharacterBody3D else Vector3.ZERO
+	if d < 2.2 and lv.length() > 1.0 and lv.normalized().dot(-to.normalized()) > 0.5:
+		var side := Vector3(-lv.z, 0, lv.x).normalized()
+		if side.dot(-to) < 0.0:
+			side = -side
+		move = (side + (-to.normalized()) * 0.5).normalized() * RUN
+	# Keep a little apart from the other companions.
+	for c in get_tree().get_nodes_in_group("party"):
+		if c != self:
+			var away := _flat(global_position - (c as Node3D).global_position)
+			if away.length() < 1.2 and away.length() > 0.01:
+				move += away.normalized() * (1.2 - away.length()) * 3.0
+	return move
+
+
+## Companions keep their fights near the player (or the hold point).
+func _anchor() -> Vector3:
+	if order == "hold" or leader == null or not is_instance_valid(leader):
+		return hold_at
+	return leader.global_position
 
 
 # ---------------------------------------------------------------- cover spots
@@ -433,7 +680,7 @@ static func spots(pieces: Array) -> Array:
 	return out
 
 
-## The piece is between this spot and a player at `feet`, and blocks his view of us crouched.
+## The piece is between this spot and a target at `feet`, and blocks his view of us crouched.
 func _protects(s: Dictionary, feet: Vector3) -> bool:
 	if s.exposed:
 		return false
@@ -443,11 +690,16 @@ func _protects(s: Dictionary, feet: Vector3) -> bool:
 
 
 ## Chooses where to go and heads there. mode: hold (best fighting spot), reposition (somewhere
-## else), flank (a spot that sees the player low behind his cover), retreat (cover farther away).
+## else), flank (a spot that sees the target low behind his cover), retreat (cover farther away).
 func _pick(mode: String) -> void:
 	var p := target.global_position if target else global_position
+	if target is Mummy:
+		_set_spot(_mummy_spot(p))  # no cover against mummies: shoot, and back off when close
+		_enter(State.MOVE)
+		return
 	var my_dist := _flat(p - global_position).length()
 	var mates := get_tree().get_nodes_in_group("gunmen")
+	var anchor := _anchor()
 	var best := {}
 	var best_score := -INF
 	for s: Dictionary in spots(get_tree().get_nodes_in_group("cover")):
@@ -459,6 +711,8 @@ func _pick(mode: String) -> void:
 		var pos: Vector3 = s.pos
 		var d := _flat(p - pos).length()
 		if d < MIN_RANGE or d > SEARCH:
+			continue
+		if team == PARTY and _flat(pos - anchor).length() > LEASH:
 			continue
 		var travel := _flat(pos - global_position).length()
 		if travel > MAX_TRAVEL * (2.0 if mode in ["retreat", "flank"] else 1.0):
@@ -485,7 +739,8 @@ func _pick(mode: String) -> void:
 					score += 2.0  # don't dither between equal spots
 		for g in mates:
 			var m := g as Gunman
-			if m != self and m.is_active() and _flat((m._spot.get("pos", m.global_position) as Vector3) - pos).length() < 3.0:
+			if m != self and m.team == team and m.is_active() \
+					and _flat((m._spot.get("pos", m.global_position) as Vector3) - pos).length() < 3.0:
 				score -= 4.0  # spread out
 		if score > best_score:
 			best_score = score
@@ -507,16 +762,39 @@ func _pick(mode: String) -> void:
 
 
 ## No cover anywhere useful: a place on the navmesh at a fighting distance, a step to the side.
+## Companions just fight from where they stand (pulled back toward the player when far off).
 func _exposed_spot(p: Vector3) -> Dictionary:
-	var away := _flat(global_position - p).normalized()
-	if away.length() < 0.1:
-		away = Vector3.BACK
-	var side := Vector3(-away.z, 0, away.x) * randf_range(-3.0, 3.0)
-	var want := p + away * PREFERRED * 0.8 + side
+	var want := global_position
+	if team == PARTY:
+		var anchor := _anchor()
+		if _flat(want - anchor).length() > LEASH * 0.5:
+			want = anchor + _flat(want - anchor).normalized() * LEASH * 0.5
+	else:
+		var away := _flat(global_position - p).normalized()
+		if away.length() < 0.1:
+			away = Vector3.BACK
+		var side := Vector3(-away.z, 0, away.x) * randf_range(-3.0, 3.0)
+		want = p + away * PREFERRED * 0.8 + side
+	return _on_navmesh({"key": "", "pos": want, "peek": want, "normal": Vector3.ZERO, "tall": false, "exposed": true})
+
+
+## Against a mummy: stay put, or back off along the line away from it when it's close.
+func _mummy_spot(p: Vector3) -> Dictionary:
+	var want := global_position
+	var away := _flat(global_position - p)
+	if away.length() < MUMMY_BACK_OFF + 1.0:
+		want = global_position + away.normalized() * (MUMMY_BACK_OFF + 2.0 - away.length())
+	return _on_navmesh({"key": "", "pos": want, "peek": want, "normal": Vector3.ZERO, "tall": false, "exposed": true})
+
+
+func _on_navmesh(s: Dictionary) -> Dictionary:
 	var map := get_world_3d().navigation_map
 	if NavigationServer3D.map_get_iteration_id(map) > 0:
-		want = NavigationServer3D.map_get_closest_point(map, want)
-	return {"key": "", "pos": want, "peek": want, "normal": Vector3.ZERO, "tall": false, "exposed": true}
+		var on := NavigationServer3D.map_get_closest_point(map, s.pos)
+		on.y = (s.pos as Vector3).y
+		s.pos = on
+		s.peek = on
+	return s
 
 
 func _set_spot(s: Dictionary) -> void:
@@ -557,7 +835,7 @@ func _move_to(dest: Vector3, speed: float, delta: float, path: bool) -> Vector3:
 	return dir * minf(speed, to.length() / maxf(delta, 0.001) * 0.5)
 
 
-## True when MOVE has made under 0.4 m of progress in STUCK_TIME.
+## True when moving has made under 0.4 m of progress in STUCK_TIME.
 func _stuck(delta: float) -> bool:
 	_progress_t += delta
 	if global_position.distance_to(_progress_at) > 0.4:
@@ -589,15 +867,15 @@ func _face(delta: float, move: Vector3) -> void:
 		rotation.y = lerp_angle(rotation.y, atan2(-dir.x, -dir.z), minf(delta * 10.0, 1.0))
 
 
-func _animate(delta: float, crouched: bool) -> void:
+func _animate(delta: float, is_crouched: bool) -> void:
 	_aim_blend = move_toward(_aim_blend, 1.0 if state == State.AIM else 0.0, delta / 0.15)
 	var aim_dir := Vector3.ZERO
 	var pitch := 0.0
-	if target and is_instance_valid(target):
+	if _target_alive(target):
 		aim_dir = (_target_point() - _eye()).normalized()
 		pitch = asin(clampf(aim_dir.y, -1.0, 1.0))
 	if rig:
-		rig.update(_flat(velocity).length(), crouched, _aim_blend, pitch, 0.0 if crouched else 1.0)
+		rig.update(_flat(velocity).length(), is_crouched, _aim_blend, pitch, 0.0 if is_crouched else 1.0)
 		rig.aim_dir = aim_dir if _aim_blend > 0.5 else Vector3.ZERO
 		model.rotation.x = 0.0
 	# The glint: the gun catches the light while it's being aimed at you.
@@ -617,54 +895,94 @@ func _peek_eye() -> Vector3:
 	return (_spot.peek as Vector3) + Vector3.UP * STAND_EYE
 
 
-## Where they aim on the player: the chest, lower when he crouches.
 func _target_point() -> Vector3:
-	return target.global_position + Vector3.UP * (0.85 if target.crouching else 1.25)
+	return _point_on(target)
 
 
 func _fire() -> void:
 	ammo -= 1
 	shots_fired += 1
-	var from := _eye()
+	var eye := _eye()
+	# Rounds leave the muzzle (no hitscan: Bullets flies them), unless the muzzle is inside
+	# something (leaning round a wall), then from the eye.
+	var from := muzzle.global_position if muzzle else eye
+	if not _clear(eye, from):
+		from = eye
 	var aim_at := _target_point()
 	var dist := from.distance_to(aim_at)
-	var spread := SPREAD + SPREAD_PER_M * dist \
-		+ SPREAD_MOVE * clampf(_flat(velocity).length() / RUN, 0.0, 1.5) \
-		+ SPREAD_TARGET_MOVE * clampf(_flat(target.velocity).length() / Player.WALK, 0.0, 1.5)
+	var target_v := (target as CharacterBody3D).velocity if target is CharacterBody3D else Vector3.ZERO
+	aim_at += _flat(target_v) * dist / BULLET_SPEED  # lead a moving target by the round's flight time
+	var spread := SPREAD + SPREAD_PER_M * dist 		+ SPREAD_MOVE * clampf(_flat(velocity).length() / RUN, 0.0, 1.5) 		+ SPREAD_TARGET_MOVE * clampf(_flat(target_v).length() / Player.WALK, 0.0, 1.5)
 	var fwd := (aim_at - from).normalized()
 	var right := fwd.cross(Vector3.UP).normalized()
 	var up := right.cross(fwd)
 	var ang := deg_to_rad(spread) * sqrt(randf())
 	var rot := randf() * TAU
 	var dir := (fwd + (right * cos(rot) + up * sin(rot)) * tan(ang)).normalized()
-	var end := from + dir * 80.0
-	var q := PhysicsRayQueryParameters3D.create(from, end, MASK_SHOT, [get_rid()])
-	var hit := get_world_3d().direct_space_state.intersect_ray(q)
-	var point: Vector3 = hit.position if hit else end
-	var mpos := muzzle.global_position if muzzle else from
 	if rig:
 		rig.shoot()
-	Sfx.play_at(get_parent(), Sfx.gunshot(0.95), mpos, 1.0)
-	Fx.muzzle_flash(get_parent(), mpos, dir)
-	Fx.tracer(get_parent(), mpos, point)
-	if not hit:
+	Sfx.play_at(get_parent(), Sfx.gunshot(0.95), from, 1.0)
+	Fx.muzzle_flash(get_parent(), from, dir)
+	Bullets.fire(get_tree(), from, dir, BULLET_SPEED, BULLET_RANGE, MASK_SHOT, _exclude,
+		func(hit: Dictionary, bdir: Vector3, travelled: float): _bullet_hit(hit, bdir, travelled))
+
+
+## One of our rounds landed (Bullets calls this on contact).
+func _bullet_hit(hit: Dictionary, dir: Vector3, travelled: float) -> void:
+	var col: Object = hit.collider
+	var point: Vector3 = hit.position
+	var parent := get_parent()
+	if col == null or not is_instance_valid(col) or parent == null:
 		return
-	if hit.collider == target:
-		# A round that clips the top of the player's cover hits the cover, not him.
-		if target.cover.state == Cover.State.IN_COVER and not _clear(from, target.global_position + Vector3.UP * 0.6):
-			Fx.impact(get_parent(), point, -dir, Fx.Kind.STONE)
-			return
-		var fall := lerpf(1.0, 0.6, clampf((dist - 15.0) / 25.0, 0.0, 1.0))
-		if target.take_damage(DAMAGE * fall, global_position):
+	var fall := lerpf(1.0, 0.6, clampf((travelled - 15.0) / 25.0, 0.0, 1.0))
+	if col is Player:
+		var pl := col as Player
+		if not is_hostile(pl):
+			return  # a friend in the line of fire stops the round
+		if pl.take_damage(damage * fall, global_position):
 			shots_hit += 1
-			Fx.impact(get_parent(), point, -dir, Fx.Kind.FLESH)
+			Fx.impact(parent, point, -dir, Fx.Kind.FLESH)
+	elif col.has_meta("mummy"):
+		var who: Node = col.get_meta("mummy")
+		if not is_instance_valid(who) or not is_hostile(who):
+			return
+		var part: String = col.get_meta("part")
+		if who is Gunman:
+			(who as Gunman).take_shot(part, damage * fall, dir, self)
+		else:
+			who.call("take_hit", part, damage * fall, dir, point, 0.7, 0.6)
+		shots_hit += 1
+		Fx.impact(parent, point, -dir, Fx.Kind.FLESH)
 	else:
-		Fx.impact(get_parent(), point, hit.normal, Fx.Kind.STONE)
+		Fx.impact(parent, point, hit.normal, Fx.Kind.STONE)
 
 
 # ---------------------------------------------------------------- damage
 
+## The player's bullets (Player._fire_bullets). Companions don't take friendly fire.
 func take_hit(part: String, dmg: float, dir: Vector3, _point: Vector3, stagger: float, knock: float) -> Dictionary:
+	if team == PARTY:
+		return {"killed": false}
+	return _hurt(part, dmg, dir, stagger, knock)
+
+
+## Another gunman's round; `shooter` becomes the target of an enemy that wasn't fighting yet.
+func take_shot(part: String, dmg: float, dir: Vector3, shooter: Node3D) -> Dictionary:
+	if target == null and team != PARTY and shooter:
+		var by := shooter as Gunman
+		target = by.leader if by and by.leader else shooter
+	return _hurt(part, dmg, dir, 0.7, 0.6)
+
+
+## A mummy's swipe (Mummy._strike calls target.take_damage). Returns whether it landed.
+func take_damage(amount: float, from: Vector3) -> bool:
+	if state == State.DEAD:
+		return false
+	_hurt("torso", amount, _flat(global_position - from).normalized(), 1.0, 1.0)
+	return true
+
+
+func _hurt(part: String, dmg: float, dir: Vector3, stagger: float, knock: float) -> Dictionary:
 	if state == State.DEAD:
 		return {"killed": false}
 	health -= dmg * PART_MULT.get(part, 1.0)
@@ -674,7 +992,7 @@ func take_hit(part: String, dmg: float, dir: Vector3, _point: Vector3, stagger: 
 	if health <= 0.0:
 		_die()
 		return {"killed": true}
-	if not retreating and health < RETREAT_AT:
+	if not retreating and health < RETREAT_AT * max_health / MAX_HEALTH:
 		retreating = true
 		_retreat_pending = true
 	_stagger_pts += stagger * (1.5 if part == "head" else 1.0)
@@ -688,7 +1006,7 @@ func take_hit(part: String, dmg: float, dir: Vector3, _point: Vector3, stagger: 
 		_aimed = 0.0  # a hit spoils the aim
 		if _retreat_pending or (not _spot.exposed and randf() < 0.5):
 			_enter(State.COVER)
-	if _retreat_pending and state in [State.COVER, State.MOVE, State.IDLE]:
+	if _retreat_pending and state in [State.COVER, State.MOVE, State.IDLE] and _target_alive(target):
 		_retreat_pending = false
 		_pick("retreat")
 	return {"killed": false}
@@ -703,6 +1021,10 @@ func _die() -> void:
 	_glint.visible = false
 	for box in _hitboxes:
 		box.collision_layer = 0
+	if team == PARTY:
+		remove_from_group("party")
+		if companion_id != "":
+			Game.apply([{"kill": companion_id}])
 	if rig:
 		rig.aim_dir = Vector3.ZERO
 		rig.die()
