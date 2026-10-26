@@ -78,7 +78,7 @@ func on_damaged(_amount: float) -> void:
 
 
 func _process(delta: float) -> void:
-	visible = Conversation.current == null  # crosshair and ammo hide while talking
+	visible = not ActionMenu.ui_open()  # hidden while talking or in a menu
 	_hit_t = maxf(_hit_t - delta, 0.0)
 	_hurt = maxf(_hurt - delta * 1.6, 0.0)
 	if player:

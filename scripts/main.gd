@@ -62,6 +62,12 @@ func _ready() -> void:
 		add_child(g)
 		g.global_position = Vector3(9.0 + (i % 2) * 5.0, 0.0, 74.0 + i * 5.0)
 		bandits.append(g)
+	# Talking and actions (Proving Ground steps 3-4, -f9's systems): Eleanor by the camp,
+	# a Cairo street stall (3 actions a day) and the camp's companion talks.
+	var camp: Vector3 = level.interactables["camp_fire"].global_position
+	Npc.make(level, "eleanor", camp + Vector3(-1.5, 0.0, -3.0), "eleanor_meet", NpcBody.SCOUT)
+	ActionSpot.make(level, "cairo_corner", level.player_spawn + Vector3(-3.0, 0.0, -6.0))
+	ActionSpot.make(level, "camp", camp + Vector3(1.2, 0.0, -1.6))
 	# A truck by the camp (Proving Ground step 9).
 	truck = Truck.new()
 	add_child(truck)
@@ -94,14 +100,16 @@ func _save_at(spot: String) -> void:
 
 ## Sleep: the next day starts, then save.
 func _sleep_at(spot: String) -> void:
-	Game.end_day()
-	hud.toast("Day %d" % Game.day)
-	_save_at(spot)
+	# The day summary ends the day itself (-f9's DaySummary), then we save.
+	DaySummary.open(self, player).closed.connect(func() -> void:
+		hud.toast("Day %d" % Game.day)
+		_save_at(spot))
 
 
 func _continue() -> void:
 	if not Game.load_game():
 		return
+	DayLog.begin_day()
 	var spot: Node3D = level.interactables.get(Game.place)
 	if spot:
 		player.global_position = spot.global_position + Vector3(0, 0, 1.5)
@@ -138,10 +146,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
 		if not started:
 			Game.reset()
+			DayLog.begin_day()
 			_start()
 		elif Input.mouse_mode != Input.MOUSE_MODE_CAPTURED and not over:
 			get_tree().paused = false
-			if Conversation.current == null:  # talking keeps the mouse for the wheel
+			if not ActionMenu.ui_open():  # talking, menus and the day screen keep the mouse
 				Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 			hud.show_message("")
 	elif event.is_action_pressed("ui_cancel") and started and not over:
