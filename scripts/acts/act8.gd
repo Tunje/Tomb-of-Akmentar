@@ -13,6 +13,11 @@ extends Node3D
 const PREP_SPOTS := ["caravanserai", "docks", "telegraph", "gunsmith", "outfitter"]
 const FIGHT_EVENTS := {"boat_battle": "act8_boat", "temple_battle": "act8_temple", "chariot_chase": "act8_chase", "flight": "act8_plane"}
 const MINIONS := 6
+## Each route's own set piece, when it's been built (-bf's boat, -7f's temple and chase): the act
+## hands over and the scene comes back here (its static next_scene), for the last night and the end.
+const SET_PIECES := {"boat_battle": ["res://act8_boat.tscn", "res://scripts/acts/act8_boat.gd"],
+	"temple_battle": ["res://act8_temple.tscn", "res://scripts/acts/act8_temple.gd"],
+	"chariot_chase": ["res://act8_chase.tscn", "res://scripts/acts/act8_chase.gd"]}
 
 var level: Level
 var player: Player
@@ -67,6 +72,13 @@ func _ready() -> void:
 	_spawn_party()
 	Game.event.connect(func(name: String): _events.append(name))
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if args.size() > 0 else Input.MOUSE_MODE_CAPTURED
+	# Back from a route's own set piece (the boat, the temple, the chase): the last night and the end.
+	var back: String = Game.flag("act8_back_from", "")
+	if back != "":
+		Game.flags.erase("act8_back_from")
+		_route_event = back
+		_to_the_road(true)
+		return
 	hud.show_message("THE WAY BACK", "The jars and the amulet must go home to Akmentar, and the guardian is coming for them.\nGet ready in Cairo, then set out from the hotel.")
 	await get_tree().create_timer(3.5).timeout
 	hud.show_message("")
@@ -129,8 +141,18 @@ func _count_transport() -> void:
 
 ## Cairo gives way to the road (the desert road map, whatever the route: a stand-in for each
 ## route's own set piece), the party about you.
-func _to_the_road() -> void:
-	hud.toast("Days on the road. The guardian's servants are never far behind.", 3.5)
+func _to_the_road(returned := false) -> void:
+	if not returned:
+		# The route's own scene when it exists: it plays the talk and the fight, then comes back.
+		var piece: Array = SET_PIECES.get(_route_event, [])
+		if not piece.is_empty() and ResourceLoader.exists(piece[0]) and ResourceLoader.exists(piece[1]):
+			var s: GDScript = load(piece[1])
+			if "next_scene" in s:
+				s.set("next_scene", "res://act8.tscn")
+			Game.set_flag("act8_back_from", _route_event)
+			get_tree().change_scene_to_file.call_deferred(piece[0])
+			return
+		hud.toast("Days on the road. The guardian's servants are never far behind.", 3.5)
 	await get_tree().create_timer(1.0).timeout
 	level.queue_free()
 	var road := DesertRoute.new()
@@ -143,9 +165,11 @@ func _to_the_road() -> void:
 		if is_instance_valid(c):
 			(c as Node3D).global_position = player.global_position + Vector3(i * 1.4 - 1.4, 0, 2.5)
 			i += 1
-	await _talk(FIGHT_EVENTS.get(_route_event, ""))
+	if not returned:
+		await _talk(FIGHT_EVENTS.get(_route_event, ""))
+		if _route_event != "flight":
+			await _fight()
 	if _route_event != "flight":
-		await _fight()
 		await _talk("act8_last_night")
 	await _final()
 
