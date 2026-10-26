@@ -181,6 +181,8 @@ var _hitboxes: Array[StaticBody3D] = []
 var _exclude: Array[RID] = []
 var _tag: Label3D  # companions: name and health over the head
 const TAG_Y := 2.15
+const TAG_ROW_PX := 58.0   # a stacked tag's height on screen
+var _tag_row := 0          # how many rows up _stack_tag put it
 var _help: Interactable  # "Help <name> up" while stumbled
 ## --companion-trace (after "--"): escape-mode companions print a line every 0.5 s.
 var _ctrace := "--companion-trace" in OS.get_cmdline_user_args()
@@ -898,8 +900,12 @@ func _stack_tag() -> void:
 	var cam := get_viewport().get_camera_3d()
 	var lift := 0.0
 	var head := global_position + Vector3.UP * TAG_Y
+	_tag_row = 0
 	if cam and not cam.is_position_behind(head):
 		var me := cam.unproject_position(head)
+		# The lowest row clear of every lower-id tag where it now sits (five companions in a
+		# huddle lifted onto each other when each only counted its neighbours).
+		var taken := {}
 		for n in get_tree().get_nodes_in_group("gunmen"):
 			var g := n as Gunman
 			if g == self or g == null or g._tag == null or not g._tag.visible or g.get_instance_id() > get_instance_id():
@@ -907,13 +913,18 @@ func _stack_tag() -> void:
 			var at := g.global_position + Vector3.UP * TAG_Y
 			if cam.is_position_behind(at):
 				continue
-			var d := cam.unproject_position(at) - me
-			if absf(d.x) < 160.0 and absf(d.y) < 40.0:
-				lift += 1.0
-		# 60 px a tag, in metres at this distance.
+			var o := cam.unproject_position(at)
+			if absf(o.x - me.x) >= 210.0:
+				continue
+			for r in 6:
+				if absf((me.y - r * TAG_ROW_PX) - (o.y - g._tag_row * TAG_ROW_PX)) < TAG_ROW_PX - 8.0:
+					taken[r] = true
+		while taken.has(_tag_row) and _tag_row < 5:
+			_tag_row += 1
+		# The rows in pixels, as metres at this distance.
 		var px := 2.0 * cam.global_position.distance_to(head) * tan(deg_to_rad(cam.fov) * 0.5) \
 			/ get_viewport().get_visible_rect().size.y
-		lift *= 60.0 * px
+		lift = _tag_row * TAG_ROW_PX * px
 	_tag.position.y = TAG_Y + lift
 
 
