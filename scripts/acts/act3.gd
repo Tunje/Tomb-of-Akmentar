@@ -132,13 +132,16 @@ func _run_events() -> void:
 
 ## Change to a set-piece scene that returns here, if it exists.
 func _set_piece(e: String) -> bool:
-	if not ResourceLoader.exists(SET_PIECES[e]) or not ResourceLoader.exists(PIECE_SCRIPTS[e]):
+	var scene: String = SET_PIECES[e]
+	if e == "ambush_town" and Game.flag("route_act3_route", "") == "coast" and ResourceLoader.exists("res://act3_coast.tscn"):
+		scene = "res://act3_coast.tscn"  # -2d's coast ambush: the same script, with trucks
+	if not ResourceLoader.exists(scene) or not ResourceLoader.exists(PIECE_SCRIPTS[e]):
 		return false
 	var s: GDScript = load(PIECE_SCRIPTS[e])
 	if "next_scene" in s:
 		s.set("next_scene", "res://act3.tscn")
 	Game.set_flag("act3_back_from", e)
-	get_tree().change_scene_to_file.call_deferred(SET_PIECES[e])
+	get_tree().change_scene_to_file.call_deferred(scene)
 	return true
 
 
