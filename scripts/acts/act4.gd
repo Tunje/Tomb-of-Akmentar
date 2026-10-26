@@ -35,6 +35,7 @@ func _ready() -> void:
 		get_window().set_flag(Window.FLAG_NO_FOCUS, true)
 	level = AkmentarSurface.new()
 	add_child(level)
+	Ambience.play(self, "desert")
 	level.set_night(0.0)
 	level.place_sites()
 	player = Player.new()
@@ -191,6 +192,7 @@ func _end_day() -> void:
 
 func _nightfall() -> void:
 	step = Step.NIGHT
+	Ambience.play(self, "night", 4.0)
 	hud.toast("Night falls over Akmentar", 3.0)
 	var tw := create_tween()
 	tw.tween_method(func(f: float): _night_f = f; level.set_night(f), 0.0, 1.0, 4.0)
@@ -253,6 +255,7 @@ func _dawn() -> void:
 	step = Step.DAWN
 	var tw := create_tween()
 	tw.tween_method(func(f: float): level.set_night(f), 1.0, 0.15, 4.0)
+	Ambience.play(self, "desert", 4.0)
 	await tw.finished
 	var americans: bool = Game.flag("americans_alive", false)
 	var germans: bool = Game.flag("germans_alive", false)

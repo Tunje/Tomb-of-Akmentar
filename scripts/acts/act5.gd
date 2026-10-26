@@ -54,6 +54,7 @@ func _ready() -> void:
 	Game.act = 5
 	level = AkmentarBelow.new()
 	add_child(level)
+	Ambience.play(self, "tomb")
 	player = Player.new()
 	add_child(player)
 	player.global_position = level.player_spawn
@@ -202,6 +203,7 @@ func _door_traps() -> void:
 
 func _tomb() -> void:
 	step = Step.TOMB
+	Barks.say_any(get_tree(), "entering_tomb")
 	var allowed := 1 if Game.flag("german_delay", false) else 2
 	Game.set_flag("tomb_allowed", allowed)
 	hud.toast("The royal tomb of Akmentar", 3.0)
@@ -258,6 +260,7 @@ func _awaken() -> void:
 
 func _escape() -> void:
 	step = Step.ESCAPE
+	Barks.say_any(get_tree(), "act5_escape")
 	hud.toast("RUN. Back to the stairs!", 3.0)
 	# Companions run with you (-bf's escape mode); one of them goes down partway (help or leave).
 	var i := 0

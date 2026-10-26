@@ -54,6 +54,7 @@ func _ready() -> void:
 			Game.companion(id)["recruited"] = true
 	level = CoastRoad.new()
 	add_child(level)
+	Ambience.play(self, "river")  # the surf along the coast road
 	level.set_dusk(0.8)
 	player = Player.new()
 	add_child(player)

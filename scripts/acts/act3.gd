@@ -44,6 +44,7 @@ func _ready() -> void:
 			Game.set_flag("hired_" + id)
 	level = DesertRoute.new()
 	add_child(level)
+	Ambience.play(self, "desert")
 	player = Player.new()
 	add_child(player)
 	player.global_position = DesertRoute.road_point(DesertRoute.START_Z) if "START_Z" in DesertRoute else level.player_spawn

@@ -44,6 +44,7 @@ func _ready() -> void:
 			Game.companion(id)["recruited"] = true
 	level = DesertTemple.new()
 	add_child(level)
+	Ambience.play(self, "desert" if visit else "night")
 	level.set_night(0.0 if visit else 0.85)
 	player = Player.new()
 	add_child(player)
@@ -142,7 +143,7 @@ func _battle() -> void:
 			var gap := path[path.size() - 1].distance_to(level.rear_exit) if path.size() > 0 else INF
 			print("RESULT temple passage walkable=%s (path end %.1f m off)" % [gap < 1.0, gap])
 			player.global_position = level.rear_exit  # the bot walks out
-		elif args.has("auto"):
+		elif args.has("auto") and not args.has("skill-bot"):  # --skill-bot: tests/difficulty_test fights
 			await get_tree().create_timer(1.0).timeout
 			for m in wave:
 				m.take_hit("head", 10000.0, Vector3.FORWARD, m.global_position, 1.0, 0.0)

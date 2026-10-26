@@ -118,6 +118,7 @@ func _keepers() -> void:
 	var surface := AkmentarSurface.new()
 	_use_level(surface, AkmentarSurface.CAMPS.party + Vector3(2.6, 0, 3.0), 0.0)
 	surface.set_night(0.35)  # first light
+	Ambience.play(self, "desert")
 	_spawn_party()
 	var camp: Vector3 = AkmentarSurface.CAMPS.party
 	var rashad := Npc.make(level, "rashad", camp + Vector3(-1.2, 0, 1.6), "", Characters.glb("rashad"))
@@ -220,6 +221,7 @@ func _road(route: String) -> void:
 	var camp := DesertRoute.road_point(z) + Vector3(9.0, 0, 0)
 	_use_level(road, camp + Vector3(-2.5, 0, 2.0), 0.0)
 	_darken(0.85)
+	Ambience.play(self, "night")
 	_camp(camp)
 	hud.show_message("THE ROAD BACK", "The %s road. Night falls; you make camp." % route)
 	await get_tree().create_timer(2.5).timeout
@@ -296,6 +298,7 @@ func _arrival() -> void:
 	_use_level(cairo, Vector3(29, 0, 93), 0.0)  # inside the south gate, looking up the street
 	cairo.set_day_time(0.85)
 	cairo.set_curse(1.0, 0.0)  # the dust that won't settle
+	Ambience.play(self, "cairo")
 	hud.show_message("CAIRO", Cairo.countdown_line())
 	await get_tree().create_timer(2.5).timeout
 	hud.show_message("")

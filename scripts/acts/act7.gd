@@ -78,6 +78,7 @@ func _ready() -> void:
 		Game.set_flag("thieves_americans")  # nobody said who stole them (a test start)
 	level = Cairo.new()
 	add_child(level)
+	Ambience.play(self, "cairo")
 	level.set_day_time(Cairo.day_time_for(Game.actions_left, Game.ACTIONS_PER_DAY))
 	level.place_people({}, (plan.get("hosts", {}) as Dictionary).values())
 	_place_spots()
@@ -194,6 +195,8 @@ func _update_signs(instant := false) -> void:
 		if Game.flag(f, false):
 			crowd = minf(crowd, CROWD[f])
 	level.set_crowd(crowd)
+	if Game.flag("sky_dark", false):
+		Ambience.play(self, "curse", 6.0)  # the dark wind over the emptying streets
 	var dust_f := 1.0 if Game.flag("dust", false) else 0.0
 	var gloom_f := 0.0
 	if Game.flag("sky_dark", false):

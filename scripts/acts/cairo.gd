@@ -1152,6 +1152,7 @@ func set_curse(dust_f: float, gloom_f: float) -> void:
 
 ## How full the streets are: 1 every townsperson about, 0 nobody (the sickness).
 func set_crowd(f: float) -> void:
+	Ambience.set_crowd(f)  # the street murmur thins with them
 	var keep := roundi(clampf(f, 0.0, 1.0) * townsfolk.size())
 	for i in townsfolk.size():
 		var t := townsfolk[i]

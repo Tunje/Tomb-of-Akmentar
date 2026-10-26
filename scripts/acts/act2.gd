@@ -23,6 +23,7 @@ var _start_day := 1
 var _leaving := false
 var _done := false
 var _t := 0.0
+var _city_bark := 0.0
 var _shots: Array[float] = []
 
 
@@ -44,6 +45,7 @@ func _ready() -> void:
 	_start_day = int(Game.flag("act2_start_day", Game.day))
 	level = Cairo.new()
 	add_child(level)
+	Ambience.play(self, "cairo")
 	level.set_day_time(Cairo.day_time_for(Game.actions_left, Game.ACTIONS_PER_DAY))
 	level.place_people()
 	_place_spots()
@@ -217,6 +219,9 @@ func _save(where: String) -> void:
 
 func _process(delta: float) -> void:
 	_t += delta
+	if _t - _city_bark > 40.0 and not _leaving:  # a companion's word now and then in the streets
+		_city_bark = _t
+		Barks.say_any(get_tree(), "idle_city", player.global_position)
 	if _shots.size() > 0 and _t >= _shots[0]:
 		_shots.pop_front()
 		_shot("act2_%05.1f.png" % _t)

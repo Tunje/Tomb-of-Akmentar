@@ -75,6 +75,7 @@ func _ready() -> void:
 	Game.set_flag("route", "riverboat")
 	level = RiverRoute.new()
 	add_child(level)
+	Ambience.play(self, "river")
 	boat = RiverBoat.make(level, level.path, "act3_steamer", 30.0)
 	player = Player.new()
 	add_child(player)

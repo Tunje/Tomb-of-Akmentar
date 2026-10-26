@@ -83,6 +83,7 @@ func _ready() -> void:
 		Game.set_flag("carrier", "eleanor" if Game.in_party("eleanor") else "player")
 	level = RiverRoute.new()
 	add_child(level)
+	Ambience.play(self, "river")
 	_night()
 	boat = RiverBoat.make(level, level.path, "act8_steamer", 120.0)
 	boat.cruise = DRIFT

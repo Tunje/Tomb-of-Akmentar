@@ -65,6 +65,7 @@ func _ready() -> void:
 	level = DesertRoute.new()
 	level.coast = coast
 	add_child(level)
+	Ambience.play(self, "desert")
 	player = Player.new()
 	add_child(player)
 	player.global_position = level.start_point

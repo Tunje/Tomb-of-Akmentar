@@ -49,6 +49,7 @@ func _ready() -> void:
 	var cairo := Cairo.new()
 	level = cairo
 	add_child(cairo)
+	Ambience.play(self, "cairo")
 	cairo.set_day_time(0.2)
 	cairo.place_people({}, ["abdel", "hamdi", "nabil", "zaki", "samira", "clara"])
 	for id in PREP_SPOTS:
@@ -157,6 +158,7 @@ func _to_the_road(returned := false) -> void:
 	level.queue_free()
 	var road := DesertRoute.new()
 	add_child(road)
+	Ambience.play(self, "desert")
 	level = road
 	await get_tree().physics_frame
 	player.global_position = DesertRoute.road_point(DesertRoute.START_Z - 40.0)

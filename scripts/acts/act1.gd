@@ -49,6 +49,7 @@ func _ready() -> void:
 		Game.apply(plan.get("start", []))
 	level = Cairo.new()
 	add_child(level)
+	Ambience.play(self, "cairo")
 	level.set_night(0.0)
 	player = Player.new()
 	add_child(player)
@@ -177,7 +178,7 @@ func _brawl() -> void:
 		b.global_position = level.open_point(player.global_position + Vector3(cos(i * TAU / 3.0), 0.0, sin(i * TAU / 3.0)) * 3.0)
 		brawlers.append(b)
 	hud.toast("Fists! Left mouse punch · right mouse block · F shove", 4.0)
-	if args.has("auto"):
+	if args.has("auto") and not args.has("skill-bot"):  # --skill-bot: tests/difficulty_test boxes them
 		for b in brawlers:  # the bot doesn't box: the brawl's end is the test
 			(b as Brawler).queue_free()
 		await get_tree().create_timer(0.5).timeout
@@ -213,7 +214,7 @@ func _gunfight() -> void:
 		g.global_position = level.open_point(player.global_position + Vector3(-5.0 + i * 5.0, 0, -10.0))
 		g.target = player
 		men.append(g)
-	if args.has("auto"):
+	if args.has("auto") and not args.has("skill-bot"):
 		for g in men:
 			g.take_damage(10000.0, player.global_position)
 	while true:
