@@ -129,34 +129,27 @@ func _on_event(name: String) -> void:
 		"fight_bounty_hunters":
 			_bounty_hunters()
 		"fight_museum_guards":
-			Game.set_flag("archivist_hostile")
-			hud.toast("The museum guards throw you out into the street.", 3.0)
+			_museum_guards()
 
 
-## Isabelle's trouble: three bounty men come for her at the tavern. Win, and she hears you out.
+## Threatening the archivist: the guards come out (-bf's GuardBrawl, fists only, nobody dies).
+## Win and you're past them (museum_guards_beaten); lose and they throw you out.
+func _museum_guards() -> void:
+	hud.toast("The museum guards come for you. Left mouse punch · right mouse block · F shove", 4.0)
+	var won: bool = await GuardBrawl.start(level, player).finished
+	hud.toast("The guards are down. The archivist is all yours." if won else "The museum guards throw you out into the street.", 3.0)
+
+
+## Isabelle's trouble: bounty men come up the street for her (-bf's StreetFight: cover, and they
+## give up when beaten). Win, and she hears you out.
 func _bounty_hunters() -> void:
 	player.set_armed(true)
-	hud.toast("Three men push into the tavern, guns out.", 3.0)
-	var at: Vector3 = level.spots.get("tavern", player.global_position)
-	var men: Array[Gunman] = []
-	for i in 3:
-		var g := Gunman.new()
-		g.team = Gunman.BANDITS
-		g.glb = Characters.glb("callahan" if i == 0 else "vogel")
-		add_child(g)
-		g.global_position = at + Vector3(-3.0 + i * 3.0, 0, 9.0)
-		g.target = player
-		men.append(g)
-	while true:
-		await get_tree().create_timer(0.5).timeout
-		var standing := 0
-		for g in men:
-			standing += int(is_instance_valid(g) and g.is_active() and not g.surrendered)
-		if standing == 0 or not player.alive:
-			break
-	if not player.alive:
+	hud.toast("Three men are coming up the street for Isabelle, guns out. Take cover!", 3.5)
+	var result: Dictionary = await StreetFight.start(level, player).finished
+	if not result.player_alive:
 		return
-	Game.set_flag("isabelle_trouble_settled")
+	if not result.surrendered.is_empty():
+		hud.toast("%d of them throw down their guns." % result.surrendered.size(), 3.0)
 	player.set_armed(false)
 	var isabelle: Node3D = level.npcs.get("isabelle")
 	if FileAccess.file_exists("res://dialogue/act2_isabelle.json") and not args.has("auto"):
