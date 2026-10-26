@@ -11,8 +11,10 @@ extends Node3D
 ## Test args (after --): --auto (the bot picks --route=desert|riverboat|coast, default desert,
 ## and --branch=temple|town|continue, default temple; talks skipped), --seconds=N.
 
-const SET_PIECES := {"ambush_town": "res://act3_desert.tscn", "riverboat_attack": "res://act3_riverboat.tscn"}
-const PIECE_SCRIPTS := {"ambush_town": "res://scripts/acts/act3_desert.gd", "riverboat_attack": "res://scripts/acts/act3_riverboat.gd"}
+const SET_PIECES := {"ambush_town": "res://act3_desert.tscn", "riverboat_attack": "res://act3_riverboat.tscn",
+	"temple_visit": "res://act3_temple.tscn"}
+const PIECE_SCRIPTS := {"ambush_town": "res://scripts/acts/act3_desert.gd", "riverboat_attack": "res://scripts/acts/act3_riverboat.gd",
+	"temple_visit": "res://scripts/acts/act8_temple.gd"}
 
 var level: DesertRoute
 var player: Player
@@ -115,6 +117,9 @@ func _run_events() -> void:
 				return
 			"temple_visit":
 				await _talk("act3_temple")
+				# Stayed to study: walk round -7f's temple and read the reliefs, then back on the road.
+				if Game.flag("temple_studied", false) and _set_piece(e):
+					return
 			"coast_road":
 				await _talk("act3_coast")
 			"ambush_town", "riverboat_attack":
