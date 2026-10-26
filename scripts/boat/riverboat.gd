@@ -294,8 +294,12 @@ func _build() -> void:
 	for k in 14:
 		var f := (k + 0.5) / 14.0
 		_part(Vector3(1.2, 0.06, 0.3), Vector3(ramp_x, DECK_Y + rise * (1.0 - f) + 0.02, up_stern + run * f), "trim", false)
+	# Open balustrades, a handrail on posts: solid side panels filled the camera beside the stairs.
 	for side in [-0.65, 0.65]:
-		_part(Vector3(0.06, 0.9, ramp_len), Vector3(ramp_x + side, DECK_Y + rise * 0.5 + 0.45, up_stern + run * 0.5), "rail", false, Vector3(ang, 0, 0))
+		_part(Vector3(0.06, 0.06, ramp_len), Vector3(ramp_x + side, DECK_Y + rise * 0.5 + 0.9, up_stern + run * 0.5), "rail", false, Vector3(ang, 0, 0))
+		for k in 4:
+			var f := (k + 0.5) / 4.0
+			_part(Vector3(0.05, 0.9, 0.05), Vector3(ramp_x + side, DECK_Y + rise * (1.0 - f) + 0.45, up_stern + run * f), "rail", false)
 	# Wheelhouse (forward on the upper deck), funnel, paddle wheel.
 	var wz := up_bow + 2.2
 	_part(Vector3(3.2, 2.3, 2.8), Vector3(0, UPPER_Y + 1.15, wz), "cabin")
