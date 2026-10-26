@@ -20,6 +20,10 @@ const DROP_H := 4.5
 const BLOCK := Vector3(1.4, 0.9, 0.75)  # low and thin enough to vault (Cover): it can land in a corridor
 const BLOCK_DAMAGE := 500.0
 const RANDOM_BLOCKS := 2
+## A lane this wide straight out through the door's centre always stays clear: random blocks fall
+## beside it, and a block that falls into it (on someone doomed standing there) crushes, then
+## crumbles to rubble you walk over. Vaulting the other blocks is a shortcut, never the only way.
+const LANE := 1.6
 const DART_DAMAGE := 30.0
 const DART_SPEED := 45.0
 const VOLLEYS := 3
@@ -66,7 +70,9 @@ func _run() -> void:
 		if is_instance_valid(d) and _alive(d):
 			spots.append((d as Node3D).global_position)
 	for i in RANDOM_BLOCKS:
-		spots.append(door_xf * Vector3(_rng.randf_range(-WIDTH * 0.4, WIDTH * 0.4), 0, -_rng.randf_range(1.0, DEPTH)))
+		var side := -1.0 if i % 2 == 0 else 1.0
+		var x := side * _rng.randf_range(LANE * 0.5 + BLOCK.x * 0.5 + 0.1, WIDTH * 0.5 - BLOCK.x * 0.5)
+		spots.append(door_xf * Vector3(x, 0, -_rng.randf_range(1.0, DEPTH)))
 	for i in spots.size():
 		_drop_block(spots[i], 0.15 * i)
 	for v in VOLLEYS:
@@ -123,7 +129,7 @@ func _drop_block(at: Vector3, delay: float) -> void:
 	body.add_child(mi)
 	add_child(body)
 	body.global_position = Vector3(at.x, floor_y + DROP_H, at.z)
-	body.rotation.y = _rng.randf() * PI
+	body.global_basis = door_xf.basis.orthonormalized()  # square to the door, so the lane's edge is exact
 	var tw := create_tween()
 	tw.tween_property(body, "global_position:y", floor_y + BLOCK.y * 0.5, 0.28).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	await tw.finished
@@ -137,10 +143,25 @@ func _drop_block(at: Vector3, delay: float) -> void:
 		var q := (p as Node3D).global_position
 		if Vector2(q.x - at.x, q.z - at.z).length() < BLOCK.x * 0.6 + 0.3 and absf(q.y - floor_y) < 1.0:
 			p.call("take_damage", BLOCK_DAMAGE, body.global_position + Vector3.UP)
+	# In the lane: it breaks up into rubble underfoot (no collision): the way out stays open.
+	var local := door_xf.affine_inverse() * body.global_position
+	if absf(local.x) < LANE * 0.5 + BLOCK.x * 0.5:
+		_crumble(body, mi)
 	# Whoever survived next to it gets the shake.
 	for p in _people_near():
 		if p is Player:
 			(p as Player).trauma = minf((p as Player).trauma + 0.5, 1.0)
+
+
+## A block that landed in the lane: a low scatter of broken stone, no longer an obstacle.
+func _crumble(body: StaticBody3D, mi: MeshInstance3D) -> void:
+	body.collision_layer = 0
+	body.remove_from_group("cover")
+	body.remove_meta("cover_size")
+	_dust(body.global_position + Vector3.UP * 0.6, 0.5)
+	var tw := create_tween()
+	tw.tween_property(mi, "scale", Vector3(1.4, 0.12, 1.6), 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.parallel().tween_property(mi, "position:y", -BLOCK.y * 0.5 + 0.05, 0.35)
 
 
 func _dust(at: Vector3, seconds: float) -> void:

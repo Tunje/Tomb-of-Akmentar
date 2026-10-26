@@ -75,6 +75,7 @@ const MUMMY_BACK_OFF := 4.0      # step away from a mummy closer than this
 const ESCAPE_NEAR := 2.5         # escape mode (Act 5): run close behind, never stop to fight
 const ESCAPE_FAR := 4.0
 const ESCAPE_SPEED := 7.2        # (the player sprints 6.6)
+const HELP_REACH := 3.2          # E this close helps a stumbled companion up (across low rubble too)
 const HOP_MAX := 1.3             # rubble this high (or lower) gets climbed while following
 # Surrender (enemies only)
 const SURRENDER_AT := 0.25       # share of max health
@@ -178,6 +179,9 @@ var _hitboxes: Array[StaticBody3D] = []
 var _exclude: Array[RID] = []
 var _tag: Label3D  # companions: name and health over the head
 var _help: Interactable  # "Help <name> up" while stumbled
+## --companion-trace (after "--"): escape-mode companions print a line every 0.5 s.
+var _ctrace := "--companion-trace" in OS.get_cmdline_user_args()
+var _ctrace_t := 0.0
 var _hop: Hop
 
 
@@ -463,6 +467,13 @@ func _enter(s: State) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if _ctrace and escape and team == PARTY and leader:
+		_ctrace_t += delta
+		if _ctrace_t >= 0.5:
+			_ctrace_t = 0.0
+			print("COMPANION %s %s stumbled=%s following=%s d=%.1f at=%s v=%.1f next=%s fin=%s" % [name, State.keys()[state], stumbled, _following,
+				global_position.distance_to(leader.global_position), global_position.snapped(Vector3.ONE * 0.1), _flat(velocity).length(),
+				_agent.get_next_path_position().snapped(Vector3.ONE * 0.1), _agent.is_navigation_finished()])
 	_ride_deck()
 	_flash = maxf(_flash - delta, 0.0)
 	if rig:
@@ -488,6 +499,7 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 		if _help:
 			_help.global_position = global_position + Vector3.UP
+		_help_check()
 		_update_tag()
 		return
 	if state == State.SURRENDER:
@@ -781,6 +793,18 @@ func stumble() -> void:
 	stumbled_down.emit(self)
 
 
+## E from the leader within HELP_REACH helps him up whatever else that E did: the Interactable
+## alone misses when the player is in cover (no prompts there) or he lies a step beyond low rubble
+## (out of its reach), and E then just toggles cover against the heap. No time limit.
+func _help_check() -> void:
+	var p := leader as Player
+	if p == null or not p.alive or not p.controls_enabled or not Input.is_action_just_pressed("cover"):
+		return
+	var off := p.global_position - global_position
+	if _flat(off).length() < HELP_REACH and absf(off.y) < 1.5:
+		help_up()
+
+
 func help_up() -> void:
 	if not stumbled:
 		return
@@ -822,13 +846,15 @@ func _update_tag() -> void:
 	if _tag == null:
 		return
 	var k := clampf(health / max_health, 0.0, 1.0)
-	_tag.visible = state != State.DEAD and (k < 1.0 or state != State.IDLE or order == "hold")
+	_tag.visible = state != State.DEAD and (k < 1.0 or state != State.IDLE or order == "hold" or stumbled)
 	if not _tag.visible:
 		return
 	var full := int(ceilf(k * 10.0))
 	var bar := "■".repeat(full) + "□".repeat(10 - full)
 	var who := companion_id.capitalize() if companion_id != "" else String(name)
 	_tag.text = who + ("  (holding)" if order == "hold" else "") + char(10) + bar
+	if stumbled:
+		_tag.text += char(10) + "E  help up"  # the HUD shows cover's prompt while you're in cover
 	_tag.modulate = Color(1.0, 0.35, 0.25).lerp(Color(0.55, 1.0, 0.45), k)
 
 

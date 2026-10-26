@@ -8,6 +8,8 @@ extends Node3D
 ##                            American gunmen standing before it (prints who died)
 ##                            slam: the player stands in the corridor till the guardian reaches him;
 ##                            --roll=yes: once up again he rolls away and runs (should live)
+##                            rubble_help: she's down just past the rubble, the player in cover
+##                            against its near side; --wait=30 s later he presses E (helped?)
 ##   --help=yes|no      help the stumbling companion (default yes)
 ##   --god              the player can't die
 ##   --seconds=90       quit after this long
@@ -91,6 +93,9 @@ func _ready() -> void:
 		return
 	if args.get("scenario", "escape") == "slam":
 		_slam_scenario()
+		return
+	if args.get("scenario", "escape") == "rubble_help":
+		_rubble_help_scenario()
 		return
 	guardian = Guardian.new()
 	add_child(guardian)
@@ -409,6 +414,47 @@ func _slam_scenario() -> void:
 	get_tree().quit(0)
 
 
+# ---------------------------------------------------------------- help across rubble
+
+## She goes down just past the rubble; the player comes back to its near side, takes cover
+## against it (as the hint says), waits a while (no time limit on helping), then presses E.
+func _rubble_help_scenario() -> void:
+	player.global_position = Vector3(0, 0, RUBBLE_Z + 1.2)
+	player.yaw = 0.0
+	eleanor.global_position = Vector3(float(args.get("side", 0.6)), 0, RUBBLE_Z - float(args.get("past", 1.6)))
+	eleanor.set_order("hold")
+	await get_tree().create_timer(0.5).timeout
+	var wait := float(args.get("wait", 30.0))
+	print("RESULT start rubble_help wait=%.0f" % wait)
+	var t := 0.0
+	while t < 3.0 and player.cover.state == Cover.State.FREE:
+		_press("move_forward", true)
+		_press("cover", fmod(t, 0.3) < 0.05)
+		await get_tree().physics_frame
+		t += get_physics_process_delta_time()
+	_press("move_forward", false)
+	_press("cover", false)
+	await get_tree().create_timer(0.3).timeout
+	eleanor.stumble()
+	print("RESULT player cover=%s gap=%.1f prompt=%s" % [Cover.State.keys()[player.cover.state],
+		_flat(eleanor.global_position - player.global_position).length(), player.cover_prompt()])
+	await get_tree().create_timer(wait).timeout
+	print("RESULT after %.0fs stumbled=%s alive=%s" % [wait, eleanor.stumbled, eleanor.is_active()])
+	var presses := 0
+	while eleanor.stumbled and presses < 3:
+		presses += 1
+		_press("cover", true)
+		await get_tree().physics_frame
+		await get_tree().physics_frame
+		_press("cover", false)
+		await get_tree().create_timer(0.4).timeout
+		print("RESULT E press %d cover=%s stumbled=%s" % [presses, Cover.State.keys()[player.cover.state], eleanor.stumbled])
+	print("RESULT rubble_help helped=%s presses=%d" % [not eleanor.stumbled, presses])
+	await get_tree().create_timer(0.5).timeout
+	_done = true
+	get_tree().quit(0)
+
+
 # ---------------------------------------------------------------- the door trap
 
 func _trap_scenario() -> void:
@@ -438,6 +484,23 @@ func _trap_scenario() -> void:
 		names.append(str((k as Node).name))
 	print("RESULT trap killed=[%s] player hp=%d alive=%s eleanor hp=%d alive=%s" % [", ".join(names), int(player.health),
 		player.alive, int(eleanor.health), eleanor.is_active()])
+	# The way out must stay walkable: a player-sized capsule along the lane, door to room.
+	var blocked := 0
+	var space := get_world_3d().direct_space_state
+	var cap := CapsuleShape3D.new()
+	cap.radius = 0.35
+	cap.height = 1.75
+	var q := PhysicsShapeQueryParameters3D.new()
+	q.shape = cap
+	q.collision_mask = 1
+	var steps := 12
+	for i in steps + 1:
+		var at := door * Vector3(0, 0.95, -TombTrap.DEPTH * float(i) / steps)
+		q.transform = Transform3D(Basis.IDENTITY, at)
+		for hit in space.intersect_shape(q, 4):
+			if (hit.collider as Node).get_parent() == trap:
+				blocked += 1
+	print("RESULT trap lane clear=%s (%d blocked samples of %d)" % [blocked == 0, blocked, steps + 1])
 	await get_tree().create_timer(1.0).timeout
 	_done = true
 	get_tree().quit(0)
