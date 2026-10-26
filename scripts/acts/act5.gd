@@ -471,7 +471,7 @@ func _auto_tomb() -> void:
 ## Escape: walk the navmesh path to the stairs' top at a sprint (god mode in the test).
 ## Test views of the maze: --view=<name> --shot-dir=... stands the player there and takes one shot.
 const VIEWS := {"bridge": [20, 13, 0.0, -0.45], "pit": [24, 13, 0.0, 0.4], "ramp": [23, 9, -PI / 2, 0.15],
-	"secret": [21, 35, PI / 2, -0.1], "secret2": [34, 21, PI / 2, -0.05], "deadend": [19, 23, PI, -0.1]}
+	"secret": [21, 35, PI / 2, -0.1], "secret2": [34, 21, PI / 2, -0.05], "deadend": [19, 23, PI, -0.1], "vent": [23, 27, -2.3, -0.3]}
 
 
 func _view(name: String) -> void:

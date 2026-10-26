@@ -480,7 +480,32 @@ func _marker(ch: String, p: Vector3, _r: int, _c: int) -> void:
 				if _ch(_r + d.y, _c + d.x) in ["#", "L"]:
 					var n := Vector3(-d.x, 0, -d.y)
 					scarab_vents.append({"point": p - n * CELL * 0.5 + Vector3.UP * 0.3, "normal": n})
+					_vent_slot(p - n * CELL * 0.5, n)
 					break
+
+
+## A scarab vent you can spot: a black slot low in the wall under a carved stone lip, with a
+## few dark holes beside it. `at` is on the wall's face at floor level, `n` faces out of the wall.
+func _vent_slot(at: Vector3, n: Vector3) -> void:
+	var dark := StandardMaterial3D.new()
+	dark.albedo_color = Color(0.02, 0.015, 0.01)
+	dark.roughness = 1.0
+	var face := Basis.looking_at(-n, Vector3.UP)
+	var parts := [[Vector3(0, 0.36, 0.0), Vector3(1.2, 0.46, 0.05), dark],
+		[Vector3(0, 0.66, 0.06), Vector3(1.5, 0.16, 0.14), _floor_mat],
+		[Vector3(-0.7, 0.36, 0.04), Vector3(0.14, 0.62, 0.1), _floor_mat],
+		[Vector3(0.7, 0.36, 0.04), Vector3(0.14, 0.62, 0.1), _floor_mat],
+		[Vector3(-0.95, 0.55, 0.0), Vector3(0.12, 0.12, 0.04), dark],
+		[Vector3(0.92, 0.2, 0.0), Vector3(0.1, 0.1, 0.04), dark],
+		[Vector3(1.05, 0.72, 0.0), Vector3(0.08, 0.08, 0.04), dark]]
+	for part in parts:
+		var mi := MeshInstance3D.new()
+		var bm := BoxMesh.new()
+		bm.size = part[1]
+		mi.mesh = bm
+		mi.material_override = part[2]
+		add_child(mi)
+		mi.global_transform = Transform3D(face, at + face * part[0] + n * 0.01)
 
 
 ## A waist-high stone block a point of interest sits on (blockout).
