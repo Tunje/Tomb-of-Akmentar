@@ -20,6 +20,9 @@ const STOP := 9.0             # m/s^2 with Space
 const GRAVITY := 20.0
 const SNAP_SPEEDS := [0.0, 1.7, 3.8, 10.0]  # idle, walk, trot, gallop (HorseRig.GAITS)
 const SEAT := Vector3(0, 1.74, 0.25)        # horse space; Player puts its feet 0.55 below this
+## Off the seat (seat space): the left stirrup and the left rein hand (the right ones mirror).
+const STIRRUP := Vector3(-0.46, -0.78, -0.12)
+const REINS := Vector3(-0.11, 0.3, -0.4)
 
 @export var id := "horse"
 var health := MAX_HEALTH
@@ -119,6 +122,18 @@ func leave(who: Node3D) -> void:
 		driver = null
 		ride.when = {}
 	passengers.erase(who)
+
+
+## Where a rider's body goes (world, this frame; they ride the back's bob and rock):
+## saddle (the seat's surface), stirrup_l / stirrup_r (where the feet go), reins_l / reins_r (hands).
+func ride_points() -> Dictionary:
+	var xf := (seats[0] as Marker3D).global_transform
+	return {
+		"saddle": xf * Vector3(0, -0.1, 0),  # the seat marker sits a little above the leather
+		"stirrup_l": xf * STIRRUP, "stirrup_r": xf * Vector3(-STIRRUP.x, STIRRUP.y, STIRRUP.z),
+		"reins_l": xf * REINS, "reins_r": xf * Vector3(-REINS.x, REINS.y, REINS.z),
+		"forward": -xf.basis.z.normalized(), "up": xf.basis.y.normalized(),
+	}
 
 
 ## Where the rider lands getting off: the near (left) side.

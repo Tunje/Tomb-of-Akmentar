@@ -110,6 +110,7 @@ func _run() -> void:
 	await _wait(0.8)
 	player.camera.current = true
 	await _shot("horse_2_mounted_rider_view.png")
+	_check_seat("standing")
 
 	# Up through the gaits: hold W until the next gait's speed, let go, hold the gait.
 	for g: Array in [["walk", 1.7], ["trot", 3.8], ["gallop", 10.0]]:
@@ -126,6 +127,14 @@ func _run() -> void:
 		_check(horse.gait() == g[0] and absf(horse.speed - float(g[1])) < 0.3,
 				"%s: gait %s at %.2f m/s" % [g[0], horse.gait(), horse.speed])
 		_report_feet(g[0])
+		_check_seat(g[0])
+		if g[0] == "trot":
+			_side.current = true
+			_side_from_side = false
+			_close = true
+			await _wait(0.2)
+			await _shot("horse_8_rider_close.png")
+			_close = false
 		_side_cam(true)
 		await _shot("horse_3_%s_side.png" % g[0])
 		player.camera.current = true
@@ -179,6 +188,26 @@ func _run() -> void:
 	print("RESULT horse_test %s fails=%d" % ["PASS" if _fails == 0 else "FAIL", _fails])
 	await _wait(0.2)
 	get_tree().quit(0 if _fails == 0 else 1)
+
+
+## Astride (ExplorerBody.set_riding, once it's in): pelvis on the saddle, feet in the stirrups,
+## hands on the reins, within a few cm.
+func _check_seat(when: String) -> void:
+	var ex: Node = player.explorer
+	if ex == null or not ex.has_method("set_riding"):
+		print("RESULT riding pose (%s): ExplorerBody.set_riding not in yet (seated on the Driving clip)" % when)
+		return
+	var p := horse.ride_points()
+	var d := {
+		"pelvis": ex.bone_point("pelvis").distance_to((p.saddle as Vector3) + (p.up as Vector3) * 0.1),
+		"foot_l": ex.bone_point("foot_l").distance_to(p.stirrup_l), "foot_r": ex.bone_point("foot_r").distance_to(p.stirrup_r),
+		"hand_l": ex.bone_point("hand_l").distance_to(p.reins_l), "hand_r": ex.bone_point("hand_r").distance_to(p.reins_r),
+	}
+	var worst := 0.0
+	for k in d:
+		worst = maxf(worst, d[k])
+	print("RESULT riding pose (%s): %s" % [when, " ".join(d.keys().map(func(k): return "%s %.3f" % [k, d[k]]))])
+	_check(worst < 0.09, "%s: astride, pelvis / feet / hands within %.3f m of saddle / stirrups / reins" % [when, worst])
 
 
 # ---------------------------------------------------------------- footfalls
@@ -279,13 +308,16 @@ func _pairs_ok(a: Array, b: Array) -> bool:
 # ---------------------------------------------------------------- helpers
 
 var _side_from_side := true
+var _close := false
 
 
 func _side_cam(from_side: bool) -> void:
 	_side_from_side = from_side
 	_side.current = true
 	var off := Vector3(7.5, 1.5, 0.0) if from_side else Vector3(-6, 5, 9)
-	_side.look_at_from_position(horse.global_transform * off, horse.global_position + Vector3.UP * 1.1)
+	if _close:
+		off = Vector3(-2.6, 2.3, -2.4)  # front-left quarter, near: the rider's seat, legs and hands
+	_side.look_at_from_position(horse.global_transform * off, horse.global_position + Vector3.UP * (1.7 if _close else 1.1))
 
 
 func _press(action: String, on: bool) -> void:
