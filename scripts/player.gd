@@ -532,7 +532,10 @@ func enter_vehicle(t: Node3D) -> void:
 	velocity = Vector3.ZERO
 	arm.add_excluded_object(t.get_rid())
 	if explorer:
-		explorer.set_driving(true)
+		if t is Horse:
+			explorer.set_riding(true, t)
+		else:
+			explorer.set_driving(true)
 
 
 func exit_vehicle() -> void:
@@ -546,7 +549,7 @@ func exit_vehicle() -> void:
 	global_position = t.exit_point()
 	_shape.disabled = false
 	if explorer:
-		explorer.set_driving(false)
+		explorer.set_riding(false)  # also leaves the driving pose
 
 
 ## Seated: follow the seat, steer with the move keys, E gets out. The camera stays free.

@@ -43,6 +43,7 @@ func _ready() -> void:
 	skeleton.skeleton_updated.connect(_orient_gun)
 	# Connected after the retarget's own connection, so it runs on the retargeted pose.
 	_src.skeleton_updated.connect(_reach_left)
+	_src.skeleton_updated.connect(_ride_pose)
 
 
 func _build_tree() -> void:
@@ -101,10 +102,11 @@ func _build_tree() -> void:
 	bt.add_node("vault_anim", _anim("ual2/ClimbUp_1m"))
 	bt.add_node("vault_ts", AnimationNodeTimeScale.new())
 	var state := AnimationNodeTransition.new()
-	state.input_count = 3
+	state.input_count = 4
 	state.set_input_name(0, "alive")
 	state.set_input_name(1, "dead")
 	state.set_input_name(2, "drive")
+	state.set_input_name(3, "ride")
 	state.xfade_time = 0.15
 	bt.add_node("state", state)
 	bt.add_node("death_anim", _anim("Death01"))
@@ -131,6 +133,8 @@ func _build_tree() -> void:
 	bt.add_node("drive_anim", _anim("Driving"))
 	bt.connect_node("state", 1, "death_anim")
 	bt.connect_node("state", 2, "drive_anim")
+	bt.add_node("ride_anim", _anim("Sitting_Idle"))
+	bt.connect_node("state", 3, "ride_anim")
 	bt.connect_node("output", 0, "state")
 	_start_tree(bt)
 
@@ -245,3 +249,44 @@ func _reach_left() -> void:
 ## Seated at a steering wheel (UAL1 Driving) while true; back to the normal body after.
 func set_driving(on: bool) -> void:
 	_tree.set("parameters/state/transition_request", "drive" if on else "alive")
+
+
+## Riding: the horse whose ride_points() the body follows (null = not riding).
+var _mount: Node3D
+
+
+## Astride a horse (true, with the Horse) or off it (false; also leaves the driving pose). The
+## upper body plays UAL1 Sitting_Idle; after the retarget each frame the pelvis goes onto the
+## saddle, the feet into the stirrups and the hands to the reins (two-bone reaches, as _reach_left).
+## Written by -f9.
+func set_riding(on: bool, mount: Node3D = null) -> void:
+	_mount = mount if on else null
+	_tree.set("parameters/state/transition_request", "ride" if on else "alive")
+
+
+func _ride_pose() -> void:
+	if _mount == null or not is_instance_valid(_mount) or not _mount.has_method("ride_points"):
+		return
+	var p: Dictionary = _mount.ride_points()
+	var to_sk := skeleton.global_transform.affine_inverse()
+	var fwd: Vector3 = p.forward
+	var up: Vector3 = p.up
+	var right := fwd.cross(up).normalized()
+	# Pelvis onto the saddle: the hip joint sits about 0.1 m above what you sit on.
+	var pel := skeleton.find_bone(BONE_MAP["pelvis"])
+	var goal := to_sk * ((p.saddle as Vector3) + up * 0.1)
+	var parent := skeleton.get_bone_parent(pel)
+	skeleton.set_bone_pose_position(pel, goal if parent < 0 else skeleton.get_bone_global_pose(parent).affine_inverse() * goal)
+	for side: String in ["l", "r"]:
+		var out := -right if side == "l" else right
+		# Feet in the stirrups, knees forward and a little out round the barrel.
+		ArmIK.reach(skeleton, skeleton.find_bone(BONE_MAP["thigh_" + side]), skeleton.find_bone(BONE_MAP["calf_" + side]),
+			skeleton.find_bone(BONE_MAP["foot_" + side]), to_sk * (p["stirrup_" + side] as Vector3),
+			to_sk.basis * (fwd + out * 0.35))
+		# Hands on the reins, elbows down and out.
+		var hd := skeleton.find_bone(BONE_MAP["hand_" + side])
+		var palm := Vector3.ZERO
+		if bone_map.has("middle_01_" + side):
+			palm = (skeleton.get_bone_global_pose(skeleton.find_bone(bone_map["middle_01_" + side])).origin - skeleton.get_bone_global_pose(hd).origin) * 0.5
+		ArmIK.reach(skeleton, skeleton.find_bone(BONE_MAP["upperarm_" + side]), skeleton.find_bone(BONE_MAP["lowerarm_" + side]),
+			hd, to_sk * (p["reins_" + side] as Vector3) - palm, to_sk.basis * (-up + out * 0.6 - fwd * 0.3))
