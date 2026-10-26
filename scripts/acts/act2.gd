@@ -11,7 +11,7 @@ extends Node3D
 ## Test args (after --): --auto (the bot sleeps through the days; RESULT lines), --seconds=N, --shots=..
 
 const PLAN := "res://actions/act2_plan.json"
-const NEXT_ACT := ["res://act3_desert.tscn", "res://act4.tscn"]  # the first that exists
+const NEXT_ACT := ["res://act3.tscn", "res://act4.tscn"]  # the first that exists
 
 var level: Cairo
 var player: Player

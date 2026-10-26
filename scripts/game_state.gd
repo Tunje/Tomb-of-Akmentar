@@ -181,7 +181,14 @@ func from_dict(d: Dictionary) -> void:
 	changed.emit("all")
 
 
+## A run started with arguments after "--" (the test bots, every session's) keeps its saves in the
+## "test" slot: they were overwriting Simon's real save in "main" all the time.
+static func _slot(slot: String) -> String:
+	return "test" if slot == "main" and not OS.get_cmdline_user_args().is_empty() else slot
+
+
 func save_game(slot := "main") -> bool:
+	slot = _slot(slot)
 	DirAccess.make_dir_recursive_absolute(SAVE_DIR)
 	var f := FileAccess.open(SAVE_DIR.path_join(slot + ".json"), FileAccess.WRITE)
 	if f == null:
@@ -192,10 +199,11 @@ func save_game(slot := "main") -> bool:
 
 
 func has_save(slot := "main") -> bool:
-	return FileAccess.file_exists(SAVE_DIR.path_join(slot + ".json"))
+	return FileAccess.file_exists(SAVE_DIR.path_join(_slot(slot) + ".json"))
 
 
 func load_game(slot := "main") -> bool:
+	slot = _slot(slot)
 	if not has_save(slot):
 		return false
 	var d: Variant = JSON.parse_string(FileAccess.get_file_as_string(SAVE_DIR.path_join(slot + ".json")))
