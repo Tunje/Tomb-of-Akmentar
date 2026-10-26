@@ -17,8 +17,8 @@ extends Node
 ##   From the project folder, in a terminal (Git Bash or PowerShell), with the console build of Godot:
 ##     "C:\Users\simon\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64_console.exe" ^
 ##       --headless --path . res://tests/campaign_test.tscn -- --auto > campaign.txt
-##   (all on one line; it needs no window, so it's fine to run while playing). It takes about
-##   15-30 minutes; the saves it makes go to the test slot, never your own save.
+##   (all on one line; it needs no window, so it's fine to run while playing). A green run takes about
+##   6-10 minutes (a stuck act waits out --act-seconds); its saves go to the test slot, never yours.
 ##   Then look at the end of campaign.txt, or just the lines starting with CAMPAIGN:
 ##     CAMPAIGN act | result | seconds | note      one row per act, PASS or FAIL (and why)
 ##     CAMPAIGN broken hand-offs: N                 what an act needed from an earlier one and
