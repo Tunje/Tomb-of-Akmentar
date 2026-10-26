@@ -196,6 +196,13 @@ func _brawl_over(lost: bool) -> void:
 	brawlers.clear()
 	if lost:
 		Game.set_flag("brawl_lost")
+	elif not args.has("auto"):
+		# Won: one of Finch's men snatches the note (or the suitcase) and runs for the bazaar (-2d's
+		# MarketChase; primaryact: "possibly a chase through the market").
+		await get_tree().create_timer(1.0).timeout
+		var run_dir := Vector3(1, 0, 0)
+		var chase := MarketChase.start(level, player, player.global_position + run_dir * 1.5)
+		await chase.finished
 	var musa := Npc.make(level, "musa", level.open_point(player.global_position + Vector3(1.5, 0, 1.0)), "", Characters.glb("musa"))
 	await get_tree().create_timer(1.0).timeout
 	_talk("act1_after_brawl", musa, func(_e): _armed_men())

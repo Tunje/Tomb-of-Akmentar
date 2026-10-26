@@ -208,6 +208,7 @@ func _nightfall() -> void:
 
 
 func _night_choice() -> void:
+	Barks.say_any(get_tree(), "campfire")  # the evening at camp, before the choice
 	if args.has("choice"):
 		Game.set_flag("night_choice", args["choice"])
 		return

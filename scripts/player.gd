@@ -781,7 +781,10 @@ func _ray(from: Vector3, to: Vector3, mask: int) -> Dictionary:
 func take_damage(amount: float, from: Vector3) -> bool:
 	if not alive or is_invulnerable():
 		return false
+	var was := health
 	health = maxf(health - amount, 0.0)
+	if was > max_health * 0.3 and health <= max_health * 0.3 and health > 0.0:
+		Barks.say_any(get_tree(), "ally_down", global_position)  # a companion reacts to you going down
 	trauma = minf(trauma + 0.55, 1.0)
 	var push := (global_position - from)
 	push.y = 0
