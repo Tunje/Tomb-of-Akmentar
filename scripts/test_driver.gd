@@ -72,6 +72,18 @@ func _physics_process(delta: float) -> void:
 		_pose_check()
 	elif args.get("scenario", "") == "cover":
 		_cover_check()
+	elif args.get("scenario", "") == "boat":
+		# Walk the pier, board (E), cast off at 2 s, ride; RESULT every 2 s.
+		var p: Player = game.player
+		var b: RiverBoat = game.boat
+		if _t < 0.05:
+			p.global_position = Vector3(40.0, 0.0, game.level.player_spawn.z + Level.SOUTH_EXTENT * 0.45 + 9.0)
+			p.yaw = PI  # facing south, to the boat
+		_press("cover", _t > 0.6 and _t < 0.7)
+		if _t > 2.0 and _t - delta <= 2.0:
+			b.sail()
+		if fmod(_t, 2.0) < delta:
+			print("RESULT boat t=%.0f player=%s boat=%s on_deck=%s" % [_t, p.global_position, b.global_position, RiverBoat.deck_under(get_tree(), p.global_position) != null])
 	elif args.get("scenario", "") == "truck":
 		_truck_check()
 	elif args.get("scenario", "") == "camp":

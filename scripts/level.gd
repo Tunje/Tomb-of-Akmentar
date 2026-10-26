@@ -50,6 +50,8 @@ const MAP := [
 const BURIAL := Rect2i(12, 1, 16, 9)
 ## How far the desert reaches south of the tomb footprint (m).
 const SOUTH_EXTENT := 34.0
+## The river south of the desert (m wide), with a pier from the bank at x 38-42.
+const RIVER_W := 40.0
 
 var player_spawn := Vector3.ZERO
 var mummy_spawns: Array[Vector3] = []
@@ -245,7 +247,10 @@ func _build_surface() -> void:
 		[Vector3(-0.5, 5, total_d * 0.5), Vector3(1, 10, total_d)],
 		[Vector3(w + 0.5, 5, total_d * 0.5), Vector3(1, 10, total_d)],
 		[Vector3(w * 0.5, 5, -0.5), Vector3(w, 10, 1)],
-		[Vector3(w * 0.5, 5, total_d + 0.5), Vector3(w, 10, 1)],
+		# South: the riverbank, open only at the pier (x 38-42); the river is crossed by boat.
+		[Vector3(19.0, 5, total_d + 0.5), Vector3(38.0, 10, 1)],
+		[Vector3(61.0, 5, total_d + 0.5), Vector3(38.0, 10, 1)],
+		[Vector3(w * 0.5, 5, total_d + RIVER_W + 0.5), Vector3(w + 400.0, 10, 1)],
 	]:
 		var b := StaticBody3D.new()
 		var cs := CollisionShape3D.new()
@@ -261,7 +266,7 @@ func _build_surface() -> void:
 	const FAR := 300.0
 	for r in [
 		Rect2(-FAR, -FAR, w + FAR * 2.0, FAR),  # north
-		Rect2(-FAR, total_d, w + FAR * 2.0, FAR),  # south
+		Rect2(-FAR, total_d + RIVER_W, w + FAR * 2.0, FAR),  # south, past the river
 		Rect2(-FAR, 0, FAR, total_d),  # west
 		Rect2(w, 0, FAR, total_d),  # east
 	]:
@@ -282,7 +287,7 @@ func _build_surface() -> void:
 		var pos: Vector3
 		match side:
 			0: pos = Vector3(lerpf(-20, w + 20, t), 0, -out)
-			1: pos = Vector3(lerpf(-20, w + 20, t), 0, total_d + out)
+			1: pos = Vector3(lerpf(-20, w + 20, t), 0, total_d + RIVER_W + out)
 			2: pos = Vector3(-out, 0, lerpf(-20, total_d + 20, t))
 			_: pos = Vector3(w + out, 0, lerpf(-20, total_d + 20, t))
 		var dune := MeshInstance3D.new()

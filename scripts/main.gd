@@ -13,6 +13,7 @@ var hud: Hud
 var mummies: Array[Mummy] = []  # live nodes only; corpses leave when they sink
 var spawned := 0
 var truck: Truck
+var boat: RiverBoat
 var bandits: Array[Gunman] = []
 var npcs := {}  # id -> Npc standing in the world
 var companions := {}  # id -> Gunman on our side
@@ -80,6 +81,20 @@ func _ready() -> void:
 		SiteSpot.make(level, "akmentar_surface", s[0], s[1] + Vector3(0.0, 0.0, 1.0))
 	ClueDoor.make(level._nav, "anubis_door", Vector3(54.0, 1.25, door_z + 6.0), Vector3(2.4, 2.5, 0.5), "clue_anubis",
 		"The slab won't move. Something carved on it matches a statue nearby.", "Pressed in the right order, the slab sinks into the sand.")
+	# The river south of the camp (step 10): a pier from the bank and -f9's riverboat docked at it,
+	# sailing west down a gentle S-bend. "Ring the bell" on board casts off.
+	var bank: float = level.player_spawn.z + Level.SOUTH_EXTENT * 0.45  # = the tomb footprint + SOUTH_EXTENT
+	level._box(level._nav, Vector3(40.0, -0.3, bank + 5.0), Vector3(4.0, 0.6, 10.0), level._floor_mat)
+	RiverWater.make(level, Vector2(500.0, Level.RIVER_W), RiverBoat.WATER_Y, Vector3(40.0, RiverBoat.WATER_Y, bank + Level.RIVER_W * 0.5))
+	var river := Path3D.new()
+	river.curve = Curve3D.new()
+	var cz := bank + 16.1  # the plank's end meets the pier's end
+	for p in [Vector3(42.5, 0.0, cz), Vector3(10.0, 0.0, cz + 2.0), Vector3(-40.0, 0.0, cz + 8.0),
+			Vector3(-90.0, 0.0, cz + 4.0), Vector3(-150.0, 0.0, cz + 10.0)]:
+		river.curve.add_point(p)
+	level.add_child(river)
+	boat = RiverBoat.make(level, river, "steamer")
+	boat.watch(player)
 	# Props added above are inside the level's nav region: rebake so paths go round them.
 	level._nav.bake_navigation_mesh(false)
 	# A truck by the camp (Proving Ground step 9).
