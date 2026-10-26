@@ -336,7 +336,7 @@ func is_active() -> bool:
 
 
 ## Whether `n` is someone this gunman should shoot.
-func is_hostile(n: Node) -> bool:
+func is_hostile(n) -> bool:  # untyped: a freed node in a typed param errors before the check
 	if n == null or n == self or not is_instance_valid(n) or surrendered:
 		return false
 	if n is Gunman and (n as Gunman).surrendered:
@@ -352,7 +352,7 @@ func is_hostile(n: Node) -> bool:
 
 # ---------------------------------------------------------------- targets
 
-static func _target_alive(n: Node3D) -> bool:
+static func _target_alive(n) -> bool:  # untyped: it may have been freed
 	if n == null or not is_instance_valid(n):
 		return false
 	if n is Player:
@@ -416,8 +416,8 @@ func _candidates() -> Array[Node3D]:
 			if is_hostile(g) and (g as Gunman).is_active():
 				out.append(g)
 		for g in get_tree().get_nodes_in_group("party"):
-			var leader_node: Node3D = (g as Gunman).leader
-			if leader_node and is_hostile(leader_node) and not out.has(leader_node):
+			var leader_node = (g as Gunman).leader  # untyped: it may have been freed
+			if is_instance_valid(leader_node) and is_hostile(leader_node) and not out.has(leader_node):
 				out.append(leader_node)
 	var alive_only: Array[Node3D] = []
 	for n in out:
@@ -427,7 +427,9 @@ func _candidates() -> Array[Node3D]:
 
 
 ## Where to aim on `n`: the chest, lower when it crouches or crawls.
-static func _point_on(n: Node3D) -> Vector3:
+static func _point_on(n) -> Vector3:  # untyped: it may have been freed
+	if n == null or not is_instance_valid(n):
+		return Vector3.ZERO
 	var h := 1.0
 	if n is Player:
 		h = 0.85 if (n as Player).crouching else 1.25
@@ -1291,7 +1293,9 @@ func take_hit(part: String, dmg: float, dir: Vector3, _point: Vector3, stagger: 
 
 
 ## Another gunman's round; `shooter` becomes the target of an enemy that wasn't fighting yet.
-func take_shot(part: String, dmg: float, dir: Vector3, shooter: Node3D) -> Dictionary:
+func take_shot(part: String, dmg: float, dir: Vector3, shooter) -> Dictionary:  # shooter untyped: freed mid-flight
+	if not is_instance_valid(shooter):
+		shooter = null
 	if target == null and team != PARTY and shooter:
 		var by := shooter as Gunman
 		target = by.leader if by and by.leader else shooter
@@ -1372,13 +1376,13 @@ func _maybe_surrender(odds: float) -> bool:
 
 
 func _any_player_alive() -> bool:
-	if target is Player:
+	if is_instance_valid(target) and target is Player:
 		return (target as Player).alive
-	if foe_player:
+	if is_instance_valid(foe_player):
 		return foe_player.alive and is_hostile(foe_player)
 	for c in get_tree().get_nodes_in_group("party"):
-		var l: Node3D = (c as Gunman).leader
-		if l is Player and (l as Player).alive:
+		var l = (c as Gunman).leader  # untyped: it may have been freed
+		if is_instance_valid(l) and l is Player and (l as Player).alive:
 			return true
 	return false
 

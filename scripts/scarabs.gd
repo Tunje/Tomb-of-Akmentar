@@ -213,7 +213,9 @@ func _find_player() -> Player:
 	return null
 
 
-static func _alive(n: Node3D) -> bool:
+static func _alive(n) -> bool:  # untyped: it may have been freed
+	if n == null or not is_instance_valid(n):
+		return false
 	if n is Player:
 		return (n as Player).alive
 	if n.has_method("is_active"):

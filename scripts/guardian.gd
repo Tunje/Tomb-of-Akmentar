@@ -407,7 +407,7 @@ func _shove_companions() -> void:
 		Sfx.play_at(get_parent(), Sfx.swipe(), g.global_position + Vector3.UP * 1.3, -2.0)
 
 
-static func _alive(n: Node3D) -> bool:
+static func _alive(n) -> bool:  # untyped: it may have been freed
 	if n == null or not is_instance_valid(n):
 		return false
 	if n is Player:
