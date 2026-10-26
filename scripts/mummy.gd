@@ -10,6 +10,8 @@ enum State { DORMANT, RISING, CHASE, WINDUP, RECOVER, STAGGER, DEAD }
 
 const PART_MULT := {"head": 2.2, "torso": 1.0, "arm_l": 0.75, "arm_r": 0.75, "leg_l": 0.8, "leg_r": 0.8}
 const LIMB_HP := {"arm_l": 35.0, "arm_r": 35.0, "leg_l": 45.0, "leg_r": 45.0}
+## image-to-3d's severed pieces (mummy_arm, mummy_leg, mummy_head, scraps); capsules until they exist.
+const PARTS_DIR := "res://assets/props/mummy_parts/"
 const REACH := 1.55
 const HIT_RANGE := 2.0
 const WINDUP := 0.6
@@ -352,19 +354,50 @@ func _gib(part: String, dir: Vector3) -> void:
 	cap.height = shape.height * k
 	cs.shape = cap
 	rb.add_child(cs)
-	var cm := CapsuleMesh.new()
-	cm.radius = cap.radius
-	cm.height = cap.height
-	var mi := MeshInstance3D.new()
-	mi.mesh = cm
-	mi.material_override = _skin.duplicate()
-	(mi.material_override as StandardMaterial3D).emission_energy_multiplier = 0.0
-	rb.add_child(mi)
+	# image-to-3d's piece when there is one (origin at the torn end, pointing +Y), else a capsule.
+	var piece_file: String = PARTS_DIR + {"head": "mummy_head", "arm_l": "mummy_arm", "arm_r": "mummy_arm",
+		"leg_l": "mummy_leg", "leg_r": "mummy_leg"}.get(part, "") + ".glb"
+	if ResourceLoader.exists(piece_file):
+		var piece: Node3D = (load(piece_file) as PackedScene).instantiate()
+		rb.add_child(piece)
+		piece.position = Vector3.DOWN * cap.height * 0.5
+	else:
+		var cm := CapsuleMesh.new()
+		cm.radius = cap.radius
+		cm.height = cap.height
+		var mi := MeshInstance3D.new()
+		mi.mesh = cm
+		mi.material_override = _skin.duplicate()
+		(mi.material_override as StandardMaterial3D).emission_energy_multiplier = 0.0
+		rb.add_child(mi)
 	get_parent().add_child(rb)
+	_scraps(box.global_position, dir)
 	rb.global_transform = Transform3D(box.global_basis.orthonormalized(), box.global_position)
 	rb.apply_central_impulse((dir + Vector3.UP * 0.6) * 5.0)
 	rb.apply_torque_impulse(Vector3(randf_range(-1, 1), randf_range(-1, 1), randf_range(-1, 1)) * 0.6)
 	get_tree().create_timer(12.0).timeout.connect(rb.queue_free)
+
+
+## A couple of wrapping scraps and bone bits thrown off with a severed piece (when they exist).
+func _scraps(at: Vector3, dir: Vector3) -> void:
+	for f in ["mummy_scrap", "mummy_bone"]:
+		var path: String = PARTS_DIR + f + ".glb"
+		if not ResourceLoader.exists(path):
+			continue
+		var rb := RigidBody3D.new()
+		rb.collision_layer = 0
+		rb.collision_mask = 1
+		rb.mass = 0.3
+		var cs := CollisionShape3D.new()
+		var sp := SphereShape3D.new()
+		sp.radius = 0.05
+		cs.shape = sp
+		rb.add_child(cs)
+		rb.add_child((load(path) as PackedScene).instantiate())
+		get_parent().add_child(rb)
+		rb.global_position = at
+		rb.apply_central_impulse((dir + Vector3(randf_range(-0.5, 0.5), 0.8, randf_range(-0.5, 0.5))) * 1.2)
+		get_tree().create_timer(12.0).timeout.connect(rb.queue_free)
 
 
 func _die(dir: Vector3, headshot: bool) -> void:
