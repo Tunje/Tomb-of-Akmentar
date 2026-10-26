@@ -190,6 +190,7 @@ func _physics_process(delta: float) -> void:
 		if _hop.step(self, delta):
 			_hop = null
 			_enter(State.CHASE)
+			_replan()  # the old path still points back over what it just climbed
 		_animate(1.0)
 		return
 	var move := Vector3.ZERO
@@ -234,6 +235,12 @@ func _physics_process(delta: float) -> void:
 	_animate(move.length())
 
 
+func _replan() -> void:
+	_repath = 0.3
+	if _alive(target):
+		_agent.target_position = target.global_position
+
+
 func _path_dir(delta: float) -> Vector3:
 	_repath -= delta
 	if _repath <= 0.0:
@@ -272,7 +279,8 @@ func _slide_off_walls(move: Vector3, delta: float) -> Vector3:
 func _climb_or_unstick(move: Vector3, delta: float) -> void:
 	if move.length() < 0.1:
 		return
-	if is_on_wall():
+	# Only what we're walking into: just after a climb it still touches the heap behind it.
+	if is_on_wall() and move.normalized().dot(-get_wall_normal()) > 0.4:
 		# A stair or a raised floor's edge: step up onto it.
 		if Hop.step_up(self, -get_wall_normal(), 0.55, RADIUS, 2.2):
 			return

@@ -476,6 +476,8 @@ func _physics_process(delta: float) -> void:
 	if _hop:
 		if _hop.step(self, delta):
 			_hop = null
+			_repath = 0.0  # the old path still points back over what we just climbed
+			_agent.target_position = _agent.target_position
 		_animate(delta, false)
 		return
 	if stumbled:
@@ -735,7 +737,8 @@ func _follow(delta: float) -> Vector3:
 		move = _move_to(dest, speed, delta, true)
 		# Rubble across the way: climb it.
 		# (Into the wall itself: the move may already be turned along it by the detour.)
-		if is_on_wall() and move.length() > 0.5:
+		# (Toward the leader, not the move: the detour may already have turned that along the heap.)
+		if is_on_wall() and move.length() > 0.5 and to.normalized().dot(-get_wall_normal()) > 0.4:
 			_hop = Hop.find(self, -get_wall_normal(), HOP_MAX)
 			if _hop:
 				return Vector3.ZERO
@@ -1058,7 +1061,7 @@ func _move_to(dest: Vector3, speed: float, delta: float, path: bool) -> Vector3:
 		if next.length() > 0.05 and not _agent.is_navigation_finished():
 			dir = next.normalized()
 	# A stair or a raised floor's edge: step up onto it (CharacterBody3D won't).
-	if is_on_wall() and Hop.step_up(self, -get_wall_normal()):
+	if is_on_wall() and dir.dot(-get_wall_normal()) > 0.4 and Hop.step_up(self, -get_wall_normal()):
 		return dir * minf(speed, to.length() / maxf(delta, 0.001) * 0.5)
 	# Head-on into a wall: walk along it for a moment, on the side nearer the goal.
 	_detour_t -= delta
