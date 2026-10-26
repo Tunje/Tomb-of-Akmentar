@@ -176,6 +176,8 @@ func _say(speaker: String, text: String, as_state: State) -> void:
 	state = as_state
 	_t = line_seconds(text)
 	wheel.show_line(speaker_name(speaker), text)
+	if speaker != "player" and speaker != "":
+		Codex.meet(speaker)  # their page in the journal's People
 	_frame(speaker)
 	line_started.emit(speaker, text)
 

@@ -51,6 +51,7 @@ static func open(parent: Node, id: String, by: Node = null) -> RouteBoard:
 
 
 func _load(id: String) -> void:
+	Hints.once("route_board")
 	board_id = id
 	data = load_board(id)
 	selected = -1

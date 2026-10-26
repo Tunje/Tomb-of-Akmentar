@@ -21,6 +21,7 @@ static func add(entry: Dictionary) -> bool:
 	e["day"] = Game.day
 	a.append(e)
 	Game.set_flag("journal", a)
+	Hints.once("journal")
 	return true
 
 

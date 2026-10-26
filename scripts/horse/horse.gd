@@ -125,6 +125,8 @@ func board(who: Node3D, seat: int) -> bool:
 		return false
 	driver = who
 	ride.when = {"flag": "__ridden"}  # hide the prompt while someone is up
+	if who is Player:
+		Hints.once("riding", self)
 	return true
 
 

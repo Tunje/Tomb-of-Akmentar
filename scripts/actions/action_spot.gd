@@ -93,6 +93,7 @@ func rows() -> Array:
 
 func open(by: Node3D) -> ActionMenu:
 	_by = by
+	Hints.once("action_menu", self)
 	var r := rows()
 	menu = ActionMenu.open(get_parent(), str(data.get("name", location.capitalize())), r, by)
 	menu.picked.connect(func(i: int) -> void: run(menu.rows[i].action))
@@ -153,6 +154,7 @@ func _after(a: Dictionary) -> void:
 	action_done.emit(str(a.get("id", "")))
 	if Game.actions_left <= 0:
 		DaySummary.open(get_parent(), _by)
+		Hints.once("days", self)
 
 
 func _done_flag(a: Dictionary) -> String:

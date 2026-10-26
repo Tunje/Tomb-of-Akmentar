@@ -1,0 +1,76 @@
+{
+	"_help": "First-time hints: Hints.once(id) shows one the first time its mechanic comes up (flag hint_<id>, saved with the game; never during a conversation or an open screen). Played by scripts/hints.gd. secs = how long it stays (default 5).",
+	"hints": {
+		"aim_fire": {
+			"text": "Right mouse: aim.  Left mouse: fire."
+		},
+		"reload": {
+			"text": "R: reload. Count your shots: a revolver holds six."
+		},
+		"holster": {
+			"text": "X: holster or draw your gun. People talk more easily to an unarmed man."
+		},
+		"switch_guns": {
+			"text": "1, 2, 3 or the mouse wheel: switch guns."
+		},
+		"cover": {
+			"text": "E beside a wall or crate: take cover. Aim (right mouse) to lean out and shoot."
+		},
+		"vault": {
+			"text": "In cover behind something low: W + E vaults over it."
+		},
+		"dodge": {
+			"text": "Space: a dodge roll. For a moment nothing can touch you."
+		},
+		"crouch": {
+			"text": "C or Ctrl: crouch. Harder to see, harder to hit."
+		},
+		"journal": {
+			"text": "Written in your journal. J opens it."
+		},
+		"codex": {
+			"text": "J, then Tab: the people you've met, and what you know of them."
+		},
+		"orders": {
+			"text": "G: tell your companions to hold where they stand, or to follow you again."
+		},
+		"help_up": {
+			"text": "A companion is down! Go to them and press E to help them up."
+		},
+		"gunner_seat": {
+			"text": "V: a companion takes the wheel and you take the gun."
+		},
+		"driving": {
+			"text": "W / S: faster and slower.  A / D: steer.  E: get out."
+		},
+		"riding": {
+			"text": "W / S: faster and slower.  A / D: steer.  E: get down."
+		},
+		"action_menu": {
+			"text": "Each thing you do here costs time: three actions a day. Buying is free; talking takes an action.",
+			"secs": 6
+		},
+		"days": {
+			"text": "Today's actions are spent. Sleep to begin the next day.",
+			"secs": 5
+		},
+		"route_board": {
+			"text": "Pick a route: the card shows its days, risk and cost. Click it again (or Enter) to set off.",
+			"secs": 6
+		},
+		"slabs": {
+			"text": "A slab is grinding down! Sprint (Shift) and get under it before it closes."
+		},
+		"scarabs": {
+			"text": "Scarabs can't bear fire. Keep to the torchlight and keep moving."
+		},
+		"guardian": {
+			"text": "The guardian can't be killed. Bullets only slow him. Run, or lead him away.",
+			"secs": 6
+		},
+		"brawl": {
+			"text": "Fists: left mouse punches (again for a cross), right mouse blocks, F shoves.",
+			"secs": 6
+		}
+	}
+}

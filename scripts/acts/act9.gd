@@ -25,8 +25,9 @@ const RITUAL_TIME := {2: 60.0, 1: 95.0}   # seconds of chant, two voices / one
 const WAVE_EVERY := 10.0                   # a wave of minions this often during the rite
 const WAVE_SIZE := 2
 const SCARABS_EVERY := 3                   # a scarab burst every this many waves
+const RITUAL_SLAMS := 2                      # grabs that slam before one kills (Act 5's: 1)
 const GUARDIAN_AT := 0.45                  # the guardian wakes this far through the rite
-const FIGHT := {"surface": 4, "halls": 5, "royal": 5}  # minions in each level's fight
+const FIGHT := {"surface": 9, "halls": 13, "royal": 13}  # minions in each level's fight
 const TRIGGER := 5.0                       # how close to a level's point its threat starts
 const SINGER_HEALTH := 220.0
 const AVOID := ["Mock their beliefs"]      # the bot never picks these
@@ -174,6 +175,8 @@ func _level(id: String, talk_id: String, line: String) -> void:
 		return
 	var around: Vector3 = points.halls if id == "surface" else points[id]  # the surface's fight comes up the stairs
 	_wake_foes(around, int(FIGHT[id]))
+	Hints.once("aim_fire", self)
+	Hints.once("orders", self)
 	hud.toast("They're coming!", 2.5)
 	Barks.say_any(get_tree(), "mummy_seen", player.global_position)
 	while _active_foes() > 0 and player.alive:
@@ -248,6 +251,7 @@ func _wave(n: int) -> void:
 		if ss:
 			ss.burst(self, level.vents[n % level.vents.size()], player)
 			Barks.say_any(get_tree(), "scarabs", points.altar)
+			Hints.once("scarabs", self)
 
 
 ## Partway: the guardian himself, out of his sarcophagus and after you, the one who carried the
@@ -258,8 +262,11 @@ func _wake_guardian() -> void:
 	if gs == null:
 		return
 	guardian = gs.spawn(self, level.guardian_spawn, player)
+	if "slams_left" in guardian:
+		guardian.set("slams_left", RITUAL_SLAMS)  # you can't run from the altar: more grace than the escape
 	hud.toast("The sarcophagus opens. He's coming for you. Lead him away from the altar!", 3.5)
 	Barks.say_any(get_tree(), "guardian_seen", level.guardian_spawn)
+	Hints.once("guardian", self)
 
 
 ## The rite's end: done, everything dead falls; failed, the guardian takes the amulet.
