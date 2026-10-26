@@ -368,6 +368,7 @@ func _crate(base: Vector3, size: Vector3) -> void:
 	marker.collision_mask = 0
 	marker.position = centre
 	marker.set_meta("cover_size", size)
+	marker.set_meta("cover_min_edge", 0.8)  # the passage crates are 0.8 m: still cover
 	marker.add_to_group("cover")
 	add_child(marker)
 

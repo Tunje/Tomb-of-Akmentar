@@ -149,8 +149,10 @@ static func edges(p: Node3D) -> Array:
 		[3, Vector3(-hx, y, -hz), Vector3(-hx, y, hz), Vector3(-1, 0, 0), size.z],
 	]
 	var xf := p.global_transform
+	# A piece can allow shorter faces (meta "cover_min_edge"): the riverboat's passage crates are 0.8 m.
+	var min_edge: float = p.get_meta("cover_min_edge", MIN_EDGE_LENGTH)
 	for f: Array in faces:
-		if f[4] < MIN_EDGE_LENGTH:
+		if f[4] < min_edge - 0.001:
 			continue
 		out.append({"id": f[0], "a": xf * (f[1] as Vector3), "b": xf * (f[2] as Vector3),
 			"normal": (xf.basis * (f[3] as Vector3)).normalized()})
