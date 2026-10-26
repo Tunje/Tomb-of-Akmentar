@@ -363,7 +363,7 @@ func _process(delta: float) -> void:
 		sin(_shake_t * 37.0 + 1.3) * 0.6 + sin(_shake_t * 67.0) * 0.4,
 		sin(_shake_t * 29.0 + 2.1)) * s
 
-	var head := lerpf(HEAD_H, CROUCH_HEAD_H, _crouch_blend) + 1.4 * _drive_blend  # above the cab when driving
+	var head := lerpf(HEAD_H, CROUCH_HEAD_H, _crouch_blend) + (1.4 if vehicle is Truck or vehicle == null else 0.7) * _drive_blend  # above the cab / the saddle
 	cam_root.global_position = global_position + Vector3.UP * head
 	cam_root.rotation = Vector3(0, yaw + deg_to_rad(_recoil.y), 0)
 	cam_pitch.rotation = Vector3(pitch + deg_to_rad(_recoil.x), 0, deg_to_rad(shake.z * 3.0))
@@ -380,7 +380,7 @@ func _process(delta: float) -> void:
 	_cover_blend = move_toward(_cover_blend, 1.0 if cover.in_cover() else 0.0, delta / 0.25)
 	_drive_blend = move_toward(_drive_blend, 1.0 if vehicle else 0.0, delta / 0.4)
 	arm.spring_length = lerpf(ARM_LEN, AIM_ARM_LEN, e) - 0.5 * _cover_blend * (1.0 - e)
-	arm.spring_length += 3.2 * _drive_blend  # pulled back behind the truck
+	arm.spring_length += (3.2 if vehicle is Truck or vehicle == null else 1.4) * _drive_blend  # behind the truck / the horse
 	camera.fov = lerpf(BASE_FOV, w.aim_fov, e)
 	camera.h_offset = shake.x * 0.06
 	camera.v_offset = shake.y * 0.06

@@ -99,6 +99,9 @@ func _ready() -> void:
 	# Falling in = back on deck, but only over the river: the tomb is below y = -1 too
 	# (RiverBoat.watch checks height alone, which put tomb visitors on the boat).
 	river_bank_z = bank
+	# Horses by the camp (step 8, -f9's Horse): E "Ride"; W climbs walk, trot, gallop.
+	Horse.make(level, "bay", camp + Vector3(-4.0, 0.0, 5.0))
+	Horse.make(level, "grey", camp + Vector3(-6.5, 0.0, 5.5))
 	# A brawl to try (step 7): three toughs loiter east of the camp; "Pick a fight" starts it.
 	var brawl_at: Vector3 = camp + Vector3(14.0, 0.0, -2.0)  # east: well away from the bandit ruins
 	var fight := Interactable.make(level, brawl_at + Vector3(0.0, 0.0, 3.0), "Pick a fight (brawl)", "brawl_start", 1.5)
