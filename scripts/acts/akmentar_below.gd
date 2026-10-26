@@ -56,6 +56,8 @@ var slab_doors: Array[SlabDoor] = []
 var neck_slab: SlabDoor  # the one across the main stairs' way in
 var scarab_vents: Array[Dictionary] = []  # {point, normal}
 var secret_doors: Array[Node] = []
+var amulet: Node3D  # on the royal tomb's plinth "2" until the thieves take it
+var sarc_lid: Node3D  # the royal sarcophagus's lid (it slides off at the awakening)
 var _door_cells: Array[Vector3] = []
 var _pit := {}  # Vector2i -> true for cells at the lower level (pit floor, bridge, ramp foot)
 var _rng := RandomNumberGenerator.new()
@@ -459,6 +461,20 @@ func _marker(ch: String, p: Vector3, _r: int, _c: int) -> void:
 		"1", "2", "3", "4", "5":
 			royal_pois[ch] = p
 			_plinth(p, 1.1)
+			var top := p + Vector3.UP * 1.1
+			if ch == "1":  # the four canopic jars, heads to the room
+				var jars := ["imsety", "hapy", "duamutef", "qebehsenuef"]
+				for k in 4:
+					_prop(self, "act5/canopic_%s.glb" % jars[k], top + Vector3((k % 2) * 0.32 - 0.16, 0, (k / 2) * 0.32 - 0.16))
+			elif ch == "2":  # the amulet, upright on its plinth
+				amulet = _prop(self, "act5/amulet_altrazin.glb", top + Vector3.UP * 0.06, 0.0, Vector3.ONE * 1.6)
+			if ch in ["1", "2"]:  # a warm glint so the treasure catches the eye across the room
+				var glint := OmniLight3D.new()
+				glint.light_color = Color(1.0, 0.8, 0.5)
+				glint.light_energy = 1.2
+				glint.omni_range = 2.2
+				add_child(glint)
+				glint.global_position = top + Vector3(0, 0.7, 0.5)
 		"G":
 			guardian_spawn = p
 		"R":
@@ -506,6 +522,27 @@ func _vent_slot(at: Vector3, n: Vector3) -> void:
 		mi.material_override = part[2]
 		add_child(mi)
 		mi.global_transform = Transform3D(face, at + face * part[0] + n * 0.01)
+
+
+## The royal sarcophagus (image-to-3d: 2.7 x 1.35 x 1.22 m, long along X, its lid a child "lid").
+func _sarcophagus(p: Vector3, r: int, c: int) -> void:
+	var along_z: bool = _ch(r - 1, c) in ["#", "L"]
+	var size := Vector3(1.22, 1.35, 2.7) if along_z else Vector3(2.7, 1.35, 1.22)
+	var base := _box(_nav, p + Vector3.UP * size.y * 0.5, size, _stone)
+	_mark_cover(base, size)
+	var prop := _prop(self, "act5/sarcophagus_royal.glb", p, PI * 0.5 if along_z else 0.0)
+	if prop:
+		(base.get_child(1) as MeshInstance3D).visible = false
+		sarc_lid = prop.find_child("lid", true, false) as Node3D
+
+
+## Slide the lid off (the awakening): it grinds aside and tips onto the floor.
+func open_sarcophagus(secs := 1.8) -> void:
+	if sarc_lid == null:
+		return
+	var tw := sarc_lid.create_tween()
+	tw.tween_property(sarc_lid, "position:z", sarc_lid.position.z + 0.9, secs).set_trans(Tween.TRANS_SINE)
+	tw.tween_property(sarc_lid, "rotation:x", 0.35, 0.35).set_ease(Tween.EASE_IN)
 
 
 ## A waist-high stone block a point of interest sits on (blockout).

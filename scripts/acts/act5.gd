@@ -221,6 +221,7 @@ func _awaken() -> void:
 	Game.set_flag("awakened", true)
 	hud.show_message("", "")
 	hud.toast("The sarcophagus lid grinds. Something breathes.", 3.0)
+	level.open_sarcophagus()
 	player.set_armed(true)
 	for lamp in level.torches:
 		lamp.light_energy *= 0.6
@@ -318,6 +319,8 @@ func _ally_run() -> void:
 		g.escape = true
 		_ally_team[id] = g
 		i += 1
+	if level.amulet:
+		level.amulet.visible = false  # it's in their sacking
 	var who: String = ALLY_TEAMS[ally][0]
 	hud.toast("%s's people are running for it, and they've got something wrapped in sacking." % who.capitalize(), 4.0)
 	_ally_flee(runner)
@@ -545,7 +548,8 @@ func _auto_tomb() -> void:
 ## Escape: walk the navmesh path to the stairs' top at a sprint (god mode in the test).
 ## Test views of the maze: --view=<name> --shot-dir=... stands the player there and takes one shot.
 const VIEWS := {"bridge": [20, 13, 0.0, -0.45], "pit": [24, 13, 0.0, 0.4], "ramp": [23, 9, -PI / 2, 0.15],
-	"secret": [21, 35, PI / 2, -0.1], "secret2": [34, 21, PI / 2, -0.05], "deadend": [19, 23, PI, -0.1], "vent": [23, 27, -2.3, -0.3]}
+	"secret": [21, 35, PI / 2, -0.1], "secret2": [34, 21, PI / 2, -0.05], "deadend": [19, 23, PI, -0.1], "vent": [23, 27, -2.3, -0.3],
+	"sarc": [6, 22, -0.3, -0.25], "jars": [3, 18, 0.0, -0.5], "amulet": [3, 29, 0.0, -0.6]}
 
 
 func _view(name: String) -> void:
