@@ -79,6 +79,7 @@ func _ready() -> void:
 	if args.has("party") or ((args.has("auto") or Game.flag("quickstart_act", false)) and Game.party().is_empty()):
 		for id in str(args.get("party", "mahmoud,khalil")).split(",", false):
 			Game.companion(id)["recruited"] = true  # test runs: who comes along
+			Game.set_flag("hired_" + id)  # the epilogue needs it to tell "died" from "never joined"
 	_spawn_party()
 	if FileAccess.file_exists(TOMB_SITES):
 		SiteBudget.begin("akmentar_below", SiteSpot.load_area("akmentar_below"), true)

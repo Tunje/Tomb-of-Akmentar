@@ -13,6 +13,7 @@ var hud: Hud
 var mummies: Array[Mummy] = []  # live nodes only; corpses leave when they sink
 var spawned := 0
 var truck: Truck
+var tourer: Truck
 var boat: RiverBoat
 var river_bank_z := INF
 var brawlers: Array[Node] = []
@@ -116,6 +117,10 @@ func _ready() -> void:
 	truck = Truck.new()
 	add_child(truck)
 	truck.global_position = level.player_spawn + Vector3(-7.0, 0.6, 1.0)
+	# The Cairo touring car beside it (image-to-3d's tourer, same driving code; right-hand drive).
+	tourer = Truck.make_tourer()
+	add_child(tourer)
+	tourer.global_position = level.player_spawn + Vector3(-12.0, 0.6, 1.0)
 
 	if args.size() > 0:
 		# Test windows must never take Simon's keyboard or mouse while he plays.

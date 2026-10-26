@@ -4,6 +4,8 @@ extends VehicleBody3D
 ## and brake/reverse, A/D steer, Space handbrake. Seats hold the driver and passengers; damage
 ## goes fine -> smoking -> burning -> wrecked, and a wreck kills everyone aboard (Act 8).
 ## Stand-in boxes until image-to-3d's truck (separate wheels, doors, steering wheel) arrives.
+## The same code drives any 1920s motor: `spec` (set before it enters the tree) gives its model,
+## wheels, seats, door and weight. TRUCK is the default; Truck.make_tourer() is the Cairo tourer.
 
 signal wrecked(truck: Truck)
 
@@ -16,10 +18,26 @@ const ANTI_ROLL_DAMP := 2.5
 const MAX_HEALTH := 100.0
 const MODEL := "res://assets/props/vehicle_truck.glb"
 const WHEEL_Z := 1.655  # half the model's wheelbase
+## What each motor is: model, wheel hubs (front/rear z, track x per axle), radius, seat hip points
+## (0 = the driver), the driver's door node and how it opens, the steering wheel's spin axis,
+## the stand-in collision boxes, mass, engine and top speed.
+const TRUCK := {"name": "truck", "model": MODEL, "front_z": -WHEEL_Z, "rear_z": WHEEL_Z, "track_f": 0.89, "track_r": 0.89,
+	"radius": 0.46, "seats": [Vector3(-0.22, 1.2, 0.25), Vector3(0.45, 1.2, 0.25), Vector3(-0.5, 1.45, 1.4), Vector3(0.5, 1.45, 1.4)],
+	"door": "door_l", "door_sign": -1.0, "door_at": Vector3(-1.4, 0.8, -1.0), "wheel_axis": "y", "prompt": "Drive the truck",
+	"boxes": [[Vector3(1.9, 0.5, 4.8), Vector3(0, 0.75, 0)], [Vector3(1.8, 1.0, 1.4), Vector3(0, 1.5, -1.1)]],
+	"mass": 1200.0, "engine": ENGINE, "max_speed": 12.5}
+## image-to-3d's touring car: right-hand drive (British Egypt), lighter and quicker than the truck.
+const TOURER := {"name": "tourer", "model": "res://assets/props/vehicle_tourer.glb", "front_z": -1.736, "rear_z": 1.736,
+	"track_f": 0.785, "track_r": 0.753, "radius": 0.455,
+	"seats": [Vector3(0.30, 0.96, 0.35), Vector3(-0.30, 0.96, 0.35), Vector3(0.30, 1.02, 1.45), Vector3(-0.30, 1.02, 1.45)],
+	"door": "door_fr", "door_sign": 1.0, "door_at": Vector3(1.35, 0.8, -0.1), "wheel_axis": "z", "prompt": "Drive the car",
+	"boxes": [[Vector3(1.85, 0.55, 4.6), Vector3(0, 0.75, 0)], [Vector3(1.7, 0.5, 1.6), Vector3(0, 1.25, -1.5)]],
+	"mass": 1000.0, "engine": 4600.0, "max_speed": 16.0}
+var spec := TRUCK
 var _door_mesh: Node3D
 var _wheel_mesh: Node3D
 var _door_open := 0.0
-const MAX_SPEED := 12.5  # m/s, about 45 km/h: a loaded 1920s truck
+const MAX_SPEED := 12.5  # m/s, about 45 km/h: a loaded 1920s truck (TRUCK's; spec.max_speed per motor)
 
 var id := "truck"
 var health := MAX_HEALTH
@@ -34,8 +52,16 @@ var _steer := 0.0
 var _last_speed := 0.0
 
 
+## A touring car (Cairo, Act 8): Truck.make_tourer() then add it to the tree.
+static func make_tourer() -> Truck:
+	var t := Truck.new()
+	t.spec = TOURER
+	t.id = "tourer"
+	return t
+
+
 func _ready() -> void:
-	mass = 1200.0
+	mass = float(spec.mass)
 	collision_layer = 1
 	collision_mask = 1 | 4  # not the player: overlapping on exit kicked the truck
 	center_of_mass_mode = RigidBody3D.CENTER_OF_MASS_MODE_CUSTOM
@@ -53,27 +79,30 @@ func _build() -> void:
 	dark.albedo_color = Color(0.08, 0.08, 0.08)
 	var canvas := StandardMaterial3D.new()
 	canvas.albedo_color = Color(0.62, 0.55, 0.4)
-	# Chassis, cab, bed with a canvas top. The truck faces -Z.
-	_part(Vector3(1.9, 0.5, 4.8), Vector3(0, 0.75, 0), paint, true)
-	_part(Vector3(1.8, 1.0, 1.4), Vector3(0, 1.5, -1.1), paint, true)
-	_part(Vector3(1.6, 0.6, 1.3), Vector3(0, 1.2, -2.15), paint, false)  # bonnet
-	_part(Vector3(1.9, 0.5, 2.6), Vector3(0, 1.25, 1.0), paint, false)  # bed sides
-	_part(Vector3(1.95, 0.9, 2.5), Vector3(0, 1.95, 1.05), canvas, false)
+	# The solid boxes (the body's collision), and for the truck its stand-in look. Faces -Z.
+	for b in spec.boxes:
+		_part(b[0], b[1], paint, true)
+	if spec.name == "truck":
+		_part(Vector3(1.6, 0.6, 1.3), Vector3(0, 1.2, -2.15), paint, false)  # bonnet
+		_part(Vector3(1.9, 0.5, 2.6), Vector3(0, 1.25, 1.0), paint, false)  # bed sides
+		_part(Vector3(1.95, 0.9, 2.5), Vector3(0, 1.95, 1.05), canvas, false)
 	# image-to-3d's truck (when present) replaces the boxes; its wheels, door and steering wheel
 	# are separate nodes with their origins on their pivots.
-	var model: Node3D = (load(MODEL) as PackedScene).instantiate() if ResourceLoader.exists(MODEL) else null
+	var model_path: String = spec.model
+	var model: Node3D = (load(model_path) as PackedScene).instantiate() if ResourceLoader.exists(model_path) else null
 	if model:
 		add_child(model)
 		for mi in get_children():
 			if mi is MeshInstance3D:
 				(mi as MeshInstance3D).visible = false
-		_door_mesh = model.find_child("door_l", true, false) as Node3D
+		_door_mesh = model.find_child(str(spec.door), true, false) as Node3D
 		_wheel_mesh = model.find_child("steering_wheel", true, false) as Node3D
-	for z in [-WHEEL_Z, WHEEL_Z]:
-		for x in [-0.89, 0.89]:
+	for z: float in [spec.front_z, spec.rear_z]:
+		var track: float = spec.track_f if z < 0.0 else spec.track_r
+		for x: float in [-track, track]:
 			var w := VehicleWheel3D.new()
-			w.position = Vector3(x, 0.46, z)
-			w.wheel_radius = 0.46
+			w.position = Vector3(x, spec.radius, z)
+			w.wheel_radius = spec.radius
 			w.wheel_rest_length = 0.18
 			w.suspension_travel = 0.22
 			w.suspension_stiffness = 70.0
@@ -104,14 +133,14 @@ func _build() -> void:
 			mi.material_override = dark
 			mi.rotation.z = PI * 0.5
 			w.add_child(mi)
-	# Driver behind the steering wheel (model: x -0.2, z -0.22), passenger beside, two in the back.
-	for p in [Vector3(-0.22, 1.2, 0.25), Vector3(0.45, 1.2, 0.25), Vector3(-0.5, 1.45, 1.4), Vector3(0.5, 1.45, 1.4)]:
+	# Driver behind the steering wheel, a passenger beside, two in the back.
+	for p: Vector3 in spec.seats:
 		var s := Marker3D.new()
 		s.position = p
 		add_child(s)
 		seats.append(s)
-	door = Interactable.make(self, global_position, "Drive the truck", id + "_door", 1.0)
-	door.position = Vector3(-1.4, 0.8, -1.0)
+	door = Interactable.make(self, global_position, str(spec.prompt), id + "_door", 1.0)
+	door.position = spec.door_at
 	door.used.connect(func(by: Node): if by.has_method("enter_vehicle"): by.enter_vehicle(self))
 	_smoke = _particles(Color(0.2, 0.2, 0.2, 0.6), 0.25, 1.6)
 	_fire = _particles(Color(1.0, 0.45, 0.1, 0.9), 0.12, 0.6)
@@ -174,8 +203,8 @@ func drive(throttle: float, steer_in: float, handbrake: bool, delta: float) -> v
 	else:
 		brake = 0.0
 		var power := 1.0 if health > MAX_HEALTH * 0.35 else 0.55  # a smoking engine pulls less
-		engine_force = -ENGINE * throttle * power  # -Z is forward
-		if fwd_speed > MAX_SPEED and throttle > 0.0:
+		engine_force = -float(spec.engine) * throttle * power  # -Z is forward
+		if fwd_speed > float(spec.max_speed) and throttle > 0.0:
 			engine_force = 0.0
 	if handbrake:
 		brake = BRAKE * 1.5
@@ -193,10 +222,13 @@ func _process(delta: float) -> void:
 	# The model's moving parts: steering wheel with the front wheels, door open while
 	# someone climbs in or out (briefly after a change of driver).
 	if _wheel_mesh:
-		_wheel_mesh.rotation.y = -steering * 4.0
+		if spec.wheel_axis == "z":
+			_wheel_mesh.rotation.z = steering * 4.0
+		else:
+			_wheel_mesh.rotation.y = -steering * 4.0
 	if _door_mesh:
 		_door_open = maxf(_door_open - delta, 0.0)
-		_door_mesh.rotation.y = -deg_to_rad(70.0) * clampf(_door_open * 2.0, 0.0, 1.0)
+		_door_mesh.rotation.y = float(spec.door_sign) * deg_to_rad(70.0) * clampf(_door_open * 2.0, 0.0, 1.0)
 
 
 func _physics_process(_delta: float) -> void:

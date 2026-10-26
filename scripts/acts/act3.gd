@@ -39,6 +39,7 @@ func _ready() -> void:
 		Game.money = 300  # a fresh test game: what Act 2 would have left, and a crew
 		for id in ["mahmoud", "khalil"]:
 			Game.companion(id)["recruited"] = true
+			Game.set_flag("hired_" + id)
 	level = DesertRoute.new()
 	add_child(level)
 	player = Player.new()

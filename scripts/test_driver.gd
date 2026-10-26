@@ -324,7 +324,7 @@ var _truck_step := 0
 
 func _truck_check() -> void:
 	var p: Player = game.player
-	var t: Truck = game.truck
+	var t: Truck = game.tourer if args.get("vehicle", "") == "tourer" else game.truck
 	var steps := [[0.5, "door"], [0.9, "enter"], [1.3, "go"], [3.0, "shot_drive"], [4.0, "left"], [5.6, "shot_turn"],
 		[6.0, "stop"], [7.5, "exit"], [8.2, "shot_out"], [8.6, "end"]]
 	if _truck_step >= steps.size() or _t < steps[_truck_step][0]:
@@ -334,7 +334,8 @@ func _truck_check() -> void:
 	_truck_step += 1
 	match what:
 		"door":
-			p.global_position = t.door.global_position + t.global_basis.x * -0.6
+			# Outside the driver's door, whichever side it's on (the tourer is right-hand drive).
+			p.global_position = t.door.global_position + t.global_basis.x * 0.6 * signf(t.door.position.x)
 			var to := t.door.global_position - p.global_position
 			p.yaw = atan2(-to.x, -to.z)
 		"enter", "exit":
