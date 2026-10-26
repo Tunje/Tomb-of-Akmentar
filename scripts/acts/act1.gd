@@ -5,9 +5,10 @@ extends Node3D
 ##   ──► Freddie's office (act1_office: Umm Sayed; he's gone; a note; who else came)
 ##   ──► Finch's debt collectors in the street (act1_debt_collectors: talk, pay, or a fist fight,
 ##       then act1_after_brawl)
-##   ──► Karim Fahmy at the café (act1_offer) ──[armed men come for his case]──► talk them down, pay
-##       them off, or draw: a gunfight from cover (won: act1_gunfight_won, and the offer resumes)
-##   ──► the offer accepted (act1_offer_accepted) ──► Enter: on to Act 2.
+##   ──► armed men at Freddie's, after him or what he left (act1_armed_men): talk them down, pay them
+##       off, or draw: a gunfight from cover (won: act1_gunfight_won)
+##   ──► Karim Fahmy at the café (act1_offer): the offer, a conversation only (Simon: no gunfight
+##       at the offer, only at Freddie's) ──► accepted (act1_offer_accepted) ──► Enter: Act 2.
 ## Test args (after --): --auto (the bot plays it through: talks' fight endings forced; RESULT lines).
 
 const PLAN := "res://actions/act1_plan.json"
@@ -16,7 +17,7 @@ const OFFICE := "club"
 const STREET := "bazaar"
 const CAFE := "tavern"
 
-enum Step { ARRIVE, OFFICE, COLLECTORS, OFFER, END }
+enum Step { ARRIVE, OFFICE, COLLECTORS, ARMED, OFFER, END }
 
 var level: Cairo
 var player: Player
@@ -97,7 +98,28 @@ func _after_office(_end: String) -> void:
 func _after_collectors(end: String) -> void:
 	if end == "end_fight":
 		return  # the brawl is on; _on_event carries on from its end
-	_to_cafe()
+	_armed_men()
+
+
+## Back at Freddie's: armed men after him (or after what he left). Talk, pay, or draw.
+func _armed_men() -> void:
+	step = Step.ARMED
+	var at: Vector3 = level.spots[OFFICE]
+	var boss := Npc.make(level, "armed_boss", at + Vector3(0, 0, 6.0), "", GunmanBody.BANDITS[0])
+	boss.face_towards(player.global_position)
+	hud.toast("Back at Freddie's, three men with guns are waiting, and they think you know where he is.", 4.0)
+	await get_tree().create_timer(1.5).timeout
+	if not FileAccess.file_exists("res://dialogue/act1_armed_men.json") and not args.has("auto"):
+		boss.queue_free()
+		_gunfight()  # no talk yet: straight to the guns
+		return
+	_talk("act1_armed_men", boss, func(end: String):
+		if is_instance_valid(boss):
+			boss.queue_free()
+		if end != "end_fight":
+			if not Game.flag("act1_gunfight_won", false):
+				Game.set_flag("act1_gunfight_avoided")
+			_to_cafe())
 
 
 func _to_cafe() -> void:
@@ -111,9 +133,7 @@ func _to_cafe() -> void:
 		_auto_walk(at, func(): _cafe.use(player))
 
 
-func _after_offer(end: String) -> void:
-	if end == "end_fight":
-		return  # the gunfight; the offer resumes after it
+func _after_offer(_end_id: String) -> void:
 	if Game.flag("act1_offer_accepted", false):
 		_end()
 
@@ -178,7 +198,7 @@ func _brawl_over(lost: bool) -> void:
 		Game.set_flag("brawl_lost")
 	var musa := Npc.make(level, "musa", player.global_position + Vector3(1.5, 0, 1.0), "", Characters.glb("musa"))
 	await get_tree().create_timer(1.0).timeout
-	_talk("act1_after_brawl", musa, func(_e): _to_cafe())
+	_talk("act1_after_brawl", musa, func(_e): _armed_men())
 
 
 ## Three hired guns after Karim's case: pistols, cover, reloading. Win, and the offer resumes.
@@ -210,7 +230,7 @@ func _gunfight() -> void:
 	Game.set_flag("act1_confrontation_done")
 	player.set_armed(false)
 	await get_tree().create_timer(1.5).timeout
-	_talk("act1_offer", _karim, _after_offer)
+	_to_cafe()
 
 
 # ---------------------------------------------------------------- helpers
@@ -221,7 +241,7 @@ func _talk(id: String, who: Node3D, next: Callable) -> void:
 		next.call("")
 		return
 	if args.has("auto"):
-		var end: String = {"act1_debt_collectors": "end_fight", "act1_offer": "end_fight" if not Game.flag("act1_confrontation_done", false) else "end_accepted"}.get(id, "")
+		var end: String = {"act1_debt_collectors": "end_fight", "act1_armed_men": "end_fight", "act1_offer": "end_accepted"}.get(id, "")
 		if end == "end_fight":
 			Game.event.emit("fight_debt_collectors" if id == "act1_debt_collectors" else "fight_armed_men")
 		elif end == "end_accepted":
