@@ -396,6 +396,8 @@ func _choose_target() -> void:
 	if best:
 		if best != target:
 			_seen_t = 0.0
+			if team == PARTY and not _target_alive(target):
+				Barks.say(self, "combat_start")
 		target = best
 	elif team == PARTY and not _target_alive(target):
 		target = null
@@ -468,6 +470,8 @@ func _enter(s: State) -> void:
 			if rig:
 				rig.reload(RELOAD)
 			Sfx.play_at(get_parent(), Sfx.click(), global_position + Vector3.UP, -6.0)
+			if team == PARTY:
+				Barks.say(self, "reloading")
 		State.STAGGER:
 			if rig:
 				rig.stagger(STAGGER_TIME)
@@ -817,6 +821,7 @@ func stumble() -> void:
 	_help = Interactable.make(get_parent() as Node3D, global_position + Vector3.UP, "Help %s up" % who, "help_" + companion_id, 1.2)
 	_help.used.connect(func(_by): help_up())
 	Sfx.play_at(get_parent(), Sfx.impact(), global_position + Vector3.UP * 0.4, -2.0)
+	Barks.say_any(get_tree(), "ally_down", global_position)
 	stumbled_down.emit(self)
 
 
@@ -841,6 +846,7 @@ func help_up() -> void:
 	if is_instance_valid(_help):
 		_help.queue_free()
 	_help = null
+	Barks.say(self, "helped_up")
 	helped_up.emit(self)
 
 
@@ -1396,6 +1402,8 @@ func _hurt(part: String, dmg: float, dir: Vector3, stagger: float, knock: float)
 	if not retreating and health < RETREAT_AT * max_health / MAX_HEALTH:
 		retreating = true
 		_retreat_pending = true
+		if team == PARTY:
+			Barks.say(self, "low_health")
 	_stagger_pts += stagger * (1.5 if part == "head" else 1.0)
 	if _stagger_pts >= STAGGER_AT and state != State.STAGGER:
 		_stagger_pts = 0.0
@@ -1512,6 +1520,8 @@ func _die() -> void:
 		var tw := create_tween()
 		tw.tween_property(model, "rotation:x", PI * 0.5, 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 		tw.parallel().tween_property(model, "position:y", 0.2, 0.5)
+	if team != PARTY:
+		Barks.say_any(get_tree(), "enemy_down", global_position)
 	killed.emit(self)
 
 

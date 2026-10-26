@@ -153,6 +153,7 @@ func wake() -> void:
 	if state == State.DORMANT:
 		_enter(State.CHASE)
 		Sfx.play_at(get_parent(), Sfx.groan(), global_position + Vector3.UP * 1.5, -4.0, 0.2)
+		Barks.say_any(get_tree(), "mummy_seen", global_position)
 
 
 ## Climb out of a sarcophagus at `from` and step down to `to`.
@@ -402,6 +403,7 @@ func _scraps(at: Vector3, dir: Vector3) -> void:
 
 func _die(dir: Vector3, headshot: bool) -> void:
 	_enter(State.DEAD)
+	Barks.say_any(get_tree(), "enemy_down", global_position)
 	if headshot and not _lost.has("head"):
 		_lost["head"] = true
 		_gib("head", dir)

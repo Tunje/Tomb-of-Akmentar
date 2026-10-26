@@ -52,6 +52,7 @@ static var _player_cache: Player
 ## A swarm pouring from a wall vent at (or near) `at`; the wall it comes out of is the nearest
 ## one around the point, and `player` is who it goes for first.
 static func burst(parent: Node, at: Vector3, player: Player) -> void:
+	Barks.say_any(parent.get_tree(), "scarabs", at)
 	var space := (parent as Node3D).get_world_3d().direct_space_state if parent is Node3D else player.get_world_3d().direct_space_state
 	var probe := at + Vector3.UP * 0.5
 	var best_d := INF
@@ -72,6 +73,7 @@ static func burst(parent: Node, at: Vector3, player: Player) -> void:
 
 ## A swarm pouring out of the wall at `point` (on the wall's surface), wall facing `wall_normal`.
 static func pour(parent: Node, point: Vector3, wall_normal: Vector3, seconds := LIFE) -> ScarabSwarm:
+	Barks.say_any(parent.get_tree(), "scarabs", point)
 	var s := ScarabSwarm.new()
 	s.name = "Scarabs"
 	s.origin = point
