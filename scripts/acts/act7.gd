@@ -14,8 +14,11 @@ extends Node3D
 ##   win and artifacts_recovered is set). Either way act7_recovered follows; then Blackwood waits
 ##   at the bank (data-gated) and the hotel bed takes you on to Act 8.
 ## - The thieves countdown at 0 before that: act7_too_late (thieves_escaped), then Act 8.
-## Test args (after --): --auto[=intercept|late|mummy] (a bot; RESULT lines), --thieves=americans|
+## Test args (after --): --auto[=intercept|late|mummy] (a bot; RESULT lines), --resume (at game over,
+## load the last save the way Enter does), --chain (on into Act 8), --thieves=americans|
 ## germans|italians, --seconds=N, --shots=t1,t2, --shot-dir=path.
+
+static var _bot_resumed := false  # --resume: the bot loads the save once, then stops
 
 const PLAN := "res://actions/act7_plan.json"
 const NEXT_ACT := ["res://act8.tscn"]  # the first that exists
@@ -88,10 +91,13 @@ func _ready() -> void:
 	add_child(CountdownBars.new())
 	player.hit_confirmed.connect(hud.on_hit)
 	player.damaged.connect(hud.on_damaged)
-	player.died.connect(func(): hud.show_message("YOU DIED", "Enter to try again"))
+	player.died.connect(func(): hud.show_message("YOU DIED", "Enter  load the last save"))
 	for s in str(args.get("shots", "")).split(",", false):
 		_shots.append(float(s))
-	DayLog.begin_day()
+	if str(Game.place).begins_with("act7_"):
+		DayLog.ensure()  # resuming a save made here: keep the day's log
+	else:
+		DayLog.begin_day()
 	_sync_party()
 	_update_signs(true)
 	_place_intercept()
@@ -226,6 +232,11 @@ func _catastrophe() -> void:
 	hud.show_message("THE CITY OF THE DEAD", "He has reached Cairo, and the artifacts were never returned.\n\nEnter  load the last save")
 	if args.has("auto"):
 		await get_tree().create_timer(1.0).timeout
+		if args.has("resume") and not _bot_resumed:
+			_bot_resumed = true  # static: survives the scene change (a flag would go with the load)
+			print("RESULT act7 resuming the last save")
+			SaveRoute.resume(get_tree())
+			return
 		get_tree().quit(0)
 
 
@@ -421,7 +432,10 @@ func _finish() -> void:
 		+ "\n\nEnter  on to Act 8")
 	if args.has("auto"):
 		await get_tree().create_timer(1.0).timeout
-		get_tree().quit(0)
+		if args.has("chain") and ResourceLoader.exists(NEXT_ACT[0]):
+			get_tree().change_scene_to_file(NEXT_ACT[0])  # --chain: on into Act 8
+		else:
+			get_tree().quit(0)
 
 
 # ---------------------------------------------------------------- the party
@@ -448,9 +462,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				get_tree().change_scene_to_file(s)
 				return
 		hud.show_message("THE END OF ACT 7", "Act 8 isn't built yet.")
-	elif _over and enter:
-		if Game.load_game():
-			get_tree().change_scene_to_file("res://main.tscn")
+	elif (_over or not player.alive) and enter:
+		SaveRoute.resume(get_tree())  # the last save, wherever it resumes
 	elif event.is_action_pressed("journal"):
 		JournalScreen.toggle(self, player)
 	elif event.is_action_pressed("party_order"):

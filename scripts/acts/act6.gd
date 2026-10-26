@@ -56,7 +56,7 @@ func _ready() -> void:
 	add_child(CountdownBars.new())
 	player.hit_confirmed.connect(hud.on_hit)
 	player.damaged.connect(hud.on_damaged)
-	player.died.connect(func(): hud.show_message("YOU DIED", "Enter to try again"))
+	player.died.connect(func(): hud.show_message("YOU DIED", "Enter  load the last save"))
 	for s in str(args.get("shots", "")).split(",", false):
 		_shots.append(float(s))
 	Game.event.connect(func(e: String): _events.append(e))
@@ -345,8 +345,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if step == Step.END and enter:
 		get_tree().change_scene_to_file(NEXT_ACT)  # Game (the countdowns, the party) carries over
 	elif (step == Step.OVER or not player.alive) and enter:
-		if Game.load_game():
-			get_tree().change_scene_to_file("res://main.tscn")
+		SaveRoute.resume(get_tree())  # the last save, wherever it resumes
 	elif event.is_action_pressed("party_order"):
 		hud.toast("Companions: " + str(Gunman.toggle_party_order(get_tree())))
 	elif event.is_action_pressed("ui_cancel") and not ActionMenu.ui_open():
