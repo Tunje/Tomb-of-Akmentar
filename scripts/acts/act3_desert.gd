@@ -182,6 +182,18 @@ func _keep_formation() -> void:
 		drover.want_speed = clampf(maxf(lead_speed, 1.5) + (slot.distance_to(truck.global_position) - 1.0) * 0.5, 0.0, 9.0)
 
 
+## A companion's one-liner (-f9's Barks): the nearest one on foot, else one still riding or
+## sitting in a truck (Riders aren't in the party group, so they speak by id).
+func _bark(situation: String, at := Vector3.INF) -> void:
+	if Barks.say_any(get_tree(), situation, at) != "":
+		return
+	for d: Dictionary in [riders, passengers]:
+		for id: String in d:
+			var r := d[id] as Rider
+			if is_instance_valid(r) and r.body and Barks.say(r.body, situation, id) != "":
+				return
+
+
 func _lead_speed() -> float:
 	var v := player.vehicle
 	if v is Horse:
@@ -202,6 +214,9 @@ func _road() -> void:
 	await get_tree().create_timer(2.5).timeout
 	hud.show_message("")
 	hud.toast("W / S speed up and slow down · A / D steer · E get %s" % ("out" if coast else "down"), 4.0)
+	await get_tree().create_timer(4.5).timeout
+	if step == Step.ROAD:
+		_bark("truck_ride" if coast else "horse_ride")
 
 
 func _ambush() -> void:
@@ -218,6 +233,7 @@ func _ambush() -> void:
 		int(args.get("seed", "-1")))
 	ambush.riders_coming.connect(func(): hud.toast("Riders! Coming down the wadi from the east!", 3.0))
 	hud.toast("Ambush! Get out into cover (E) or drive on through!" if coast else "Ambush! Get down into cover (E) or ride on through!", 4.0)
+	get_tree().create_timer(1.2).timeout.connect(func(): _bark("combat_start", player.global_position))
 	result = await ambush.finished
 	_after()
 
