@@ -13,6 +13,8 @@ var hud: Hud
 var mummies: Array[Mummy] = []  # live nodes only; corpses leave when they sink
 var spawned := 0
 var truck: Truck
+var bandits: Array[Gunman] = []
+const BANDIT_SIGHT := 28.0
 var started := false
 var over := false
 var wave_done := false
@@ -53,6 +55,13 @@ func _ready() -> void:
 		m.rotation.y = randf() * TAU
 	level.interactables["camp_fire"].used.connect(func(_by): _save_at("camp_fire"))
 	level.interactables["camp_bed"].used.connect(func(_by): _sleep_at("camp_bed"))
+	# A bandit ambush among the west ruins (Proving Ground step 6): they engage when you
+	# come close or shoot near them.
+	for i in 4:
+		var g := Gunman.new()
+		add_child(g)
+		g.global_position = Vector3(9.0 + (i % 2) * 5.0, 0.0, 74.0 + i * 5.0)
+		bandits.append(g)
 	# A truck by the camp (Proving Ground step 9).
 	truck = Truck.new()
 	add_child(truck)
@@ -177,7 +186,16 @@ func _alive_in_burial() -> int:
 	return n
 
 
+## Bandits engage within BANDIT_SIGHT (or `any_range`, e.g. a shot nearby).
+func _alert_bandits(any_range := 0.0) -> void:
+	for g in bandits:
+		if is_instance_valid(g) and g.target == null \
+				and g.global_position.distance_to(player.global_position) < maxf(BANDIT_SIGHT, any_range):
+			g.target = player
+
+
 func _wake_by_sight() -> void:
+	_alert_bandits()
 	var eye := player.global_position + Vector3.UP * 1.5
 	var space := get_world_3d().direct_space_state
 	for m in mummies:
@@ -205,6 +223,7 @@ func _wake_later(m: Mummy, secs: float) -> void:
 
 
 func _on_fired() -> void:
+	_alert_bandits(45.0)
 	# Gunfire carries in a tomb.
 	for m in mummies:
 		if is_instance_valid(m) and m.state == Mummy.State.DORMANT \

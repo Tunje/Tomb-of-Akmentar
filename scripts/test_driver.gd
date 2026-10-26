@@ -378,5 +378,8 @@ func _finish() -> void:
 	var p: Player = game.player
 	print("RESULT summary t=%.1f fired=%d hits=%d kills=%d alive_mummies=%d health=%d over=%s spawned=%d" % [
 		_t, _fired, _hits, _kills, game.alive_count(), int(p.health), str(game.over), game.spawned])
+	for g in game.bandits:
+		if is_instance_valid(g):
+			print("RESULT bandit %s state=%s target=%s fired=%d hit=%d hp=%d" % [g.name, Gunman.State.keys()[g.state], g.target != null, g.shots_fired, g.shots_hit, int(g.health)])
 	await get_tree().create_timer(0.3).timeout
 	get_tree().quit(0)
