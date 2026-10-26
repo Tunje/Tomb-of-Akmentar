@@ -19,7 +19,9 @@ const STAGGER_TIME := 0.7
 const DAMAGE := 20.0
 const GRAVITY := 20.0
 
-var target: Player
+var target  # the player or a companion (anything with alive, take_damage, global_position)
+var player: Node3D  # the target main first set; the fallback
+var _retarget := 0.0
 var state := State.DORMANT
 var health := 100.0
 var speed := 1.5
@@ -49,6 +51,7 @@ var _arm_pivots := {}
 
 
 func _ready() -> void:
+	add_to_group("mummies")  # companions find mummies through this group
 	collision_layer = 4
 	collision_mask = 1 | 2 | 4
 	speed = randf_range(1.25, 1.8)
@@ -195,6 +198,10 @@ func _physics_process(delta: float) -> void:
 	if state in [State.DORMANT, State.RISING, State.DEAD]:
 		return
 
+	_retarget -= delta
+	if _retarget <= 0.0:
+		_retarget = 0.5
+		_pick_target()
 	var to_player := Vector3.ZERO
 	var dist := INF
 	if target and target.alive:
@@ -230,6 +237,22 @@ func _physics_process(delta: float) -> void:
 	velocity.y = 0.0 if is_on_floor() else velocity.y - GRAVITY * delta
 	move_and_slide()
 	_animate(delta, move.length())
+
+
+## The nearest of the player and the companions (group "party") that is still alive.
+func _pick_target() -> void:
+	if player == null:
+		player = target
+	var best: Node3D = player if player and player.alive else null
+	var bd := global_position.distance_to(best.global_position) if best else INF
+	for c in get_tree().get_nodes_in_group("party"):
+		var n := c as Node3D
+		var d := global_position.distance_to(n.global_position)
+		if n.alive and d < bd - 1.0:
+			best = n
+			bd = d
+	if best:
+		target = best
 
 
 func _reach() -> float:

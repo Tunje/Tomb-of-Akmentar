@@ -59,6 +59,8 @@ func _ready() -> void:
 	if args.has("god"):
 		p.max_health = 100000.0
 		p.health = 100000.0
+	if args.has("recruit"):
+		Game.apply([{"recruit": args["recruit"]}])  # joins as a companion (main._on_game_changed)
 	print("RESULT start scenario=%s" % args.get("scenario", "none"))
 
 
@@ -378,6 +380,9 @@ func _finish() -> void:
 	var p: Player = game.player
 	print("RESULT summary t=%.1f fired=%d hits=%d kills=%d alive_mummies=%d health=%d over=%s spawned=%d" % [
 		_t, _fired, _hits, _kills, game.alive_count(), int(p.health), str(game.over), game.spawned])
+	for id in game.companions:
+		var c: Gunman = game.companions[id]
+		print("RESULT companion %s alive=%s hp=%d fired=%d hit=%d" % [id, is_instance_valid(c) and c.alive, int(c.health) if is_instance_valid(c) else 0, c.shots_fired if is_instance_valid(c) else 0, c.shots_hit if is_instance_valid(c) else 0])
 	for g in game.bandits:
 		if is_instance_valid(g):
 			print("RESULT bandit %s state=%s target=%s fired=%d hit=%d hp=%d" % [g.name, Gunman.State.keys()[g.state], g.target != null, g.shots_fired, g.shots_hit, int(g.health)])

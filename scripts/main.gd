@@ -14,6 +14,8 @@ var mummies: Array[Mummy] = []  # live nodes only; corpses leave when they sink
 var spawned := 0
 var truck: Truck
 var bandits: Array[Gunman] = []
+var npcs := {}  # id -> Npc standing in the world
+var companions := {}  # id -> Gunman on our side
 const BANDIT_SIGHT := 28.0
 var started := false
 var over := false
@@ -66,7 +68,8 @@ func _ready() -> void:
 	# Talking and actions (Proving Ground steps 3-4, -f9's systems): Eleanor by the camp,
 	# a Cairo street stall (3 actions a day) and the camp's companion talks.
 	var camp: Vector3 = level.interactables["camp_fire"].global_position
-	Npc.make(level, "eleanor", camp + Vector3(-1.5, 0.0, -3.0), "eleanor_meet", NpcBody.SCOUT)
+	Game.changed.connect(_on_game_changed)
+	npcs["eleanor"] = Npc.make(level, "eleanor", camp + Vector3(-1.5, 0.0, -3.0), "eleanor_meet", NpcBody.SCOUT)
 	ActionSpot.make(level, "cairo_corner", level.player_spawn + Vector3(-3.0, 0.0, -6.0))
 	ActionSpot.make(level, "camp", camp + Vector3(1.2, 0.0, -1.6))
 	# Investigation (step 11): three statues near the tomb doorway, and a sealed slab that only
@@ -129,6 +132,7 @@ func _continue() -> void:
 	if saved_ammo is Array and saved_ammo.size() == player.ammo.size():
 		for i in saved_ammo.size():
 			player.ammo[i] = int(saved_ammo[i])
+	_spawn_party()
 	_start()
 	hud.toast("Day %d" % Game.day)
 
@@ -164,6 +168,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			if not ActionMenu.ui_open():  # talking, menus and the day screen keep the mouse
 				Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 			hud.show_message("")
+	elif event.is_action_pressed("party_order") and started and not over:
+		var order: String = Gunman.toggle_party_order(get_tree())
+		hud.toast("Companions: " + order)
 	elif event.is_action_pressed("journal") and started and not over:
 		JournalScreen.toggle(self, player)
 	elif event.is_action_pressed("ui_cancel") and started and not over and not ActionMenu.ui_open():
@@ -304,7 +311,7 @@ func _setup_input() -> void:
 	var keys := {
 		"move_forward": [KEY_W], "move_back": [KEY_S], "move_left": [KEY_A], "move_right": [KEY_D],
 		"sprint": [KEY_SHIFT], "crouch": [KEY_C, KEY_CTRL], "dodge": [KEY_SPACE],
-		"reload": [KEY_R], "cover": [KEY_E], "holster": [KEY_X], "journal": [KEY_J], "weapon_1": [KEY_1], "weapon_2": [KEY_2], "weapon_3": [KEY_3],
+		"reload": [KEY_R], "cover": [KEY_E], "holster": [KEY_X], "journal": [KEY_J], "party_order": [KEY_G], "weapon_1": [KEY_1], "weapon_2": [KEY_2], "weapon_3": [KEY_3],
 	}
 	var mouse := {
 		"fire": [MOUSE_BUTTON_LEFT], "aim": [MOUSE_BUTTON_RIGHT],
@@ -324,3 +331,45 @@ func _setup_input() -> void:
 			var e := InputEventMouseButton.new()
 			e.button_index = b
 			InputMap.action_add_event(action, e)
+
+
+# ---------------------------------------------------------------- companions
+
+## Companion models until each has their own (image-to-3d makes one per person).
+const COMPANION_GLB := {"eleanor": NpcBody.SCOUT}
+
+
+## Everyone in the party fights at our side (on continue, and when someone is recruited).
+func _spawn_party() -> void:
+	var i := 0
+	for id in Game.party():
+		_spawn_companion(id, player.global_position + Vector3(i * 1.2 - 0.6, 0.0, 2.5))
+		i += 1
+
+
+func _spawn_companion(id: String, at: Vector3) -> void:
+	if companions.has(id) and is_instance_valid(companions[id]):
+		return
+	var c := Gunman.make_companion(id, player, COMPANION_GLB.get(id, NpcBody.SCOUT))
+	if c == null:
+		return
+	add_child(c)
+	c.global_position = at
+	companions[id] = c
+	# The standing NPC steps into the party: one Eleanor, not two.
+	if npcs.has(id) and is_instance_valid(npcs[id]):
+		npcs[id].queue_free()
+		npcs.erase(id)
+
+
+## Game.changed "companion:<id>": a recruit joins once their conversation has finished.
+func _on_game_changed(what: String) -> void:
+	if not what.begins_with("companion:"):
+		return
+	var id := what.trim_prefix("companion:")
+	if not Game.in_party(id) or companions.has(id):
+		return
+	var at: Vector3 = npcs[id].global_position if npcs.has(id) and is_instance_valid(npcs[id]) else player.global_position + Vector3(0, 0, 2.5)
+	if Conversation.current:
+		await Conversation.current.finished
+	_spawn_companion(id, at)
