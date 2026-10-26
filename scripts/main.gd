@@ -36,7 +36,7 @@ func _ready() -> void:
 			n.process_mode = Node.PROCESS_MODE_PAUSABLE)
 	_setup_input()
 	var args := TestDriver.parse_args()
-	if args.get("act", "") in ["2", "4", "5"]:
+	if args.get("act", "") in ["1", "2", "4", "5"]:
 		get_tree().change_scene_to_file.call_deferred("res://act%s.tscn" % args.act)
 		return
 	if args.has("explorer-glb"):
@@ -129,7 +129,7 @@ func _ready() -> void:
 		_start(false)
 	else:
 		player.controls_enabled = false
-		var cont := ("\nC  continue from your last save" if Game.has_save() else "") + "\n2  play Act 2: raising the expedition in Cairo (in progress)" + "\n4  play Act 4: the tombs of Akmentar (in progress)" + "\n5  play Act 5: the awakening below Akmentar (in progress)"
+		var cont := ("\nC  continue from your last save" if Game.has_save() else "") + "\n1  play Act 1: a bad day in Cairo (in progress)" + "\n2  play Act 2: raising the expedition in Cairo (in progress)" + "\n4  play Act 4: the tombs of Akmentar (in progress)" + "\n5  play Act 5: the awakening below Akmentar (in progress)"
 		hud.show_message("TOMBS OF AKMENTAR", "Click to begin a new game" + cont + "\n\nWASD move · Shift sprint · C crouch · Space dodge · E use / cover (W+E vault)\nRight mouse aim · Left mouse fire · R reload · 1 2 3 guns · X holster\nSave at campfires and beds · Esc pause")
 
 
@@ -154,7 +154,7 @@ func _continue() -> void:
 	if not Game.load_game():
 		return
 	# A save made in an act goes back to that act (the end of one, into the next).
-	var scene: String = {"act2_hotel_bed": "res://act2.tscn", "act2_end": "res://act4.tscn", "act4_end": "res://act5.tscn",
+	var scene: String = {"act1_end": "res://act2.tscn", "act2_hotel_bed": "res://act2.tscn", "act2_end": "res://act4.tscn", "act4_end": "res://act5.tscn",
 		"act4_camp": "res://act4.tscn", "act5_end": "res://act5.tscn"}.get(Game.place, "")
 	if scene != "":
 		get_tree().change_scene_to_file(scene)
@@ -223,10 +223,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			SiteDraft.open(self, "akmentar_surface", player)
 		elif event.keycode == KEY_F4 and started and not over:
 			EpilogueShow.open(self, "akmentar", player)
-		elif event.keycode in [KEY_2, KEY_4, KEY_5] and not started:
+		elif event.keycode in [KEY_1, KEY_2, KEY_4, KEY_5] and not started:
 			Game.reset()
 			Game.set_flag("quickstart_act")  # started from the menu: the act fills in a default party
-			get_tree().change_scene_to_file("res://act%d.tscn" % {KEY_2: 2, KEY_4: 4, KEY_5: 5}[event.keycode])
+			get_tree().change_scene_to_file("res://act%d.tscn" % {KEY_1: 1, KEY_2: 2, KEY_4: 4, KEY_5: 5}[event.keycode])
 		elif event.keycode == KEY_C and not started and Game.has_save():
 			_continue()
 		elif event.keycode == KEY_ENTER and over:

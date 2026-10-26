@@ -44,7 +44,7 @@ func _ready() -> void:
 	_start_day = int(Game.flag("act2_start_day", Game.day))
 	level = Cairo.new()
 	add_child(level)
-	level.set_night(0.0)
+	level.set_day_time(Cairo.day_time_for(Game.actions_left, Game.ACTIONS_PER_DAY))
 	level.place_people()
 	_place_spots()
 	player = Player.new()
@@ -97,6 +97,10 @@ func _sleep() -> void:
 
 
 func _on_changed(what: String) -> void:
+	if what == "actions":  # the sun moves as the day's actions are spent (-7f's day cycle)
+		level.ease_day_time(Cairo.day_time_for(Game.actions_left, Game.ACTIONS_PER_DAY))
+	elif what == "day":
+		level.set_day_time(0.0)
 	if what == "day" and Game.day >= _start_day + int(plan.get("days", 2)):
 		_leave()
 	elif what.begins_with("flag:hired_") or what == "party":
