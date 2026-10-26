@@ -132,7 +132,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			_start()
 		elif Input.mouse_mode != Input.MOUSE_MODE_CAPTURED and not over:
 			get_tree().paused = false
-			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+			if Conversation.current == null:  # talking keeps the mouse for the wheel
+				Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 			hud.show_message("")
 	elif event.is_action_pressed("ui_cancel") and started and not over:
 		get_tree().paused = true
