@@ -155,14 +155,16 @@ func _run() -> void:
 	var cards := EpilogueShow.pick_cards("akmentar")
 	var variants := cards.map(func(c): return "%s:%s" % [c.who, c.variant])
 	print("RESULT epilogue cards %s" % [variants])
-	_check(variants == ["player:survived", "eleanor:published", "archivist:denied", "americans:home"], "epilogue picks by state")
+	# Eleanor is along but was never promised her publication; nobody else was hired; Act 4 left no flags.
+	_check(variants.slice(0, 3) == ["player:survived", "eleanor:notes", "pembroke:never"] and "archivist:denied" in variants
+		and "whitfield:lost" in variants and cards.size() == 23, "epilogue picks by state (every card shows)")
 	var e := EpilogueShow.open(self, "akmentar", _player)
 	await _wait(0.8)
 	await _shot("board_10_epilogue_1.png")
 	_key(KEY_SPACE)
 	await _wait(0.8)
 	await _shot("board_11_epilogue_2.png")
-	for k in 3:
+	for k in cards.size() - 1:
 		_key(KEY_SPACE)
 		await _wait(0.1)
 	_check(_gone(e), "the slideshow closes after the last card")
