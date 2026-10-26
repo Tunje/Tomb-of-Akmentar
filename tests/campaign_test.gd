@@ -12,6 +12,23 @@ extends Node
 ## Then it prints a table (act, PASS/FAIL, seconds), the broken hand-offs (what an act needed and
 ## didn't get, whose file it is) and the flags each act injected itself (quickstarts that hide a
 ## broken hand-off). Exits 0 when every act passed and no hand-off broke.
+##
+## HOW TO RUN IT (for Simon)
+##   From the project folder, in a terminal (Git Bash or PowerShell), with the console build of Godot:
+##     "C:\Users\simon\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64_console.exe" ^
+##       --headless --path . res://tests/campaign_test.tscn -- --auto > campaign.txt
+##   (all on one line; it needs no window, so it's fine to run while playing). It takes about
+##   15-30 minutes; the saves it makes go to the test slot, never your own save.
+##   Then look at the end of campaign.txt, or just the lines starting with CAMPAIGN:
+##     CAMPAIGN act | result | seconds | note      one row per act, PASS or FAIL (and why)
+##     CAMPAIGN broken hand-offs: N                 what an act needed from an earlier one and
+##                                                  didn't get, with whose file it is [in brackets]
+##     CAMPAIGN start-up injections: N              an act overwriting what it was handed
+##     CAMPAIGN album {...}                          who got which ending card
+##     RESULT campaign PASS / FAIL                  the verdict
+##   --act-seconds=N gives each act longer (default 900) before it counts as stuck.
+##   Each act's bot plays it on its own terms, so a run isn't always the same: a companion can die
+##   in one run and live in the next. Run it twice before believing a single failure.
 
 const ACTS := ["res://act1.tscn", "res://act2.tscn", "res://act3.tscn", "res://act4.tscn", "res://act5.tscn",
 	"res://act6.tscn", "res://act7.tscn", "res://act8.tscn", "res://act9.tscn"]
@@ -177,6 +194,11 @@ class Runner extends Node:
 				_need(n, th in ["americans", "germans", "italians"], "thieves not set (%s)" % th)
 				_need(n, th == "" or _b(s, "thieves_" + th), "thieves_%s plain flag not set" % th)
 				_need(n, str(_f(s, "new_objective")) == "recover_amulet", "new_objective != recover_amulet (%s): the revelation talk didn't run" % _f(s, "new_objective"))
+				# The escape under the bot shouldn't cost companions (it's god mode for the player, and
+				# the companions run with him); a loss here usually means one was cut off by a slab.
+				var lost: Array = _f(s, "act5_casualties") if _f(s, "act5_casualties") is Array else []
+				_need(n, lost.is_empty(), "companions lost in the escape under the bot: %s (party before %s, after %s)" % [lost,
+					handoff[4].party if handoff.has(4) else "?", s.party])
 				if handoff.has(4) and str(_f(handoff[4], "ally")) != "":
 					_need(n, th == str(_f(handoff[4], "ally")), "thieves (%s) != Act 4's ally (%s)" % [th, _f(handoff[4], "ally")])
 			6:
