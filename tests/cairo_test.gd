@@ -79,17 +79,33 @@ func _run() -> void:
 		var p: Vector3 = (_level.npcs[id] as Node3D).global_position
 		_check(not _inside(space, p + Vector3.UP * 1.0), "%s stands clear" % id)
 	_check(_level.interactables.has("hotel_bed"), "the hotel bed is usable")
+	# Townsfolk walk without collision: their routes must not cross anything solid.
+	for w in Cairo.WALKS:
+		var blocked := ""
+		for k in w.size():
+			var a: Vector3 = w[k]
+			var b: Vector3 = w[(k + 1) % w.size()]
+			var steps := int(a.distance_to(b) / 0.4) + 1
+			for s in steps + 1:
+				var p := a.lerp(b, float(s) / steps)
+				for y in [0.4, 1.2]:
+					if blocked == "" and _inside(space, p + Vector3.UP * y):
+						blocked = "%s" % p
+		_check(blocked == "", "walk %s..%s is clear%s" % [w[0], w[1], "" if blocked == "" else " (blocked at %s)" % blocked])
+	_check(_level.townsfolk.size() == Cairo.WALKS.size() + Cairo.CHATS.size() * 2, "townsfolk about (%d)" % _level.townsfolk.size())
+	_check(is_equal_approx(Cairo.day_time_for(3, 3), 0.0) and is_equal_approx(Cairo.day_time_for(0, 3), 1.0), "day_time_for: morning to dusk")
 	if _shots:
-		for night in [0.0, 1.0]:
-			_level.set_night(night)
+		for t in [0.15, 0.5, 1.0]:
+			_level.set_day_time(t)
+			var label: String = {0.15: "morning", 0.5: "noon", 1.0: "dusk"}[t]
 			for v in VIEWS:
-				if night > 0.0 and not v[0] in ["avenue_west", "bazaar", "museum", "overview"]:
+				if t != 0.5 and not v[0] in ["avenue_west", "bazaar", "museum", "overview"]:
 					continue
 				_cam.look_at_from_position(v[1], v[2])
-				for i in 6:
+				for i in 8:
 					await get_tree().process_frame
 				var img := get_viewport().get_texture().get_image()
-				var path := _dir.path_join("cairo_%s_%s.png" % [v[0], "dusk" if night > 0.0 else "day"])
+				var path := _dir.path_join("cairo_%s_%s.png" % [v[0], label])
 				img.save_png(path)
 				print("SHOT ", ProjectSettings.globalize_path(path))
 	print("RESULT %s (%d failed)" % ["PASS" if _fails == 0 else "FAIL", _fails])

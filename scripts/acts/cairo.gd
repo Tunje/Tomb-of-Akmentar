@@ -5,7 +5,8 @@ extends Level
 ## (north-south, x 26-32); Sharia east (x 72-80) past the museum plaza; the bazaar lane (z 74-80)
 ## between them, under arches and awnings; and the quay road along the river (x 104-112).
 ## Flat-roofed plaster blocks fill the rest. The named places (SPOTS) are Interactables in
-## `interactables`; recruits stand at NPC_POINTS (place_people). set_night(f): 0 day, 1 dusk.
+## `interactables`; recruits and hosts stand at NPC_POINTS (place_people); townsfolk walk WALKS.
+## set_day_time(t): 0 morning, 0.5 noon, 1 dusk.
 ## Blockout boxes until image-to-3d's building pieces arrive.
 
 const RIVER_X := 112.0      # the quay edge; the Nile is east of it
@@ -65,11 +66,41 @@ const NPC_POINTS := {
 const HORSE_POINTS := [Vector3(86, 0, 58.6), Vector3(90, 0, 58.6), Vector3(94, 0, 58.6), Vector3(98, 0, 58.6)]
 ## Where the riverboat ties up: alongside the pier's south face, bow to the east (+X).
 const MOORING := Vector3(121, WATER_Y, 57.5)
+## Townsfolk walking loops (each a list of points, walked in order and back to the first),
+## kept to the open middle of the streets, clear of lamps, crates and the named people.
+const WALKS := [
+	[Vector3(4, 0, 49), Vector3(34, 0, 49)],
+	[Vector3(60, 0, 51), Vector3(100, 0, 51)],
+	[Vector3(40, 0, 50.5), Vector3(72, 0, 50.5)],
+	[Vector3(30.5, 0, 4), Vector3(30.5, 0, 44)],
+	[Vector3(30.3, 0, 56), Vector3(30.3, 0, 96)],
+	[Vector3(77, 0, 2), Vector3(77, 0, 44)],
+	[Vector3(75, 0, 58), Vector3(75, 0, 98)],
+	[Vector3(35, 0, 76.3), Vector3(69, 0, 76.3)],
+	[Vector3(106, 0, 4), Vector3(106, 0, 44)],
+	[Vector3(106.5, 0, 76), Vector3(106.5, 0, 98)],
+	[Vector3(88, 0, 34), Vector3(96, 0, 34), Vector3(96, 0, 43), Vector3(88, 0, 43)],
+	[Vector3(86, 0, 66), Vector3(98, 0, 66)],
+]
+## Townsfolk standing about in twos, talking.
+const CHATS := [
+	[Vector3(18, 0, 52.4), Vector3(18.9, 0, 52.9)], [Vector3(100, 0, 47.8), Vector3(100.9, 0, 48.4)],
+	[Vector3(35, 0, 44.6), Vector3(35.8, 0, 44.0)], [Vector3(66, 0, 77.4), Vector3(66.9, 0, 77.0)],
+]
+## Animals about the place: where, facing (yaw), and size (1 horse, 0.72 donkey).
+const ANIMALS := [
+	[Vector3(88, 0, 90), 0.4, 0.72], [Vector3(92.5, 0, 92), -0.3, 0.72], [Vector3(98, 0, 63.5), PI * 0.5, 1.0],
+	[Vector3(59.6, 0, 77.6), PI * 0.5, 0.72],   # the bazaar cart's donkey
+]
+## Stand-in looks for townsfolk until image-to-3d's civilians exist.
+const TOWNSFOLK_MODELS := ["bandits/bandit_scout.glb", "bandits/bandit_raider.glb"]
 
 var spots := {}             # id -> Vector3 (the SPOTS positions)
 var npcs := {}              # id -> Npc (place_people)
 var mooring := Transform3D(Basis.IDENTITY, MOORING)
-var _night := 0.0
+var day_time := 0.5         # 0 morning .. 0.5 noon .. 1 dusk (set_day_time)
+var townsfolk: Array[Node3D] = []
+var _day_tween: Tween
 var _rng := RandomNumberGenerator.new()
 var _deco: Node3D
 var _plaster: Array[StandardMaterial3D] = []
@@ -79,12 +110,14 @@ var _paving: StandardMaterial3D
 var _dark: StandardMaterial3D
 var _win: StandardMaterial3D
 var _win_lit: StandardMaterial3D
+var _lamp_glass: StandardMaterial3D
 var _wood: StandardMaterial3D
 var _iron: StandardMaterial3D
 var _water: StandardMaterial3D
 var _leaf: StandardMaterial3D
 var _cloths: Array[StandardMaterial3D] = []
 var _lamps: Array[OmniLight3D] = []
+var _animals_idle: Array[HorseRig] = []
 
 
 func _ready() -> void:
@@ -129,6 +162,7 @@ func _ready() -> void:
 	_caravanserai()
 	_quay()
 	_street_life()
+	_animals()
 	_skyline()
 	# A spot with Act 2 actions (actions/act2_<id>.json) gets act2.gd's ActionSpot there instead,
 	# so only the others (the bed, the consulate) get a plain Interactable.
@@ -139,8 +173,9 @@ func _ready() -> void:
 			interactables[id] = Interactable.make(self, s[0] + Vector3.UP * 0.9, s[2], id, 1.0)
 	player_spawn = Vector3(47.5, 0, 50)
 	_environment()
-	set_night(0.0)
+	set_day_time(day_time)
 	_nav.bake_navigation_mesh(false)
+	_townsfolk()
 
 
 ## The recruits at their places. `conversations`: Characters id -> dialogue id (none = no Talk).
@@ -180,6 +215,11 @@ func _cairo_materials() -> void:
 	_win_lit.emission_enabled = true
 	_win_lit.emission = Color(1.0, 0.7, 0.35)
 	_win_lit.emission_energy_multiplier = 0.0
+	_lamp_glass = _flat(Color(0.85, 0.8, 0.62))
+	_lamp_glass.roughness = 0.2
+	_lamp_glass.emission_enabled = true
+	_lamp_glass.emission = Color(1.0, 0.75, 0.4)
+	_lamp_glass.emission_energy_multiplier = 0.0
 	_wood = _flat(Color(0.33, 0.21, 0.12))
 	_iron = _flat(Color(0.12, 0.12, 0.12))
 	_iron.metallic = 0.6
@@ -370,7 +410,8 @@ func _entrance(at: Vector3, n: Vector3, text: String, door_w := 1.8, door_h := 2
 	_mesh(at + Vector3.UP * door_h * 0.5 + n * 0.05, _rot_size(Vector3(door_w, door_h, 0.12), n), _dark)
 	_mesh(at + Vector3.UP * (door_h + 0.15) + n * 0.1, _rot_size(Vector3(door_w + 0.6, 0.3, 0.22), n), _trim)
 	_mesh(at + Vector3.UP * 0.07 + n * 0.45, _rot_size(Vector3(door_w + 1.2, 0.14, 0.9), n), _trim)
-	_sign(at + Vector3.UP * (door_h + 0.9), n, text, sign_w)
+	if text != "":
+		_sign(at + Vector3.UP * (door_h + 0.9), n, text, sign_w)
 
 
 ## An arch across a street: two piers, the curve (a ring of stones) and the band over it.
@@ -397,7 +438,21 @@ func _arch(at: Vector3, along: Vector3, span: float, rise := 3.4, solid := true,
 			stone.rotation.z = a - PI * 0.5
 		else:
 			stone.rotation.x = PI * 0.5 - a
-	_mesh(top + Vector3.UP * (radius * 0.7 + 0.7), _rot_size(Vector3(span + 1.4, 1.2, depth), along), m)
+	var crown := radius * 0.7
+	_mesh(top + Vector3.UP * (crown + 0.7), _rot_size(Vector3(span + 1.4, 1.2, depth), along), m)
+	# Fill the spandrels (between the curve and the band) in steps that follow the curve.
+	for s in [-1.0, 1.0]:
+		var x0 := radius * 0.45
+		var x_end := radius + 0.7
+		var slices := 6
+		for k in slices:
+			var xa := lerpf(x0, x_end, float(k) / slices)
+			var xb := lerpf(x0, x_end, float(k + 1) / slices)
+			var under := crown * sqrt(maxf(0.0, 1.0 - pow(xa / radius, 2))) + 0.15 if xa < radius else 0.0
+			var h := crown + 0.1 - under
+			if h > 0.05:
+				var p: Vector3 = top + across * s * (xa + xb) * 0.5 + Vector3.UP * (under + h * 0.5)
+				_mesh(p, _rot_size(Vector3(xb - xa, h, depth * 0.9), along), m)
 
 
 # ---------------------------------------------------------------- the named places
@@ -440,7 +495,8 @@ func _museum() -> void:
 			(col.get_child(1) as MeshInstance3D).visible = false
 	_mesh(Vector3(92, 7.1, front + 1.3), Vector3(14.4, 0.7, 3.0), _trim)
 	_mesh(Vector3(92, 8.0, front + 0.5), Vector3(10.0, 1.2, 1.2), mat)
-	_entrance(Vector3(92, 0.45, front), n, "MUSEUM OF ANTIQUITIES", 2.6, 3.6, 7.5)
+	_entrance(Vector3(92, 0.45, front), n, "", 2.6, 3.6)
+	_sign(Vector3(92, 7.1, front + 2.8), n, "MUSEUM OF EGYPTIAN ANTIQUITIES", 9.0, Color(0.5, 0.4, 0.28))
 	# The plaza: paving, palms, a fountain basin (cover), benches.
 	var pave := _mesh(Vector3(92, 0.01, 36), Vector3(24, 0.02, 20), _paving)
 	pave.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -623,7 +679,6 @@ func _bazaar() -> void:
 	# Lanterns strung along the lane.
 	for x in [42.0, 60.0]:
 		_lantern(Vector3(x, 3.6, 74.4))
-	_cart(Vector3(58, 0, 77.6), 0.1)
 
 
 func _dealer() -> void:
@@ -818,7 +873,7 @@ func _pot_palm(at: Vector3) -> void:
 func _lantern(at: Vector3) -> void:
 	var lamp := _prop(_deco, "prop_lantern.glb", at)
 	if lamp == null:
-		_mesh(at + Vector3.UP * 0.15, Vector3(0.22, 0.3, 0.22), _win_lit)
+		_mesh(at + Vector3.UP * 0.15, Vector3(0.22, 0.3, 0.22), _lamp_glass)
 	var l := OmniLight3D.new()
 	l.light_color = Color(1.0, 0.7, 0.38)
 	l.omni_range = 7.0
@@ -832,8 +887,8 @@ func _lantern(at: Vector3) -> void:
 ## An iron street lamp on a post.
 func _street_lamp(at: Vector3) -> void:
 	_cylinder_post(at, 0.09, 3.8, _iron)
-	_mesh(at + Vector3.UP * 3.95, Vector3(0.4, 0.5, 0.4), _win_lit)
-	_mesh(at + Vector3.UP * 4.27, Vector3(0.55, 0.12, 0.55), _iron)
+	_mesh(at + Vector3.UP * 3.98, Vector3(0.24, 0.34, 0.24), _lamp_glass)
+	_mesh(at + Vector3.UP * 4.19, Vector3(0.34, 0.08, 0.34), _iron)
 	var l := OmniLight3D.new()
 	l.light_color = Color(1.0, 0.75, 0.45)
 	l.omni_range = 11.0
@@ -941,28 +996,107 @@ func _skyline() -> void:
 
 # ---------------------------------------------------------------- light
 
-## 0 = warm daylight, 1 = dusk: the sun drops and reddens, the lamps and some windows come on.
-func set_night(f: float) -> void:
-	_night = f
+## The time of day: 0 morning (sun low in the east, over the Nile), 0.5 noon (high, south),
+## 1 dusk (low and red in the west; the lamps and some windows come on). act2.gd moves it as the
+## day's actions are spent; ease_day_time slides it there.
+func set_day_time(t: float) -> void:
+	day_time = clampf(t, 0.0, 1.0)
 	if _sun == null:
 		return
-	_sun.light_energy = lerpf(1.7, 0.55, f)
-	_sun.light_color = Color(1.0, 0.88, 0.68).lerp(Color(1.0, 0.5, 0.28), f)
-	_sun.rotation = Vector3(deg_to_rad(lerpf(-42, -9, f)), deg_to_rad(lerpf(-140, -105, f)), 0)
-	_env.ambient_light_energy = lerpf(0.6, 0.3, f)
-	_env.ambient_light_sky_contribution = lerpf(1.0, 0.6, f)
-	_env.fog_light_color = Color(0.82, 0.7, 0.52).lerp(Color(0.6, 0.38, 0.32), f)
-	_env.fog_density = lerpf(0.003, 0.006, f)
-	_env.tonemap_exposure = lerpf(0.92, 1.1, f)
+	var high := sin(PI * day_time)            # 0 at the ends of the day, 1 at noon
+	var dusk := smoothstep(0.7, 1.0, day_time)
+	var dawn := 1.0 - smoothstep(0.0, 0.25, day_time)
+	var elevation := lerpf(10.0, 3.0, day_time) + 55.0 * high
+	_sun.rotation = Vector3(deg_to_rad(-elevation), deg_to_rad(lerpf(90.0, -90.0, day_time)), 0)
+	_sun.light_energy = lerpf(0.8, 1.7, high) * (1.0 - 0.35 * dusk)
+	_sun.light_color = Color(1.0, 0.92, 0.78).lerp(Color(1.0, 0.82, 0.62), dawn).lerp(Color(1.0, 0.5, 0.28), dusk)
+	_env.ambient_light_energy = lerpf(0.45, 0.6, high) * (1.0 - 0.4 * dusk)
+	_env.ambient_light_sky_contribution = lerpf(1.0, 0.6, dusk)
+	_env.fog_light_color = Color(0.82, 0.7, 0.52).lerp(Color(0.75, 0.68, 0.62), dawn).lerp(Color(0.6, 0.38, 0.32), dusk)
+	_env.fog_density = lerpf(0.003, 0.0055, maxf(dawn, dusk))
+	_env.tonemap_exposure = lerpf(0.92, 1.1, dusk)
 	var sky := _env.sky.sky_material as ProceduralSkyMaterial
-	sky.sky_top_color = Color(0.36, 0.55, 0.8).lerp(Color(0.18, 0.18, 0.38), f)
-	sky.sky_horizon_color = Color(0.9, 0.8, 0.62).lerp(Color(0.95, 0.55, 0.35), f)
-	sky.ground_horizon_color = Color(0.82, 0.7, 0.52).lerp(Color(0.5, 0.32, 0.25), f)
-	var lamps_on := smoothstep(0.4, 0.9, f)
+	sky.sky_top_color = Color(0.36, 0.55, 0.8).lerp(Color(0.42, 0.55, 0.75), dawn).lerp(Color(0.18, 0.18, 0.38), dusk)
+	sky.sky_horizon_color = Color(0.9, 0.8, 0.62).lerp(Color(0.95, 0.78, 0.65), dawn).lerp(Color(0.95, 0.55, 0.35), dusk)
+	sky.ground_horizon_color = Color(0.82, 0.7, 0.52).lerp(Color(0.5, 0.32, 0.25), dusk)
+	var lamps_on := smoothstep(0.82, 0.97, day_time)
 	for l in _lamps:
 		l.light_energy = 1.6 * lamps_on
-	_win_lit.emission_energy_multiplier = 2.5 * lamps_on
+	_win_lit.emission_energy_multiplier = 0.9 * lamps_on
+	_lamp_glass.emission_energy_multiplier = 3.0 * lamps_on
+
+
+## Slide the time of day to `t` over `seconds` (0 = at once).
+func ease_day_time(t: float, seconds := 3.0) -> void:
+	if _day_tween:
+		_day_tween.kill()
+	if seconds <= 0.0:
+		set_day_time(t)
+		return
+	_day_tween = create_tween()
+	_day_tween.tween_method(set_day_time, day_time, clampf(t, 0.0, 1.0), seconds).set_trans(Tween.TRANS_SINE)
+
+
+## The day's time for `actions_left` of `per_day` actions: each action spent moves it on; the
+## last one spent brings dusk.
+static func day_time_for(actions_left: int, per_day: int) -> float:
+	return clampf(1.0 - float(actions_left) / maxf(per_day, 1), 0.0, 1.0)
+
+
+## Kept for the older callers: 0 = the afternoon, 1 = dusk.
+func set_night(f: float) -> void:
+	set_day_time(lerpf(0.55, 1.0, f))
 
 
 func set_indoor(_f: float) -> void:
-	pass  # all outdoors: day / dusk is set_night's job
+	pass  # all outdoors: the time of day is set_day_time's job
+
+
+# ---------------------------------------------------------------- people and animals
+
+func _townsfolk() -> void:
+	var k := 0
+	for w in WALKS:
+		var t := Townsperson.make(self, w, Characters.DIR + TOWNSFOLK_MODELS[k % TOWNSFOLK_MODELS.size()])
+		k += 1
+		if t:
+			townsfolk.append(t)
+	for pair in CHATS:
+		for i in 2:
+			var p: Vector3 = pair[i]
+			var n := Npc.make(self, "townsfolk_%d" % k, p, "", Characters.DIR + TOWNSFOLK_MODELS[k % TOWNSFOLK_MODELS.size()])
+			n.face_towards(pair[1 - i])
+			n.rotation.y = atan2(-(pair[1 - i] - p).x, -(pair[1 - i] - p).z)
+			if n.body:
+				n.body.talk = 0.6
+			k += 1
+			townsfolk.append(n)
+
+
+## Horses and donkeys standing about (HorseRig only, idling: no Ride prompt and not in the
+## expedition's transport). Each stands in a box the navmesh goes round.
+func _animals() -> void:
+	for a in ANIMALS:
+		var at: Vector3 = a[0]
+		var size: float = a[2]
+		var body := StaticBody3D.new()
+		var cs := CollisionShape3D.new()
+		var bs := BoxShape3D.new()
+		bs.size = Vector3(0.6, 1.5, 2.3) * size
+		cs.shape = bs
+		cs.position = Vector3(0, 0.75 * size, -0.3 * size)
+		body.add_child(cs)
+		_nav.add_child(body)
+		body.position = at
+		body.rotation.y = a[1]
+		var rig := HorseRig.create()
+		rig.scale = Vector3.ONE * size
+		body.add_child(rig)
+		_animals_idle.append(rig)
+	_cart(Vector3(62.4, 0, 77.6), PI * 0.5)
+
+
+func _process(delta: float) -> void:
+	super(delta)
+	for rig in _animals_idle:
+		rig.animate(delta, 0.0, 0.0)
