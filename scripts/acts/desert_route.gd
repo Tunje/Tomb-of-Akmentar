@@ -149,6 +149,7 @@ func _ground() -> void:
 		var mi := MeshInstance3D.new()
 		mi.mesh = st.commit()
 		mi.material_override = _sand
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF  # flat ground: no self-shadow speckle
 		add_child(mi)
 	# The bed: grey-brown gravel, a shade darker than the sand, so the wadi reads from afar.
 	var gravel := _floor_mat.duplicate() as StandardMaterial3D

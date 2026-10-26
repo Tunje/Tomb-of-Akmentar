@@ -285,7 +285,7 @@ func _withdraw_stragglers() -> void:
 			print("RoadAmbush: %s withdraws (%s)" % [b.name, "time's up" if late else "lost contact"])
 			bandits.erase(b)
 			_hired.erase(b)
-			b.queue_free()
+			FightBot.remove_gunman(b)
 			return
 
 

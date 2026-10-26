@@ -44,9 +44,7 @@ var elder: Npc
 var _t := 0.0
 var _shots: Array[float] = []
 var _overview: Camera3D
-var _bot_unseen := 0.0
-var _bot_path := PackedVector3Array()
-var _bot_repath := 0.0
+var _fight_bot: FightBot
 
 
 func _ready() -> void:
@@ -352,6 +350,8 @@ func _shot(file: String) -> void:
 
 
 func _bot(delta: float) -> void:
+	if _fight_bot == null:
+		_fight_bot = FightBot.new(player)
 	player.max_health = 100000.0
 	player.health = 100000.0
 	var plan: String = args.get("plan", "fight")
@@ -363,9 +363,9 @@ func _bot(delta: float) -> void:
 			return
 		_bot_ride(step == Step.AMBUSH)
 	elif step == Step.AMBUSH:
-		_bot_fight(delta)
+		_fight_bot.fight(delta)
 	elif step == Step.TOWN:
-		_bot_walk(DesertRoute.road_point(DesertRoute.TOWN_Z), delta)
+		_fight_bot.walk(DesertRoute.road_point(DesertRoute.TOWN_Z), delta)
 	else:
 		_release_moves()
 		Input.action_release("fire")
@@ -386,62 +386,6 @@ func _bot_ride(gallop: bool) -> void:
 	if args.has("trace") and fmod(_t, 1.0) < get_physics_process_delta_time():
 		print("TRACE ride z=%.1f x=%.1f road_x=%.1f speed=%.1f err=%.2f" % [z, player.global_position.x,
 			DesertRoute.road_x(z), speed, err])
-
-
-## On foot: shoot the nearest bandit in sight; with none in sight for a while, walk toward the
-## nearest one (the navmesh path).
-func _bot_fight(delta: float) -> void:
-	var space := get_world_3d().direct_space_state
-	var best: Gunman = null
-	var nearest: Gunman = null
-	var bd := 60.0
-	var nd := INF
-	for n in get_tree().get_nodes_in_group("gunmen"):
-		var g := n as Gunman
-		if g == null or g.team != Gunman.BANDITS or not g.alive or g.surrendered:
-			continue
-		var d := player.global_position.distance_to(g.global_position)
-		if d < nd:
-			nd = d
-			nearest = g
-		var ray := PhysicsRayQueryParameters3D.create(player.camera.global_position, g.global_position + Vector3.UP * 1.3, 1)
-		if d < bd and space.intersect_ray(ray).is_empty():
-			bd = d
-			best = g
-	if best == null:
-		Input.action_release("fire")
-		Input.action_release("aim")
-		_bot_unseen += delta
-		if nearest and _bot_unseen > 3.0:
-			_bot_walk(nearest.global_position, delta)
-		else:
-			_release_moves()
-		return
-	_bot_unseen = 0.0
-	_release_moves()
-	var aim := best.global_position + Vector3.UP * 1.3 - player.camera.global_position
-	var want_yaw := atan2(-aim.x, -aim.z)
-	var want_pitch := asin(clampf(aim.normalized().y, -1, 1))
-	player.yaw = lerp_angle(player.yaw, want_yaw, minf(delta * 10.0, 1.0))
-	player.pitch = lerpf(player.pitch, want_pitch, minf(delta * 10.0, 1.0))
-	Input.action_press("aim")
-	_press("fire", absf(angle_difference(player.yaw, want_yaw)) < deg_to_rad(2.5) and fmod(_t, 0.4) < delta)
-
-
-func _bot_walk(to: Vector3, delta: float) -> void:
-	_bot_repath -= delta
-	if _bot_repath <= 0.0 or _bot_path.is_empty():
-		_bot_repath = 1.0
-		_bot_path = NavigationServer3D.map_get_path(get_world_3d().navigation_map, player.global_position, to, true)
-	while _bot_path.size() > 1 and Vector2(_bot_path[0].x - player.global_position.x, _bot_path[0].z - player.global_position.z).length() < 1.0:
-		_bot_path.remove_at(0)
-	if _bot_path.is_empty():
-		_release_moves()
-		return
-	var d := _bot_path[0] - player.global_position
-	player.yaw = lerp_angle(player.yaw, atan2(-d.x, -d.z), minf(delta * 8.0, 1.0))
-	player.pitch = lerpf(player.pitch, 0.0, minf(delta * 4.0, 1.0))
-	_press("move_forward", true)
 
 
 func _press(action: String, on: bool) -> void:
