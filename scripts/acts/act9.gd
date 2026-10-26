@@ -66,6 +66,7 @@ func _ready() -> void:
 		_quickstart()
 	level = AkmentarBelow.new()
 	add_child(level)
+	Ambience.play(self, "tomb")
 	_points()
 	player = Player.new()
 	add_child(player)
@@ -139,6 +140,7 @@ func _arrival() -> void:
 	await get_tree().create_timer(2.5).timeout
 	hud.show_message("")
 	await _talk("act9_arrival", _speaker())
+	Barks.say_any(get_tree(), "entering_tomb")
 	await _level("surface", "act9_surface", "The stair down. Something waits at the bottom.")
 	hud.toast("Down into the halls.", 3.0)
 	await _reach(points.halls)
@@ -173,6 +175,7 @@ func _level(id: String, talk_id: String, line: String) -> void:
 	var around: Vector3 = points.halls if id == "surface" else points[id]  # the surface's fight comes up the stairs
 	_wake_foes(around, int(FIGHT[id]))
 	hud.toast("They're coming!", 2.5)
+	Barks.say_any(get_tree(), "mummy_seen", player.global_position)
 	while _active_foes() > 0 and player.alive:
 		await get_tree().create_timer(0.3).timeout
 	print("RESULT act9 %s cleared t=%.1f" % [id, _t])
@@ -244,6 +247,7 @@ func _wave(n: int) -> void:
 		var ss := _ready_script("res://scripts/scarabs.gd", "burst")
 		if ss:
 			ss.burst(self, level.vents[n % level.vents.size()], player)
+			Barks.say_any(get_tree(), "scarabs", points.altar)
 
 
 ## Partway: the guardian himself, out of his sarcophagus and after you, the one who carried the
@@ -255,6 +259,7 @@ func _wake_guardian() -> void:
 		return
 	guardian = gs.spawn(self, level.guardian_spawn, player)
 	hud.toast("The sarcophagus opens. He's coming for you. Lead him away from the altar!", 3.5)
+	Barks.say_any(get_tree(), "guardian_seen", level.guardian_spawn)
 
 
 ## The rite's end: done, everything dead falls; failed, the guardian takes the amulet.
@@ -354,6 +359,9 @@ func _fell(id: String) -> void:
 		g.take_damage(100000.0, g.global_position)  # a test's --voices: they fall now
 	if step != Step.END and step != Step.EPILOGUE:
 		hud.toast("%s is down!" % id.capitalize(), 3.0)
+		var other: Gunman = singers.get("omar" if id == "noura" else "noura")
+		if other and is_instance_valid(other) and other.alive:
+			Barks.say(other, "ally_down")
 
 
 func _wake_foes(around: Vector3, n: int) -> void:
@@ -371,6 +379,7 @@ func _spawn_minion(at: Vector3) -> void:
 	m.global_position = at
 	m.target = player
 	m.wake()
+	m.killed.connect(func(dead: Mummy) -> void: Barks.say_any(get_tree(), "enemy_down", dead.global_position))
 	_foes.append(m)
 
 
@@ -460,6 +469,7 @@ func _ready_script(path: String, entry: String) -> GDScript:
 
 func _process(delta: float) -> void:
 	_t += delta
+	_idle_bark(delta)
 	if _shots.size() > 0 and _t >= _shots[0]:
 		_shots.pop_front()
 		_shot("act9_%05.1f.png" % _t)
@@ -469,6 +479,18 @@ func _process(delta: float) -> void:
 
 
 var _bot_t := 0.0
+var _idle_t := 0.0
+
+
+## Between fights on the way down, someone remarks on the place now and then.
+func _idle_bark(delta: float) -> void:
+	if not step in [Step.SURFACE, Step.HALLS, Step.ROYAL] or _active_foes() > 0:
+		_idle_t = 0.0
+		return
+	_idle_t += delta
+	if _idle_t > 35.0:
+		_idle_t = 0.0
+		Barks.say_any(get_tree(), "idle_explore", player.global_position)
 
 
 func _physics_process(delta: float) -> void:
