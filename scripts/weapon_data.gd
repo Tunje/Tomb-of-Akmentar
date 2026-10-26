@@ -19,6 +19,7 @@ extends Resource
 @export var stagger := 1.0  # stagger points per hit
 @export var knockback := 1.0
 @export var range_m := 80.0
+@export var bullet_speed := 250.0  # m/s; real rounds, not hitscan
 @export var falloff_start := 30.0  # damage drops linearly to 50% at range_m
 @export var aim_fov := 50.0
 @export var sound_pitch := 1.0
@@ -48,6 +49,7 @@ static func defaults() -> Array[WeaponData]:
 	revolver.aim_fov = 52.0
 	revolver.sound_pitch = 1.15
 	revolver.model_length = 0.28
+	revolver.bullet_speed = 220.0
 	revolver.model_path = "res://assets/guns/revolver_cairo.glb"
 
 	var rifle := WeaponData.new()
@@ -71,6 +73,7 @@ static func defaults() -> Array[WeaponData]:
 	rifle.aim_fov = 38.0
 	rifle.sound_pitch = 0.85
 	rifle.model_length = 0.95
+	rifle.bullet_speed = 560.0
 	rifle.model_path = "res://assets/guns/rifle_lever.glb"
 	rifle.foregrip = Vector3(0, -0.02, -0.42)
 
@@ -96,6 +99,7 @@ static func defaults() -> Array[WeaponData]:
 	shotgun.aim_fov = 56.0
 	shotgun.sound_pitch = 0.7
 	shotgun.model_length = 0.85
+	shotgun.bullet_speed = 380.0
 	shotgun.model_path = "res://assets/guns/shotgun_tombsweeper.glb"
 	shotgun.foregrip = Vector3(0, -0.03, -0.3)
 

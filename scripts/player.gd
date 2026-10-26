@@ -646,40 +646,42 @@ func _fire_bullets(w: WeaponData) -> void:
 	var head := cam_root.global_position
 	origin += fwd * maxf((head - origin).dot(fwd), 0.0)
 	var spread := current_spread()
-	var hits := {}  # mummy -> {damage, head, dir, point, part}
+	var mpos := muzzle.global_position
+	var skip: Array[RID] = [get_rid()]
+	if vehicle:
+		skip.append(vehicle.get_rid())
+	var shot := {"sounded": false}  # one flesh sound per trigger pull, however many pellets land
 	for p in w.pellets:
 		var ang := deg_to_rad(spread) * sqrt(randf())
 		var rot := randf() * TAU
 		var dir := (fwd + (cb.x * cos(rot) + cb.y * sin(rot)) * tan(ang)).normalized()
+		# Real rounds (Simon: no hitscan): the crosshair ray only finds what we aim at; the
+		# bullet then flies from the muzzle toward that point at the gun's speed.
 		var end := origin + dir * w.range_m
-		var hit := _ray(origin, end, MASK_WORLD | MASK_HITBOX)
-		var point: Vector3 = hit.position if hit else end
-		# The muzzle must see the point too, or the shot stops at the wall.
-		var mpos := muzzle.global_position
-		var block := _ray(mpos, point + (point - mpos).normalized() * 0.05, MASK_WORLD | MASK_HITBOX)
-		if block and block.collider != (hit.collider if hit else null):
-			hit = block
-			point = block.position
-		Fx.tracer(get_parent(), mpos, point)
-		if not hit:
-			continue
-		var col: Object = hit.collider
-		if col.has_meta("mummy"):
-			var mummy: Node = col.get_meta("mummy")
-			var dist := mpos.distance_to(point)
-			var fall := 1.0 - 0.5 * clampf((dist - w.falloff_start) / maxf(w.range_m - w.falloff_start, 1.0), 0.0, 1.0)
-			var part: String = col.get_meta("part")
-			var res: Dictionary = mummy.take_hit(part, w.damage * fall, dir, point, w.stagger, w.knockback)
-			Fx.impact(get_parent(), point, hit.normal, Fx.Kind.FLESH)
-			if not hits.has(mummy):
-				hits[mummy] = {"killed": false, "head": false}
-			hits[mummy].killed = hits[mummy].killed or res.get("killed", false)
-			hits[mummy].head = hits[mummy].head or part == "head"
-		else:
-			Fx.impact(get_parent(), point, hit.normal, Fx.Kind.STONE)
-	for m in hits:
-		hit_confirmed.emit(hits[m].killed, hits[m].head)
-		Sfx.play_at(get_parent(), Sfx.flesh(), (m as Node3D).global_position + Vector3.UP, -2.0)
+		var aim := _ray(origin, end, MASK_WORLD | MASK_HITBOX)
+		var point: Vector3 = aim.position if aim else end
+		Bullets.fire(get_tree(), mpos, point - mpos, w.bullet_speed, w.range_m, MASK_WORLD | MASK_HITBOX, skip,
+			func(hit: Dictionary, bdir: Vector3, travelled: float): _bullet_hit(w, hit, bdir, travelled, shot))
+
+
+## A round of ours landed (Bullets calls this on contact).
+func _bullet_hit(w: WeaponData, hit: Dictionary, dir: Vector3, travelled: float, shot: Dictionary) -> void:
+	var col: Object = hit.collider
+	var point: Vector3 = hit.position
+	if col == null or not is_instance_valid(col) or not col.has_meta("mummy"):
+		Fx.impact(get_parent(), point, hit.normal, Fx.Kind.STONE)
+		return
+	var target: Node = col.get_meta("mummy")
+	if not is_instance_valid(target):
+		return
+	var fall := 1.0 - 0.5 * clampf((travelled - w.falloff_start) / maxf(w.range_m - w.falloff_start, 1.0), 0.0, 1.0)
+	var part: String = col.get_meta("part")
+	var res: Dictionary = target.take_hit(part, w.damage * fall, dir, point, w.stagger, w.knockback)
+	Fx.impact(get_parent(), point, hit.normal, Fx.Kind.FLESH)
+	hit_confirmed.emit(res.get("killed", false), part == "head")
+	if not shot.sounded:
+		shot.sounded = true
+		Sfx.play_at(get_parent(), Sfx.flesh(), point, -2.0)
 
 
 func _ray(from: Vector3, to: Vector3, mask: int) -> Dictionary:
