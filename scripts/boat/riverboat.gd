@@ -53,7 +53,6 @@ var _plank_mesh: MeshInstance3D
 var _gate_shape: CollisionShape3D
 var _gate_mesh: MeshInstance3D
 var _wheel: Node3D
-var _last_xf := Transform3D.IDENTITY
 var _mats := {}
 
 
@@ -79,7 +78,6 @@ func _ready() -> void:
 		smooth_curve(path.curve)
 	_build()
 	_place(0.0, true)
-	_last_xf = global_transform
 	_set_docked(true)
 
 
@@ -117,7 +115,6 @@ func _physics_process(delta: float) -> void:
 			_set_docked(true)
 			docked.emit()
 	_place(delta, false)
-	_carry_people()
 	_watch_falls()
 	if _wheel:
 		_wheel.rotate_x(-speed / 1.6 * delta)
@@ -153,27 +150,6 @@ static func smooth_curve(c: Curve3D) -> void:
 		var tan := (c.get_point_position(mini(k + 1, n - 1)) - c.get_point_position(maxi(k - 1, 0))) / 6.0
 		c.set_point_in(k, -tan)
 		c.set_point_out(k, tan)
-
-
-## Gunmen keep their chosen spot as a world position: while they stand on the deck, move it with
-## the deck (stopgap; see the gunman.gd patch in the step 10 report).
-func _carry_people() -> void:
-	var now := global_transform
-	var d := now * _last_xf.affine_inverse()
-	_last_xf = now
-	if d.origin.length_squared() < 1e-10 and d.basis.is_equal_approx(Basis.IDENTITY):
-		return
-	for g in get_tree().get_nodes_in_group("gunmen"):
-		var n := g as Node3D
-		if n == null or not on_deck(n.global_position):
-			continue
-		if "_spot" in n and n._spot is Dictionary and n._spot.has("pos"):
-			n._spot.pos = d * (n._spot.pos as Vector3)
-			n._spot.peek = d * (n._spot.peek as Vector3)
-			n._spot.normal = d.basis * (n._spot.normal as Vector3)
-		for v in ["hold_at", "_camp_anchor", "_progress_at"]:
-			if v in n:
-				n.set(v, d * (n.get(v) as Vector3))
 
 
 ## Is world point `p` on (or just above) this boat's decks?
