@@ -17,7 +17,8 @@ const MINIONS := 6
 ## hands over and the scene comes back here (its static next_scene), for the last night and the end.
 const SET_PIECES := {"boat_battle": ["res://act8_boat.tscn", "res://scripts/acts/act8_boat.gd"],
 	"temple_battle": ["res://act8_temple.tscn", "res://scripts/acts/act8_temple.gd"],
-	"chariot_chase": ["res://act8_chase.tscn", "res://scripts/acts/act8_chase.gd"]}
+	"chariot_chase": ["res://act8_chase.tscn", "res://scripts/acts/act8_chase.gd"],
+	"flight": ["res://act8_flight.tscn", "res://scripts/acts/act8_flight.gd"]}
 
 var level: Level
 var player: Player
@@ -85,6 +86,8 @@ func _ready() -> void:
 	hud.show_message("")
 	if args.has("auto"):
 		Game.apply([{"item": ["horse", 4]}, {"item": ["truck", 1]}, {"set_flag": "act8_boat_booked"}])
+		if args.get("route", "") == "plane":
+			Game.set_flag("plane_ready")  # the bot "wired Fletcher"
 		_set_out()
 
 
