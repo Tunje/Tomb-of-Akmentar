@@ -81,6 +81,7 @@ func _ready() -> void:
 	add_child(player)
 	player.global_position = level.player_spawn
 	player.set_armed(false)
+	player.yaw = -PI * 0.5  # east down the avenue, under the sky the curse is darkening
 	hud = Hud.new()
 	hud.player = player
 	add_child(hud)
@@ -101,6 +102,12 @@ func _ready() -> void:
 		int(Game.countdowns.get("thieves", 0)), int(Game.countdowns.get("mummy", 0))])
 	await get_tree().create_timer(3.0).timeout
 	hud.show_message("")
+	var worst := ""  # the stage the city is at already, now the title has gone
+	for s: Dictionary in plan.get("signs", []):
+		if Game.flag(str(s.get("flag", "")), false) and str(s.get("flag", "")) != "mummy_in_cairo":
+			worst = str(s.get("text", "")).split(": ", true, 1)[-1]
+	if worst != "":
+		hud.toast(worst, 5.0)
 	if Game.in_party("hassan") and not Game.flag("act7_hassan_heard", false):
 		Game.set_flag("act7_hassan_heard")
 		if args.has("auto"):
@@ -176,7 +183,7 @@ func _update_signs(instant := false) -> void:
 			continue
 		Game.set_flag(f)
 		print("RESULT act7 sign %s (mummy %d)" % [f, m])
-		if f != "mummy_in_cairo":
+		if f != "mummy_in_cairo" and not instant:
 			hud.toast(str(s.get("text", "")).split(": ", true, 1)[-1], 5.0)
 	var crowd := 1.0
 	for f in CROWD:
