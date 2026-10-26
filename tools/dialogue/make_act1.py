@@ -45,14 +45,14 @@ TALKS["act1_office"] = talk(
 # ---------------------------------------------------------------- encounter A: the debt collectors
 
 TALKS["act1_debt_collectors"] = talk(
-    "Act 1, encounter A: Harold Finch and his enforcer Musa Kamal think you know where Freddie is. Talk your way out (owe_finch, or freddie_betrayed with the note), pay part (debt_paid_part, 20), or provoke a fight: event fight_debt_collectors (end_fight; the brawl tutorial), after which act1_after_brawl. End ids end_talked / end_paid / end_fight.",
+    "Act 1, encounter A: Harold Finch and his enforcer Musa Kamal think you know where Freddie is. Talk your way out (owe_finch, or freddie_betrayed with the note), pay 20 of Freddie's 200, which only buys time (debt_paid_part, and 50 more owed: owe_finch), or provoke a fight: event fight_debt_collectors (end_fight; the brawl tutorial), after which act1_after_brawl. End ids end_talked / end_paid / end_fight.",
     {"finch": "Harold Finch", "musa": "Musa Kamal"}, {
         "start": L("finch", "There he is. Freddie Mallory's old army pal. Freddie owes me two hundred pounds, and I think you know where he is.", "menu"),
         "menu": L("finch", "So. Where is he?", choices=[
             C("Say you don't know", "I don't know. He owes me money too.", "dont_know", if_={"not_flag": "finch_dont_know"}, do=[flag("finch_dont_know")]),
             C("Give up Freddie", "Alexandria. He left a note.", "betray", if_={"flag": "freddie_note"}),
             C("Promise to pay", "I'll have work soon. I'll pay you part of his debt from it.", "promise"),
-            C("Pay part now", "Here's twenty pounds. Call it interest. Now leave me alone.", "paid", if_={"money": 20}, do=[pay(20), flag("debt_paid_part")]),
+            C("Pay part now", "Here's twenty pounds. Call it interest. Now leave me alone.", "paid", if_={"money": 20}, do=[pay(20), flag("debt_paid_part"), flag("owe_finch", 50)]),
             C("Insult him", "Get out of my way, Finch, before your bruiser needs a doctor.", "provoke"),
             C("Hit him", "", "fight"),
         ]),
@@ -61,7 +61,7 @@ TALKS["act1_debt_collectors"] = talk(
                     do=[flag("freddie_betrayed")]),
         "promise": L("finch", "Part of it. From work you don't have. All right, soldier, I'll hold you to that. Fifty pounds within the month.", "end_talked",
                      do=[flag("owe_finch", 50)]),
-        "paid": L("finch", "Twenty. Well, it's a start. We'll be seeing you.", "end_paid"),
+        "paid": L("finch", "Twenty. Of two hundred. That buys you a week, soldier, not a pardon. Fifty more within the month, or Musa comes back.", "end_paid"),
         "provoke": L("musa", "Mr. Finch, may I?", "fight"),
         "fight": L("finch", "Musa. Teach him some manners.", "end_fight", do=[{"event": "fight_debt_collectors"}]),
         "end_talked": END,
@@ -88,25 +88,34 @@ TALKS["act1_after_brawl"] = talk(
 # ---------------------------------------------------------------- encounter B: armed men at Freddie's
 
 armed = {
-    "start": L("gunman", "Nobody move. You're Mallory's friend. Where is he? He took something that belongs to our employer, and we think you know where.", "standoff"),
+    "start": L("gunman", "Nobody move. You're Mallory's friend. Where is he? He owes our employer two hundred pounds, and he took something that isn't his. We think you know where.", "standoff"),
     "standoff": B(({"flag": "musa_respect"}, "musa_there"), (None, "talk_down")),
     "musa_there": L("musa", "Wait. This one... this one helped me stand up. He knows nothing. I do not shoot him.", "musa_leaves"),
     "musa_leaves": L("gunman", "Musa! You fool! ...Fine. Fine! Tell Mallory we're still looking.", "avoided"),
     "talk_down": L("player", "Three of them in Freddie's doorway. Pistols out. The leader's hand isn't steady.", choices=[
-        C("Talk him down", "You don't want this. This is Finch's building, and the police watch everything Finch owns. One shot and they're on the stairs. Walk away.", "talk_try"),
+        C("Talk him down", "You don't want this. This is Finch's building, and the police watch everything Finch owns. One shot and they're on the stairs. Walk away.", "talk_try",
+          do=[flag("armed_talked")]),
         C("Give them the note", "He's in Alexandria. Here's his note. Go and ask him yourself.", "note",
           if_={"flag": "freddie_note", "not_flag": "freddie_betrayed"}, do=[flag("freddie_betrayed")]),
-        C("Offer them money", "Twenty pounds to forget you ever climbed these stairs.", "bribe", if_={"money": 20}, do=[pay(20)]),
+        C("Offer what you have", "Twenty pounds. It's all I've got. Take it and go.", "pocketed",
+          if_={"money": 20, "not_flag": "armed_took_money"}, do=[pay(20), flag("armed_took_money")]),
         C("Draw", "", "draw"),
     ]),
     "talk_try": B(({"flag": "warned_finch"}, "talk_works"), (None, "talk_fails")),
     "talk_works": L("gunman", "...Police. Right. Finch's building. You're Finch's problem, not ours. Let's go.", "avoided"),
-    "talk_fails": L("gunman", "Nice speech. Where's Mallory? Last time I ask.", choices=[
+    "talk_fails": L("gunman", "Nice speech. Where's Mallory?", "pressed"),
+    # Your pockets are an insult to a two-hundred-pound debt: they keep it, and still want Freddie.
+    "pocketed": L("gunman", "Twenty. Mallory owes two hundred, and you offer me lunch money. I'll keep it, for the insult. Now: where is he?", "pressed"),
+    "pressed": L("gunman", "Last time I ask.", choices=[
+        C("Talk him down", "Think about it. One shot in Finch's building and the police are on the stairs.", "talk_try",
+          if_={"not_flag": "armed_talked"}, do=[flag("armed_talked")]),
+        C("Give them the note", "All right. Alexandria. Here's his note.", "note",
+          if_={"flag": "freddie_note", "not_flag": "freddie_betrayed"}, do=[flag("freddie_betrayed")]),
+        C("Offer what you have", "Twenty pounds. It's all I've got.", "pocketed",
+          if_={"money": 20, "not_flag": "armed_took_money"}, do=[pay(20), flag("armed_took_money")]),
         C("Draw", "", "draw"),
-        C("Offer them money", "All right, all right. Twenty pounds, and you walk.", "bribe", if_={"money": 20}, do=[pay(20)]),
     ]),
     "note": L("gunman", "Alexandria. There, that wasn't so hard. Come on.", "avoided"),
-    "bribe": L("gunman", "Twenty. Generous man. If Mallory comes back, you never saw us.", "avoided"),
     "draw": L("gunman", "Kill him!", "end_fight", do=[{"event": "fight_armed_men"}]),
     "avoided": L("player", "Footsteps going down the stairs. My hand's still on the revolver.", "end_avoided",
                  do=[flag("act1_confrontation_done"), flag("act1_gunfight_avoided")]),
@@ -114,7 +123,7 @@ armed = {
     "end_avoided": END,
 }
 TALKS["act1_armed_men"] = talk(
-    "Act 1, encounter B, at Freddie's office after the debt collectors: armed men looking for Freddie (or what he left) think you're in on it. With musa_respect, Musa is one of them and won't shoot; talking them down works if Umm Sayed warned you about Finch (warned_finch: the police watch Finch's building); giving them Freddie's note (freddie_note) sends them to Alexandria (freddie_betrayed); 20 buys them off. Any of those: act1_confrontation_done + act1_gunfight_avoided (end_avoided). Drawing: event fight_armed_men (end_fight; the gun tutorial): on a win act1.gd sets act1_gunfight_won + act1_confrontation_done.",
+    "Act 1, encounter B, at Freddie's office after the debt collectors: armed men looking for Freddie (or what he left) think you're in on it. With musa_respect, Musa is one of them and won't shoot; talking them down works if Umm Sayed warned you about Finch (warned_finch: the police watch Finch's building); giving them Freddie's note (freddie_note) sends them to Alexandria (freddie_betrayed). Freddie owes their employer 200: offering the 20 in your pockets doesn't buy them off; they keep it (armed_took_money) and press you again. Avoided: act1_confrontation_done + act1_gunfight_avoided (end_avoided). Drawing: event fight_armed_men (end_fight; the gun tutorial): on a win act1.gd sets act1_gunfight_won + act1_confrontation_done.",
     {"gunman": "Hired gunman", "musa": "Musa Kamal"}, armed)
 
 

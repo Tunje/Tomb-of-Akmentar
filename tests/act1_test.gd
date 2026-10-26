@@ -89,6 +89,18 @@ func _run() -> void:
 	Game.set_flag("freddie_note")
 	r = await _talk("act1_armed_men", ["Give them the note"])
 	_check(r.end == "end_avoided" and Game.flag("freddie_betrayed"), "armed men: Freddie's note sends them to Alexandria")
+	# Your 20 against Freddie's 200: they pocket it and press on; you still have to choose.
+	_fresh([])
+	Game.apply(plan.start)
+	r = await _talk("act1_armed_men", ["Offer what you have", "Draw"])
+	_check(r.end == "end_fight" and Game.money == 5 and Game.flag("armed_took_money") and not Game.flag("act1_gunfight_avoided"),
+		"armed men: the money doesn't buy them off (%d left)" % Game.money)
+	# Finch: 20 of the 200 only buys a week (50 more owed).
+	_fresh([])
+	Game.apply(plan.start)
+	r = await _talk("act1_debt_collectors", ["Pay part now"])
+	_check(r.end == "end_paid" and Game.flag("debt_paid_part") and int(Game.flag("owe_finch", 0)) == 50 and Game.money == 5,
+		"collectors: 20 buys time, 50 still owed")
 
 
 func _fresh(party: Array) -> void:
