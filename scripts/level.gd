@@ -486,6 +486,10 @@ func _flame(parent: Node3D, pos: Vector3, energy: float, light_range: float, sha
 	parent.add_child(l)
 	l.position = pos
 	torches.append(l)
+	# Scarabs keep out of firelight (scarabs.gd reads group "fire"): a wall torch guards a little,
+	# a brazier or fire pillar a whole corner. Ambience gives each a crackle too.
+	l.add_to_group("fire")
+	l.set_meta("fire_radius", 1.2 if light_range < 9.0 else 3.2)
 	var fire := CPUParticles3D.new()
 	fire.amount = 40
 	fire.lifetime = 0.5
