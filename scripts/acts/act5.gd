@@ -494,7 +494,9 @@ func _revelation() -> void:
 	hud.toast("Daylight, and men in indigo all around you.", 3.0)
 	_rashad = Npc.make(self, "rashad", level.stair_top + Vector3(0, 0, 3.0), "act5_revelation", Characters.glb("rashad"))
 	await get_tree().create_timer(2.0).timeout
-	if FileAccess.file_exists("res://dialogue/act5_revelation.json") and not args.has("auto"):
+	if args.has("auto"):
+		await BotTalk.run(self, "act5_revelation", player, _rashad)  # its flags (new_objective...) carry on
+	elif FileAccess.file_exists("res://dialogue/act5_revelation.json"):
 		var c := Conversation.new()
 		add_child(c)
 		c.start("act5_revelation", player, _rashad if _rashad else player)

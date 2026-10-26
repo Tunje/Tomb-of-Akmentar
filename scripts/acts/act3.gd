@@ -172,15 +172,18 @@ func _end() -> void:
 		get_tree().quit(0)
 
 
-## A talk with the first companion standing (or the road); skipped in bot runs and when missing.
+## A talk with the first companion standing (or the road); bots play it through (BotTalk).
 func _talk(id: String) -> void:
-	if args.has("auto") or not FileAccess.file_exists("res://dialogue/%s.json" % id):
+	if not FileAccess.file_exists("res://dialogue/%s.json" % id):
 		return
 	var who: Node3D = player
 	for c in companions.values():
 		if is_instance_valid(c):
 			who = c
 			break
+	if args.has("auto"):
+		await BotTalk.run(self, id, player, who)
+		return
 	var c := Conversation.new()
 	add_child(c)
 	c.start(id, player, who)

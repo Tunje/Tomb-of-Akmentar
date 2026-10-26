@@ -211,6 +211,11 @@ func _night_choice() -> void:
 		return
 	if FileAccess.file_exists("res://dialogue/act4_night_choice.json"):
 		var speaker: Node3D = companions.values()[0] if not companions.is_empty() else level.interactables.camp_fire
+		if args.has("auto"):  # the wheel used to wait forever under --auto without --choice
+			await BotTalk.run(self, "act4_night_choice", player, speaker)
+			if not Game.flags.has("night_choice"):
+				Game.set_flag("night_choice", "barricade")
+			return
 		var c := Conversation.new()
 		add_child(c)
 		c.start("act4_night_choice", player, speaker)
