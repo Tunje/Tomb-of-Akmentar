@@ -63,6 +63,38 @@ static func find(body: CharacterBody3D, dir: Vector3, max_h: float, radius := 0.
 	return h
 
 
+## Up onto a step (a stair, a raised floor's edge) no higher than `max_step` that `body` is
+## pressed against while moving along `dir`: lifts it onto the top and a little forward. True if
+## it stepped. CharacterBody3D won't climb a vertical edge on its own, however low.
+static func step_up(body: CharacterBody3D, dir: Vector3, max_step := 0.55, radius := 0.35, height := 1.75) -> bool:
+	var d := Vector3(dir.x, 0, dir.z).normalized()
+	if d.length() < 0.1:
+		return false
+	var space := body.get_world_3d().direct_space_state
+	var feet := body.global_position
+	var ex: Array[RID] = [body.get_rid()]
+	var probe := feet + d * (radius + 0.2)
+	var down := space.intersect_ray(_q(probe + Vector3.UP * (max_step + 0.3), probe + Vector3.DOWN * 0.1, ex))
+	if down.is_empty():
+		return false
+	var rise: float = (down.position as Vector3).y - feet.y
+	if rise < 0.05 or rise > max_step:
+		return false
+	var to := Vector3(feet.x, (down.position as Vector3).y + 0.02, feet.z) + d * 0.25
+	var shape := PhysicsShapeQueryParameters3D.new()
+	var cap := CapsuleShape3D.new()
+	cap.radius = radius
+	cap.height = height
+	shape.shape = cap
+	shape.transform = Transform3D(Basis.IDENTITY, to + Vector3.UP * (height * 0.5 + 0.03))
+	shape.collision_mask = MASK
+	shape.exclude = ex
+	if not space.intersect_shape(shape, 1).is_empty():
+		return false
+	body.global_position = to
+	return true
+
+
 ## Moves `body` along the arc; true when it has landed.
 func step(body: CharacterBody3D, delta: float) -> bool:
 	t = minf(t + delta / time, 1.0)

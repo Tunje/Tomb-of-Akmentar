@@ -17,7 +17,7 @@ const DEPTH := 5.0               # and out from it
 const RUMBLE := 0.8
 const WARN := 0.9                # dust falls this long before its block
 const DROP_H := 4.5
-const BLOCK := Vector3(1.4, 1.0, 1.4)
+const BLOCK := Vector3(1.4, 0.9, 0.75)  # low and thin enough to vault (Cover): it can land in a corridor
 const BLOCK_DAMAGE := 500.0
 const RANDOM_BLOCKS := 2
 const DART_DAMAGE := 30.0
@@ -128,6 +128,9 @@ func _drop_block(at: Vector3, delay: float) -> void:
 	tw.tween_property(body, "global_position:y", floor_y + BLOCK.y * 0.5, 0.28).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	await tw.finished
 	body.collision_layer = 1
+	# Fallen, it's an obstacle on the way back out: vault it like rubble (W+E), the AI climbs it.
+	body.set_meta("cover_size", BLOCK)
+	body.add_to_group("cover")
 	Sfx.play_at(self, Sfx.gunshot(0.35), body.global_position, 6.0, 0.1)
 	Fx.impact(self, Vector3(at.x, floor_y + 0.05, at.z), Vector3.UP, Fx.Kind.STONE)
 	for p in _people_near():

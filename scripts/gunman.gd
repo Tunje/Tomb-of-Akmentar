@@ -1057,6 +1057,9 @@ func _move_to(dest: Vector3, speed: float, delta: float, path: bool) -> Vector3:
 		var next := _flat(_agent.get_next_path_position() - global_position)
 		if next.length() > 0.05 and not _agent.is_navigation_finished():
 			dir = next.normalized()
+	# A stair or a raised floor's edge: step up onto it (CharacterBody3D won't).
+	if is_on_wall() and Hop.step_up(self, -get_wall_normal()):
+		return dir * minf(speed, to.length() / maxf(delta, 0.001) * 0.5)
 	# Head-on into a wall: walk along it for a moment, on the side nearer the goal.
 	_detour_t -= delta
 	if _detour_t > 0.0:

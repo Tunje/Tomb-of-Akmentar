@@ -15,6 +15,7 @@ signal caught(victim: Node3D)
 enum State { DORMANT, RISING, CHASE, WINDUP, RECOVER, STAGGER, PAUSED, CLIMB }
 
 const SCALE := 1.25
+const RADIUS := 0.42             # its capsule: bulky, but it has to fit 2 m corridors and corners
 const SPEED := 2.7               # walking, close in (player walk 4.0, sprint 6.6)
 const CATCH_UP_SPEED := 6.0      # far behind it lengthens its stride: always at your heels...
 const CATCH_UP_FROM := 10.0      # ...from walking at this gap...
@@ -29,6 +30,7 @@ const STAGGER_TIME := 1.0
 const SLOW_PER_POINT := 0.1      # share of its speed a point of stagger takes off...
 const SLOW_MAX := 0.65
 const SLOW_RECOVER := 0.25       # ...and how fast that wears off (per second)
+const GRAB_GRACE := 4.0          # no grab this long after it wakes: a head start to run
 const SHOVE_RANGE := 1.7
 const SHOVE_DAMAGE := 12.0
 const SHOVE_PUSH := 6.0
@@ -54,9 +56,17 @@ var _lean_v := Vector2.ZERO
 var _repath := 0.0
 var _shoved := {}  # companion -> time of last shove
 var _hop: Hop
+var _detour := Vector3.ZERO
+var _detour_t := 0.0
 var _stuck_at := Vector3.ZERO
 var _stuck_t := 0.0
 var _hitboxes: Array[StaticBody3D] = []
+var _awake_t := 0.0
+var stuck_events := 0
+var climbs := 0
+## --guardian-trace (after "--"): a line every 2 s and on every catch / climb / unstick.
+var _trace := "--guardian-trace" in OS.get_cmdline_user_args()
+var _trace_t := 0.0
 
 
 func _ready() -> void:
@@ -64,13 +74,13 @@ func _ready() -> void:
 	collision_mask = 1 | 2 | 4
 	var shape := CollisionShape3D.new()
 	var cap := CapsuleShape3D.new()
-	cap.radius = 0.45
+	cap.radius = RADIUS
 	cap.height = 2.2
 	shape.shape = cap
 	shape.position.y = 1.1
 	add_child(shape)
 	_agent = NavigationAgent3D.new()
-	_agent.radius = 0.55
+	_agent.radius = RADIUS + 0.08
 	_agent.path_desired_distance = 0.7
 	_agent.target_desired_distance = 0.8
 	add_child(_agent)
@@ -162,6 +172,13 @@ func _enter(s: State) -> void:
 # ---------------------------------------------------------------- tick
 
 func _physics_process(delta: float) -> void:
+	if _trace:
+		_trace_t += delta
+		if _trace_t >= 2.0:
+			_trace_t = 0.0
+			var gap := global_position.distance_to(target.global_position) if _alive(target) else -1.0
+			print("GUARDIAN %s gap=%.1f at=%s slow=%.2f catches=%d staggers=%d stuck=%d climbs=%d" % [State.keys()[state],
+				gap, global_position.snapped(Vector3.ONE * 0.1), _slow, catches, staggers, stuck_events, climbs])
 	_t += delta
 	_flash = maxf(_flash - delta, 0.0)
 	if rig:
@@ -184,13 +201,16 @@ func _physics_process(delta: float) -> void:
 		dist = to.length()
 	match state:
 		State.CHASE:
-			if dist < REACH and _facing(to) > 0.5:
+			_awake_t += delta
+			if dist < REACH and _facing(to) > 0.5 and _awake_t > GRAB_GRACE:
 				_enter(State.WINDUP)
 			elif _alive(target):
 				var k := clampf((dist - CATCH_UP_FROM) / (CATCH_UP_DIST - CATCH_UP_FROM), 0.0, 1.0)
 				var speed := lerpf(SPEED, CATCH_UP_SPEED, k) * (1.0 - _slow)
 				move = _path_dir(delta) * speed
 				_climb_or_unstick(move, delta)
+				if state == State.CHASE:
+					move = _slide_off_walls(move, delta)
 			_shove_companions()
 		State.WINDUP:
 			if _t >= WINDUP:
@@ -227,14 +247,41 @@ func _path_dir(delta: float) -> Vector3:
 	return next.normalized()
 
 
+## Head-on into a wall (a corner the path cut too fine for its bulk): slide along it toward
+## the next path point for a moment.
+func _slide_off_walls(move: Vector3, delta: float) -> Vector3:
+	_detour_t -= delta
+	if _detour_t > 0.0:
+		return _detour * move.length()
+	if is_on_wall() and move.length() > 0.1:
+		var n := get_wall_normal()
+		n.y = 0.0
+		n = n.normalized()
+		if n.dot(move.normalized()) < -0.5:
+			var along := Vector3(-n.z, 0, n.x)
+			var goal := _agent.get_next_path_position() - global_position
+			if along.dot(goal) < 0.0:
+				along = -along
+			_detour = (along + n * 0.3).normalized()
+			_detour_t = 0.35
+			return _detour * move.length()
+	return move
+
+
 ## Rubble across the way: climb over it. Pressed against something it can't climb: nudge sideways.
 func _climb_or_unstick(move: Vector3, delta: float) -> void:
 	if move.length() < 0.1:
 		return
 	if is_on_wall():
-		var hop := Hop.find(self, -get_wall_normal(), CLIMB_MAX, 0.45, 2.2, 1.0)
+		# A stair or a raised floor's edge: step up onto it.
+		if Hop.step_up(self, -get_wall_normal(), 0.55, RADIUS, 2.2):
+			return
+		var hop := Hop.find(self, -get_wall_normal(), CLIMB_MAX, RADIUS, 2.2, 1.0)
 		if hop:
 			_hop = hop
+			climbs += 1
+			if _trace:
+				print("GUARDIAN climbs at %s" % global_position.snapped(Vector3.ONE * 0.1))
 			if rig:
 				rig.cancel_attack()
 			_enter(State.CLIMB)
@@ -246,6 +293,22 @@ func _climb_or_unstick(move: Vector3, delta: float) -> void:
 	if _stuck_t > 1.5:
 		_stuck_t = 0.0
 		_repath = 0.0
+		stuck_events += 1
+		if _trace:
+			var nxt := _agent.get_next_path_position()
+			var d := Vector3(nxt.x - global_position.x, 0, nxt.z - global_position.z).normalized()
+			var hits := PackedStringArray()
+			for h in [0.4, 1.2, 2.0]:
+				var q := PhysicsRayQueryParameters3D.create(global_position + Vector3.UP * h, global_position + Vector3.UP * h + d * 1.5, 1, [get_rid()])
+				var r := get_world_3d().direct_space_state.intersect_ray(q)
+				hits.append("%.1f:%s" % [h, (r.collider as Node).name if r else "-"])
+			for f: float in [0.3, 0.5, 0.7, 1.0, 1.5]:
+				var top := global_position + d * f + Vector3.UP * 1.5
+				var r2 := get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(top, top + Vector3.DOWN * 3.0, 1, [get_rid()]))
+				hits.append("floor@%.1f=%s" % [f, ("%.2f" % ((r2.position as Vector3).y - global_position.y)) if r2 else "none"])
+			print("GUARDIAN stuck at %s next=%s ahead[%s] wallnormal=%s target %s" % [global_position.snapped(Vector3.ONE * 0.1),
+				nxt.snapped(Vector3.ONE * 0.1), ", ".join(hits), get_wall_normal().snapped(Vector3.ONE * 0.1),
+				target.global_position.snapped(Vector3.ONE * 0.1) if _alive(target) else Vector3.ZERO])
 
 
 func _facing(to: Vector3) -> float:
@@ -257,6 +320,11 @@ func _grab(dist: float, to: Vector3) -> void:
 	Sfx.play_at(get_parent(), Sfx.swipe(), global_position + Vector3.UP * 1.8, 0.0)
 	if not _alive(target) or dist > GRAB_RANGE or _facing(to) < 0.3:
 		return
+	if _trace:
+		var tv := (target as CharacterBody3D).velocity if target is CharacterBody3D else Vector3.ZERO
+		print("GUARDIAN grabs %s at %s; it is at %s moving %.1f m/s controls=%s" % [target.name, global_position.snapped(Vector3.ONE * 0.1),
+			target.global_position.snapped(Vector3.ONE * 0.1), Vector2(tv.x, tv.z).length(),
+			str(target.get("controls_enabled")) if target is Player else "-"])
 	if target.call("take_damage", 100000.0, global_position):
 		catches += 1
 		Sfx.play_at(get_parent(), Sfx.groan(), global_position + Vector3.UP * 2.0, 3.0, 0.05)
