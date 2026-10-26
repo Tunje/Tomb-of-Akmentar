@@ -86,7 +86,8 @@ func _process(delta: float) -> void:
 		_ammo.text = "%d / %d" % [player.ammo[player.current], w.mag_size]
 		_gun.text = w.display_name + ("   reloading" if player.is_reloading() else "")
 	_count.text = "Mummies: %d" % remaining if remaining > 0 else ""
-	_prompt.text = player.cover_prompt() if player else ""
+	# Only through the player's own eyes (not a test's overview or chase camera).
+	_prompt.text = player.cover_prompt() if player and player.camera and player.camera.current else ""
 	_info.text = "Day %d   Actions %s   £%d" % [Game.day, "●".repeat(Game.actions_left) + "○".repeat(maxi(Game.ACTIONS_PER_DAY - Game.actions_left, 0)), Game.money]
 	_toast_t = maxf(_toast_t - delta, 0.0)
 	_toast.modulate.a = clampf(_toast_t, 0.0, 1.0)

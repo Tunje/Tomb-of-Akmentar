@@ -180,6 +180,7 @@ var _glint: MeshInstance3D
 var _hitboxes: Array[StaticBody3D] = []
 var _exclude: Array[RID] = []
 var _tag: Label3D  # companions: name and health over the head
+const TAG_Y := 2.15
 var _help: Interactable  # "Help <name> up" while stumbled
 ## --companion-trace (after "--"): escape-mode companions print a line every 0.5 s.
 var _ctrace := "--companion-trace" in OS.get_cmdline_user_args()
@@ -862,7 +863,7 @@ func _make_tag() -> void:
 	_tag.font_size = 26
 	_tag.outline_size = 8
 	_tag.outline_modulate = Color(0, 0, 0, 0.8)
-	_tag.position.y = 2.15
+	_tag.position.y = TAG_Y
 	_tag.visible = false
 	add_child(_tag)
 
@@ -882,6 +883,32 @@ func _update_tag() -> void:
 	if stumbled:
 		_tag.text += char(10) + "E  help up"  # the HUD shows cover's prompt while you're in cover
 	_tag.modulate = Color(1.0, 0.35, 0.25).lerp(Color(0.55, 1.0, 0.45), k)
+	_stack_tag()
+
+
+## Two companions side by side would print their tags over each other: lift this one a tag's
+## height for each other shown tag that lands on the same spot on screen.
+func _stack_tag() -> void:
+	var cam := get_viewport().get_camera_3d()
+	var lift := 0.0
+	var head := global_position + Vector3.UP * TAG_Y
+	if cam and not cam.is_position_behind(head):
+		var me := cam.unproject_position(head)
+		for n in get_tree().get_nodes_in_group("gunmen"):
+			var g := n as Gunman
+			if g == self or g == null or g._tag == null or not g._tag.visible or g.get_instance_id() > get_instance_id():
+				continue
+			var at := g.global_position + Vector3.UP * TAG_Y
+			if cam.is_position_behind(at):
+				continue
+			var d := cam.unproject_position(at) - me
+			if absf(d.x) < 160.0 and absf(d.y) < 40.0:
+				lift += 1.0
+		# 60 px a tag, in metres at this distance.
+		var px := 2.0 * cam.global_position.distance_to(head) * tan(deg_to_rad(cam.fov) * 0.5) \
+			/ get_viewport().get_visible_rect().size.y
+		lift *= 60.0 * px
+	_tag.position.y = TAG_Y + lift
 
 
 # ---------------------------------------------------------------- cover spots
