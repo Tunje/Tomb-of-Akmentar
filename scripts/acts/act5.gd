@@ -34,6 +34,7 @@ var _ally_npc: Npc
 var _rashad: Node3D
 var _tomb_spots := {}
 var _sleepers: Array[Mummy] = []
+var _told_vault := false
 var _ally_team := {}  # id -> Gunman, the allied expedition during the escape
 
 
@@ -89,6 +90,8 @@ func _ready() -> void:
 	_descend()
 	if args.has("view"):
 		_view(str(args.view))
+	if args.has("holes"):
+		_scan_holes()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -267,11 +270,16 @@ func _escape() -> void:
 			var c: Gunman = companions.values()[0]
 			if is_instance_valid(c) and c.alive and step == Step.ESCAPE:
 				c.stumble())
-	# Collapsed sections along the way: low rubble to vault.
+	# Collapsed sections along the way: a heap across part of the passage, never all of it (Simon:
+	# a chest-high wall sealed the way out). Run round the gap, or vault it (E, then W+E).
+	var k := 0
 	for c in level.collapse_points:
-		var size := Vector3(3.6, 1.0, 0.8)
-		var rubble := level._box(level._nav, c + Vector3.UP * 0.5, size, level._stone)
+		var size := Vector3(2.4, 1.0, 0.8)
+		var side := 0.8 if k % 2 == 0 else -0.8
+		var rubble := level._box(level._nav, c + Vector3(side, 0.5, 0), size, level._stone)
 		level._mark_cover(rubble, size)
+		k += 1
+		_rubble_hint(rubble)
 	level._nav.bake_navigation_mesh(false)  # paths round the rubble (or vault it)
 	_arm_slabs()
 	if args.has("auto"):
@@ -283,6 +291,7 @@ func _escape() -> void:
 		await get_tree().create_timer(0.2).timeout
 		out = _exit_reached(player)
 	level.stair_top = level.exits[out]  # the revelation happens where you came up
+	_guardian_turns_back()
 	Game.set_flag("escaped", true)
 	Game.set_flag("escape_exit", ["main", "west", "east"][out])
 	await _wait_for_companions()
@@ -361,6 +370,17 @@ func _ally_flee(runner: Node3D) -> void:
 	Game.set_flag("thieves_fled", true)
 
 
+## The first time you come up to a rubble heap: how to get over it.
+func _rubble_hint(rubble: Node3D) -> void:
+	while step == Step.ESCAPE and is_instance_valid(rubble):
+		if player.global_position.distance_to(rubble.global_position) < 4.0:
+			if not _told_vault:
+				_told_vault = true
+				hud.toast("Fallen stone: run round the gap, or E to take cover against it, then W+E to vault.", 4.0)
+			return
+		await get_tree().create_timer(0.3).timeout
+
+
 ## Drop-slabs: each sinks when you run at it; the stairs' neck on a timer. A shut slab changes the
 ## maze, so the navmesh is rebaked: companions and the guardian path round (or are cut off).
 func _arm_slabs() -> void:
@@ -403,6 +423,22 @@ func _vent_watch(ss: GDScript, v: Dictionary) -> void:
 		await get_tree().create_timer(0.25).timeout
 	if step == Step.ESCAPE:
 		ss.pour(self, v.point, v.normal)
+
+
+## Out in the daylight, the hunt is over for now (Simon: the mummy could still kill him after he got
+## out): the guardian is after the amulet, not you, and won't follow into the sun. It stops, turns
+## back into the dark and is gone; its minions with it.
+func _guardian_turns_back() -> void:
+	if guardian and is_instance_valid(guardian):
+		if guardian.has_method("pause"):
+			guardian.call("pause")
+		var g := guardian
+		get_tree().create_timer(1.5).timeout.connect(func():
+			if is_instance_valid(g):
+				g.queue_free())
+	for m in get_tree().get_nodes_in_group("mummies"):
+		if is_instance_valid(m) and m != guardian:
+			(m as Node).queue_free()
 
 
 ## Which exit `who` is out of (index into level.exits), or -1.
@@ -548,8 +584,9 @@ func _auto_tomb() -> void:
 ## Escape: walk the navmesh path to the stairs' top at a sprint (god mode in the test).
 ## Test views of the maze: --view=<name> --shot-dir=... stands the player there and takes one shot.
 const VIEWS := {"bridge": [20, 13, 0.0, -0.45], "pit": [24, 13, 0.0, 0.4], "ramp": [23, 9, -PI / 2, 0.15],
-	"secret": [21, 35, PI / 2, -0.1], "secret2": [34, 21, PI / 2, -0.05], "deadend": [19, 23, PI, -0.1], "vent": [23, 27, -2.3, -0.3],
-	"sarc": [6, 22, -0.3, -0.25], "jars": [3, 18, 0.0, -0.5], "amulet": [3, 29, 0.0, -0.6]}
+	"secret": [21, 40, PI / 2, -0.1], "secret2": [34, 21, PI / 2, -0.05], "deadend": [13, 31, 0.0, -0.1],
+	"hall": [18, 40, 0.0, -0.05], "hub": [19, 24, 0.0, -0.05], "walkway": [27, 26, -PI / 2, -0.35],
+	"deep": [30, 30, 0.3, 0.45], "sarc": [6, 22, -0.3, -0.25], "jars": [3, 18, 0.0, -0.5], "amulet": [3, 29, 0.0, -0.6]}
 
 
 func _view(name: String) -> void:
@@ -567,6 +604,29 @@ func _view(name: String) -> void:
 	get_tree().quit(0)
 
 
+## Test: --holes. Every walkable cell, at its centre and near its corners: something solid to land
+## on within 7 m below the upper floor (the deep halls' floors are 5 m down). Prints each hole.
+func _scan_holes() -> void:
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	var space := get_world_3d().direct_space_state
+	var holes := 0
+	for r in AkmentarBelow.H:
+		for c in AkmentarBelow.W:
+			var ch := level._ch(r, c)
+			if ch in ["#", "L", "D", "?"]:
+				continue
+			var p := level._cell(r, c)
+			for off in [Vector2.ZERO, Vector2(0.8, 0.8), Vector2(-0.8, 0.8), Vector2(0.8, -0.8), Vector2(-0.8, -0.8)]:
+				var from := Vector3(p.x + off.x, AkmentarBelow.FLOOR_Y + 1.5, p.z + off.y)
+				var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(from, from + Vector3.DOWN * 8.5, 1))
+				if hit.is_empty():
+					holes += 1
+					print("RESULT hole r=%d c=%d ch=%s at=%s" % [r, c, ch, from])
+	print("RESULT holes=%d" % holes)
+	get_tree().quit(0)
+
+
 func _auto_step_back() -> void:
 	var away := player.global_position - level.royal_door.global_position
 	player.yaw = atan2(-away.x, -away.z)
@@ -575,8 +635,46 @@ func _auto_step_back() -> void:
 	Input.action_release("move_forward")
 
 
+## Test: --help. When a companion goes down, the bot goes back, faces him and presses E as a player
+## would; logs whether the prompt was there, whether he's up, and whether he runs on.
+var _helping: Gunman
+
+
+func _auto_help_watch() -> void:
+	for c in companions.values():
+		(c as Gunman).stumbled_down.connect(func(g: Gunman): _helping = g)
+
+
+func _auto_help(g: Gunman) -> void:
+	var to := g.global_position - player.global_position
+	to.y = 0
+	player.global_position = g.global_position - to.normalized() * 1.3
+	player.yaw = atan2(-to.x, -to.z)
+	for i in 6:
+		await get_tree().physics_frame
+	var prompt := player.focus.prompt if player.focus and "prompt" in player.focus else str(player.focus)
+	print("RESULT help prompt=%s stumbled=%s dist=%.1f" % [prompt, g.stumbled, player.global_position.distance_to(g.global_position)])
+	Input.action_press("cover")
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	Input.action_release("cover")
+	await get_tree().create_timer(0.3).timeout
+	var at := g.global_position
+	await get_tree().create_timer(2.0).timeout
+	print("RESULT help after_e stumbled=%s alive=%s moved=%.1f state=%s" % [g.stumbled, g.alive, g.global_position.distance_to(at), Gunman.State.keys()[g.state]])
+
+
 func _auto_escape() -> void:
+	if args.has("help"):
+		_auto_help_watch()
 	while step == Step.ESCAPE and player.alive:
+		if _helping:
+			var g := _helping
+			_helping = null
+			Input.action_release("move_forward")
+			Input.action_release("sprint")
+			await _auto_help(g)
+			continue
 		var path := PackedVector3Array()
 		var best := INF
 		for e in level.exits:

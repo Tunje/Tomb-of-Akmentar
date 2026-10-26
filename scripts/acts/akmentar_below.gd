@@ -1,18 +1,19 @@
 class_name AkmentarBelow
 extends Level
-## Act 5's map: Akmentar's second level and the royal tomb. A real maze (Simon: "dead ends,
-## secret passages, bridges over rooms further down"):
-## - a seeded recursive-backtracker maze of 2 m corridors with dead ends, plus a few loops;
-## - set-piece rooms stamped into it: nine chambers with points of interest, the antechamber and
-##   the royal tomb at the far north, the south hall with the stairs up;
-## - the Great Pit: a chamber 5 m lower, crossed by a stone bridge at the upper level, with a long
-##   ramp down to its floor (one point of interest is down there);
+## Act 5's map: Akmentar's second level and the royal tomb, a labyrinthine complex (Simon: "many
+## large chambers with interconnected paths, LIKE a labyrinth complex, not a literal labyrinth"):
+## - large chambers (columns, fire pillars, a point of interest in most) joined by 4 m passages that
+##   branch and loop, so there's always more than one way through, laid out by hand;
+## - the antechamber and the royal tomb at the far north, the south hall with the stairs up;
+## - deep halls 5 m lower with walkways crossing over them at the upper level (Simon: "walkways
+##   over chambers"): the Great Pit with its stone bridge, and the chariot hall, whose walkway is
+##   the direct way east; a ramp leads down into each (points of interest on both floors);
 ## - secret walls ("?"): hollow-sounding cracked stone that opens once you know the trick (a clue
-##   flag), one hiding a chamber, one a shortcut;
-## - sleeping mummies in some dead ends, minion spawns in others (the awakening).
+##   flag), one sealing the Scarab Mother's shrine, one a shortcut into the south hall;
+## - short blind passages; at the awakening minions come out of them and the chamber corners.
 ## Map letters as Level's, plus: "," pit floor, "=" bridge, "/" ramp, "?" secret wall,
 ## a-i points of interest, 1-5 royal tomb points, R royal door, G guardian, X vents, Z minions, C collapse,
-## "|" a drop-slab door (it shuts during the escape), V a scarab vent in a corridor wall.
+## "|" a drop-slab door (pairs: one slab across a 4 m passage), V a scarab vent in a wall.
 ## Three ways out: the main stairs south of the south hall, and a long shaft up at each side.
 
 const W := 48
@@ -25,18 +26,55 @@ const SOUTH := Rect2i(18, 33, 12, 4)
 const PIT := Rect2i(8, 16, 12, 9)
 const BRIDGE_ROW := 20
 const RAMP := Rect2i(20, 23, 5, 1)  # high end east (x 24), descends west into the pit
-## The side shafts: their west columns (two wide), from the maze's last row up to the surface.
+## The second deep hall (the chariots, "g"): a walkway along DEEP_WALK at the upper level, a ramp
+## (DEEP_RAMP, high end north) down into it from the middle chamber.
+const DEEP := Rect2i(27, 26, 8, 5)
+const DEEP_WALK := 27
+const DEEP_RAMP := Rect2i(31, 24, 2, 4)
+## The side shafts: their west columns (two wide), from the complex's last row up to the surface.
 const SHAFTS := [4, 42]
-const SLABS := 5  # drop-slabs in the maze, plus one at the main stairs' neck
+const SLABS := 5  # drop-slabs across passages, plus one at the main stairs' neck
 const SCARAB_VENTS := 4
-## Point-of-interest rooms (3 x 3 inside), keyed by the letter at their centre.
-const POI_ROOMS := {"a": Vector2i(3, 11), "b": Vector2i(41, 11), "c": Vector2i(3, 28), "d": Vector2i(41, 28),
-	"f": Vector2i(29, 15), "g": Vector2i(29, 28), "h": Vector2i(34, 21)}
+## The chambers. A letter key is a point of interest at its centre ("h", the shrine, is sealed).
+const CHAMBERS := {
+	"a": Rect2i(1, 13, 6, 6), "b": Rect2i(36, 13, 8, 6), "c": Rect2i(1, 25, 6, 6), "d": Rect2i(37, 25, 8, 6),
+	"f": Rect2i(27, 14, 7, 6), "g": Rect2i(27, 26, 8, 5), "h": Rect2i(38, 20, 4, 3),
+	"hub": Rect2i(22, 14, 4, 6), "low": Rect2i(21, 26, 4, 5), "west": Rect2i(9, 27, 8, 4), "mid": Rect2i(29, 21, 5, 3),
+}
+## The passages between them (4 m: two cells wide), as the rects they open.
+const PASSAGES := [
+	Rect2i(23, 12, 2, 2),   # antechamber -> hub
+	Rect2i(7, 13, 15, 2),   # hub -> the opening chapel (a), along the top of the pit
+	Rect2i(5, 19, 2, 2),    # a -> the bridge's west end
+	Rect2i(21, 19, 2, 2),   # the bridge's east end -> hub
+	Rect2i(24, 20, 2, 2),   # hub -> the ramp's top
+	Rect2i(25, 22, 2, 5),   # the ramp's top -> the low hall and the chariots (g)
+	Rect2i(26, 16, 1, 2),   # hub -> the erased king (f)
+	Rect2i(34, 15, 2, 2),   # f -> the builders (b)
+	Rect2i(43, 19, 2, 6),   # b -> the embalmers (d), down the east side
+	Rect2i(30, 20, 2, 1),   # f -> mid
+	Rect2i(34, 21, 3, 2),   # mid -> the shrine's secret wall (a blind end until it opens)
+	Rect2i(35, 27, 2, 2),   # the walkway -> d
+	Rect2i(25, 27, 2, 2),   # low -> the chariot hall's walkway
+	Rect2i(17, 28, 4, 2),   # west -> low
+	Rect2i(7, 28, 2, 2),    # the wards (c) -> west
+	Rect2i(1, 19, 2, 6),    # a -> c, down the west side
+	Rect2i(23, 31, 2, 2),   # low -> the south hall's neck
+	Rect2i(4, 31, 2, 1),    # c -> the west shaft
+	Rect2i(42, 31, 2, 1),   # d -> the east shaft
+	Rect2i(15, 31, 2, 4),   # west -> the shortcut's secret wall into the south hall
+]
+## Blind passages; at the awakening a minion comes out of the far end of each ("Z"). Nothing moves
+## down here before then (Simon: no mummies before the awakening).
+const BLIND := [[Rect2i(30, 11, 2, 3), Vector2i(30, 11), "Z"], [Rect2i(40, 10, 2, 3), Vector2i(40, 10), "Z"],
+	[Rect2i(12, 31, 2, 3), Vector2i(12, 33), "Z"], [Rect2i(39, 31, 2, 2), Vector2i(39, 32), "Z"]]
+## More minions waiting in chamber corners.
+const MINIONS := [Vector2i(1, 25), Vector2i(43, 13), Vector2i(9, 27), Vector2i(34, 30)]
 ## The point of interest on the pit's floor, and the one in the antechamber.
 const PIT_POI := Vector2i(11, 22)
 const ANTE_POI := Vector2i(20, 10)
-## Secret walls: cell -> the clue flag that reveals the trick. "h" is sealed inside a ring.
-const SECRETS := {Vector2i(32, 21): "found_builders", Vector2i(17, 34): "found_symbols"}
+## Secret walls: cell -> the clue flag that reveals the trick.
+const SECRETS := {Vector2i(37, 21): "found_builders", Vector2i(17, 34): "found_symbols"}
 ## Map letters -> -f9's site ids (sites/akmentar_below.json, sites/royal_tomb.json). The Builders' Wall
 ## reveals the sealed room (the Scarab Mother's shrine); the Gallery of Wards the shortcut.
 const SITE_IDS := {"a": "opening_chapel", "b": "builders", "c": "wards", "d": "embalmers", "e": "treasury",
@@ -70,21 +108,23 @@ func map_rows() -> Array:
 	var g: Array = []
 	for y in H:
 		g.append("#".repeat(W).split(""))
-	_carve_maze(g)
 	_stamp(g, ROYAL, ".")
 	_stamp(g, ANTE, ".")
 	_stamp(g, SOUTH, ".")
-	# A short neck from the antechamber into the maze, and from the south hall.
-	for y in range(ANTE.end.y, ANTE.end.y + 2):
-		g[y][23] = "."
-	for y in range(SOUTH.position.y - 2, SOUTH.position.y):
-		g[y][23] = "."
-	for k in POI_ROOMS:
-		var c: Vector2i = POI_ROOMS[k]
-		_stamp(g, Rect2i(c.x - 1, c.y - 1, 3, 3), ".")
-		g[c.y][c.x] = k
+	for k in CHAMBERS:
+		_stamp(g, CHAMBERS[k], ".")
+	for r: Rect2i in PASSAGES:
+		_stamp(g, r, ".")
 	_pit_hall(g)
+	_deep_hall(g)
+	for b in BLIND:
+		_stamp(g, b[0], ".")
+		var tip: Vector2i = b[1]
+		g[tip.y][tip.x] = b[2]
+	for m: Vector2i in MINIONS:
+		g[m.y][m.x] = "Z"
 	_secret_room(g)
+	_dress_chambers(g)
 	# Royal tomb dressing.
 	var rx := ROYAL.position.x
 	for p in [[rx + 2, 2, "1"], [rx + 13, 2, "2"], [rx + 1, 4, "3"], [rx + 14, 4, "4"], [rx + 3, 6, "5"],
@@ -108,7 +148,7 @@ func map_rows() -> Array:
 	for x in [SOUTH.position.x + 3, SOUTH.end.x - 4]:
 		g[SOUTH.position.y][x] = "P"
 		g[SOUTH.end.y - 1][x] = "P"
-	# The side shafts: long stairs up from the maze's bottom row at each side.
+	# The side shafts: long stairs up from the complex's bottom row at each side.
 	for x in SHAFTS:
 		for y in range(SOUTH.position.y - 1, H - 1):
 			g[y][x] = "D"
@@ -116,56 +156,14 @@ func map_rows() -> Array:
 		for y in [SOUTH.position.y + 1, H - 3]:
 			g[y][x - 1] = "L"
 			g[y][x + 2] = "L"
-	g[SOUTH.position.y - 1][23] = "|"  # the main stairs' neck
-	_dead_end_spawns(g)
+	g[SOUTH.position.y - 1][23] = "|"  # the main stairs' neck: one slab across both cells
+	g[SOUTH.position.y - 1][24] = "|"
 	_slabs_and_vents(g)
 	_torches(g)
 	var rows: Array = []
 	for row in g:
 		rows.append("".join(row))
 	return rows
-
-
-## Recursive backtracker on the odd cells of the middle band (between the antechamber and the
-## south hall), then a few extra openings so it isn't a pure tree.
-func _carve_maze(g: Array) -> void:
-	var y0 := ANTE.end.y + 1
-	var y1 := SOUTH.position.y - 2
-	if y0 % 2 == 0:
-		y0 += 1
-	var start := Vector2i(23, y0)
-	var stack: Array[Vector2i] = [start]
-	var seen := {start: true}
-	g[start.y][start.x] = "."
-	while not stack.is_empty():
-		var cur: Vector2i = stack.back()
-		var nexts: Array[Vector2i] = []
-		for d in [Vector2i(2, 0), Vector2i(-2, 0), Vector2i(0, 2), Vector2i(0, -2)]:
-			var n: Vector2i = cur + d
-			if n.x >= 1 and n.x < W - 1 and n.y >= y0 and n.y <= y1 and not seen.has(n):
-				nexts.append(n)
-		if nexts.is_empty():
-			stack.pop_back()
-			continue
-		var n: Vector2i = nexts[_rng.randi() % nexts.size()]
-		seen[n] = true
-		g[(cur.y + n.y) / 2][(cur.x + n.x) / 2] = "."
-		g[n.y][n.x] = "."
-		stack.append(n)
-	# Loops: knock through a handful of walls between two corridors.
-	var opened := 0
-	var tries := 0
-	while opened < 9 and tries < 400:
-		tries += 1
-		var x := _rng.randi_range(2, W - 3)
-		var y := _rng.randi_range(y0, y1)
-		if g[y][x] != "#":
-			continue
-		var horiz: bool = g[y][x - 1] == "." and g[y][x + 1] == "." and g[y - 1][x] == "#" and g[y + 1][x] == "#"
-		var vert: bool = g[y - 1][x] == "." and g[y + 1][x] == "." and g[y][x - 1] == "#" and g[y][x + 1] == "#"
-		if horiz or vert:
-			g[y][x] = "."
-			opened += 1
 
 
 func _stamp(g: Array, r: Rect2i, ch: String) -> void:
@@ -175,7 +173,7 @@ func _stamp(g: Array, r: Rect2i, ch: String) -> void:
 
 
 ## The Great Pit: a lower chamber ringed by rock, a bridge across it at the upper level (joining
-## the maze on both sides), and a ramp from the east down to its floor.
+## the passages on both sides), and a ramp from the east down to its floor.
 func _pit_hall(g: Array) -> void:
 	_stamp(g, PIT.grow(1), "#")
 	_stamp(g, PIT, ",")
@@ -188,7 +186,7 @@ func _pit_hall(g: Array) -> void:
 	g[BRIDGE_ROW][PIT.end.x + 1] = "."
 	g[BRIDGE_ROW][PIT.position.x - 1] = "."  # the bridge's ends sit on solid ground
 	g[BRIDGE_ROW][PIT.end.x] = "."
-	# Ramp: a walled run from the maze at its east end down to the pit floor.
+	# Ramp: a walled run from the east at its top down to the pit floor.
 	_stamp(g, Rect2i(RAMP.position.x, RAMP.position.y - 1, RAMP.size.x, 3), "#")
 	for x in range(RAMP.position.x, RAMP.end.x):
 		g[RAMP.position.y][x] = "/"
@@ -200,84 +198,140 @@ func _pit_hall(g: Array) -> void:
 	g[PIT.position.y + 3][PIT.end.x - 1] = "X"  # scarabs well up from the pit at the awakening
 
 
-## Room "h" is sealed: a ring of rock with a single secret wall facing the maze.
-func _secret_room(g: Array) -> void:
-	var c: Vector2i = POI_ROOMS.h
-	var ring := Rect2i(c.x - 2, c.y - 2, 5, 5)
+## The chariot hall: sunk 5 m behind a ring of rock, a walkway across it at the upper level from
+## the low hall to the embalmers, and a ramp down into it from the middle chamber.
+func _deep_hall(g: Array) -> void:
+	var ring := DEEP.grow(1)
 	for y in range(ring.position.y, ring.end.y):
 		for x in range(ring.position.x, ring.end.x):
-			var edge := x == ring.position.x or x == ring.end.x - 1 or y == ring.position.y or y == ring.end.y - 1
-			if edge:
+			if not DEEP.has_point(Vector2i(x, y)):
+				g[y][x] = "#"
+	for y in range(DEEP.position.y, DEEP.end.y):
+		for x in range(DEEP.position.x, DEEP.end.x):
+			_pit[Vector2i(x, y)] = true
+	for x in range(DEEP.position.x, DEEP.end.x):
+		g[DEEP_WALK][x] = "="
+	g[DEEP_WALK][DEEP.position.x - 1] = "."  # the walkway's ends on solid ground
+	g[DEEP_WALK][DEEP.end.x] = "."
+	for y in range(DEEP_RAMP.position.y, DEEP_RAMP.end.y):
+		for x in range(DEEP_RAMP.position.x, DEEP_RAMP.end.x):
+			if g[y][x] != "=":
+				g[y][x] = "/"
+			_pit[Vector2i(x, y)] = true
+
+
+## The shrine ("h") is sealed: a ring of rock round it with one secret wall, at the end of the
+## passage from the middle chamber. The other secret is the shortcut into the south hall.
+func _secret_room(g: Array) -> void:
+	var ring: Rect2i = (CHAMBERS.h as Rect2i).grow(1)
+	for y in range(ring.position.y, ring.end.y):
+		for x in range(ring.position.x, ring.end.x):
+			if x == ring.position.x or x == ring.end.x - 1 or y == ring.position.y or y == ring.end.y - 1:
 				g[y][x] = "#"
 	for s in SECRETS:
 		g[s.y][s.x] = "?"
-	g[c.y][c.x - 3] = "."  # the maze side of the secret wall
-	g[34][16] = "."  # the shortcut's far side, west of the south hall
-	g[33][16] = "."
-	g[32][16] = "."  # and on up into the maze
 
 
-## Dead ends: sleeping mummies in three, minion spawns (the awakening) in up to six others.
-func _dead_end_spawns(g: Array) -> void:
-	var ends: Array[Vector2i] = []
-	for y in range(1, H - 1):
-		for x in range(1, W - 1):
-			if g[y][x] != ".":
-				continue
-			var walls := 0
-			for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
-				walls += int(g[y + d.y][x + d.x] == "#")
-			if walls == 3:
-				ends.append(Vector2i(x, y))
-	ends.sort_custom(func(a, b): return (a.x * 31 + a.y * 17) % 97 < (b.x * 31 + b.y * 17) % 97)
-	for k in mini(ends.size(), 9):
-		g[ends[k].y][ends[k].x] = "M" if k < 3 else "Z"
+## Each chamber's point of interest at its centre; columns inset from the corners of the big ones,
+## fire pillars halfway along the sides.
+func _dress_chambers(g: Array) -> void:
+	for k in CHAMBERS:
+		var r: Rect2i = CHAMBERS[k]
+		var cx := r.position.x + r.size.x / 2
+		var cy := r.position.y + r.size.y / 2
+		if k.length() == 1:
+			g[cy][cx] = k
+		if k == "h":
+			continue
+		if r.size.x >= 6 and r.size.y >= 5:
+			for p in [Vector2i(r.position.x + 1, r.position.y + 1), Vector2i(r.end.x - 2, r.position.y + 1),
+					Vector2i(r.position.x + 1, r.end.y - 2), Vector2i(r.end.x - 2, r.end.y - 2)]:
+				if g[p.y][p.x] == ".":
+					g[p.y][p.x] = "P"
+		for p in [Vector2i(r.position.x, cy), Vector2i(r.end.x - 1, cy)]:
+			if g[p.y][p.x] == "." and _walled_beside(g, p):
+				g[p.y][p.x] = "B"
 
 
-## Drop-slabs across straight corridor cells and scarab vents in corridor walls, spread over the
-## maze's middle band (seeded, a few cells apart).
+## `p` has rock on at least one side (a fire pillar there stands against a wall, not in a doorway).
+func _walled_beside(g: Array, p: Vector2i) -> bool:
+	for d in [Vector2i(1, 0), Vector2i(-1, 0)]:
+		if g[p.y + d.y][p.x + d.x] == "#":
+			return true
+	return false
+
+
+## Drop-slabs across passages (one slab spans a 4 m passage: two cells marked "|") and scarab
+## vents in passage walls. Passages on the ways from the antechamber to the exits go first, so every
+## escape meets some; a slab only goes where a way round remains.
 func _slabs_and_vents(g: Array) -> void:
-	var straight: Array[Vector2i] = []
-	for y in range(ANTE.end.y + 3, SOUTH.position.y - 2):
-		for x in range(2, W - 2):
+	var pairs: Array = []  # [cell, its twin across the passage]
+	var walls: Array[Vector2i] = []
+	for y in range(ANTE.end.y + 1, SOUTH.position.y - 2):  # not on the exits' last approach
+		for x in range(2, W - 3):
 			if g[y][x] != ".":
 				continue
-			var ew: bool = g[y][x - 1] == "#" and g[y][x + 1] == "#" and g[y - 1][x] == "." and g[y + 1][x] == "."
-			var ns: bool = g[y - 1][x] == "#" and g[y + 1][x] == "#" and g[y][x - 1] == "." and g[y][x + 1] == "."
-			if ew or ns:
-				straight.append(Vector2i(x, y))
-	for i in straight.size():
-		var j := _rng.randi_range(i, straight.size() - 1)
-		var t := straight[i]
-		straight[i] = straight[j]
-		straight[j] = t
-	# Cells on the shortest ways from the antechamber to the three ways out go first, so every
-	# escape meets some.
+			# Across a north-south passage: rock either side, open above and below.
+			if g[y][x + 1] == "." and _rock(g[y][x - 1]) and _rock(g[y][x + 2]) 					and _open(g[y - 1][x]) and _open(g[y - 1][x + 1]) and _open(g[y + 1][x]) and _open(g[y + 1][x + 1]):
+				pairs.append([Vector2i(x, y), Vector2i(x + 1, y)])
+			# Across an east-west passage.
+			if g[y + 1][x] == "." and _rock(g[y - 1][x]) and _rock(g[y + 2][x]) 					and _open(g[y][x - 1]) and _open(g[y + 1][x - 1]) and _open(g[y][x + 1]) and _open(g[y + 1][x + 1]):
+				pairs.append([Vector2i(x, y), Vector2i(x, y + 1)])
+			for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+				if g[y + d.y][x + d.x] == "#":
+					walls.append(Vector2i(x, y))
+					break
+	for i in pairs.size():
+		var j := _rng.randi_range(i, pairs.size() - 1)
+		var t: Array = pairs[i]
+		pairs[i] = pairs[j]
+		pairs[j] = t
 	var route := _routes(g, Vector2i(23, ANTE.end.y + 1),
 		[Vector2i(23, SOUTH.position.y - 2), Vector2i(SHAFTS[0], SOUTH.position.y - 2), Vector2i(SHAFTS[1], SOUTH.position.y - 2)])
-	straight.sort_custom(func(a, b): return route.has(a) and not route.has(b))
+	pairs.sort_custom(func(a, b): return route.has(a[0]) and not route.has(b[0]))
 	var placed: Array[Vector2i] = []
 	var reach := _reach(g)
-	for c in straight:
-		if placed.size() >= SLABS + SCARAB_VENTS:
+	for pr in pairs:
+		if placed.size() >= SLABS:
 			break
+		var c: Vector2i = pr[0]
 		var near := false
 		for o in placed:
 			near = near or Vector2(o - c).length() < 6.0
 		if near:
 			continue
-		if placed.size() < SLABS:
-			# Only where a way round remains: with every slab shut, nobody can be sealed off from
-			# all the exits (a slab coming down in your face means a detour, never a dead end).
-			g[c.y][c.x] = "|"
-			var r := _reach(g)
-			if r.size() < reach.size() - 1:
-				g[c.y][c.x] = "."
-				continue
-			reach = r
-		else:
-			g[c.y][c.x] = "V"
+		# Only where a way round remains: with every slab shut, nobody can be sealed off from
+		# all the exits (a slab coming down in your face means a detour, never a dead end).
+		for q: Vector2i in pr:
+			g[q.y][q.x] = "|"
+		var r := _reach(g)
+		if r.size() < reach.size() - 2:
+			for q: Vector2i in pr:
+				g[q.y][q.x] = "."
+			continue
+		reach = r
 		placed.append(c)
+	var vents := 0
+	for i in walls.size():
+		var c: Vector2i = walls[(i * 37) % walls.size()]
+		if vents >= SCARAB_VENTS or g[c.y][c.x] != ".":
+			continue
+		var near := false
+		for o in placed:
+			near = near or Vector2(o - c).length() < 5.0
+		if near:
+			continue
+		g[c.y][c.x] = "V"
+		placed.append(c)
+		vents += 1
+
+
+static func _rock(ch: String) -> bool:
+	return ch in ["#", "L"]
+
+
+static func _open(ch: String) -> bool:
+	return not ch in ["#", "L", "?", "|", "=", "/", ","]
 
 
 ## The cells that can walk to a way out (any stair cell), with the slabs ("|") shut.
@@ -419,17 +473,25 @@ func _bridge_cell(r: int, c: int) -> void:
 		rail.set_meta("parapet", true)
 
 
-## The ramp from the maze (east, upper level) down to the pit floor (west): one sloped slab.
+## The ramps down into the deep halls: into the pit (high end east, down to the west) and into the
+## chariot hall (high end north, down to the south). Each is one sloped slab.
 func _ramp() -> void:
-	var hi := _cell(RAMP.position.y, RAMP.end.x - 1) + Vector3(CELL * 0.5, 0, 0)
-	var lo := _cell(RAMP.position.y, RAMP.position.x) - Vector3(CELL * 0.5, PIT_DROP, 0)
-	var run := hi.x - lo.x
-	var slope := atan2(PIT_DROP, run)
-	var length := sqrt(run * run + PIT_DROP * PIT_DROP)
+	var pit_hi := _cell(RAMP.position.y, RAMP.end.x - 1) + Vector3(CELL * 0.5, 0, 0)
+	var pit_lo := _cell(RAMP.position.y, RAMP.position.x) - Vector3(CELL * 0.5, PIT_DROP, 0)
+	_slope(pit_hi, pit_lo, CELL)
+	for x in range(RAMP.position.x, RAMP.end.x):
+		_pit[Vector2i(x, RAMP.position.y)] = true  # the pit floor continues under the ramp's foot
+	var mid_x := (_cell(0, DEEP_RAMP.position.x).x + _cell(0, DEEP_RAMP.end.x - 1).x) * 0.5
+	var deep_hi := Vector3(mid_x, FLOOR_Y, _cell(DEEP_RAMP.position.y, 0).z - CELL * 0.5)
+	var deep_lo := Vector3(mid_x, FLOOR_Y - PIT_DROP, _cell(DEEP_RAMP.end.y - 1, 0).z + CELL * 0.5)
+	_slope(deep_hi, deep_lo, CELL * DEEP_RAMP.size.x)
+
+
+func _slope(hi: Vector3, lo: Vector3, width: float) -> void:
 	var body := StaticBody3D.new()
 	var cs := CollisionShape3D.new()
 	var bs := BoxShape3D.new()
-	bs.size = Vector3(length, 0.4, CELL)
+	bs.size = Vector3(width, 0.4, hi.distance_to(lo))
 	cs.shape = bs
 	body.add_child(cs)
 	var mi := MeshInstance3D.new()
@@ -439,11 +501,8 @@ func _ramp() -> void:
 	mi.material_override = _floor_mat
 	body.add_child(mi)
 	_nav.add_child(body)
-	body.position = (hi + lo) * 0.5 - Vector3(0, 0.2, 0)
-	body.rotation.z = slope  # rises toward +X (east)
-	# The pit floor continues under the ramp's foot.
-	for x in range(RAMP.position.x, RAMP.end.x):
-		_pit[Vector2i(x, RAMP.position.y)] = true
+	var b := Basis.looking_at(hi - lo, Vector3.UP)  # its long side (Z) runs down the slope
+	body.global_transform = Transform3D(b, (hi + lo) * 0.5 - b.y * 0.2)
 
 
 ## A secret wall: a ClueDoor (it sinks once its clue flag is set) that sounds hollow when tried,
@@ -482,13 +541,19 @@ func _marker(ch: String, p: Vector3, _r: int, _c: int) -> void:
 			royal_pois[ch] = p
 			_plinth(p, 1.1)
 			var top := p + Vector3.UP * 1.1
-			if ch == "1":  # the four canopic jars, heads to the room
-				var jars := ["imsety", "hapy", "duamutef", "qebehsenuef"]
+			# The jars and the amulet are already gone when you get here (the thieves found them
+			# while you were busy): what's left is the evidence. Simon: "you will see no one walked
+			# over and stole them".
+			if ch == "1":  # four clean rings in the dust and broken seals where the jars stood
 				for k in 4:
-					_prop(self, "act5/canopic_%s.glb" % jars[k], top + Vector3((k % 2) * 0.32 - 0.16, 0, (k / 2) * 0.32 - 0.16))
-			elif ch == "2":  # the amulet, upright on its plinth
-				amulet = _prop(self, "act5/amulet_altrazin.glb", top + Vector3.UP * 0.06, 0.0, Vector3.ONE * 1.6)
-			if ch in ["1", "2"]:  # a warm glint so the treasure catches the eye across the room
+					var at := top + Vector3((k % 2) * 0.34 - 0.17, 0.005, (k / 2) * 0.34 - 0.17)
+					_disc(at, 0.1, Color(0.62, 0.55, 0.42))
+					for j in 3:
+						_chip(at + Vector3(randf_range(-0.16, 0.16), 0.0, randf_range(-0.16, 0.16)))
+			elif ch == "2":  # the empty cradle: a stone saddle with a clean oval in its dust
+				_box(self, top + Vector3.UP * 0.07, Vector3(0.34, 0.14, 0.26), _stone)
+				_disc(top + Vector3.UP * 0.145, 0.06, Color(0.66, 0.6, 0.48))
+			if ch in ["1", "2"]:  # light on the empty places, so you notice what's missing
 				var glint := OmniLight3D.new()
 				glint.light_color = Color(1.0, 0.8, 0.5)
 				glint.light_energy = 1.2
@@ -506,8 +571,13 @@ func _marker(ch: String, p: Vector3, _r: int, _c: int) -> void:
 		"C":
 			collapse_points.append(p)
 		"|":
-			var ns := _ch(_r - 1, _c) in ["#", "L"]  # rock north and south: the corridor runs east-west
-			var slab := SlabDoor.make(_nav, p, Vector3(CELL, WALL_H, 0.5), PI * 0.5 if ns else 0.0, _stone)
+			# One slab across a 4 m passage: built by the first cell of the pair (west or north).
+			if _ch(_r, _c - 1) == "|" or _ch(_r - 1, _c) == "|":
+				return
+			var across_x := _ch(_r, _c + 1) == "|"  # the pair lies east-west: the passage runs north-south
+			var wide := 2.0 if across_x or _ch(_r + 1, _c) == "|" else 1.0
+			var at := p + (Vector3(CELL * 0.5, 0, 0) if across_x else Vector3(0, 0, CELL * 0.5)) * (wide - 1.0)
+			var slab := SlabDoor.make(_nav, at, Vector3(CELL * wide, WALL_H, 0.5), 0.0 if across_x else PI * 0.5, _stone)
 			slab_doors.append(slab)
 			if _r == SOUTH.position.y - 1 and _c == 23:
 				neck_slab = slab
@@ -518,6 +588,36 @@ func _marker(ch: String, p: Vector3, _r: int, _c: int) -> void:
 					scarab_vents.append({"point": p - n * CELL * 0.5 + Vector3.UP * 0.3, "normal": n})
 					_vent_slot(p - n * CELL * 0.5, n)
 					break
+
+
+## A flat ring of lighter dust (what stood here kept the dust off).
+func _disc(at: Vector3, radius: float, colour: Color) -> void:
+	var mi := MeshInstance3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = radius
+	cm.bottom_radius = radius
+	cm.height = 0.01
+	mi.mesh = cm
+	var m := StandardMaterial3D.new()
+	m.albedo_color = colour
+	m.roughness = 1.0
+	mi.material_override = m
+	add_child(mi)
+	mi.global_position = at
+
+
+## A chip of broken plaster seal.
+func _chip(at: Vector3) -> void:
+	var mi := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = Vector3(randf_range(0.03, 0.06), 0.015, randf_range(0.02, 0.05))
+	mi.mesh = bm
+	var m := StandardMaterial3D.new()
+	m.albedo_color = Color(0.78, 0.7, 0.58)
+	mi.material_override = m
+	add_child(mi)
+	mi.global_position = at + Vector3.UP * 0.01
+	mi.rotation.y = randf() * TAU
 
 
 ## A scarab vent you can spot: a black slot low in the wall under a carved stone lip, with a
@@ -684,16 +784,10 @@ func _build_surface() -> void:
 	_pick_collapse_points()
 
 
-## Two rubble points on the way out (the corridor cells nearest the middle of the run).
+## Two rubble points on the way out: across the antechamber's neck and the south hall's neck.
 func _pick_collapse_points() -> void:
-	var cands: Array[Vector3] = []
-	for r in range(ANTE.end.y + 2, SOUTH.position.y - 2):
-		var p := _cell(r, 23)
-		if _ch(r, 23) == "." and _ch(r, 22) in ["#", "L"] and _ch(r, 24) in ["#", "L"]:
-			cands.append(p)
-	if cands.size() >= 2:
-		collapse_points.append(cands[cands.size() / 3])
-		collapse_points.append(cands[cands.size() * 2 / 3])
+	for r in [ANTE.end.y + 1, SOUTH.position.y - 2]:
+		collapse_points.append(_cell(r, 23) + Vector3(CELL * 0.5, 0, 0))
 
 
 func _environment() -> void:
