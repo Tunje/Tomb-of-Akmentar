@@ -420,7 +420,7 @@ func _mat(id: String) -> StandardMaterial3D:
 		return _mats[id]
 	var colors := {
 		"hull": Color(0.16, 0.14, 0.12), "deck": Color(0.52, 0.38, 0.22), "trim": Color(0.36, 0.25, 0.14),
-		"rail": Color(0.82, 0.78, 0.68), "cabin": Color(0.86, 0.82, 0.72), "roof": Color(0.3, 0.28, 0.26),
+		"rail": Color(0.82, 0.78, 0.68), "cabin": Color(0.86, 0.82, 0.72), "roof": Color(0.6, 0.55, 0.48),
 		"window": Color(0.12, 0.14, 0.16), "funnel": Color(0.55, 0.16, 0.1), "funnel_top": Color(0.08, 0.08, 0.08),
 		"wheel": Color(0.45, 0.14, 0.1), "crate": Color(0.6, 0.46, 0.28), "brass": Color(0.8, 0.62, 0.25),
 	}

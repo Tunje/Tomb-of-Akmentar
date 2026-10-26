@@ -49,20 +49,34 @@ static func muzzle_flash(parent: Node, pos: Vector3, dir: Vector3) -> void:
 	var root := Node3D.new()
 	parent.add_child(root)
 	root.global_position = pos
+	# A soft additive glow card a hand's width ahead of the muzzle and a modest light: the old opaque
+	# emissive sphere read as a flat cream disc at night, and its light blew out the shooter (-2d).
 	var l := OmniLight3D.new()
-	l.light_color = Color(1.0, 0.75, 0.4)
-	l.light_energy = 7.0
-	l.omni_range = 7.0
+	l.light_color = Color(1.0, 0.72, 0.38)
+	l.light_energy = 3.0
+	l.omni_range = 5.0
+	l.omni_attenuation = 1.6
 	root.add_child(l)
+	l.position = dir * 0.35
 	var flash := MeshInstance3D.new()
-	var sm := SphereMesh.new()
-	sm.radius = 0.09
-	sm.height = 0.18
-	flash.mesh = sm
-	flash.material_override = _unshaded("flash", Color(1.0, 0.8, 0.45), 6.0)
+	var qm := QuadMesh.new()
+	qm.size = Vector2(0.32, 0.32)
+	flash.mesh = qm
+	if not _mats.has("flash_glow"):
+		var m := StandardMaterial3D.new()
+		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		m.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+		m.albedo_texture = soft_dot()
+		m.albedo_color = Color(1.0, 0.68, 0.32)
+		m.no_depth_test = false
+		_mats["flash_glow"] = m
+	flash.material_override = _mats["flash_glow"]
+	flash.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	root.add_child(flash)
-	flash.global_position = pos + dir * 0.08
-	flash.scale = Vector3(1.0, 1.0, 1.0) * randf_range(0.8, 1.3)
+	flash.global_position = pos + dir * 0.1
+	flash.scale = Vector3.ONE * randf_range(0.8, 1.3)
 	_expire(root, 0.05)
 
 

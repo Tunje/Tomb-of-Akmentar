@@ -74,7 +74,8 @@ func _spawn_party() -> void:
 		var c := Gunman.make_companion(id, player, Characters.glb(id))
 		if c:
 			add_child(c)
-			c.global_position = player.global_position + Vector3(i * 1.4 - 1.4, 0, 2.5)
+			# Out to the sides, a step ahead: behind the player they stood in the camera's lens (-2d).
+			c.global_position = player.global_position + Vector3((2.4 + i * 1.2) * (1 if i % 2 == 0 else -1), 0, -1.0)
 			companions[id] = c
 			i += 1
 
@@ -90,10 +91,14 @@ func _board(id: String) -> void:
 		var want: String = {"act3_route": str(args.get("route", "desert")),
 			"act3_desert_branch": str(args.get("branch", "temple")), "act3_coast_branch": str(args.get("branch", "continue"))}.get(b.board_id, "")
 		var opts: Array = b.options()
+		var picked := false
 		for i in opts.size():
-			if str(opts[i].get("id", "")) == want:
-				b.choose(i)
+			if str(opts[i].get("id", "")) == want and b.reason(i) == "":
+				picked = b.choose(i)
 				break
+		for i in opts.size():  # the wanted way is locked (the fork talk chose): the first open one
+			if not picked and b.reason(i) == "":
+				picked = b.choose(i)
 		# A chained board (coast -> its branch) loads in the same board: pick again.
 		await get_tree().create_timer(0.3).timeout
 		if not closed[0] and is_instance_valid(b) and b.board_id != id:

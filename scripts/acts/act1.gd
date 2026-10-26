@@ -85,6 +85,9 @@ func _to_office() -> void:
 func _after_office(_end: String) -> void:
 	if is_instance_valid(_office):
 		_office.queue_free()
+	# Turn to the street: facing the door, the camera was squashed against the facade (-2d).
+	var n: Vector2 = Cairo.SPOTS[OFFICE][1]
+	player.yaw = atan2(-n.x, -n.y)
 	step = Step.COLLECTORS
 	# Finch and his men catch you in the street outside.
 	var at: Vector3 = level.open_point(level.near_spot(OFFICE, 0.0, 4.0))  # out in the street, not inside the club
