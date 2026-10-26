@@ -98,7 +98,9 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if args.size() > 0:
 		return
-	if event.is_action_pressed("journal"):
+	if step == Step.END and event is InputEventKey and event.pressed and event.keycode in [KEY_ENTER, KEY_KP_ENTER]:
+		get_tree().change_scene_to_file("res://act6.tscn")  # the Keepers' send-off; Game carries over
+	elif event.is_action_pressed("journal"):
 		JournalScreen.toggle(self, player)
 	elif event.is_action_pressed("party_order"):
 		hud.toast("Companions: " + str(Gunman.toggle_party_order(get_tree())))
@@ -506,7 +508,7 @@ func _end() -> void:
 	Game.save_game()
 	var lines := ["The guardian is awake.", "The amulet is gone: the %s took it." % str(Game.flag("thieves", "")).capitalize(),
 		"The Keepers want it back, and so must you."]
-	hud.show_message("THE AWAKENING", "\n".join(lines) + "\n\n(Act 6 comes next.)")
+	hud.show_message("THE AWAKENING", "\n".join(lines) + "\n\nEnter  hear the Keepers out (Act 6)")
 	print("RESULT act5 end ally=%s forced=%s delay=%s studied_tomb=%d escaped=%s exit=%s lost=%s fled=%s thieves=%s t=%.0f" % [
 		Game.flag("ally", ""), Game.flag("door_forced", false), Game.flag("german_delay", false), _tomb_done,
 		Game.flag("escaped", false), Game.flag("escape_exit", ""), Game.flag("act5_casualties", []), Game.flag("thieves_fled", false),
