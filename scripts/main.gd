@@ -159,10 +159,7 @@ func _continue() -> void:
 	if not Game.load_game():
 		return
 	# A save made in an act goes back to that act (the end of one, into the next).
-	var scene: String = {"act1_end": "res://act2.tscn", "act2_hotel_bed": "res://act2.tscn", "act2_end": "res://act3.tscn", "act3_end": "res://act4.tscn",
-		"act7_hotel_bed": "res://act7.tscn", "act7_recovered": "res://act7.tscn", "act7_end": "res://act8.tscn",
-		"act8_end": "res://act9.tscn", "act4_end": "res://act5.tscn",
-		"act4_camp": "res://act4.tscn", "act5_end": "res://act6.tscn", "act6_keepers": "res://act6.tscn", "act6_end": "res://act7.tscn"}.get(Game.place, "")
+	var scene := SaveRoute.scene_for(Game.place)  # the one table of where each save resumes
 	if scene != "":
 		get_tree().change_scene_to_file(scene)
 		return
