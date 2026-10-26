@@ -32,6 +32,10 @@ const SPOTS := {
 	"caravanserai": [Vector3(78.6, 0, 77), Vector2(-1, 0), "The caravanserai"],
 	"labour": [Vector3(107, 0, 62), Vector2(0, 0), "The labour market"],
 	"docks": [Vector3(110, 0, 50), Vector2(0, 0), "The docks"],
+	# Act 7's.
+	"station": [Vector3(1.4, 0, 50), Vector2(1, 0), "The railway station"],
+	"police": [Vector3(7, 0, 52.7), Vector2(0, -1), "Police headquarters"],
+	"road_gate": [Vector3(29, 0, 97.5), Vector2(0, 0), "The south gate"],
 }
 ## Where each recruit and each spot's host stands (Characters / people.json ids), and the point
 ## they face. Hosts are -f9's: the person an action spot's talk is with.
@@ -61,6 +65,8 @@ const NPC_POINTS := {
 	"karim": [Vector3(66.2, 0, 46.9), Vector3(65, 0, 50)],
 	"clara": [Vector3(46.2, 0, 46.9), Vector3(45, 0, 50)],
 	"hamdi": [Vector3(116, 0, 51), Vector3(110, 0, 50)],
+	"watkins": [Vector3(0.9, 0, 47.9), Vector3(6, 0, 50)],
+	"khalaf": [Vector3(8.9, 0, 53.4), Vector3(7, 0, 49)],
 }
 ## Hitching places in the caravanserai yard (the act puts the expedition's horses here).
 const HORSE_POINTS := [Vector3(86, 0, 58.6), Vector3(90, 0, 58.6), Vector3(94, 0, 58.6), Vector3(98, 0, 58.6)]
@@ -159,18 +165,20 @@ func _ready() -> void:
 	_mosque()
 	_bazaar()
 	_dealer()
+	_station()
+	_police()
+	_road_gate()
 	_caravanserai()
 	_quay()
 	_street_life()
 	_animals()
 	_skyline()
-	# A spot with Act 2 actions (actions/act2_<id>.json) gets act2.gd's ActionSpot there instead,
-	# so only the others (the bed, the consulate) get a plain Interactable.
+	# Each act puts its own ActionSpots (actions/act<N>_<id>.json) on these positions; only the
+	# hotel bed is a plain Interactable here (the act wires it to save and end the day).
 	for id in SPOTS:
 		var s: Array = SPOTS[id]
 		spots[id] = s[0]
-		if not FileAccess.file_exists("res://actions/act2_%s.json" % id):
-			interactables[id] = Interactable.make(self, s[0] + Vector3.UP * 0.9, s[2], id, 1.0)
+	interactables["hotel_bed"] = Interactable.make(self, spots.hotel_bed + Vector3.UP * 0.9, SPOTS.hotel_bed[2], "hotel_bed", 1.0)
 	player_spawn = Vector3(47.5, 0, 50)
 	_environment()
 	set_day_time(day_time)
@@ -178,9 +186,12 @@ func _ready() -> void:
 	_townsfolk()
 
 
-## The recruits at their places. `conversations`: Characters id -> dialogue id (none = no Talk).
-func place_people(conversations := {}) -> Dictionary:
+## The recruits and hosts at their places. `conversations`: Characters id -> dialogue id (none =
+## no Talk). `only`: just these ids (an act without the recruits, e.g. Act 7); empty = everyone.
+func place_people(conversations := {}, only: Array = []) -> Dictionary:
 	for id in NPC_POINTS:
+		if not only.is_empty() and not id in only:
+			continue
 		var p: Array = NPC_POINTS[id]
 		var n := Npc.make(self, id, p[0], conversations.get(id, ""), Characters.glb(id))
 		n.face_towards(p[1])
@@ -367,14 +378,14 @@ func _blocks() -> void:
 	_block(Rect2(0, 0, 26, 46), [Rect2(4, 10, 18, 22)])                          # NW (the mosque)
 	_block(Rect2(32, 0, 40, 46), [Rect2(38, 30, 18, 16), Rect2(58, 34, 14, 12),   # N-mid: hotel, bank,
 		Rect2(62, 18, 10, 16), Rect2(64, 4, 8, 10)])                             # consulate, telegraph
-	_block(Rect2(0, 54, 26, 46), [Rect2(14, 60, 12, 12)])                         # SW (the tavern)
+	_block(Rect2(0, 54, 26, 46), [Rect2(14, 60, 12, 12), Rect2(2, 54, 10, 10)])   # SW: tavern, police
 	_block(Rect2(32, 54, 40, 20), [Rect2(56, 54, 14, 10), Rect2(40, 54, 10, 8),   # S-mid north: club,
 		Rect2(32, 56, 8, 10)], 5.0, 10.0)                                        # outfitter, gunsmith
 	_block(Rect2(32, 80, 40, 20), [Rect2(36, 80, 8, 8)], 5.0, 10.0)              # S-mid south (dealer)
 	# The ring: low and high blocks round the outside, so the streets end in facades.
-	_block(Rect2(-RING, -RING, RING, SOUTH + RING * 2.0), [], 8.0, 16.0)
+	_block(Rect2(-RING, -RING, RING, SOUTH + RING * 2.0), [Rect2(-RING, 40, RING, 20)], 8.0, 16.0)  # (the station)
 	_block(Rect2(0, -RING, RIVER_X - 8.0, RING), [], 8.0, 16.0)
-	_block(Rect2(0, SOUTH, RIVER_X - 8.0, RING), [], 8.0, 16.0)
+	_block(Rect2(0, SOUTH, RIVER_X - 8.0, RING), [Rect2(26, SOUTH, 6, RING)], 8.0, 16.0)  # (the south gate)
 	_block(Rect2(RIVER_X - 8.0, -RING, 8.0, RING), [], 6.0, 8.0)
 	_block(Rect2(RIVER_X - 8.0, SOUTH, 8.0, RING), [], 6.0, 8.0)
 
@@ -686,6 +697,75 @@ func _dealer() -> void:
 	_entrance(Vector3(40, 0, 80), Vector3(0, 0, -1), "ANTIQUITIES", 1.5, 2.6, 3.4)
 
 
+## The railway station closes the avenue's west end: a tall hall, a clock over the doors.
+func _station() -> void:
+	var n := Vector3(1, 0, 0)
+	_building(Rect2(-RING, 40, RING, 20), 13.0, _plaster[1], [Vector2(1, 0)], false)
+	_entrance(Vector3(0, 0, 50), n, "", 3.4, 4.2)
+	_sign(Vector3(0, 6.0, 50), n, "CAIRO CENTRAL STATION", 7.0, Color(0.2, 0.25, 0.32))
+	# The clock: a white face in an iron ring, hands at ten past ten.
+	var face := MeshInstance3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = 1.0
+	cm.bottom_radius = 1.0
+	cm.height = 0.12
+	face.mesh = cm
+	face.material_override = _flat(Color(0.92, 0.9, 0.82))
+	_deco.add_child(face)
+	face.position = Vector3(0.1, 9.0, 50)
+	face.rotation.z = PI * 0.5
+	for hand in [[0.75, 0.5], [0.55, -0.5]]:
+		var h := _mesh(Vector3(0.2, 9.0, 50), Vector3(0.03, hand[0], 0.07), _iron)
+		h.rotation.x = hand[1]
+		h.position += Vector3(0, cos(hand[1]), -sin(hand[1])) * hand[0] * 0.5
+	# Twin towers either side.
+	for z in [44.4, 55.6]:
+		_box(_nav, Vector3(0.8, 8.5, z), Vector3(3.2, 17.0, 3.2), _plaster[1])
+		_mesh(Vector3(0.8, 17.2, z), Vector3(3.8, 0.4, 3.8), _trim)
+		_mesh(Vector3(0.8, 18.4, z), Vector3(2.0, 2.0, 2.0), _plaster[4])
+	_lantern(Vector3(0.35, 3.4, 47.8))
+	_lantern(Vector3(0.35, 3.4, 52.2))
+
+
+## Police headquarters on the avenue's south side.
+func _police() -> void:
+	var n := Vector3(0, 0, -1)
+	_building(Rect2(2, 54, 10, 10), 10.0, _plaster[4], [Vector2(0, -1)], false)
+	_entrance(Vector3(7, 0, 54), n, "POLICE", 1.8, 3.0, 3.0)
+	_lantern(Vector3(5.6, 2.9, 53.7))
+	_lantern(Vector3(8.4, 2.9, 53.7))
+	for x in [4.0, 10.0]:
+		_mesh(Vector3(x, 0.55, 53.0), Vector3(2.4, 1.1, 0.08), _iron)
+
+
+## The south road out of the city: Sharia west runs through an arch in the outer ring to a
+## checkpoint barrier (the act's lockdown happens here). Beyond it the road is only seen.
+func _road_gate() -> void:
+	_arch(Vector3(29, 0, SOUTH + 0.6), Vector3(0, 0, 1), 5.0, 3.8, true, _plaster[4])
+	_mesh(Vector3(29, 1.0, SOUTH + 3.0), Vector3(6.0, 0.14, 0.14), _cloths[0])
+	for x in [26.4, 31.6]:
+		_mesh(Vector3(x, 0.55, SOUTH + 3.0), Vector3(0.2, 1.1, 0.2), _iron)
+	var b := StaticBody3D.new()
+	var cs := CollisionShape3D.new()
+	var bs := BoxShape3D.new()
+	bs.size = Vector3(6.0, 6.0, 0.5)
+	cs.shape = bs
+	b.add_child(cs)
+	add_child(b)
+	b.position = Vector3(29, 3.0, SOUTH + 3.3)
+	# The sentry box just inside, and the road on south.
+	var hut := _box(_nav, Vector3(31.0, 1.25, 98.6), Vector3(1.2, 2.5, 1.2), _wood)
+	_mark_cover(hut, Vector3(1.2, 2.5, 1.2))
+	_mesh(Vector3(29, -0.01, SOUTH + RING + 40.0), Vector3(6.0, 0.02, 80.0), _street)
+	var far := MeshInstance3D.new()
+	var pm := PlaneMesh.new()
+	pm.size = Vector2(160, 80)
+	far.mesh = pm
+	far.material_override = _sand
+	add_child(far)
+	far.position = Vector3(29, -0.05, SOUTH + RING + 40.0)
+
+
 ## The caravanserai: a walled yard (x 80-104, z 54-100) with an arched gate on Sharia east,
 ## stables in an arcade along the north wall, troughs, hay, a hitching rail.
 func _caravanserai() -> void:
@@ -977,6 +1057,8 @@ func _skyline() -> void:
 			1: p = Vector3(lerpf(-RING - 40, RIVER_X, t), 0, -RING - out)
 			_: p = Vector3(lerpf(-RING - 40, RIVER_X, t), 0, SOUTH + RING + out)
 		var h := _rng.randf_range(7, 18)
+		if side == 2 and absf(p.x - 29.0) < 15.0:
+			continue  # keep the south road's view open
 		var size := Vector3(_rng.randf_range(8, 16), h, _rng.randf_range(8, 16))
 		_mesh(p + Vector3.UP * h * 0.5, size, _plaster[_rng.randi() % _plaster.size()])
 	for p in [Vector3(-40, 0, 70), Vector3(40, 0, -45), Vector3(80, 0, 140), Vector3(-30, 0, -20)]:

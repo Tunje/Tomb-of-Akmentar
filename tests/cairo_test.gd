@@ -15,6 +15,8 @@ const VIEWS := [
 	["caravanserai", Vector3(100, 3.0, 96), Vector3(84, 1.0, 64)],
 	["docks", Vector3(96, 4.0, 40), Vector3(122, 0, 54)],
 	["tavern", Vector3(36, 2.0, 74), Vector3(26, 2, 64)],
+	["station", Vector3(22, 2.5, 50), Vector3(0, 5, 50)],
+	["road_gate", Vector3(29, 2.2, 84), Vector3(29, 2, 104)],
 	["overview", Vector3(-6, 45, 120), Vector3(56, 0, 46)],
 ]
 
