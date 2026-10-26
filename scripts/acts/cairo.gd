@@ -110,6 +110,8 @@ var spots := {}             # id -> Vector3 (the SPOTS positions)
 var npcs := {}              # id -> Npc (place_people)
 var mooring := Transform3D(Basis.IDENTITY, MOORING)
 var day_time := 0.5         # 0 morning .. 0.5 noon .. 1 dusk (set_day_time)
+var dust := 0.0             # the curse (set_curse): ochre dust in the air
+var gloom := 0.0            # the curse: the sky darkening by day
 var townsfolk: Array[Node3D] = []
 var _day_tween: Tween
 var _rng := RandomNumberGenerator.new()
@@ -1106,7 +1108,17 @@ func set_day_time(t: float) -> void:
 	sky.sky_top_color = Color(0.36, 0.55, 0.8).lerp(Color(0.42, 0.55, 0.75), dawn).lerp(Color(0.18, 0.18, 0.38), dusk)
 	sky.sky_horizon_color = Color(0.9, 0.8, 0.62).lerp(Color(0.95, 0.78, 0.65), dawn).lerp(Color(0.95, 0.55, 0.35), dusk)
 	sky.ground_horizon_color = Color(0.82, 0.7, 0.52).lerp(Color(0.5, 0.32, 0.25), dusk)
-	var lamps_on := smoothstep(0.82, 0.97, day_time)
+	# The curse: dust thickens the air, the gloom drains the sun and sky toward a bruised brown.
+	if dust > 0.0 or gloom > 0.0:
+		_sun.light_energy *= 1.0 - 0.25 * dust - 0.6 * gloom
+		_sun.light_color = _sun.light_color.lerp(Color(0.9, 0.55, 0.35), gloom * 0.6)
+		_env.ambient_light_energy *= 1.0 - 0.45 * gloom
+		_env.fog_light_color = _env.fog_light_color.lerp(Color(0.72, 0.56, 0.34), dust * 0.7).lerp(Color(0.2, 0.14, 0.12), gloom)
+		_env.fog_density += 0.008 * dust + 0.01 * gloom
+		sky.sky_top_color = sky.sky_top_color.lerp(Color(0.62, 0.5, 0.36), dust * 0.5).lerp(Color(0.1, 0.07, 0.08), gloom)
+		sky.sky_horizon_color = sky.sky_horizon_color.lerp(Color(0.85, 0.65, 0.4), dust * 0.6).lerp(Color(0.35, 0.18, 0.12), gloom)
+		sky.ground_horizon_color = sky.ground_horizon_color.lerp(Color(0.25, 0.15, 0.12), gloom)
+	var lamps_on := maxf(smoothstep(0.82, 0.97, day_time), gloom)
 	for l in _lamps:
 		l.light_energy = 1.6 * lamps_on
 	_win_lit.emission_energy_multiplier = 0.9 * lamps_on
@@ -1128,6 +1140,24 @@ func ease_day_time(t: float, seconds := 3.0) -> void:
 ## last one spent brings dusk.
 static func day_time_for(actions_left: int, per_day: int) -> float:
 	return clampf(1.0 - float(actions_left) / maxf(per_day, 1), 0.0, 1.0)
+
+
+## The curse over the city (Act 7): `dust_f` 0..1 hangs ochre dust in the air, `gloom_f` 0..1
+## darkens the sky by day (the lamps come on). Lies over the time of day; eased by the act.
+func set_curse(dust_f: float, gloom_f: float) -> void:
+	dust = clampf(dust_f, 0.0, 1.0)
+	gloom = clampf(gloom_f, 0.0, 1.0)
+	set_day_time(day_time)
+
+
+## How full the streets are: 1 every townsperson about, 0 nobody (the sickness).
+func set_crowd(f: float) -> void:
+	var keep := roundi(clampf(f, 0.0, 1.0) * townsfolk.size())
+	for i in townsfolk.size():
+		var t := townsfolk[i]
+		if is_instance_valid(t):
+			t.visible = i < keep
+			t.process_mode = Node.PROCESS_MODE_INHERIT if i < keep else Node.PROCESS_MODE_DISABLED
 
 
 ## Kept for the older callers: 0 = the afternoon, 1 = dusk.
