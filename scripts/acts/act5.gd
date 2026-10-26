@@ -77,7 +77,9 @@ func _ready() -> void:
 	player.died.connect(func(): hud.show_message("YOU DIED", "Enter to try again"))
 	for s in str(args.get("shots", "")).split(",", false):
 		_shots.append(float(s))
-	if args.has("party") or ((args.has("auto") or Game.flag("quickstart_act", false)) and Game.party().is_empty()):
+	# A test or menu start brings a crew, but only a fresh one: after a real Act 4 (night_choice) an empty
+	# party is a wipe and stays one (-f9's campaign test).
+	if args.has("party") or ((args.has("auto") or Game.flag("quickstart_act", false)) and Game.party().is_empty() and not Game.flags.has("night_choice")):
 		for id in str(args.get("party", "mahmoud,khalil")).split(",", false):
 			Game.companion(id)["recruited"] = true  # test runs: who comes along
 			Game.set_flag("hired_" + id)  # the epilogue needs it to tell "died" from "never joined"
