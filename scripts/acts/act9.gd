@@ -16,7 +16,8 @@ extends Node3D
 ## Test args (after --): --auto (a bot plays it; RESULT lines), --party=eleanor,hargreaves (who
 ## comes, quickstart), --clues=clue_greetings,clue_hieroglyphs (known before the descent),
 ## --voices=1 (Omar falls as the rite starts) | --voices=0 (both do: the rite fails),
-## --ritual=N (seconds of chant, for quick runs), --seconds=N, --shots=t1,t2, --shot-dir=path.
+## --ritual=N (seconds of chant, for quick runs), --place=act9_end (as if continued from the save
+## at the end: straight to the album), --seconds=N, --shots=t1,t2, --shot-dir=path.
 
 enum Step { ARRIVAL, SURFACE, HALLS, ROYAL, RITUAL, END, EPILOGUE }
 
@@ -58,7 +59,11 @@ func _ready() -> void:
 	if args.size() > 0:
 		get_window().set_flag(Window.FLAG_NO_FOCUS, true)
 	Game.act = 9
-	_quickstart()
+	if args.has("place"):
+		Game.place = str(args.place)  # tests: as if continued from this save
+	var finished := str(Game.place) == "act9_end"  # a Continue after the end: the album, not the act again
+	if not finished:
+		_quickstart()
 	level = AkmentarBelow.new()
 	add_child(level)
 	_points()
@@ -83,6 +88,11 @@ func _ready() -> void:
 	player.died.connect(func(): hud.show_message("YOU DIED", "Enter to try again"))
 	for s in str(args.get("shots", "")).split(",", false):
 		_shots.append(float(s))
+	if finished:
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		print("RESULT act9 continued at act9_end: the album")
+		_show_album()
+		return
 	_spawn_party()
 	_spawn_singers()
 	Game.event.connect(_on_event)
@@ -271,6 +281,11 @@ func _end() -> void:
 		Game.flag("ritual_failed", false), Game.flag("player_died_in_tomb", false), Game.party(), _t])
 	Game.place = "act9_end"
 	Game.save_game(_slot())
+	_show_album()
+
+
+## The ending album, then THE END (also straight from a save made at the end).
+func _show_album() -> void:
 	step = Step.EPILOGUE
 	_album = EpilogueShow.open(self, "akmentar", player)
 	print("RESULT act9 album %s" % [EpilogueShow.pick_cards("akmentar").map(func(c: Dictionary) -> String: return "%s:%s" % [c.who, c.variant])])
