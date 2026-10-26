@@ -133,6 +133,8 @@ var _detour_t := 0.0
 var _last_burst := -100.0
 var _bad_spots := {}  # spot key -> time it proved unreachable
 var _following := false
+var _deck: RiverBoat
+var _deck_xf := Transform3D()
 
 var model: Node3D
 var rig: GunmanBody
@@ -400,6 +402,7 @@ func _enter(s: State) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	_ride_deck()
 	_flash = maxf(_flash - delta, 0.0)
 	if rig:
 		rig.flash(_flash * 3.0)
@@ -501,6 +504,25 @@ func _physics_process(delta: float) -> void:
 	velocity.y = 0.0 if is_on_floor() else velocity.y - GRAVITY * delta
 	move_and_slide()
 	_animate(delta, crouched)
+
+
+## On a moving deck (RiverBoat), the world positions we keep (spot, hold point, camp anchor,
+## progress) move with it.
+func _ride_deck() -> void:
+	var deck := RiverBoat.deck_under(get_tree(), global_position)
+	if deck != _deck:
+		_deck = deck
+		_deck_xf = deck.global_transform if deck else Transform3D()
+	elif deck:
+		var d := deck.global_transform * _deck_xf.affine_inverse()
+		_deck_xf = deck.global_transform
+		if _spot.has("pos"):
+			_spot.pos = d * (_spot.pos as Vector3)
+			_spot.peek = d * (_spot.peek as Vector3)
+			_spot.normal = d.basis * (_spot.normal as Vector3)
+		hold_at = d * hold_at
+		_camp_anchor = d * _camp_anchor
+		_progress_at = d * _progress_at
 
 
 func _cover_think(has_target: bool) -> void:
@@ -912,7 +934,9 @@ func _fire() -> void:
 	var dist := from.distance_to(aim_at)
 	var target_v := (target as CharacterBody3D).velocity if target is CharacterBody3D else Vector3.ZERO
 	aim_at += _flat(target_v) * dist / BULLET_SPEED  # lead a moving target by the round's flight time
-	var spread := SPREAD + SPREAD_PER_M * dist 		+ SPREAD_MOVE * clampf(_flat(velocity).length() / RUN, 0.0, 1.5) 		+ SPREAD_TARGET_MOVE * clampf(_flat(target_v).length() / Player.WALK, 0.0, 1.5)
+	var spread := SPREAD + SPREAD_PER_M * dist \
+		+ SPREAD_MOVE * clampf(_flat(velocity).length() / RUN, 0.0, 1.5) \
+		+ SPREAD_TARGET_MOVE * clampf(_flat(target_v).length() / Player.WALK, 0.0, 1.5)
 	var fwd := (aim_at - from).normalized()
 	var right := fwd.cross(Vector3.UP).normalized()
 	var up := right.cross(fwd)
