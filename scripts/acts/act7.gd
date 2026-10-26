@@ -98,8 +98,7 @@ func _ready() -> void:
 	Game.changed.connect(_on_changed)
 	Game.event.connect(_on_event)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if args.size() > 0 else Input.MOUSE_MODE_CAPTURED
-	hud.show_message("CAIRO, UNDER THE CURSE", "The thieves leave in %d days. He reaches the city in %d." % [
-		int(Game.countdowns.get("thieves", 0)), int(Game.countdowns.get("mummy", 0))])
+	hud.show_message("CAIRO, UNDER THE CURSE", Cairo.countdown_line())
 	await get_tree().create_timer(3.0).timeout
 	hud.show_message("")
 	var worst := ""  # the stage the city is at already, now the title has gone

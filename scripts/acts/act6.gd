@@ -1,0 +1,383 @@
+extends Node3D
+## Act 6: the race back to Cairo, with -f9's data (routes/act6_plan.json, routes/act6_return.json,
+## dialogue/act6_*.json). KEEPERS -> BOARD -> ROAD -> ARRIVAL -> END.
+## - Dawn at Akmentar (AkmentarSurface): Rashad and Bashir stay to hold the guardian
+##   (act6_keepers), which sets the thieves and mummy countdowns.
+## - enough_horses and trucks_running are worked out, then the return board (act6_return). Every
+##   day travelled ticks the countdowns (RouteBoard -> Game.end_day). Desert without enough_horses:
+##   the mummy catches you in the open, game over (event desert_return).
+## - The road (DesertRoute as the backdrop, at night): the camp, act6_road (the thieves' trail if
+##   they fled the same way), then ride on or hold: fight_mummy_servants brings the guardian's
+##   servants out of the dark (Mummy enemies round the camp).
+## - Arrival at Cairo's south gate in the dust (act6_arrival), then Enter goes to Act 7.
+## Test args (after --): --auto[=coast|desert|nohorses] (a bot; RESULT lines), --plan=hold|ride,
+## --party=a,b, --chain (the bot goes on into Act 7), --seconds=N, --shots=t1,t2, --shot-dir=path.
+
+enum Step { KEEPERS, BOARD, ROAD, ARRIVAL, END, OVER }
+
+const PLAN := "res://routes/act6_plan.json"
+const NEXT_ACT := "res://act7.tscn"
+const RIVALS := ["americans", "germans"]   # the expeditions that can lend horses (if alive)
+const SERVANTS := 5                        # mummies at the night camp
+
+var level: Level
+var player: Player
+var hud: Hud
+var step := Step.KEEPERS
+var args := {}
+var plan := {}
+var companions := {}
+var servants: Array[Mummy] = []
+var _events: Array[String] = []
+var _t := 0.0
+var _shots: Array[float] = []
+
+
+func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	child_entered_tree.connect(func(n: Node):
+		if n.process_mode == Node.PROCESS_MODE_INHERIT:
+			n.process_mode = Node.PROCESS_MODE_PAUSABLE)
+	Controls.setup()
+	args = TestDriver.parse_args()
+	if args.size() > 0:
+		get_window().set_flag(Window.FLAG_NO_FOCUS, true)
+	plan = JSON.parse_string(FileAccess.get_file_as_string(PLAN)) if FileAccess.file_exists(PLAN) else {}
+	Game.act = 6
+	if args.has("party") or (args.has("auto") and Game.party().is_empty()):
+		for id in str(args.get("party", "mahmoud,eleanor")).split(",", false):
+			Game.companion(id)["recruited"] = true  # test runs: who comes along
+	player = Player.new()
+	add_child(player)
+	player.set_armed(false)
+	hud = Hud.new()
+	hud.player = player
+	add_child(hud)
+	add_child(CountdownBars.new())
+	player.hit_confirmed.connect(hud.on_hit)
+	player.damaged.connect(hud.on_damaged)
+	player.died.connect(func(): hud.show_message("YOU DIED", "Enter to try again"))
+	for s in str(args.get("shots", "")).split(",", false):
+		_shots.append(float(s))
+	Game.event.connect(func(e: String): _events.append(e))
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if args.size() > 0 else Input.MOUSE_MODE_CAPTURED
+	_keepers()
+
+
+# ---------------------------------------------------------------- the levels
+
+## Swap the map under the player (the party comes along): the old one goes.
+func _use_level(l: Level, at: Vector3, yaw: float) -> void:
+	if level:
+		level.queue_free()
+	level = l
+	add_child(level)
+	player.global_position = at
+	player.velocity = Vector3.ZERO
+	player.yaw = yaw
+	var i := 0
+	for id in companions:
+		var c: Node3D = companions[id]
+		if is_instance_valid(c):
+			c.global_position = at + Vector3(i * 1.4 - 1.4, 0, 2.5).rotated(Vector3.UP, yaw)
+		i += 1
+
+
+func _spawn_party() -> void:
+	for id in Game.party():
+		if companions.has(id):
+			continue
+		var c := Gunman.make_companion(id, player, Characters.glb(id))
+		if c:
+			add_child(c)
+			c.global_position = player.global_position + Vector3(companions.size() * 1.4 - 1.4, 0, 2.5)
+			companions[id] = c
+
+
+## Level has a sun and sky but only AkmentarSurface / Cairo know night: dim any Level's.
+func _darken(f: float) -> void:
+	if level.has_method("set_night") and not level is Cairo:
+		level.call("set_night", f)
+		return
+	level._sun.light_energy = lerpf(1.6, 0.15, f)
+	level._sun.light_color = Color(1.0, 0.9, 0.75).lerp(Color(0.55, 0.65, 0.95), f)
+	level._env.ambient_light_energy = lerpf(0.55, 0.08, f)
+	level._env.ambient_light_sky_contribution = lerpf(1.0, 0.25, f)
+	level._env.fog_light_color = Color(0.75, 0.62, 0.45).lerp(Color(0.05, 0.06, 0.1), f)
+	level._env.tonemap_exposure = lerpf(0.9, 1.25, f)
+	var sky := level._env.sky.sky_material as ProceduralSkyMaterial
+	sky.sky_top_color = Color(0.32, 0.5, 0.75).lerp(Color(0.02, 0.03, 0.08), f)
+	sky.sky_horizon_color = Color(0.85, 0.75, 0.6).lerp(Color(0.08, 0.08, 0.14), f)
+	sky.ground_horizon_color = Color(0.8, 0.68, 0.5).lerp(Color(0.06, 0.05, 0.05), f)
+
+
+# ---------------------------------------------------------------- dawn at Akmentar
+
+func _keepers() -> void:
+	step = Step.KEEPERS
+	var surface := AkmentarSurface.new()
+	_use_level(surface, AkmentarSurface.CAMPS.party + Vector3(2.6, 0, 3.0), 0.0)
+	surface.set_night(0.35)  # first light
+	_spawn_party()
+	var camp: Vector3 = AkmentarSurface.CAMPS.party
+	var rashad := Npc.make(level, "rashad", camp + Vector3(-1.2, 0, 1.6), "", Characters.glb("rashad"))
+	var bashir := Npc.make(level, "bashir", camp + Vector3(1.0, 0, 1.4), "", Characters.glb("bashir"))
+	for n in [rashad, bashir]:
+		n.face_towards(player.global_position)
+	hud.show_message("ACT 6", "Dawn at Akmentar. The guardian is awake; the thieves are on the road.")
+	await get_tree().create_timer(2.5).timeout
+	hud.show_message("")
+	if not Game.flag("act6_started", false):
+		# The data sets the clocks by adding; start them from nothing.
+		Game.countdowns.erase("thieves")
+		Game.countdowns.erase("mummy")
+		if _thief() == "":
+			Game.set_flag("thieves_americans")
+		if args.has("auto"):
+			var c: Dictionary = plan.get("countdowns", {})
+			Game.apply([{"countdown": ["thieves", int(c.get("thieves", 7))]}, {"countdown": ["mummy", int(c.get("mummy", 9))]},
+				{"set_flag": ["keeper_horses", 2]}, {"set_flag": "act6_started"}])
+		else:
+			await _talk("act6_keepers", rashad)
+		if not Game.flag("act6_started", false):  # a talk that missed it: still set the clocks
+			Game.apply([{"countdown": ["thieves", 7]}, {"countdown": ["mummy", 9]}, {"set_flag": "act6_started"}])
+	print("RESULT act6 keepers thieves=%d mummy=%d keeper_horses=%d" % [int(Game.countdowns.get("thieves", 0)),
+		int(Game.countdowns.get("mummy", 0)), int(Game.flag("keeper_horses", 0))])
+	_save("keepers")
+	_board()
+
+
+## Which crew has the artifacts ("" if no flag says).
+func _thief() -> String:
+	for t in ["americans", "germans", "italians"]:
+		if Game.flag("thieves_" + t, false):
+			return t
+	return ""
+
+
+## horses alive + the Keepers' + 2 from each surviving rival that isn't the thieves >= party + 1.
+func _count_transport() -> void:
+	var horses := 0
+	for h: Dictionary in Game.transport.get("horses", []):
+		horses += int(float(h.get("health", 0)) > 0.0)
+	horses += int(Game.flag("keeper_horses", 0))
+	for r in RIVALS:
+		if Game.flag(r + "_alive", false) and not Game.flag("thieves_" + r, false):
+			horses += 2
+	var need := Game.party().size() + 1
+	Game.set_flag("enough_horses", horses >= need)
+	var trucks := false
+	for t: Dictionary in Game.transport.get("trucks", []):
+		trucks = trucks or float(t.get("health", 0)) > 0.0
+	Game.set_flag("trucks_running", trucks)
+	print("RESULT act6 transport horses=%d need=%d enough=%s trucks=%s" % [horses, need, Game.flag("enough_horses"), trucks])
+
+
+# ---------------------------------------------------------------- the board
+
+func _board() -> void:
+	step = Step.BOARD
+	_count_transport()
+	var b := RouteBoard.open(self, "act6_return", player)
+	var closed := [false]
+	b.finished.connect(func(_picks): closed[0] = true)
+	if args.has("auto"):
+		await get_tree().create_timer(0.5).timeout
+		var want := "coast" if str(args.get("auto", "true")) in ["true", "coast"] else "desert"
+		for i in b.options().size():
+			if str(b.options()[i].get("id", "")) == want:
+				b.choose(i)
+				break
+	while not closed[0]:
+		await get_tree().process_frame
+	await get_tree().create_timer(0.3).timeout
+	var route := str(Game.flag("return_route", ""))
+	print("RESULT act6 route=%s day=%d thieves=%d mummy=%d" % [route, Game.day,
+		int(Game.countdowns.get("thieves", 0)), int(Game.countdowns.get("mummy", 0))])
+	if route == "desert" and not Game.flag("enough_horses", false):
+		_caught()
+		return
+	_road(route)
+
+
+## Desert without horses for everyone: he catches you in the open.
+func _caught() -> void:
+	step = Step.OVER
+	print("RESULT act6 game_over caught_in_desert")
+	_darken(0.9)
+	hud.show_message("CAUGHT IN THE OPEN", "Too few horses. Halfway across the sand, the wind drops, and he is there.\n\nEnter  load the last save")
+	if args.has("auto"):
+		await get_tree().create_timer(1.0).timeout
+		get_tree().quit(0)
+
+
+# ---------------------------------------------------------------- the road, at night
+
+func _road(route: String) -> void:
+	step = Step.ROAD
+	Game.set_flag("act6_desert_pick" if route == "desert" else "act6_coast_pick")
+	var road := DesertRoute.new()
+	road.coast = route == "coast"
+	var z := DesertRoute.START_Z - 30.0
+	var camp := DesertRoute.road_point(z) + Vector3(9.0, 0, 0)
+	_use_level(road, camp + Vector3(-2.5, 0, 2.0), 0.0)
+	_darken(0.85)
+	_camp(camp)
+	hud.show_message("THE ROAD BACK", "The %s road. Night falls; you make camp." % route)
+	await get_tree().create_timer(2.5).timeout
+	hud.show_message("")
+	_events.clear()
+	if args.has("auto"):
+		if str(args.get("plan", "hold")) == "ride":
+			Game.set_flag("act6_night_ride")
+		else:
+			Game.apply([{"event": "fight_mummy_servants"}])
+	else:
+		await _talk("act6_road", player)
+	if _events.has("fight_mummy_servants"):
+		await _servants(camp)
+		if not player.alive:
+			return
+	elif Game.flag("act6_night_ride", false):
+		hud.toast("You break camp and ride through the dark, the servants' shapes keeping pace on the dunes.", 4.0)
+		for id in Game.party():
+			Game.apply([{"stat": [id, "fear", 1]}])
+		await get_tree().create_timer(2.0).timeout
+	_arrival()
+
+
+func _camp(at: Vector3) -> void:
+	var fire := Node3D.new()
+	level.add_child(fire)
+	fire.position = at
+	level._flame(fire, Vector3.UP * 0.45, 2.8, 14.0, true)
+	level._prop(level, "prop_campfire.glb", at)
+	for k in 3:
+		var a := PI * 0.5 + (k - 1) * 1.1
+		level._prop(level, "prop_bedroll.glb", at + Vector3(cos(a), 0, sin(a)) * 2.6, a)
+
+
+## The guardian's servants come out of the dark at the camp: hold until they're down.
+func _servants(camp: Vector3) -> void:
+	player.set_armed(true)
+	hud.toast("Shapes in the dark, wrapped and silent. Hold the fire!", 3.0)
+	var down := [0]
+	for i in SERVANTS:
+		var a := TAU * i / SERVANTS + randf_range(-0.2, 0.2)
+		var m := Mummy.new()
+		m.priest = i == 0
+		add_child(m)
+		var p := camp + Vector3(cos(a), 0, sin(a)) * randf_range(16.0, 22.0)
+		p.y = DesertRoute.ground_y(p.z)
+		m.global_position = p
+		m.target = player
+		m.wake()
+		m.killed.connect(func(_m): down[0] += 1)
+		servants.append(m)
+	print("RESULT act6 servants=%d" % servants.size())
+	if args.has("auto"):
+		await get_tree().create_timer(1.5).timeout
+		for m in servants:
+			if is_instance_valid(m):
+				m._die(Vector3.FORWARD, false)  # as a fatal shot would
+	while down[0] < servants.size() and player.alive:
+		await get_tree().create_timer(0.5).timeout
+	if not player.alive:
+		return
+	player.set_armed(false)
+	Game.set_flag("act6_camp_held")
+	print("RESULT act6 camp_held")
+	hud.toast("The last of them falls into the fire. Nobody sleeps.", 3.0)
+	await get_tree().create_timer(2.0).timeout
+
+
+# ---------------------------------------------------------------- Cairo
+
+func _arrival() -> void:
+	step = Step.ARRIVAL
+	var cairo := Cairo.new()
+	_use_level(cairo, Vector3(29, 0, 93), 0.0)  # inside the south gate, looking up the street
+	cairo.set_day_time(0.85)
+	cairo.set_curse(1.0, 0.0)  # the dust that won't settle
+	hud.show_message("CAIRO", Cairo.countdown_line())
+	await get_tree().create_timer(2.5).timeout
+	hud.show_message("")
+	if not args.has("auto"):
+		await _talk("act6_arrival", player)
+	_finish()
+
+
+func _finish() -> void:
+	step = Step.END
+	Game.set_flag("act6_done")
+	_save("end")
+	print("RESULT act6 end day=%d thieves=%d mummy=%d route=%s" % [Game.day, int(Game.countdowns.get("thieves", 0)),
+		int(Game.countdowns.get("mummy", 0)), Game.flag("return_route", "")])
+	hud.show_message("BACK IN CAIRO", "Enter  into the city (Act 7)")
+	if args.has("auto"):
+		await get_tree().create_timer(1.0).timeout
+		if args.has("chain"):
+			get_tree().change_scene_to_file(NEXT_ACT)  # --chain: on into Act 7 with these countdowns
+		else:
+			get_tree().quit(0)
+
+
+func _talk(id: String, with: Node3D) -> void:
+	if not FileAccess.file_exists("res://dialogue/%s.json" % id):
+		return
+	var c := Conversation.new()
+	add_child(c)
+	c.start(id, player, with if with else player)
+	await c.finished
+
+
+func _save(where: String) -> void:
+	Game.place = "act6_" + where
+	Game.set_flag("player_health", player.health)
+	if Game.save_game():
+		hud.toast("Game saved")
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if args.size() > 0:
+		return
+	var enter: bool = event is InputEventKey and event.pressed and event.keycode in [KEY_ENTER, KEY_KP_ENTER]
+	if step == Step.END and enter:
+		get_tree().change_scene_to_file(NEXT_ACT)  # Game (the countdowns, the party) carries over
+	elif (step == Step.OVER or not player.alive) and enter:
+		if Game.load_game():
+			get_tree().change_scene_to_file("res://main.tscn")
+	elif event.is_action_pressed("party_order"):
+		hud.toast("Companions: " + str(Gunman.toggle_party_order(get_tree())))
+	elif event.is_action_pressed("ui_cancel") and not ActionMenu.ui_open():
+		get_tree().paused = not get_tree().paused
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if get_tree().paused else Input.MOUSE_MODE_CAPTURED
+		hud.show_message("PAUSED" if get_tree().paused else "", "Click to resume · Q to quit" if get_tree().paused else "")
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_Q and get_tree().paused:
+		get_tree().quit()
+
+
+# ---------------------------------------------------------------- frame, test runs
+
+func _process(delta: float) -> void:
+	_t += delta
+	if _shots.size() > 0 and _t >= _shots[0]:
+		_shots.pop_front()
+		_shot("act6_%05.1f.png" % _t)
+	if args.has("seconds") and _t > float(args.seconds):
+		print("RESULT act6 timeout step=%d" % step)
+		get_tree().quit(1)
+	if args.get("auto", "") == "desert" and step == Step.KEEPERS and not Game.flag("act6_auto_horses", false):
+		# The desert bot rides with horses for everyone.
+		Game.set_flag("act6_auto_horses")
+		Game.transport["horses"] = [{"id": "a", "health": 100}, {"id": "b", "health": 100}, {"id": "c", "health": 100}]
+
+
+func _shot(file: String) -> void:
+	await RenderingServer.frame_post_draw
+	if DisplayServer.get_name() == "headless":
+		return
+	var dir: String = args.get("shot-dir", "user://shots")
+	DirAccess.make_dir_recursive_absolute(dir)
+	get_viewport().get_texture().get_image().save_png(dir.path_join(file))
+	print("RESULT shot %s" % dir.path_join(file))

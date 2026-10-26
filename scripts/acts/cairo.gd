@@ -1217,3 +1217,10 @@ func _process(delta: float) -> void:
 	super(delta)
 	for rig in _animals_idle:
 		rig.animate(delta, 0.0, 0.0)
+
+
+## "The thieves leave in 2 days. He reaches the city in 1 day." from Game.countdowns.
+static func countdown_line() -> String:
+	var t := int(Game.countdowns.get("thieves", 0))
+	var m := int(Game.countdowns.get("mummy", 0))
+	return "The thieves leave in %d day%s. He reaches the city in %d day%s." % [t, "" if t == 1 else "s", m, "" if m == 1 else "s"]
