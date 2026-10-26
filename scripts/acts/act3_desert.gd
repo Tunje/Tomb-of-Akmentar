@@ -189,8 +189,11 @@ func _bark(situation: String, at := Vector3.INF) -> void:
 		return
 	for d: Dictionary in [riders, passengers]:
 		for id: String in d:
-			var r := d[id] as Rider
-			if is_instance_valid(r) and r.body and Barks.say(r.body, situation, id) != "":
+			var v: Variant = d[id]  # (dismounted Riders are freed: check before the cast)
+			if not is_instance_valid(v):
+				continue
+			var r := v as Rider
+			if r.body and Barks.say(r.body, situation, id) != "":
 				return
 
 
@@ -213,7 +216,6 @@ func _road() -> void:
 		hud.show_message("THE DESERT ROAD", "Three days across the sand to the town. Akmentar lies beyond.")
 	await get_tree().create_timer(2.5).timeout
 	hud.show_message("")
-	hud.toast("W / S speed up and slow down · A / D steer · E get %s" % ("out" if coast else "down"), 4.0)
 	await get_tree().create_timer(4.5).timeout
 	if step == Step.ROAD:
 		_bark("truck_ride" if coast else "horse_ride")

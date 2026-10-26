@@ -46,7 +46,8 @@ func _layout() -> void:
 	_count.position = Vector2(s.x * 0.5 - 200, 20)
 	_prompt.position = Vector2(s.x * 0.5 - 400, s.y * 0.5 + 150)
 	_info.position = Vector2(30, 20)
-	_toast.position = Vector2(s.x * 0.5 - 400, s.y * 0.28)
+	# Above a title card when one is up ("Game saved" over LEAVING CAIRO), else upper middle.
+	_toast.position = Vector2(s.x * 0.5 - 400, s.y * 0.5 - 250 if _title.text != "" else s.y * 0.28)
 
 
 func _label(font_size: int, align: HorizontalAlignment, box: Vector2) -> Label:

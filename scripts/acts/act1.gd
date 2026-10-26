@@ -264,7 +264,7 @@ func _talk(id: String, who: Node3D, next: Callable) -> void:
 
 func _auto_walk(to: Vector3, then: Callable) -> void:
 	await get_tree().create_timer(0.5).timeout
-	player.global_position = to + Vector3(0, 0, 1.0)
+	player.global_position = level.open_point(to)  # (to + 1 m south put the bot inside the club)
 	await get_tree().create_timer(0.3).timeout
 	then.call()
 
