@@ -18,6 +18,8 @@ extends CharacterBody3D
 ## capsules when assets are missing.
 
 signal killed(gunman: Gunman)
+signal stumbled_down(gunman: Gunman)
+signal helped_up(gunman: Gunman)
 
 enum State { IDLE, MOVE, COVER, AIM, RELOAD, STAGGER, DEAD, SURRENDER }
 
@@ -70,6 +72,10 @@ const FOLLOW_FAR := 6.0          # start walking again past this
 const CATCH_UP := 10.0           # sprint past this
 const LEASH := 12.0              # their cover stays this close to the player (or the hold point)
 const MUMMY_BACK_OFF := 4.0      # step away from a mummy closer than this
+const ESCAPE_NEAR := 2.5         # escape mode (Act 5): run close behind, never stop to fight
+const ESCAPE_FAR := 4.0
+const ESCAPE_SPEED := 7.2        # (the player sprints 6.6)
+const HOP_MAX := 1.3             # rubble this high (or lower) gets climbed while following
 # Surrender (enemies only)
 const SURRENDER_AT := 0.25       # share of max health
 const SURRENDER_CHANCE := 0.5    # per hit (and per SURRENDER_CHECK while hurt and outnumbered)
@@ -115,6 +121,10 @@ var cover_time := 0.0
 var alive_time := 0.0
 var flanks := 0
 var stuck_count := 0
+## Companions, Act 5's escape: run close with the player, no stopping to fight.
+var escape := false
+## Down on the floor (stumble()): stays put until the player helps (E) or something gets him.
+var stumbled := false
 ## Hands up: out of the fight, hostile to no one (shooting him anyway is the story's mean choice).
 var surrendered := false
 ## Enemies only: whether this one may give up at all (a fanatic of the order might not), and how
@@ -167,6 +177,8 @@ var _glint: MeshInstance3D
 var _hitboxes: Array[StaticBody3D] = []
 var _exclude: Array[RID] = []
 var _tag: Label3D  # companions: name and health over the head
+var _help: Interactable  # "Help <name> up" while stumbled
+var _hop: Hop
 
 
 ## A companion for the player, or null when `id` isn't in the party (recruited and alive).
@@ -461,6 +473,21 @@ func _physics_process(delta: float) -> void:
 		velocity.y = 0.0 if is_on_floor() else velocity.y - GRAVITY * delta
 		move_and_slide()
 		return
+	if _hop:
+		if _hop.step(self, delta):
+			_hop = null
+		_animate(delta, false)
+		return
+	if stumbled:
+		_push = _push.move_toward(Vector3.ZERO, delta * 8.0)
+		velocity.x = _push.x
+		velocity.z = _push.z
+		velocity.y = 0.0 if is_on_floor() else velocity.y - GRAVITY * delta
+		move_and_slide()
+		if _help:
+			_help.global_position = global_position + Vector3.UP
+		_update_tag()
+		return
 	if state == State.SURRENDER:
 		velocity.x = 0.0
 		velocity.z = 0.0
@@ -479,7 +506,10 @@ func _physics_process(delta: float) -> void:
 	_retarget -= delta
 	if _retarget <= 0.0:
 		_retarget = RETARGET
-		_choose_target()
+		if escape:
+			target = null  # running, not fighting
+		else:
+			_choose_target()
 	var has_target := _target_alive(target)
 
 	_think -= delta
@@ -497,7 +527,7 @@ func _physics_process(delta: float) -> void:
 
 	# Companions with nothing to shoot at go back to following / holding.
 	if team == PARTY and not has_target and state in [State.MOVE, State.COVER, State.AIM]:
-		_set_spot({"key": ""})
+		_set_spot(_no_spot())
 		_enter(State.IDLE)
 
 	var move := Vector3.ZERO
@@ -691,15 +721,24 @@ func _follow(delta: float) -> Vector3:
 	var d := to.length()
 	var move := Vector3.ZERO
 	var sees_leader := _clear(global_position + Vector3.UP * STAND_EYE, leader.global_position + Vector3.UP * 1.2)
-	if d > FOLLOW_FAR or not sees_leader:
+	var near := ESCAPE_NEAR if escape else FOLLOW_NEAR
+	if d > (ESCAPE_FAR if escape else FOLLOW_FAR) or not sees_leader:
 		_following = true  # also round a wall: don't wait out of sight in the next room
-	elif d < FOLLOW_NEAR + 0.5:
+	elif d < near + 0.5:
 		_following = false
 	if _following:
 		var lead_speed := _flat((leader as CharacterBody3D).velocity).length() if leader is CharacterBody3D else 0.0
-		var speed := SPRINT if d > CATCH_UP else maxf(WALK * 1.5, minf(lead_speed * 1.15, SPRINT))
-		var dest := leader.global_position - to.normalized() * FOLLOW_NEAR
+		var speed := SPRINT if d > CATCH_UP or (escape and d > ESCAPE_FAR) else maxf(WALK * 1.5, minf(lead_speed * 1.15, SPRINT))
+		if escape:
+			speed = maxf(speed, minf(lead_speed * 1.1, ESCAPE_SPEED))  # keep up with a sprinting leader
+		var dest := leader.global_position - to.normalized() * near
 		move = _move_to(dest, speed, delta, true)
+		# Rubble across the way: climb it.
+		# (Into the wall itself: the move may already be turned along it by the detour.)
+		if is_on_wall() and move.length() > 0.5:
+			_hop = Hop.find(self, -get_wall_normal(), HOP_MAX)
+			if _hop:
+				return Vector3.ZERO
 		if move.length() > 0.5 and _stuck(delta):
 			stuck_count += 1
 			_progress_t = 0.0
@@ -720,6 +759,35 @@ func _follow(delta: float) -> Vector3:
 			if away.length() < 1.2 and away.length() > 0.01:
 				move += away.normalized() * (1.2 - away.length()) * 3.0
 	return move
+
+
+## Trip and go down (the escape): he stays on the floor, kneeling, until the player helps him up
+## (an Interactable "Help <name> up"). Anything that reaches him there can finish him (Guardian).
+func stumble() -> void:
+	if team != PARTY or stumbled or not is_active():
+		return
+	stumbled = true
+	_set_spot(_no_spot())
+	_enter(State.IDLE)
+	if rig:
+		rig.kneel(true)
+	var who := companion_id.capitalize() if companion_id != "" else String(name)
+	_help = Interactable.make(get_parent() as Node3D, global_position + Vector3.UP, "Help %s up" % who, "help_" + companion_id, 1.2)
+	_help.used.connect(func(_by): help_up())
+	Sfx.play_at(get_parent(), Sfx.impact(), global_position + Vector3.UP * 0.4, -2.0)
+	stumbled_down.emit(self)
+
+
+func help_up() -> void:
+	if not stumbled:
+		return
+	stumbled = false
+	if rig:
+		rig.kneel(false)
+	if is_instance_valid(_help):
+		_help.queue_free()
+	_help = null
+	helped_up.emit(self)
 
 
 ## Companions keep their fights near the player (or the hold point).
@@ -958,6 +1026,11 @@ func _on_navmesh(s: Dictionary) -> Dictionary:
 		s.pos = on
 		s.peek = on
 	return s
+
+
+## No cover spot held (all the keys a spot has, so nothing that reads one trips over it).
+func _no_spot() -> Dictionary:
+	return {"key": "", "pos": global_position, "peek": global_position, "normal": Vector3.ZERO, "tall": false, "exposed": true}
 
 
 func _set_spot(s: Dictionary) -> void:
@@ -1230,7 +1303,7 @@ func _surrender() -> void:
 	surrendered = true
 	_surrendered_at = alive_time
 	flanking = false
-	_set_spot({"key": ""})
+	_set_spot(_no_spot())
 	_enter(State.SURRENDER)
 	_glint.visible = false
 	if rig:
@@ -1265,8 +1338,11 @@ func _drop_gun() -> void:
 
 
 func _die() -> void:
+	if is_instance_valid(_help):
+		_help.queue_free()
+	stumbled = false
 	_enter(State.DEAD)
-	_set_spot({"key": ""})
+	_set_spot(_no_spot())
 	flanking = false
 	collision_layer = 0
 	collision_mask = 1

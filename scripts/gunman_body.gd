@@ -210,3 +210,10 @@ func stagger(seconds: float) -> void:
 func surrender(on := true) -> void:
 	cancel_reload()
 	_tree.set("parameters/give_up/blend_amount", 1.0 if on else 0.0)
+
+
+## Down on one knee, hands free (a stumble in the escape): the surrender kneel without the hands up.
+func kneel(on := true) -> void:
+	cancel_reload()
+	_tree.set("parameters/hands_up/blend_amount", 0.0 if on else 1.0)
+	_tree.set("parameters/give_up/blend_amount", 1.0 if on else 0.0)
