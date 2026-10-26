@@ -12,6 +12,9 @@ const BANDITS := [
 	"res://assets/characters/bandits/bandit_scout.glb",
 ]
 
+## The arms of the surrender pose (no hands-up clip in UAL: the pistol aim held high, empty-handed).
+const HANDS_UP := "Pistol_Aim_Up"
+
 ## Tests can point gunmen at another GLB on the same rig ("" = a random bandit).
 static var default_glb := ""
 
@@ -113,6 +116,13 @@ func _build_tree() -> void:
 	state.set_input_name(1, "dead")
 	state.xfade_time = 0.15
 	bt.add_node("state", state)
+	# Surrender: kneeling (crouch legs), hands raised (the pistol aim-up pose, arms only).
+	var hands := AnimationNodeBlend2.new()
+	_upper_only(hands)
+	bt.add_node("hands_up", hands)
+	bt.add_node("kneel_anim", _anim("Crouch_Idle"))
+	bt.add_node("hands_anim", _anim(HANDS_UP))
+	bt.add_node("give_up", AnimationNodeBlend2.new())
 	bt.add_node("death_anim", _anim("Death01"))
 
 	bt.connect_node("crouch_mix", 0, "loco")
@@ -132,10 +142,15 @@ func _build_tree() -> void:
 	bt.connect_node("stagger_ts", 0, "stagger_anim")
 	bt.connect_node("stagger", 0, "flinch")
 	bt.connect_node("stagger", 1, "stagger_ts")
-	bt.connect_node("state", 0, "stagger")
+	bt.connect_node("hands_up", 0, "kneel_anim")
+	bt.connect_node("hands_up", 1, "hands_anim")
+	bt.connect_node("give_up", 0, "stagger")
+	bt.connect_node("give_up", 1, "hands_up")
+	bt.connect_node("state", 0, "give_up")
 	bt.connect_node("state", 1, "death_anim")
 	bt.connect_node("output", 0, "state")
 	_start_tree(bt)
+	_tree.set("parameters/hands_up/blend_amount", 1.0)
 
 
 ## Capsule hitboxes along the bones, in the mummies' parts (player bullets read meta "mummy").
@@ -189,3 +204,9 @@ func stagger(seconds: float) -> void:
 	cancel_reload()
 	_tree.set("parameters/stagger_ts/scale", clip_length("Hit_Chest") / maxf(seconds, 0.1))
 	_tree.set("parameters/stagger/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+
+
+## Kneel with the hands up (on = surrendered).
+func surrender(on := true) -> void:
+	cancel_reload()
+	_tree.set("parameters/give_up/blend_amount", 1.0 if on else 0.0)

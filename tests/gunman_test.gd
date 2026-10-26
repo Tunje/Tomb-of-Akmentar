@@ -3,6 +3,8 @@ extends Node3D
 ##   --scenario=fight    bot holds cover and pops up to shoot the nearest gunman (default)
 ##   --scenario=passive  bot crouches in cover and never shoots (they should flank)
 ##   --scenario=open     bot strafes in the open and never shoots (their hit rate on a mover)
+##   --scenario=surrender  as fight, the bandits start on 30 hp (they may give up); --mean: the bot
+##                       shoots the ones who surrendered too (flag shot_surrendered)
 ##   --seconds=45        quit after this long
 ##   --shots=5,12,20     screenshot times (s); each gives a player view and an overview
 ##   --shot-dir=C:/path  where PNGs go (default user://shots)
@@ -39,6 +41,7 @@ var _player_hits_on_them := 0
 var _kills := 0
 var _report_t := 0.0
 var _done := false
+var _events := PackedStringArray()
 
 
 func _ready() -> void:
@@ -80,12 +83,17 @@ func _ready() -> void:
 		add_child(g)
 		g.global_position = Vector3(-6 + i * 6, 0, -17)
 		g.target = player
+		if args.get("scenario", "") == "surrender":
+			g.health = 30.0  # already hurt: below 25% after a hit or two
+		g.killed.connect(func(_g): print("RESULT %s killed t=%.1f surrendered=%s" % [g.name, _t, g.surrendered]))
 		gunmen.append(g)
 
 	_top_cam = Camera3D.new()
 	_top_cam.fov = 60.0
 	add_child(_top_cam)
 	_top_cam.look_at_from_position(Vector3(0, 26, 24), Vector3(0, 0, -1))
+	Game.reset()
+	Game.event.connect(func(e: String): _events.append("%s@%.1f" % [e, _t]))
 	print("RESULT start scenario=%s" % args.get("scenario", "fight"))
 
 
@@ -169,7 +177,7 @@ func _physics_process(delta: float) -> void:
 		return
 	_t += delta
 	match str(args.get("scenario", "fight")):
-		"fight":
+		"fight", "surrender":
 			_bot_cover(true)
 		"passive":
 			_bot_cover(false)
@@ -230,7 +238,7 @@ func _nearest_visible() -> Gunman:
 	var bd := INF
 	var space := get_world_3d().direct_space_state
 	for g in gunmen:
-		if not is_instance_valid(g) or not g.is_active():
+		if not is_instance_valid(g) or not g.is_active() or (g.surrendered and not args.has("mean")):
 			continue
 		var eye := player.global_position + Vector3.UP * 1.6
 		var q := PhysicsRayQueryParameters3D.create(eye, g.global_position + Vector3.UP * 1.3, 1)
@@ -309,6 +317,8 @@ func _finish() -> void:
 		_t, args.get("scenario", "fight"), fired, _player_hits, _player_damage,
 		100.0 * hit / maxf(fired, 1), 100.0 * cover / maxf(alive, 0.01), flanks, _player_fired,
 		_player_hits_on_them, _kills])
+	var gave_up := gunmen.filter(func(g): return is_instance_valid(g) and g.surrendered).size()
+	print("RESULT surrender surrendered=%d events=%s shot_surrendered=%s" % [gave_up, ",".join(_events), Game.flag("shot_surrendered")])
 	await get_tree().create_timer(0.3).timeout
 	get_tree().quit(0)
 

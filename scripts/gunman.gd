@@ -19,7 +19,7 @@ extends CharacterBody3D
 
 signal killed(gunman: Gunman)
 
-enum State { IDLE, MOVE, COVER, AIM, RELOAD, STAGGER, DEAD }
+enum State { IDLE, MOVE, COVER, AIM, RELOAD, STAGGER, DEAD, SURRENDER }
 
 const BANDITS := "bandits"
 const PARTY := "party"
@@ -70,6 +70,10 @@ const FOLLOW_FAR := 6.0          # start walking again past this
 const CATCH_UP := 10.0           # sprint past this
 const LEASH := 12.0              # their cover stays this close to the player (or the hold point)
 const MUMMY_BACK_OFF := 4.0      # step away from a mummy closer than this
+# Surrender (enemies only)
+const SURRENDER_AT := 0.25       # share of max health
+const SURRENDER_CHANCE := 0.5    # per hit (and per SURRENDER_CHECK while hurt and outnumbered)
+const SURRENDER_CHECK := 2.0
 
 ## Cover spot key -> the Gunman holding it.
 static var _claims := {}
@@ -101,6 +105,10 @@ var cover_time := 0.0
 var alive_time := 0.0
 var flanks := 0
 var stuck_count := 0
+## Hands up: out of the fight, hostile to no one (shooting him anyway is the story's mean choice).
+var surrendered := false
+## Enemies only: whether this one may give up at all (a fanatic of the order might not).
+var can_surrender := true
 
 ## For mummies and anything else that asks `target.alive`.
 var alive: bool:
@@ -133,6 +141,8 @@ var _detour_t := 0.0
 var _last_burst := -100.0
 var _bad_spots := {}  # spot key -> time it proved unreachable
 var _following := false
+var _surrender_t := 0.0
+var _flank_try := -100.0  # last time this one looked for a flank (found or not)
 var _deck: RiverBoat
 var _deck_xf := Transform3D()
 
@@ -143,6 +153,7 @@ var _agent: NavigationAgent3D
 var _glint: MeshInstance3D
 var _hitboxes: Array[StaticBody3D] = []
 var _exclude: Array[RID] = []
+var _tag: Label3D  # companions: name and health over the head
 
 
 ## A companion for the player, or null when `id` isn't in the party (recruited and alive).
@@ -203,6 +214,8 @@ func _ready() -> void:
 		_exclude.append(box.get_rid())
 	_camp_anchor = global_position
 	hold_at = global_position
+	if team == PARTY:
+		_make_tag()
 
 
 func _build_model() -> void:
@@ -278,7 +291,9 @@ func is_active() -> bool:
 
 ## Whether `n` is someone this gunman should shoot.
 func is_hostile(n: Node) -> bool:
-	if n == null or n == self or not is_instance_valid(n):
+	if n == null or n == self or not is_instance_valid(n) or surrendered:
+		return false
+	if n is Gunman and (n as Gunman).surrendered:
 		return false
 	if n is Player:
 		return team != PARTY
@@ -296,6 +311,8 @@ static func _target_alive(n: Node3D) -> bool:
 		return false
 	if n is Player:
 		return (n as Player).alive
+	if n is Gunman:
+		return (n as Gunman).is_active() and not (n as Gunman).surrendered
 	if n.has_method("is_active"):
 		return n.call("is_active")
 	return true
@@ -412,9 +429,19 @@ func _physics_process(delta: float) -> void:
 		velocity.y = 0.0 if is_on_floor() else velocity.y - GRAVITY * delta
 		move_and_slide()
 		return
+	if state == State.SURRENDER:
+		velocity.x = 0.0
+		velocity.z = 0.0
+		velocity.y = 0.0 if is_on_floor() else velocity.y - GRAVITY * delta
+		move_and_slide()
+		return
 	_t += delta
 	alive_time += delta
 	_seen_t += delta
+	_surrender_t += delta
+	if _surrender_t >= SURRENDER_CHECK:
+		_surrender_t = 0.0
+		_maybe_surrender()
 	_stagger_pts = maxf(_stagger_pts - delta * 1.2, 0.0)
 
 	_retarget -= delta
@@ -504,6 +531,7 @@ func _physics_process(delta: float) -> void:
 	velocity.y = 0.0 if is_on_floor() else velocity.y - GRAVITY * delta
 	move_and_slide()
 	_animate(delta, crouched)
+	_update_tag()
 
 
 ## On a moving deck (RiverBoat), the world positions we keep (spot, hold point, camp anchor,
@@ -599,7 +627,7 @@ func _after_burst() -> void:
 func _wants_flank() -> bool:
 	if team == PARTY or flanking or _camp_t < CAMP_TIME or _seen_t < 1.5:
 		return false
-	if _now() - _last_flank < FLANK_COOLDOWN:
+	if _now() - _last_flank < FLANK_COOLDOWN or _now() - _flank_try < FLANK_COOLDOWN:
 		return false
 	if _clear(_peek_eye(), target.global_position + Vector3.UP * 0.8):
 		return false  # this spot already sees him behind his cover
@@ -669,6 +697,36 @@ func _anchor() -> Vector3:
 	return leader.global_position
 
 
+## A companion's name and health bar over the head, the same size on screen at any distance.
+func _make_tag() -> void:
+	_tag = Label3D.new()
+	_tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_tag.no_depth_test = true
+	_tag.fixed_size = true
+	_tag.pixel_size = 0.0011
+	_tag.font_size = 26
+	_tag.outline_size = 8
+	_tag.outline_modulate = Color(0, 0, 0, 0.8)
+	_tag.position.y = 2.15
+	_tag.visible = false
+	add_child(_tag)
+
+
+## Shown in a fight, when hurt or when holding; hidden while following at full health.
+func _update_tag() -> void:
+	if _tag == null:
+		return
+	var k := clampf(health / max_health, 0.0, 1.0)
+	_tag.visible = state != State.DEAD and (k < 1.0 or state != State.IDLE or order == "hold")
+	if not _tag.visible:
+		return
+	var full := int(ceilf(k * 10.0))
+	var bar := "■".repeat(full) + "□".repeat(10 - full)
+	var who := companion_id.capitalize() if companion_id != "" else String(name)
+	_tag.text = who + ("  (holding)" if order == "hold" else "") + char(10) + bar
+	_tag.modulate = Color(1.0, 0.35, 0.25).lerp(Color(0.55, 1.0, 0.45), k)
+
+
 # ---------------------------------------------------------------- cover spots
 
 ## Every place a gunman can hold behind a cover piece: [{key, pos, peek, normal, tall}]. Low pieces
@@ -695,10 +753,12 @@ static func spots(pieces: Array) -> Array:
 						"normal": n, "tall": true, "exposed": false})
 			else:
 				var count := maxi(1, int(length / 1.2))
+				# When the view over the top is blocked (a deckhouse, a wall behind), lean round an end.
+				var alts := [a - t * LEAN_OUT + n * HOLD_DIST, b + t * LEAN_OUT + n * HOLD_DIST]
 				for i in count:
 					var pos := a + t * (length * (i + 0.5) / count) + n * HOLD_DIST
 					out.append({"key": "%d:%d:%d" % [p.get_instance_id(), e.id, i], "pos": pos, "peek": pos,
-						"normal": n, "tall": false, "exposed": false})
+						"alts": alts, "normal": n, "tall": false, "exposed": false})
 	return out
 
 
@@ -755,8 +815,11 @@ func _pick(mode: String) -> void:
 				if mode == "reposition" and s.key == _spot.get("key", ""):
 					continue
 				score = -absf(d - PREFERRED) - travel * 0.5
-				if _clear((s.peek as Vector3) + Vector3.UP * STAND_EYE, p + Vector3.UP * 1.4):
+				s["shot"] = _shot_from(s, p)
+				if s.shot:
 					score += 5.0
+				else:
+					score -= 10.0  # cover with no shot from it is a last resort
 				if mode == "hold" and s.key == _spot.get("key", ""):
 					score += 2.0  # don't dither between equal spots
 		for g in mates:
@@ -767,11 +830,19 @@ func _pick(mode: String) -> void:
 		if score > best_score:
 			best_score = score
 			best = s
+	if mode == "flank":
+		_flank_try = _now()  # found or not: don't look again every think tick
 	if best.is_empty() and mode in ["flank", "reposition", "retreat"]:
 		_pick("hold")
 		return
 	if best.is_empty():
 		best = _exposed_spot(p)
+	elif mode in ["hold", "reposition"] and not best.get("shot", true) and not best.exposed:
+		# Every free cover is blind (a deckhouse, a wall in the way): shoot a burst from the
+		# nearest place by the cover that sees the target, then choose again.
+		var firing := _firing_point(p)
+		if not firing.is_empty():
+			best = firing
 	if mode == "flank" and not best.is_empty():
 		if not _protects(best, p):
 			best = best.duplicate()
@@ -779,8 +850,44 @@ func _pick(mode: String) -> void:
 		flanking = true
 		flanks += 1
 		_last_flank = _now()
+	# Already there (the best is the spot we hold): stay put instead of restarting the move,
+	# which would reset the cover timer and never let us pop up.
+	if state == State.COVER and best.key != "" and best.key == _spot.get("key", "") and _arrived(best.pos):
+		return
 	_set_spot(best)
 	_enter(State.MOVE)
+
+
+## Whether spot `s` has a shot at a target standing at `p`: over / round the cover from its peek,
+## or (low pieces) leaning round an end. Picks that peek into `s`.
+func _shot_from(s: Dictionary, p: Vector3) -> bool:
+	var at := p + Vector3.UP * 1.4
+	if _clear((s.peek as Vector3) + Vector3.UP * STAND_EYE, at):
+		return true
+	for alt: Vector3 in s.get("alts", []):
+		if _clear(alt + Vector3.UP * STAND_EYE, at):
+			s.peek = alt
+			return true
+	return false
+
+
+## The nearest point by any cover piece (its spots' peeks and lean-outs) that sees a target
+## at `p`, as an exposed spot; or {}.
+func _firing_point(p: Vector3) -> Dictionary:
+	var at := p + Vector3.UP * 1.4
+	var best := Vector3.INF
+	var best_d := MAX_TRAVEL
+	for s: Dictionary in spots(get_tree().get_nodes_in_group("cover")):
+		var points: Array = [s.peek]
+		points.append_array(s.get("alts", []))
+		for q: Vector3 in points:
+			var d := _flat(q - global_position).length()
+			if d < best_d and _flat(p - q).length() >= MIN_RANGE and _clear(q + Vector3.UP * STAND_EYE, at):
+				best = q
+				best_d = d
+	if best == Vector3.INF:
+		return {}
+	return {"key": "", "pos": best, "peek": best, "normal": Vector3.ZERO, "tall": false, "exposed": true}
 
 
 ## No cover anywhere useful: a place on the navmesh at a fighting distance, a step to the side.
@@ -968,6 +1075,10 @@ func _bullet_hit(hit: Dictionary, dir: Vector3, travelled: float) -> void:
 			Fx.impact(parent, point, -dir, Fx.Kind.FLESH)
 	elif col.has_meta("mummy"):
 		var who: Node = col.get_meta("mummy")
+		if who is Horse:  # never aimed at, but a stray round still hurts it
+			(who as Horse).take_hit(col.get_meta("part"), damage * fall, dir, point, 0.0, 0.0)
+			Fx.impact(parent, point, -dir, Fx.Kind.FLESH)
+			return
 		if not is_instance_valid(who) or not is_hostile(who):
 			return
 		var part: String = col.get_meta("part")
@@ -987,6 +1098,8 @@ func _bullet_hit(hit: Dictionary, dir: Vector3, travelled: float) -> void:
 func take_hit(part: String, dmg: float, dir: Vector3, _point: Vector3, stagger: float, knock: float) -> Dictionary:
 	if team == PARTY:
 		return {"killed": false}
+	if surrendered and state != State.DEAD:
+		Game.apply([{"set_flag": "shot_surrendered"}, {"event": "shot_surrendered"}])
 	return _hurt(part, dmg, dir, stagger, knock)
 
 
@@ -1016,6 +1129,10 @@ func _hurt(part: String, dmg: float, dir: Vector3, stagger: float, knock: float)
 	if health <= 0.0:
 		_die()
 		return {"killed": true}
+	if surrendered:
+		return {"killed": false}  # hands stay up
+	if _maybe_surrender():
+		return {"killed": false}
 	if not retreating and health < RETREAT_AT * max_health / MAX_HEALTH:
 		retreating = true
 		_retreat_pending = true
@@ -1034,6 +1151,78 @@ func _hurt(part: String, dmg: float, dir: Vector3, stagger: float, knock: float)
 		_retreat_pending = false
 		_pick("retreat")
 	return {"killed": false}
+
+
+## Hurt below SURRENDER_AT and outnumbered (his side's fighters no more than the other side's):
+## a chance to give up. Returns whether he did.
+func _maybe_surrender() -> bool:
+	if team == PARTY or surrendered or not can_surrender or state == State.DEAD:
+		return false
+	if health > max_health * SURRENDER_AT or not _target_alive(target):
+		return false
+	var mine := 0
+	var theirs := 0
+	for g in get_tree().get_nodes_in_group("gunmen"):
+		var m := g as Gunman
+		if m.is_active() and not m.surrendered:
+			if m.team == team:
+				mine += 1
+			elif m.team == PARTY:
+				theirs += 1
+	if _any_player_alive():
+		theirs += 1
+	if mine > theirs or randf() > SURRENDER_CHANCE:
+		return false
+	_surrender()
+	return true
+
+
+func _any_player_alive() -> bool:
+	if target is Player:
+		return (target as Player).alive
+	for c in get_tree().get_nodes_in_group("party"):
+		var l: Node3D = (c as Gunman).leader
+		if l is Player and (l as Player).alive:
+			return true
+	return false
+
+
+## Drop the gun, kneel, hands up.
+func _surrender() -> void:
+	surrendered = true
+	flanking = false
+	_set_spot({"key": ""})
+	_enter(State.SURRENDER)
+	_glint.visible = false
+	if rig:
+		rig.aim_dir = Vector3.ZERO
+		rig.surrender()
+		_drop_gun()
+	Sfx.play_at(get_parent(), Sfx.click(), global_position + Vector3.UP, -4.0)
+	Game.apply([{"event": "bandit_surrendered"}])
+
+
+## The gun in his hand falls to the ground.
+func _drop_gun() -> void:
+	var holder := rig.gun_holder
+	if holder == null or holder.get_child_count() == 0:
+		return
+	var gun := holder.get_child(0) as Node3D
+	var xf := gun.global_transform
+	var rb := RigidBody3D.new()
+	rb.collision_layer = 0
+	rb.collision_mask = 1
+	rb.mass = 1.0
+	var cs := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(0.05, 0.12, 0.3)
+	cs.shape = box
+	rb.add_child(cs)
+	get_parent().add_child(rb)
+	rb.global_transform = xf
+	gun.reparent(rb, true)
+	muzzle = null
+	rb.apply_central_impulse(global_basis * Vector3(0.3, 0.6, -0.6))
 
 
 func _die() -> void:
