@@ -36,6 +36,9 @@ func _ready() -> void:
 			n.process_mode = Node.PROCESS_MODE_PAUSABLE)
 	_setup_input()
 	var args := TestDriver.parse_args()
+	if args.get("act", "") == "4":
+		get_tree().change_scene_to_file.call_deferred("res://act4.tscn")
+		return
 	if args.has("explorer-glb"):
 		ExplorerBody.glb_path = args["explorer-glb"]
 	if args.has("mummy-glb"):
@@ -126,7 +129,7 @@ func _ready() -> void:
 		_start(false)
 	else:
 		player.controls_enabled = false
-		var cont := "\nC  continue from your last save" if Game.has_save() else ""
+		var cont := ("\nC  continue from your last save" if Game.has_save() else "") + "\n4  play Act 4: the tombs of Akmentar (in progress)"
 		hud.show_message("TOMBS OF AKMENTAR", "Click to begin a new game" + cont + "\n\nWASD move · Shift sprint · C crouch · Space dodge · E use / cover (W+E vault)\nRight mouse aim · Left mouse fire · R reload · 1 2 3 guns · X holster\nSave at campfires and beds · Esc pause")
 
 
@@ -214,6 +217,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			SiteDraft.open(self, "akmentar_surface", player)
 		elif event.keycode == KEY_F4 and started and not over:
 			EpilogueShow.open(self, "akmentar", player)
+		elif event.keycode == KEY_4 and not started:
+			Game.reset()
+			get_tree().change_scene_to_file("res://act4.tscn")
 		elif event.keycode == KEY_C and not started and Game.has_save():
 			_continue()
 		elif event.keycode == KEY_ENTER and over:
@@ -338,29 +344,7 @@ func _on_player_died() -> void:
 
 
 func _setup_input() -> void:
-	var keys := {
-		"move_forward": [KEY_W], "move_back": [KEY_S], "move_left": [KEY_A], "move_right": [KEY_D],
-		"sprint": [KEY_SHIFT], "crouch": [KEY_C, KEY_CTRL], "dodge": [KEY_SPACE],
-		"reload": [KEY_R], "cover": [KEY_E], "holster": [KEY_X], "journal": [KEY_J], "party_order": [KEY_G], "shove": [KEY_F], "weapon_1": [KEY_1], "weapon_2": [KEY_2], "weapon_3": [KEY_3],
-	}
-	var mouse := {
-		"fire": [MOUSE_BUTTON_LEFT], "aim": [MOUSE_BUTTON_RIGHT],
-		"weapon_next": [MOUSE_BUTTON_WHEEL_DOWN], "weapon_prev": [MOUSE_BUTTON_WHEEL_UP],
-	}
-	for action in keys:
-		if not InputMap.has_action(action):
-			InputMap.add_action(action)
-		for k in keys[action]:
-			var e := InputEventKey.new()
-			e.physical_keycode = k
-			InputMap.action_add_event(action, e)
-	for action in mouse:
-		if not InputMap.has_action(action):
-			InputMap.add_action(action)
-		for b in mouse[action]:
-			var e := InputEventMouseButton.new()
-			e.button_index = b
-			InputMap.action_add_event(action, e)
+	Controls.setup()
 
 
 # ---------------------------------------------------------------- companions

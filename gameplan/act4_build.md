@@ -25,7 +25,7 @@ From `primaryact.md` Act 4. This is how we build it on the Phase 1 systems.
 | Flag | Values |
 |---|---|
 | `race_step` | 3 / 4 / 5 (arrival; lower = earlier) |
-| `claimed_<site>` | "party" / "germans" / "americans" (SiteDraft sets it) |
+| `claimed_<site>` | "player" / "germans" / "americans" (SiteDraft sets it) |
 | `clue_<site>` | true once inspected |
 | `night_choice` | "barricade" / "americans" / "germans" |
 | `americans_alive`, `germans_alive` | true / false after the night |
