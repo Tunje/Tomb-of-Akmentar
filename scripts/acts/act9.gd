@@ -101,8 +101,9 @@ func _quickstart() -> void:
 			Game.set_flag("hired_" + id)
 	for f in str(args.get("clues", "")).split(",", false):
 		Game.set_flag(f)
-	Game.set_flag("artifacts_recovered")
-	Game.set_flag("act8_choice", "descend")
+	if not Game.flags.has("act8_route"):  # started here, not from Act 8: what Act 8 would have left
+		Game.set_flag("artifacts_recovered")
+		Game.set_flag("act8_choice", "descend")
 
 
 ## The level points on Act 5's map: the stairs' top, the low hall, the antechamber, the altar.
