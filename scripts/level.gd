@@ -552,6 +552,11 @@ func _wall_torch(r: int, c: int) -> void:
 		wood.albedo_color = Color(0.2, 0.12, 0.06)
 		stick.material_override = wood
 		holder.add_child(stick)
+		# The iron bracket (dungeon kit), its cup under the flame, its back plate on the rock.
+		var sconce := _prop(holder, "dungeon/wall_sconce.glb", holder.global_position, atan2(float(d.x), float(d.y)))
+		if sconce:
+			sconce.position = Vector3(d.x, 0, d.y) * -0.12 + Vector3.UP * -0.15
+			stick.visible = false
 		_flame(holder, Vector3.UP * 0.4, 2.2, 8.0, false)
 		return
 

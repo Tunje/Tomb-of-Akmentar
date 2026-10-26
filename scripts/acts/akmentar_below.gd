@@ -90,6 +90,8 @@ func map_rows() -> Array:
 	for p in [[rx + 2, 2, "1"], [rx + 13, 2, "2"], [rx + 1, 4, "3"], [rx + 14, 4, "4"], [rx + 3, 6, "5"],
 			[rx + 7, 3, "S"], [rx + 7, 4, "G"], [rx + 1, 1, "X"], [rx + 14, 1, "X"], [rx + 10, 6, "B"], [rx + 5, 6, "B"]]:
 		g[p[1]][p[0]] = p[2]
+	for p in [[rx + 4, 2], [rx + 11, 2], [rx + 4, 5], [rx + 11, 5]]:
+		g[p[1]][p[0]] = "P"  # columns down the royal tomb
 	g[ROYAL.end.y][23] = "R"
 	g[ROYAL.end.y][24] = "R"
 	g[ANTE_POI.y][ANTE_POI.x] = "i"
@@ -103,6 +105,9 @@ func map_rows() -> Array:
 		g[y][25] = "L"
 	g[SOUTH.position.y + 1][SOUTH.position.x + 1] = "B"
 	g[SOUTH.position.y + 1][SOUTH.end.x - 2] = "B"
+	for x in [SOUTH.position.x + 3, SOUTH.end.x - 4]:
+		g[SOUTH.position.y][x] = "P"
+		g[SOUTH.end.y - 1][x] = "P"
 	# The side shafts: long stairs up from the maze's bottom row at each side.
 	for x in SHAFTS:
 		for y in range(SOUTH.position.y - 1, H - 1):
@@ -369,7 +374,7 @@ func _build_tomb() -> void:
 				var at := Vector3(p.x, fy, p.z)
 				match ch:
 					"P":
-						_box(_nav, at + Vector3.UP * WALL_H * 0.5, Vector3(1.3, WALL_H, 1.3), _stone)
+						_column(at, r, c)
 					"B":
 						_brazier(at)
 					"S":
@@ -400,6 +405,7 @@ func _build_tomb() -> void:
 		var st: Rect2i = stairs[k]
 		st.size += Vector2i.ONE
 		_stairs(st)
+	_glyph_walls()
 
 
 ## A bridge cell: a narrow stone span at the upper level with low parapets, the pit floor below.
@@ -451,6 +457,20 @@ func _secret(r: int, c: int) -> void:
 		"The stone here sounds hollow. Fine cracks run round a block the size of a door, but it won't move.",
 		"You press where the builders marked it. The block grinds back into the dark.")
 	secret_doors.append(d)
+	# Painted like every other wall (on the door, so it sinks with it): only the cracks give it away.
+	var block := _kit_mesh("wall_glyph_b")
+	if block == null:
+		return
+	for dir in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+		if _ch(r + dir.y, c + dir.x) in ["#", "L", "?"]:
+			continue
+		var out := Vector3(dir.x, 0, dir.y)  # from the door toward that floor
+		for k in 2:
+			var mi := MeshInstance3D.new()
+			mi.mesh = block
+			d.add_child(mi)
+			mi.global_transform = Transform3D(Basis.looking_at(-out, Vector3.UP),
+				p + out * (CELL * 0.5 - BLOCK.z * 0.5 + 0.02) + Vector3.UP * k * BLOCK.y)
 
 
 func _marker(ch: String, p: Vector3, _r: int, _c: int) -> void:
@@ -522,6 +542,103 @@ func _vent_slot(at: Vector3, n: Vector3) -> void:
 		mi.material_override = part[2]
 		add_child(mi)
 		mi.global_transform = Transform3D(face, at + face * part[0] + n * 0.01)
+
+
+# ---------------------------------------------------------------- the dungeon kit (image-to-3d)
+
+const KIT := "dungeon/"
+const BLOCK := Vector3(2.0, 2.5, 0.4)  # a glyph wall block; its carved face is +Z
+const FRIEZE := Vector3(2.0, 0.6, 0.45)
+
+
+## Every rock face that looks onto a floor gets carved, painted blocks, set into the rock so the
+## corridors stay 2 m wide, stacked to the ceiling (four high down in the pit), with the frieze
+## along the top. Drawn as one MultiMesh per design: thousands of blocks, a handful of draw calls.
+func _glyph_walls() -> void:
+	var designs := ["wall_glyph_a", "wall_glyph_b", "wall_glyph_c"]
+	var meshes: Array[Mesh] = []
+	for d in designs:
+		meshes.append(_kit_mesh(d))
+	var frieze := _kit_mesh("wall_glyph_frieze")
+	if meshes.has(null):
+		return
+	var xforms: Array = [[], [], []]
+	var tops: Array[Transform3D] = []
+	var top_y := FLOOR_Y + WALL_H
+	for r in _rows:
+		for c in _cols:
+			var ch := _ch(r, c)
+			if ch in ["#", "L", "D"]:
+				continue
+			for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+				if not _ch(r + d.y, c + d.x) in ["#", "L"]:
+					continue
+				var out := Vector3(-d.x, 0, -d.y)  # from the rock toward the floor
+				var face := _cell(r, c) - out * CELL * 0.5
+				var turn := Basis.looking_at(-out, Vector3.UP)  # +Z = out
+				var base := _floor_y(r, c)
+				var k := 0
+				while base + k * BLOCK.y < top_y - 0.5:
+					var at := Vector3(face.x, base + k * BLOCK.y, face.z) - out * (BLOCK.z * 0.5 - 0.02)
+					var pick := absi(r * 7 + c * 13 + k * 5 + d.x * 3 + d.y * 11) % 3
+					xforms[pick].append(Transform3D(turn, at))
+					k += 1
+				if frieze:
+					tops.append(Transform3D(turn, Vector3(face.x, top_y - FRIEZE.y, face.z) - out * (FRIEZE.z * 0.5 - 0.05)))
+	for i in 3:
+		_multimesh(meshes[i], xforms[i])
+	if frieze:
+		_multimesh(frieze, tops)
+
+
+func _multimesh(mesh: Mesh, xforms: Array) -> void:
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.mesh = mesh
+	mm.instance_count = xforms.size()
+	for i in xforms.size():
+		mm.set_instance_transform(i, xforms[i])
+	var mmi := MultiMeshInstance3D.new()
+	mmi.multimesh = mm
+	add_child(mmi)
+
+
+## The mesh inside one of the kit's GLBs (they're single-mesh props).
+func _kit_mesh(file: String) -> Mesh:
+	var path := PROPS + KIT + file + ".glb"
+	if not ResourceLoader.exists(path):
+		return null
+	var scene := (load(path) as PackedScene).instantiate()
+	var found := scene.find_children("*", "MeshInstance3D", true, false)
+	var mesh: Mesh = (found[0] as MeshInstance3D).mesh if not found.is_empty() else null
+	scene.free()
+	return mesh
+
+
+## A real column (lotus, papyrus or square with carved figures) on a column cell's stone core.
+func _column(at: Vector3, r: int, c: int) -> void:
+	var body := _box(_nav, at + Vector3.UP * WALL_H * 0.5, Vector3(1.2, WALL_H, 1.2), _stone)
+	var kinds := ["pillar_lotus", "pillar_papyrus", "pillar_square_glyph"]
+	var prop := _prop(self, KIT + kinds[(r + c) % 3] + ".glb", at, PI * 0.5 * ((r * 3 + c) % 4))
+	if prop:
+		(body.get_child(1) as MeshInstance3D).visible = false
+
+
+## Fire pillars in place of the blockout braziers: the tall ones in the royal tomb. The bowl doesn't
+## cast shadows, or the flame's own light would be boxed in by it.
+func _brazier(p: Vector3) -> void:
+	var tall := ROYAL.has_point(Vector2i(int(p.x / CELL), int(p.z / CELL)))
+	var h := 3.0 if tall else 1.8
+	var b := _box(_nav, p + Vector3.UP * h * 0.5, Vector3(0.7, h, 0.7), _stone)
+	var prop := _prop(self, KIT + ("fire_pillar_tall.glb" if tall else "fire_pillar.glb"), p)
+	if prop == null:
+		(b.get_child(1) as MeshInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_flame(b, Vector3.UP * (h * 0.5 + 0.35), 3.0, 11.0, true)
+		return
+	(b.get_child(1) as MeshInstance3D).visible = false
+	for g in prop.find_children("*", "GeometryInstance3D", true, false):
+		(g as GeometryInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_flame(b, Vector3.UP * (h * 0.5 - 0.1), 3.0, 11.0, true)
 
 
 ## The royal sarcophagus (image-to-3d: 2.7 x 1.35 x 1.22 m, long along X, its lid a child "lid").
