@@ -1,6 +1,6 @@
 extends Node3D
 ## Board screens test (build plan step 12): the Act 3 route map (desert, then the temple branch),
-## countdown bars, the Act 6 return map (desert locked without horses, river unavailable, the
+## countdown bars, the Act 6 return map (desert at severe risk without horses, river unavailable, the
 ## coast ticking both countdowns), the Act 4 site draft played in full (3 rounds, rivals by
 ## priority, the Egyptologist's advice), the draft order when you arrive last, and the epilogue.
 ## Prints RESULT lines and saves screenshots; exits 0 when every check passed. Args after "--":
@@ -87,10 +87,12 @@ func _run() -> void:
 	_check(bars.visible, "countdown bars show when countdowns exist")
 	await _shot("board_4_countdown_bars.png")
 	Game.flags.erase("has_horses")  # lost the horses in the attack
+	Game.set_flag("trucks_running")
 	b = RouteBoard.open(self, "act6_return", _player)
 	await _wait(0.2)
-	_check(b.reason(0) == "Not enough horses" and b.reason(2) == "No boats left" and b.reason(1) == "",
-			"desert locked, river unavailable, coast open (%s / %s / %s)" % [b.reason(0), b.reason(2), b.reason(1)])
+	# Without enough horses the desert can still be picked, at Severe risk (act6.gd ends it).
+	_check(b.reason(0) == "" and RouteBoard.num(b.options()[0], "risk") == 3 and b.reason(2) == "No boats left" and b.reason(1) == "",
+			"desert severe, river unavailable, coast open (%s / %s / %s)" % [b.reason(0), b.reason(2), b.reason(1)])
 	_key(KEY_3)
 	_key(KEY_ENTER)
 	await _wait(0.2)
