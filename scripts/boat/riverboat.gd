@@ -7,7 +7,9 @@ extends AnimatableBody3D
 ##   DOCKED ──[ring the bell (E) / sail() / sail_after]──► SAILING ──[end of the path]──► DOCKED
 ## Docked, a gangplank is down on the starboard side: E "Go ashore" on deck, "Board the riverboat"
 ## from the pier. Crates are cover (group "cover", meta "cover_size", like level.gd's _mark_cover).
-## Anyone watched (watch()) who falls into the river is put back on deck.
+## Anyone watched (watch()) who falls into the river is put back on deck: below the waterline with
+## no floor under them (so a tomb or cellar below y = 0 doesn't count), and inside `water_rect`
+## (world XZ) when that is set.
 ##   var boat := RiverBoat.make(self, path, "nile_steamer")
 ## Local frame: -Z is the bow, +X starboard, the origin on the waterline at midships.
 
@@ -40,6 +42,7 @@ var cruise := CRUISE
 var sail_after := -1.0        # >= 0: casts off by itself after this many seconds docked
 var falls := 0
 var deck_spawn := Vector3(0, DECK_Y + 0.05, -8.0)   # local: where fallen players come back
+var water_rect := Rect2()     # world XZ of the river; empty = anywhere with no floor below
 
 var _yaw := 0.0
 var _t := 0.0
@@ -189,6 +192,21 @@ static func deck_under(tree: SceneTree, p: Vector3) -> RiverBoat:
 
 # ---------------------------------------------------------------- people
 
+## Has `body` fallen into the river? Below the waterline, over open water (no floor under it
+## within 30 m), and inside water_rect if one is set.
+func in_river(body: Node3D) -> bool:
+	var p := body.global_position
+	if p.y > FALL_Y:
+		return false
+	if water_rect.has_area() and not water_rect.has_point(Vector2(p.x, p.z)):
+		return false
+	var ex: Array[RID] = []
+	if body is CollisionObject3D:
+		ex.append((body as CollisionObject3D).get_rid())
+	var q := PhysicsRayQueryParameters3D.create(p + Vector3.UP * 0.5, p + Vector3.DOWN * 30.0, 1, ex)
+	return get_world_3d().direct_space_state.intersect_ray(q).is_empty()
+
+
 ## Put `body` back on deck (at `spawn_local`, default deck_spawn) if it falls into the river.
 func watch(body: Node3D) -> void:
 	if not body in _watched:
@@ -197,7 +215,7 @@ func watch(body: Node3D) -> void:
 
 func _watch_falls() -> void:
 	for b in _watched:
-		if not is_instance_valid(b) or b.global_position.y > FALL_Y:
+		if not is_instance_valid(b) or not in_river(b):
 			continue
 		falls += 1
 		print("BOAT %s fell overboard, back on deck" % b.name)
