@@ -108,7 +108,9 @@ func _ready() -> void:
 ## Test and start-screen runs: who comes along (hired_<id> too, so the album knows they joined),
 ## and what you learned before (clue flags).
 func _quickstart() -> void:
-	if args.has("party") or ((args.has("auto") or Game.flag("quickstart_act", false)) and Game.party().is_empty()):
+	# A party that died on the way stays dead: only a start here (no Act 8 behind it) gets a test party.
+	var fresh := not Game.flags.has("act8_route")
+	if args.has("party") or ((args.has("auto") or Game.flag("quickstart_act", false)) and Game.party().is_empty() and fresh):
 		for id in str(args.get("party", DEFAULT_PARTY)).split(",", false):
 			Game.apply([{"recruit": id}])
 			Game.set_flag("hired_" + id)
