@@ -69,7 +69,7 @@ var armed := true
 ## What E would use right now (shown on the HUD).
 var focus: Interactable
 ## The truck we're driving, or null.
-var vehicle: Truck
+var vehicle: Node3D  # Truck or Horse (same seat / drive interface)
 var _drive_blend := 0.0
 var _vaulting := false
 var _cover_blend := 0.0
@@ -499,7 +499,7 @@ func dodge() -> void:
 
 ## HUD hint for cover, or "".
 ## Into a truck's driver's seat (from its door Interactable).
-func enter_vehicle(t: Truck) -> void:
+func enter_vehicle(t: Node3D) -> void:
 	if vehicle or not t.board(self, 0):
 		return
 	vehicle = t
@@ -529,7 +529,7 @@ func exit_vehicle() -> void:
 
 ## Seated: follow the seat, steer with the move keys, E gets out. The camera stays free.
 func _drive_step(delta: float) -> void:
-	var seat := vehicle.seats[0]
+	var seat: Marker3D = vehicle.seats[0]
 	global_position = seat.global_position - Vector3.UP * 0.55
 	var truck_yaw := vehicle.global_rotation.y
 	model.rotation.y = truck_yaw

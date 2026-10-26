@@ -14,6 +14,7 @@ var mummies: Array[Mummy] = []  # live nodes only; corpses leave when they sink
 var spawned := 0
 var truck: Truck
 var boat: RiverBoat
+var river_bank_z := INF
 var bandits: Array[Gunman] = []
 var npcs := {}  # id -> Npc standing in the world
 var companions := {}  # id -> Gunman on our side
@@ -94,7 +95,9 @@ func _ready() -> void:
 		river.curve.add_point(p)
 	level.add_child(river)
 	boat = RiverBoat.make(level, river, "steamer")
-	boat.watch(player)
+	# Falling in = back on deck, but only over the river: the tomb is below y = -1 too
+	# (RiverBoat.watch checks height alone, which put tomb visitors on the boat).
+	river_bank_z = bank
 	# Props added above are inside the level's nav region: rebake so paths go round them.
 	level._nav.bake_navigation_mesh(false)
 	# A truck by the camp (Proving Ground step 9).
@@ -210,6 +213,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
+	if boat and player.global_position.z > river_bank_z and player.global_position.y < RiverBoat.FALL_Y and player.vehicle == null:
+		player.global_position = boat.to_global(boat.deck_spawn)  # fell in the river: back aboard
+		player.velocity = Vector3.ZERO
 	level.set_indoor(level.indoor_amount(player.camera.global_position))
 	if not started or over or get_tree().paused:
 		return
