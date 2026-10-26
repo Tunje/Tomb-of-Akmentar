@@ -25,7 +25,8 @@ const TRUCK := {"name": "truck", "model": MODEL, "front_z": -WHEEL_Z, "rear_z": 
 	"radius": 0.46, "seats": [Vector3(-0.22, 1.2, 0.25), Vector3(0.45, 1.2, 0.25), Vector3(-0.5, 1.45, 1.4), Vector3(0.5, 1.45, 1.4)],
 	"door": "door_l", "door_sign": -1.0, "door_at": Vector3(-1.4, 0.8, -1.0), "wheel_axis": "y", "prompt": "Drive the truck",
 	"boxes": [[Vector3(1.9, 0.5, 4.8), Vector3(0, 0.75, 0)], [Vector3(1.8, 1.0, 1.4), Vector3(0, 1.5, -1.1)]],
-	"mass": 1200.0, "engine": ENGINE, "max_speed": 12.5}
+	"mass": 1200.0, "engine": ENGINE, "max_speed": 12.5,
+	"gunner_at": Vector3(0.0, 2.45, 0.9)}  # the gunner seat: up on the canvas tilt (it's one mesh with the truck)
 ## image-to-3d's touring car: right-hand drive (British Egypt), lighter and quicker than the truck.
 const TOURER := {"name": "tourer", "model": "res://assets/props/vehicle_tourer.glb", "front_z": -1.736, "rear_z": 1.736,
 	"track_f": 0.785, "track_r": 0.753, "radius": 0.455,

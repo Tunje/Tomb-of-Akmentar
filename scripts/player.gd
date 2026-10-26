@@ -585,8 +585,14 @@ func take_wheel() -> void:
 ## The gunner seat: ride it standing in the bed, aim and fire as on foot (no walking, no cover);
 ## E hops off, V (swap_seat) takes the wheel back. The camera rides along at the shoulder.
 func _gunner_step(delta: float) -> void:
-	var seat: Marker3D = vehicle.seats[mini(gunner_seat, vehicle.seats.size() - 1)]
-	global_position = seat.global_position - Vector3.UP * 0.4
+	# Where the gunner stands: the motor's spec says (the truck: on top of its canvas), else up in
+	# the passenger seat (an open car).
+	var stand: Variant = (vehicle as Truck).spec.get("gunner_at", null) if vehicle is Truck else null
+	if stand != null:
+		global_position = vehicle.global_transform * (stand as Vector3)
+	else:
+		var seat: Marker3D = vehicle.seats[mini(gunner_seat, vehicle.seats.size() - 1)]
+		global_position = seat.global_position - Vector3.UP * 0.4
 	velocity = Vector3.ZERO
 	if not alive:
 		exit_vehicle()
