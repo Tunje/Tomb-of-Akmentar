@@ -12,6 +12,10 @@ const GUARDIAN := "res://scripts/guardian.gd"
 const SCARABS := "res://scripts/scarabs.gd"
 const LEVEL2_SITES := "res://sites/akmentar_below.json"
 const TOMB_SITES := "res://sites/royal_tomb.json"
+## The slab across the main stairs' neck comes down on its own this long into the escape: slower
+## than that and it's one of the side shafts.
+const NECK_SLAB_AFTER := 45.0
+const WAIT_AT_TOP := 8.0  # how long the survivors at the top wait for the rest
 
 var level: AkmentarBelow
 var player: Player
@@ -68,6 +72,9 @@ func _ready() -> void:
 	player.died.connect(func(): hud.show_message("YOU DIED", "Enter to try again"))
 	for s in str(args.get("shots", "")).split(",", false):
 		_shots.append(float(s))
+	if args.has("party") or (args.has("auto") and Game.party().is_empty()):
+		for id in str(args.get("party", "mahmoud,khalil")).split(",", false):
+			Game.companion(id)["recruited"] = true  # test runs: who comes along
 	_spawn_party()
 	if FileAccess.file_exists(TOMB_SITES):
 		SiteBudget.begin("akmentar_below", SiteSpot.load_area("akmentar_below"), true)
@@ -243,9 +250,13 @@ func _escape() -> void:
 	step = Step.ESCAPE
 	hud.toast("RUN. Back to the stairs!", 3.0)
 	# Companions run with you (-bf's escape mode); one of them goes down partway (help or leave).
+	var i := 0
 	for c in companions.values():
 		if is_instance_valid(c):
 			c.escape = true
+			if args.has("auto"):  # the bot teleported through the tomb: bring them along
+				c.global_position = player.global_position + Vector3(i * 1.2 - 0.6, 0, 1.5)
+				i += 1
 	if not companions.is_empty():
 		get_tree().create_timer(14.0).timeout.connect(func():
 			var c: Gunman = companions.values()[0]
@@ -257,14 +268,104 @@ func _escape() -> void:
 		var rubble := level._box(level._nav, c + Vector3.UP * 0.5, size, level._stone)
 		level._mark_cover(rubble, size)
 	level._nav.bake_navigation_mesh(false)  # paths round the rubble (or vault it)
+	_arm_slabs()
 	if args.has("auto"):
 		_auto_escape()
-	while player.global_position.z < level.stair_top.z - 2.0 or player.global_position.y < -1.0:
+	var out := -1
+	while out < 0:
 		if not player.alive:
 			return
 		await get_tree().create_timer(0.2).timeout
+		out = _exit_reached(player)
+	level.stair_top = level.exits[out]  # the revelation happens where you came up
 	Game.set_flag("escaped", true)
+	Game.set_flag("escape_exit", ["main", "west", "east"][out])
+	await _wait_for_companions()
 	_revelation()
+
+
+## Drop-slabs: each sinks when you run at it; the stairs' neck on a timer. A shut slab changes the
+## maze, so the navmesh is rebaked: companions and the guardian path round (or are cut off).
+func _arm_slabs() -> void:
+	var people: Array = [player]
+	if guardian:
+		people.append(guardian)
+	var told := [false]
+	for s in level.slab_doors:
+		s.target = player
+		s.people = people
+		s.armed = true
+		s.shut.connect(func(): level._nav.bake_navigation_mesh(false))
+		if args.has("auto"):
+			s.started.connect(func(): print("RESULT slab start at=%s t=%.1f" % [s._floor, _t]))
+			s.shut.connect(func():
+				var near := []
+				for id in companions:
+					var c: Node3D = companions[id]
+					if is_instance_valid(c):
+						near.append("%s:%.0fm" % [id, c.global_position.distance_to(s._floor)])
+				print("RESULT slab shut at=%s player=%.0fm %s" % [s._floor, player.global_position.distance_to(s._floor), near]))
+		s.started.connect(func():
+			if not told[0]:
+				told[0] = true
+				hud.toast("Stone grinds overhead: the slab is coming down. Get under it!", 3.0))
+	if level.neck_slab:
+		level.neck_slab.drop_after = NECK_SLAB_AFTER
+		level.neck_slab.started.connect(func():
+			hud.toast("Far off, a deep grinding: the way to the main stairs is closing.", 3.5))
+	# Scarab vents in the corridor walls: each pours once as you pass.
+	var ss := _ready_script(SCARABS, "pour")
+	if ss == null:
+		return
+	for v in level.scarab_vents:
+		_vent_watch(ss, v)
+
+
+func _vent_watch(ss: GDScript, v: Dictionary) -> void:
+	while step == Step.ESCAPE and player.global_position.distance_to(v.point) > 5.0:
+		await get_tree().create_timer(0.25).timeout
+	if step == Step.ESCAPE:
+		ss.pour(self, v.point, v.normal)
+
+
+## Which exit `who` is out of (index into level.exits), or -1.
+func _exit_reached(who: Node3D) -> int:
+	for i in level.exits.size():
+		var e: Vector3 = level.exits[i]
+		var p := who.global_position
+		if p.y > -1.0 and absf(p.x - e.x) < 4.0 and p.z > e.z - 2.0:
+			return i
+	return -1
+
+
+## A companion is out once at the top, or on the last of the stairs close behind you.
+func _out(c: Node3D) -> bool:
+	return _exit_reached(c) >= 0 or (c.global_position.y > -3.0 and c.global_position.distance_to(player.global_position) < 8.0)
+
+
+## At the top: a few seconds for the companions still coming; whoever isn't out by then (cut off
+## behind a slab, caught, lost in the dark) is a casualty.
+func _wait_for_companions() -> void:
+	var t := 0.0
+	var waiting := true
+	while waiting and t < WAIT_AT_TOP:
+		waiting = false
+		for c in companions.values():
+			if is_instance_valid(c) and c.alive and not _out(c):
+				waiting = true
+		if waiting:
+			if t == 0.0:
+				hud.toast("You wait at the top, listening for footsteps...", 3.0)
+			await get_tree().create_timer(0.5).timeout
+			t += 0.5
+	var lost: Array = []
+	for id in companions:
+		var c: Gunman = companions[id]
+		if not is_instance_valid(c) or not c.alive or not _out(c):
+			lost.append(id)
+	Game.set_flag("act5_casualties", lost)
+	if not lost.is_empty():
+		hud.toast("%s didn't come out." % ", ".join(lost.map(func(id): return str(id).capitalize())), 4.0)
 
 
 func _revelation() -> void:
@@ -291,9 +392,10 @@ func _end() -> void:
 	var lines := ["The guardian is awake.", "The amulet is gone: the %s took it." % str(Game.flag("thieves", "")).capitalize(),
 		"The Keepers want it back, and so must you."]
 	hud.show_message("THE AWAKENING", "\n".join(lines) + "\n\n(Act 6 comes next.)")
-	print("RESULT act5 end ally=%s forced=%s delay=%s studied_tomb=%d escaped=%s thieves=%s health=%d" % [
+	print("RESULT act5 end ally=%s forced=%s delay=%s studied_tomb=%d escaped=%s exit=%s lost=%s thieves=%s t=%.0f" % [
 		Game.flag("ally", ""), Game.flag("door_forced", false), Game.flag("german_delay", false), _tomb_done,
-		Game.flag("escaped", false), Game.flag("thieves", ""), int(player.health)])
+		Game.flag("escaped", false), Game.flag("escape_exit", ""), Game.flag("act5_casualties", []),
+		Game.flag("thieves", ""), _t])
 	if args.has("auto"):
 		await get_tree().create_timer(1.5).timeout
 		get_tree().quit(0)
@@ -328,7 +430,7 @@ func _process(delta: float) -> void:
 		_death_logged = true
 		print("RESULT act5 died step=%s at=%s t=%.1f" % [Step.keys()[step], player.global_position, _t])
 	if args.has("seconds") and _t > float(args.seconds):
-		print("RESULT act5 timeout step=%s" % Step.keys()[step])
+		print("RESULT act5 timeout step=%s player=%s" % [Step.keys()[step], player.global_position])
 		get_tree().quit(1)
 
 
@@ -397,8 +499,19 @@ func _auto_step_back() -> void:
 
 func _auto_escape() -> void:
 	while step == Step.ESCAPE and player.alive:
-		var path := NavigationServer3D.map_get_path(get_world_3d().navigation_map, player.global_position,
-			level.stair_top + Vector3(0, 0, -1.0), true)
+		var path := PackedVector3Array()
+		var best := INF
+		for e in level.exits:
+			var p := NavigationServer3D.map_get_path(get_world_3d().navigation_map, player.global_position,
+				e + Vector3(0, 0, -1.0), true)
+			var len := 0.0
+			for i in range(1, p.size()):
+				len += p[i].distance_to(p[i - 1])
+			if p.size() > 1 and p[p.size() - 1].distance_to(e + Vector3(0, 0, -1.0)) > 2.0:
+				len = INF  # the path ends short: that way is shut
+			if len < best:
+				best = len
+				path = p
 		var next: Vector3 = path[1] if path.size() > 1 else level.stair_top
 		var d := next - player.global_position
 		# A minion in the way: stop and shoot it.

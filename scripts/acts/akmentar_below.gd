@@ -11,7 +11,9 @@ extends Level
 ##   flag), one hiding a chamber, one a shortcut;
 ## - sleeping mummies in some dead ends, minion spawns in others (the awakening).
 ## Map letters as Level's, plus: "," pit floor, "=" bridge, "/" ramp, "?" secret wall,
-## a-i points of interest, 1-5 royal tomb points, R royal door, G guardian, X vents, Z minions, C collapse.
+## a-i points of interest, 1-5 royal tomb points, R royal door, G guardian, X vents, Z minions, C collapse,
+## "|" a drop-slab door (it shuts during the escape), V a scarab vent in a corridor wall.
+## Three ways out: the main stairs south of the south hall, and a long shaft up at each side.
 
 const W := 48
 const H := 44
@@ -23,6 +25,10 @@ const SOUTH := Rect2i(18, 33, 12, 4)
 const PIT := Rect2i(8, 16, 12, 9)
 const BRIDGE_ROW := 20
 const RAMP := Rect2i(20, 23, 5, 1)  # high end east (x 24), descends west into the pit
+## The side shafts: their west columns (two wide), from the maze's last row up to the surface.
+const SHAFTS := [4, 42]
+const SLABS := 5  # drop-slabs in the maze, plus one at the main stairs' neck
+const SCARAB_VENTS := 4
 ## Point-of-interest rooms (3 x 3 inside), keyed by the letter at their centre.
 const POI_ROOMS := {"a": Vector2i(3, 11), "b": Vector2i(41, 11), "c": Vector2i(3, 28), "d": Vector2i(41, 28),
 	"f": Vector2i(29, 15), "g": Vector2i(29, 28), "h": Vector2i(34, 21)}
@@ -44,7 +50,11 @@ var minion_spawns: Array[Vector3] = []
 var collapse_points: Array[Vector3] = []
 var guardian_spawn := Vector3.ZERO
 var royal_door: StaticBody3D
-var stair_top := Vector3.ZERO
+var stair_top := Vector3.ZERO  # the main stairs' top
+var exits: Array[Vector3] = []  # every stair top, the main one first
+var slab_doors: Array[SlabDoor] = []
+var neck_slab: SlabDoor  # the one across the main stairs' way in
+var scarab_vents: Array[Dictionary] = []  # {point, normal}
 var secret_doors: Array[Node] = []
 var _door_cells: Array[Vector3] = []
 var _pit := {}  # Vector2i -> true for cells at the lower level (pit floor, bridge, ramp foot)
@@ -91,7 +101,17 @@ func map_rows() -> Array:
 		g[y][25] = "L"
 	g[SOUTH.position.y + 1][SOUTH.position.x + 1] = "B"
 	g[SOUTH.position.y + 1][SOUTH.end.x - 2] = "B"
+	# The side shafts: long stairs up from the maze's bottom row at each side.
+	for x in SHAFTS:
+		for y in range(SOUTH.position.y - 1, H - 1):
+			g[y][x] = "D"
+			g[y][x + 1] = "D"
+		for y in [SOUTH.position.y + 1, H - 3]:
+			g[y][x - 1] = "L"
+			g[y][x + 2] = "L"
+	g[SOUTH.position.y - 1][23] = "|"  # the main stairs' neck
 	_dead_end_spawns(g)
+	_slabs_and_vents(g)
 	_torches(g)
 	var rows: Array = []
 	for row in g:
@@ -207,6 +227,93 @@ func _dead_end_spawns(g: Array) -> void:
 		g[ends[k].y][ends[k].x] = "M" if k < 3 else "Z"
 
 
+## Drop-slabs across straight corridor cells and scarab vents in corridor walls, spread over the
+## maze's middle band (seeded, a few cells apart).
+func _slabs_and_vents(g: Array) -> void:
+	var straight: Array[Vector2i] = []
+	for y in range(ANTE.end.y + 3, SOUTH.position.y - 2):
+		for x in range(2, W - 2):
+			if g[y][x] != ".":
+				continue
+			var ew: bool = g[y][x - 1] == "#" and g[y][x + 1] == "#" and g[y - 1][x] == "." and g[y + 1][x] == "."
+			var ns: bool = g[y - 1][x] == "#" and g[y + 1][x] == "#" and g[y][x - 1] == "." and g[y][x + 1] == "."
+			if ew or ns:
+				straight.append(Vector2i(x, y))
+	for i in straight.size():
+		var j := _rng.randi_range(i, straight.size() - 1)
+		var t := straight[i]
+		straight[i] = straight[j]
+		straight[j] = t
+	# Cells on the shortest ways from the antechamber to the three ways out go first, so every
+	# escape meets some.
+	var route := _routes(g, Vector2i(23, ANTE.end.y + 1),
+		[Vector2i(23, SOUTH.position.y - 2), Vector2i(SHAFTS[0], SOUTH.position.y - 2), Vector2i(SHAFTS[1], SOUTH.position.y - 2)])
+	straight.sort_custom(func(a, b): return route.has(a) and not route.has(b))
+	var placed: Array[Vector2i] = []
+	var reach := _reach(g)
+	for c in straight:
+		if placed.size() >= SLABS + SCARAB_VENTS:
+			break
+		var near := false
+		for o in placed:
+			near = near or Vector2(o - c).length() < 6.0
+		if near:
+			continue
+		if placed.size() < SLABS:
+			# Only where a way round remains: with every slab shut, nobody can be sealed off from
+			# all the exits (a slab coming down in your face means a detour, never a dead end).
+			g[c.y][c.x] = "|"
+			var r := _reach(g)
+			if r.size() < reach.size() - 1:
+				g[c.y][c.x] = "."
+				continue
+			reach = r
+		else:
+			g[c.y][c.x] = "V"
+		placed.append(c)
+
+
+## The cells that can walk to a way out (any stair cell), with the slabs ("|") shut.
+func _reach(g: Array) -> Dictionary:
+	var seen := {}
+	var queue: Array[Vector2i] = []
+	for y in H:
+		for x in W:
+			if g[y][x] == "D":
+				seen[Vector2i(x, y)] = true
+				queue.append(Vector2i(x, y))
+	while not queue.is_empty():
+		var cur: Vector2i = queue.pop_front()
+		for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var n: Vector2i = cur + d
+			if n.x < 0 or n.y < 0 or n.x >= W or n.y >= H or seen.has(n) or g[n.y][n.x] in ["#", "L", "?", "|"]:
+				continue
+			seen[n] = true
+			queue.append(n)
+	return seen
+
+
+## Every cell on the shortest grid path from `from` to each of `goals` (a set: Vector2i -> true).
+func _routes(g: Array, from: Vector2i, goals: Array) -> Dictionary:
+	var parent := {from: from}
+	var queue: Array[Vector2i] = [from]
+	while not queue.is_empty():
+		var cur: Vector2i = queue.pop_front()
+		for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var n: Vector2i = cur + d
+			if n.x < 0 or n.y < 0 or n.x >= W or n.y >= H or parent.has(n) or g[n.y][n.x] in ["#", "L", "?"]:
+				continue
+			parent[n] = cur
+			queue.append(n)
+	var on := {}
+	for goal in goals:
+		var c: Vector2i = goal
+		while parent.has(c) and c != from:
+			on[c] = true
+			c = parent[c]
+	return on
+
+
 ## Wall torches every few metres along the corridors (on rock that faces a floor cell).
 func _torches(g: Array) -> void:
 	for y in range(1, H - 1):
@@ -228,7 +335,7 @@ func _floor_y(r: int, c: int) -> float:
 func _build_tomb() -> void:
 	var pit_y := FLOOR_Y - PIT_DROP
 	var wall_h := WALL_H + PIT_DROP
-	var stair := Rect2i()
+	var stairs := {}
 	for r in _rows:
 		var c := 0
 		while c < _cols:
@@ -248,7 +355,8 @@ func _build_tomb() -> void:
 			if ch == "?":
 				_secret(r, c)
 			elif ch == "D":
-				stair = Rect2i(c, r, 1, 1) if stair.size == Vector2i.ZERO else stair.expand(Vector2i(c, r))
+				var k := c if _ch(r, c - 1) != "D" else c - 1  # each stairwell keyed by its west column
+				stairs[k] = Rect2i(c, r, 1, 1) if not stairs.has(k) else (stairs[k] as Rect2i).expand(Vector2i(c, r))
 			elif ch == "/":
 				pass  # the ramp is built as one piece below
 			elif ch == "=":
@@ -286,9 +394,10 @@ func _build_tomb() -> void:
 			var b := _cell(r, c + run - 1)
 			_box(_nav, Vector3((a.x + b.x) * 0.5, -0.5, a.z), Vector3(run * CELL, 1.0, CELL), _sand)
 			c += run
-	if stair.size != Vector2i.ZERO:
-		stair.size += Vector2i.ONE
-		_stairs(stair)
+	for k in stairs:
+		var st: Rect2i = stairs[k]
+		st.size += Vector2i.ONE
+		_stairs(st)
 
 
 ## A bridge cell: a narrow stone span at the upper level with low parapets, the pit floor below.
@@ -360,6 +469,18 @@ func _marker(ch: String, p: Vector3, _r: int, _c: int) -> void:
 			minion_spawns.append(p)
 		"C":
 			collapse_points.append(p)
+		"|":
+			var ns := _ch(_r - 1, _c) in ["#", "L"]  # rock north and south: the corridor runs east-west
+			var slab := SlabDoor.make(_nav, p, Vector3(CELL, WALL_H, 0.5), PI * 0.5 if ns else 0.0, _stone)
+			slab_doors.append(slab)
+			if _r == SOUTH.position.y - 1 and _c == 23:
+				neck_slab = slab
+		"V":
+			for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+				if _ch(_r + d.y, _c + d.x) in ["#", "L"]:
+					var n := Vector3(-d.x, 0, -d.y)
+					scarab_vents.append({"point": p - n * CELL * 0.5 + Vector3.UP * 0.3, "normal": n})
+					break
 
 
 ## A waist-high stone block a point of interest sits on (blockout).
@@ -372,7 +493,11 @@ func _build_surface() -> void:
 	# No desert down here: the stairs' top is the way out.
 	player_spawn = _cell(SOUTH.position.y + 2, 23) + Vector3(CELL * 0.5, 0, 0)
 	stair_top = _cell(H - 1, 23) + Vector3(CELL * 0.5, -FLOOR_Y, 0)
-	_box(self, stair_top + Vector3(0, -0.5, 4.0), Vector3(8.0, 1.0, 10.0), _sand)
+	exits = [stair_top]
+	for x in SHAFTS:
+		exits.append(_cell(H - 1, x) + Vector3(CELL * 0.5, -FLOOR_Y, 0))
+	for e in exits:
+		_box(self, e + Vector3(0, -0.5, 4.0), Vector3(8.0, 1.0, 10.0), _sand)
 	if _door_cells.size() == 2:
 		var mid := (_door_cells[0] + _door_cells[1]) * 0.5
 		royal_door = _box(_nav, mid + Vector3.UP * 2.0, Vector3(CELL * 2.0, 4.0, 0.8), _floor_mat)
