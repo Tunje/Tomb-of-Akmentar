@@ -72,6 +72,25 @@ func _physics_process(delta: float) -> void:
 		_pose_check()
 	elif args.get("scenario", "") == "cover":
 		_cover_check()
+	elif args.get("scenario", "") == "brawl":
+		# Pick the fight east of the camp, then face the nearest tough and jab every 0.5 s.
+		var p: Player = game.player
+		var spot: Vector3 = game.level.interactables["camp_fire"].global_position + Vector3(14.0, 0.0, 2.5)
+		if _t < 0.05:
+			p.global_position = spot
+			p.yaw = 0.0
+		_press("cover", _t > 0.5 and _t < 0.6)
+		var near: Node3D = null
+		for b in game.brawlers:
+			if is_instance_valid(b) and (near == null or p.global_position.distance_to(b.global_position) < p.global_position.distance_to(near.global_position)):
+				near = b
+		if near and p.melee.enabled:
+			var d := near.global_position - p.global_position
+			p.yaw = atan2(-d.x, -d.z)
+			_press("move_forward", d.length() > 1.6)
+			_press("fire", fmod(_t, 0.5) < 0.1)
+		if fmod(_t, 3.0) < delta:
+			print("RESULT brawl t=%.0f enabled=%s fist_hp=%.0f guard=%.0f flags=%s" % [_t, p.melee.enabled, p.melee.hp, p.melee.guard, [Game.flag("brawl_won"), Game.flag("brawl_lost")]])
 	elif args.get("scenario", "") == "boat":
 		# Walk the pier, board (E), cast off at 2 s, ride; RESULT every 2 s.
 		var p: Player = game.player

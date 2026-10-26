@@ -15,6 +15,7 @@ var spawned := 0
 var truck: Truck
 var boat: RiverBoat
 var river_bank_z := INF
+var brawlers: Array[Node] = []
 var bandits: Array[Gunman] = []
 var npcs := {}  # id -> Npc standing in the world
 var companions := {}  # id -> Gunman on our side
@@ -98,6 +99,11 @@ func _ready() -> void:
 	# Falling in = back on deck, but only over the river: the tomb is below y = -1 too
 	# (RiverBoat.watch checks height alone, which put tomb visitors on the boat).
 	river_bank_z = bank
+	# A brawl to try (step 7): three toughs loiter east of the camp; "Pick a fight" starts it.
+	var brawl_at: Vector3 = camp + Vector3(14.0, 0.0, -2.0)  # east: well away from the bandit ruins
+	var fight := Interactable.make(level, brawl_at + Vector3(0.0, 0.0, 3.0), "Pick a fight (brawl)", "brawl_start", 1.5)
+	fight.used.connect(func(_by): _start_brawl(brawl_at))
+	Game.event.connect(_on_game_event)
 	# Props added above are inside the level's nav region: rebake so paths go round them.
 	level._nav.bake_navigation_mesh(false)
 	# A truck by the camp (Proving Ground step 9).
@@ -332,7 +338,7 @@ func _setup_input() -> void:
 	var keys := {
 		"move_forward": [KEY_W], "move_back": [KEY_S], "move_left": [KEY_A], "move_right": [KEY_D],
 		"sprint": [KEY_SHIFT], "crouch": [KEY_C, KEY_CTRL], "dodge": [KEY_SPACE],
-		"reload": [KEY_R], "cover": [KEY_E], "holster": [KEY_X], "journal": [KEY_J], "party_order": [KEY_G], "weapon_1": [KEY_1], "weapon_2": [KEY_2], "weapon_3": [KEY_3],
+		"reload": [KEY_R], "cover": [KEY_E], "holster": [KEY_X], "journal": [KEY_J], "party_order": [KEY_G], "shove": [KEY_F], "weapon_1": [KEY_1], "weapon_2": [KEY_2], "weapon_3": [KEY_3],
 	}
 	var mouse := {
 		"fire": [MOUSE_BUTTON_LEFT], "aim": [MOUSE_BUTTON_RIGHT],
@@ -394,3 +400,35 @@ func _on_game_changed(what: String) -> void:
 	if Conversation.current:
 		await Conversation.current.finished
 	_spawn_companion(id, at)
+
+
+# ---------------------------------------------------------------- brawls
+
+## Fists only: holster, raise the guard, three unarmed toughs (-bf's Brawler) close in.
+func _start_brawl(at: Vector3) -> void:
+	if player.melee.enabled:
+		return
+	player.set_armed(false)
+	player.melee.enabled = true
+	for i in 3:
+		var b := Brawler.new()
+		b.glb = GunmanBody.BANDITS[i]
+		b.skill = 0.5
+		b.max_hp = 70.0
+		add_child(b)
+		b.global_position = at + Vector3(cos(i * TAU / 3.0), 0.0, sin(i * TAU / 3.0)) * 3.0
+		brawlers.append(b)
+	hud.toast("Brawl! Left mouse punch · right mouse block · F shove")
+
+
+## Game events: the end of a brawl hands the fists back.
+func _on_game_event(name: String) -> void:
+	if name == "brawl_won" or name == "brawl_lost":
+		player.melee.enabled = false
+		player.melee.revive()
+		hud.toast("You won the brawl" if name == "brawl_won" else "You were knocked out")
+		# The fight is over either way: the toughs walk off (no beating a man who's down).
+		for b in brawlers:
+			if is_instance_valid(b):
+				b.queue_free()
+		brawlers.clear()

@@ -124,6 +124,14 @@ func _draw_overlay() -> void:
 	_canvas.draw_rect(hb, Color(0, 0, 0, 0.55))
 	var frac := player.health / player.max_health
 	_canvas.draw_rect(Rect2(hb.position, Vector2(hb.size.x * frac, hb.size.y)), Color(0.75, 0.2, 0.15).lerp(Color(0.85, 0.75, 0.45), frac))
+	# In a brawl: fist health (it never touches real health) and the guard meter.
+	if player.melee and player.melee.enabled:
+		var fb := Rect2(Vector2(30, size.y - 90), Vector2(280, 12))
+		_canvas.draw_rect(fb, Color(0, 0, 0, 0.55))
+		_canvas.draw_rect(Rect2(fb.position, Vector2(fb.size.x * player.melee.hp / player.melee.max_hp, fb.size.y)), Color(0.85, 0.55, 0.3))
+		var gb := Rect2(Vector2(30, size.y - 74), Vector2(280, 6))
+		_canvas.draw_rect(gb, Color(0, 0, 0, 0.55))
+		_canvas.draw_rect(Rect2(gb.position, Vector2(gb.size.x * clampf(player.melee.guard / 100.0, 0.0, 1.0), gb.size.y)), Color(0.6, 0.7, 0.85))
 
 
 ## A short notice in the upper middle ("Game saved", "Day 2").

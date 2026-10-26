@@ -64,6 +64,7 @@ var _hurt_cd := 0.0
 var _model_hidden := false
 var _upper_aim := 0.0
 var cover := Cover.new()
+var melee: Melee
 ## Explore mode = false: gun holstered, relaxed arms, E talks and uses things.
 var armed := true
 ## What E would use right now (shown on the HUD).
@@ -158,6 +159,17 @@ func _build_body() -> void:
 			n.visible = false
 		gun_pivot.reparent(explorer.gun_holder, false)
 		gun_pivot.transform = Transform3D.IDENTITY
+	# Fists for brawls (Melee, -bf): the hero takes more than a regular.
+	melee = Melee.new()
+	melee.visual = model
+	melee.max_hp = 150.0
+	melee.hp = 150.0
+	melee.power = 1.3
+	melee.toughness = 1.5
+	melee.enabled = false  # fists up only in a brawl; main / the story turns it on
+	add_child(melee)
+	if explorer:
+		melee.install(explorer)
 
 	_audio = AudioStreamPlayer.new()
 	add_child(_audio)
@@ -258,9 +270,17 @@ func _physics_process(delta: float) -> void:
 			and not want_fire and not crouching and _reload_t <= 0.0
 	else:
 		sprinting = false
-	# Explore mode: aiming or firing draws the gun first.
-	if not armed and (want_aim or want_fire) and controls_enabled and alive:
-		set_armed(true)
+	# Unarmed in a brawl: left mouse punches (again during a jab = the cross), right mouse
+	# blocks, F shoves. Outside a brawl, aiming or firing draws the gun first (explore mode).
+	if not armed and controls_enabled and alive:
+		if melee.enabled:
+			if Input.is_action_just_pressed("fire"):
+				melee.attack("jab", -Basis(Vector3.UP, yaw).z)
+			elif Input.is_action_just_pressed("shove"):
+				melee.attack("shove", -Basis(Vector3.UP, yaw).z)
+			melee.set_block(want_aim)
+		elif want_aim or want_fire:
+			set_armed(true)
 	if not armed:
 		want_aim = false
 		want_fire = false
@@ -277,7 +297,7 @@ func _physics_process(delta: float) -> void:
 		focus.use(self)
 		e_pressed = false
 	# Cover first (Wreck Wreckers' rules): it returns the move while in cover, or null.
-	var cover_pressed := e_pressed
+	var cover_pressed := e_pressed and not melee.enabled  # no cover in a fistfight
 	var leave_now := not alive or _dodge_t > 0.0 or (controls_enabled and Input.is_action_pressed("sprint"))
 	var cover_move: Variant = cover.step(self, delta, input, -basis_yaw.z, cover_pressed, want_aim, leave_now)
 	if cover.state == Cover.State.VAULT:
@@ -309,7 +329,7 @@ func _physics_process(delta: float) -> void:
 			speed = CROUCH
 		elif aiming:
 			speed = AIM_WALK
-		var target := wish * speed
+		var target := wish * speed * melee.move_scale()
 		velocity.x = move_toward(velocity.x, target.x, ACCEL * speed * delta / 4.0)
 		velocity.z = move_toward(velocity.z, target.z, ACCEL * speed * delta / 4.0)
 	velocity.y = 0.0 if is_on_floor() else velocity.y - GRAVITY * delta
@@ -401,6 +421,8 @@ func _update_facing(delta: float, wish: Vector3) -> void:
 		target_yaw = yaw
 	elif _dodge_t > 0.0:
 		target_yaw = atan2(-_dodge_dir.x, -_dodge_dir.z)
+	elif melee.enabled and not melee.out():
+		target_yaw = yaw  # squared up to the camera's way in a brawl
 	elif wish.length() > 0.1:
 		target_yaw = atan2(-wish.x, -wish.z)
 	model.rotation.y = lerp_angle(model.rotation.y, target_yaw, minf(delta * 14.0, 1.0))
@@ -485,7 +507,7 @@ func start_reload() -> void:
 
 
 func dodge() -> void:
-	if _dodge_t > 0.0 or _dodge_cd > 0.0 or not is_on_floor() or cover.state == Cover.State.VAULT:
+	if _dodge_t > 0.0 or _dodge_cd > 0.0 or not is_on_floor() or cover.state == Cover.State.VAULT or melee.busy():
 		return
 	var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	if input.length() < 0.2:
