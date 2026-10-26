@@ -93,8 +93,8 @@ func _build_ground() -> void:
 
 func _run() -> void:
 	await _wait(0.6)
-	_check(horse.rig.stand_in and horse.rig.skeleton.get_bone_count() == HorseRig.BONES.size(),
-			"stand-in skeleton with the %d agreed bones" % HorseRig.BONES.size())
+	var found := HorseRig.BONES.filter(func(b): return horse.rig.skeleton.find_bone(b[0]) >= 0).size()
+	_check(found == HorseRig.BONES.size(), "%s with all %d agreed bones (%d found)" % ["capsule stand-in" if horse.rig.stand_in else "horse GLB", HorseRig.BONES.size(), found])
 	_side_cam(true)
 	await _wait(1.5)
 	await _shot("horse_1_idle_side.png")

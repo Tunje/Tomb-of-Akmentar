@@ -15,6 +15,8 @@ extends Node3D
 
 const GLB := "res://assets/characters/horse/horse.glb"
 const WITHERS := 1.55
+## The withers joint (spine_3) of image-to-3d's horse sits this high (the back is above it).
+const WITHERS_JOINT := 1.3
 
 ## name, parent, joint position (horse space, origin on the ground under the pelvis), radius of
 ## the stand-in capsule (0 = none). A bone points at its first listed child (or its tip).
@@ -68,15 +70,22 @@ const GAITS := {
 	"trot": {"speed": 3.8, "freq": 1.45, "duty": 0.42, "off": {"fl": 0.0, "hr": 0.0, "fr": 0.5, "hl": 0.5},
 		"lift": 1.15, "bob": 0.05, "bob_n": 2.0, "rock": 0.8, "nod": 3.0, "nod_n": 2.0},
 	"gallop": {"speed": 10.0, "freq": 2.1, "duty": 0.3, "off": {"hl": 0.0, "hr": 0.09, "fl": 0.4, "fr": 0.5},
-		"lift": 1.4, "bob": 0.09, "bob_n": 1.0, "rock": 4.5, "nod": 10.0, "nod_n": 1.0},
+		"lift": 1.4, "bob": 0.05, "bob_n": 1.0, "rock": 3.0, "nod": 10.0, "nod_n": 1.0, "low": -0.06},
 }
 const ORDER := ["idle", "walk", "trot", "gallop"]
+## Most a leg's top joint is dropped to keep the hoof down (m): the shoulder slides, the hip barely.
+const DROP_FRONT := 0.18
+const DROP_HIND := 0.14
 
 var skeleton: Skeleton3D
 var stand_in := false
 var phase := 0.0
 var weights := {"idle": 1.0}
 var dead_t := -1.0            # >= 0: lying down after death
+## Measured from the body (rig space): the middle of the saddle's seat, and half the barrel's width
+## below it (where a rider's legs hang). The stand-in's values until a GLB is measured.
+var saddle_rest := Vector3(0, 1.64, -0.55)
+var barrel_half := 0.37
 
 var _glb := GLB
 var _model: Node3D
@@ -86,6 +95,7 @@ var _axes := {}               # name -> [horse X, Y, Z in the bone's rest frame]
 var _down := {}               # leg top bone -> horse "down" in its parent's rest frame
 var _rest_o := {}             # leg top bone -> rest origin
 var _hoof_rest := {}          # leg -> fetlock rest position (rig space)
+var _tilt := {}               # leg -> how far its rest stance leans forward (rad, + = hoof ahead)
 var _t := 0.0
 var _rest_leg := 0.0          # idle: a hind hoof resting now and then
 
@@ -113,6 +123,7 @@ func _ready() -> void:
 	_index()
 	if not stand_in:
 		_fit()
+		_measure()
 
 
 ## Which gait shows most now ("idle", "walk", "trot", "gallop").
@@ -149,7 +160,7 @@ func animate(delta: float, speed: float, turn: float) -> void:
 	for g in weights:
 		var p: Dictionary = GAITS[g]
 		var w: float = weights[g]
-		bob += w * float(p.bob) * cos(TAU * phase * float(p.bob_n))
+		bob += w * (float(p.bob) * cos(TAU * phase * float(p.bob_n)) + float(p.get("low", 0.0)))  # low: the gallop stretches out lower
 		rock += w * deg_to_rad(float(p.rock)) * sin(TAU * phase)
 		nod += w * deg_to_rad(float(p.nod)) * sin(TAU * phase * float(p.nod_n) + PI * 0.5)
 	var idle_w: float = weights.get("idle", 0.0)
@@ -239,14 +250,19 @@ func _pose_leg(leg: String, swing: float, lift: float, idle_w: float, comp := 0.
 		rest_hoof = on * idle_w if leg == which else 0.0
 	# A straight leg swinging about its top would lift the hoof L(1 - cos) at either end of the
 	# stride: drop the top joint by that much (a horse's shoulder slides; at the hip it hides inside).
-	_drop("leg_%s_upper" % leg, float(leg_len[leg]) * (1.0 - cos(swing)) + comp)
+	# Counted from the rest stance: a leg that stood leaning reaches lower once it swings upright.
+	# Capped: on a skinned body a big drop drags the skin (the rump sagged at a gallop); the shoulder
+	# really slides, the hip mustn't move far. Past the cap the hoof lifts a little at the stride's ends.
+	var cap := DROP_FRONT if front else DROP_HIND
+	_drop("leg_%s_upper" % leg, clampf(float(leg_len[leg]) * (cos(float(_tilt.get(leg, 0.0))) - cos(swing)) + comp, -cap, cap))
+	var from_rest := swing - float(_tilt.get(leg, 0.0))
 	if front:
-		_rot("leg_%s_upper" % leg, swing, 0.0)
+		_rot("leg_%s_upper" % leg, from_rest, 0.0)
 		_rot("leg_%s_lower" % leg, lift * 0.35, 0.0)
 		_rot("leg_%s_cannon" % leg, -lift * 1.25, 0.0)   # the knee folds the cannon back
 		_rot("leg_%s_hoof" % leg, -lift * 0.7, 0.0)
 	else:
-		_rot("leg_%s_upper" % leg, swing + lift * 0.15, 0.0)
+		_rot("leg_%s_upper" % leg, from_rest + lift * 0.15, 0.0)
 		_rot("leg_%s_lower" % leg, -lift * 0.55 - rest_hoof * 0.15, 0.0)
 		_rot("leg_%s_cannon" % leg, lift * 1.0 + rest_hoof * 0.45, 0.0)   # the hock bends the other way
 		_rot("leg_%s_hoof" % leg, -lift * 0.6 - rest_hoof * 0.5, 0.0)
@@ -297,19 +313,66 @@ func _index() -> void:
 		if top >= 0 and hoof >= 0:
 			leg_len[leg] = (to_rig * skeleton.get_bone_global_rest(top).origin).distance_to(to_rig * skeleton.get_bone_global_rest(hoof).origin)
 			_hoof_rest[leg] = to_rig * skeleton.get_bone_global_rest(hoof).origin
+			# A GLB's legs needn't stand square (image-to-3d's right legs stand ~16 deg back): swing
+			# from straight down, not from the rest stance.
+			var v: Vector3 = (_hoof_rest[leg] as Vector3) - to_rig * skeleton.get_bone_global_rest(top).origin
+			_tilt[leg] = atan2(-v.z, -v.y)
 	if not missing.is_empty():
 		push_warning("HorseRig: bones missing from %s: %s" % [_glb, ", ".join(missing)])
 
 
-## Real GLB: scale it so the withers stand WITHERS high (image-to-3d bakes metres; this only
-## corrects a wrong export).
+## Real GLB: image-to-3d bakes metres; only a clearly wrong export (the withers joint far from
+## WITHERS_JOINT, e.g. a 1-unit-tall model) is rescaled.
 func _fit() -> void:
 	var i: int = _bone.get("spine_3", -1)
 	if i < 0:
 		return
-	var h := (global_transform.affine_inverse() * skeleton.global_transform * skeleton.get_bone_global_rest(i).origin).y
-	if h > 0.1 and absf(h / WITHERS - 1.0) > 0.1:
-		_model.scale *= WITHERS / h
+	var h := rest_point("spine_3").y
+	if h > 0.1 and absf(h / WITHERS_JOINT - 1.0) > 0.3:
+		_model.scale *= WITHERS_JOINT / h
+		_index()
+
+
+## A bone's rest position in rig space (origin on the ground, -Z forward).
+func rest_point(bone: String) -> Vector3:
+	var i: int = _bone.get(bone, -1)
+	if i < 0:
+		return Vector3.ZERO
+	return (global_transform.affine_inverse() * skeleton.global_transform) * skeleton.get_bone_global_rest(i).origin
+
+
+## Real GLB: the saddle is part of the mesh. Find its seat (the highest point in a thin column on
+## the back, 45% of the way from the withers to the pelvis) and the barrel's half width below it.
+func _measure() -> void:
+	var w := rest_point("spine_3")
+	var p := rest_point("pelvis")
+	var seat_z := lerpf(w.z, p.z, 0.45)
+	var top := -INF
+	var pts: Array[Vector3] = []
+	var to_rig := global_transform.affine_inverse()
+	for n in _model.find_children("*", "MeshInstance3D", true, false):
+		var mi := n as MeshInstance3D
+		if mi.mesh == null:
+			continue
+		var xf := to_rig * mi.global_transform
+		for sfc in mi.mesh.get_surface_count():
+			var verts: PackedVector3Array = mi.mesh.surface_get_arrays(sfc)[Mesh.ARRAY_VERTEX]
+			for v in verts:
+				var q := xf * v
+				if absf(q.z - seat_z) < 0.22:
+					pts.append(q)
+					if absf(q.x) < 0.08 and absf(q.z - seat_z) < 0.08:
+						top = maxf(top, q.y)
+	if top == -INF:
+		push_warning("HorseRig: couldn't find the saddle on %s, using the stand-in's" % _glb)
+		return
+	var half := 0.0
+	for q in pts:
+		if q.y > top - 0.55 and q.y < top - 0.25:
+			half = maxf(half, absf(q.x))
+	saddle_rest = Vector3(0, top, seat_z)
+	barrel_half = half if half > 0.1 else barrel_half
+	print("HorseRig: %s saddle seat %s, barrel half width %.2f m" % [_glb.get_file(), saddle_rest.snapped(Vector3.ONE * 0.01), barrel_half])
 
 
 ## The capsule horse on a skeleton with the agreed bones; each bone's +Y points at its child.

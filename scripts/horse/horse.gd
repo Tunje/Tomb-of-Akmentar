@@ -19,9 +19,12 @@ const EASE := 4.0             # m/s^2 toward the target / when slowing
 const STOP := 9.0             # m/s^2 with Space
 const GRAVITY := 20.0
 const SNAP_SPEEDS := [0.0, 1.7, 3.8, 10.0]  # idle, walk, trot, gallop (HorseRig.GAITS)
-const SEAT := Vector3(0, 1.74, 0.25)        # horse space; Player puts its feet 0.55 below this
-## Off the seat (seat space): the left stirrup and the left rein hand (the right ones mirror).
+## The seat marker sits this far above the saddle's leather (Player puts its feet 0.55 below the marker).
+const SEAT_ABOVE := 0.1
+## Off the seat (seat space): the left stirrup (x set from the barrel's width) and the left rein
+## hand (the right ones mirror).
 const STIRRUP := Vector3(-0.46, -0.78, -0.12)
+const STIRRUP_OUT := 0.09     # the stirrup hangs this far outside the barrel (a leg's thickness)
 const REINS := Vector3(-0.11, 0.3, -0.4)
 
 @export var id := "horse"
@@ -42,6 +45,7 @@ var _brake := false
 var _input_t := 0.0           # driven this physics frame (drive() was called)
 var _glb := ""
 var _body_shape: CollisionShape3D
+var _stirrup := STIRRUP
 var _legs_shape: CollisionShape3D
 
 
@@ -77,12 +81,15 @@ func _ready() -> void:
 	add_child(legs)
 	_legs_shape = legs
 	rig = HorseRig.create(_glb)
-	rig.position = Vector3(0, 0, 0.8)   # the rig's origin is under the pelvis; ours is mid-body
 	add_child(rig)
+	# Centre the body on us: the pelvis-to-withers midpoint goes 0.275 m behind our origin (the
+	# stand-in's origin is under its pelvis, the GLB's under its middle).
+	rig.position = Vector3(0, 0, 0.275 - (rig.rest_point("pelvis").z + rig.rest_point("spine_3").z) * 0.5)
+	_stirrup = Vector3(-(rig.barrel_half + STIRRUP_OUT), STIRRUP.y, STIRRUP.z)
 	_hitboxes()
 	var seat := Marker3D.new()  # on the rig, so the rider bobs and rocks with the back
 	seat.name = "Seat"
-	seat.position = SEAT - rig.position
+	seat.position = rig.saddle_rest + Vector3.UP * SEAT_ABOVE
 	rig.add_child(seat)
 	seats = [seat]
 	ride = Interactable.make(self, global_position + Vector3.UP * 1.0, "Ride", "horse_" + id, 1.4)
@@ -129,8 +136,8 @@ func leave(who: Node3D) -> void:
 func ride_points() -> Dictionary:
 	var xf := (seats[0] as Marker3D).global_transform
 	return {
-		"saddle": xf * Vector3(0, -0.1, 0),  # the seat marker sits a little above the leather
-		"stirrup_l": xf * STIRRUP, "stirrup_r": xf * Vector3(-STIRRUP.x, STIRRUP.y, STIRRUP.z),
+		"saddle": xf * Vector3(0, -SEAT_ABOVE, 0),  # the leather, under the marker
+		"stirrup_l": xf * _stirrup, "stirrup_r": xf * Vector3(-_stirrup.x, _stirrup.y, _stirrup.z),
 		"reins_l": xf * REINS, "reins_r": xf * Vector3(-REINS.x, REINS.y, REINS.z),
 		"forward": -xf.basis.z.normalized(), "up": xf.basis.y.normalized(),
 	}
