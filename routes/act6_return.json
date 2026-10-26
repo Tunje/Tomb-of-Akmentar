@@ -1,0 +1,21 @@
+{
+	"_help": "Act 6: the race back to Cairo. Every day travelled ticks the thieves and mummy countdowns.",
+	"title": "The race back to Cairo",
+	"intro": "The thieves are ahead. The mummy is behind.",
+	"from": {"name": "Akmentar", "at": [0.88, 0.7]},
+	"to": {"name": "Cairo", "at": [0.1, 0.32]},
+	"marks": [[[0.05, 0.2], [0.3, 0.42], [0.55, 0.6], [0.82, 0.62], [0.95, 0.66]], [[0.02, 0.9], [0.4, 0.95], [0.75, 0.92], [0.98, 0.85]]],
+	"options": [
+		{"id": "desert", "label": "Across the desert", "days": 3, "risk": 2, "cost": 0,
+			"desc": "The fastest way back, if there are enough horses for everyone. Without them, the mummy catches you in the open.",
+			"if": {"flag": "has_horses"}, "locked_text": "Not enough horses",
+			"path": [[0.88, 0.7], [0.6, 0.38], [0.35, 0.22], [0.1, 0.32]]},
+		{"id": "coast", "label": "Along the coast", "days": 5, "risk": 1, "cost": 0,
+			"desc": "Slower, but the trucks and any animals the other expeditions spare can carry everyone. The mummy gains on Cairo every extra day.",
+			"path": [[0.88, 0.7], [0.5, 0.88], [0.2, 0.75], [0.1, 0.32]]},
+		{"id": "river", "label": "The river", "days": 4, "risk": 0, "cost": 0,
+			"desc": "There are no riverboats left for your expedition.",
+			"unavailable": "No boats left",
+			"path": [[0.88, 0.7], [0.55, 0.6], [0.3, 0.42], [0.1, 0.32]]}
+	]
+}

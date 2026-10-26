@@ -1,0 +1,36 @@
+{
+	"_help": "The ending album. Each card shows its first variant whose 'if' passes (Game.check); cards with none are left out. Format: scripts/boards/epilogue_show.gd.",
+	"title": "Where are they now?",
+	"cards": [
+		{"who": "player", "name": "You",
+			"variants": [
+				{"id": "sacrificed", "if": {"flag": "player_sacrificed"}, "caption": "Akmentar, 1926",
+					"text": "You went back down alone and sealed the barrier from the inside. Your name was carved on no wall, and that, the guardians said, was the point."},
+				{"id": "survived", "caption": "Cairo, 1927",
+					"text": "You came back to Cairo and told the story exactly once, to a room that laughed. You never again showed much interest in ancient tombs, and you never sold the map."}
+			]},
+		{"who": "eleanor", "name": "Eleanor Whitmore",
+			"variants": [
+				{"id": "published", "if": {"in_party": "eleanor", "stat": ["eleanor", "trust", 2]}, "caption": "London, 1932",
+					"text": "Her account of the forgotten king was published under her own name. Several of her conclusions remained controversial, but her work made her one of the leading authorities on the lost dynasty."},
+				{"id": "notes", "if": {"in_party": "eleanor"}, "caption": "Cairo Museum, 1929",
+					"text": "She kept her own notes and published nothing for years. When she finally did, she left out the parts no one would believe, and the expedition's leader along with them."},
+				{"id": "stayed", "caption": "Cairo Museum, 1926",
+					"text": "She stayed in the reading room, cataloguing other people's discoveries. She still keeps a rubbing of an erased cartouche in her desk drawer."}
+			]},
+		{"who": "archivist", "name": "Professor El-Gohary",
+			"variants": [
+				{"id": "convinced", "if": {"flag": "clue_hieroglyphs"}, "caption": "Cairo Museum, 1930",
+					"text": "Faced with the re-carved Wall of Hieroglyphs, he revised the museum's records himself, though he never admitted in public that he had been wrong."},
+				{"id": "denied", "caption": "Cairo, 1938",
+					"text": "He went to his grave insisting that Akmentar was a camel drivers' story, and that whatever you found there was something else."}
+			]},
+		{"who": "americans", "name": "The American expedition",
+			"variants": [
+				{"id": "anubis", "if": {"flag": "claimed_anubis_americans"}, "caption": "New York, 1927",
+					"text": "They shipped home crates from the Statue of Anubis and toured them across America. The crates were never opened in public."},
+				{"id": "home", "caption": "New York, 1927",
+					"text": "They went home with photographs, a lost wager and a story that grew a little taller every time it was told."}
+			]}
+	]
+}

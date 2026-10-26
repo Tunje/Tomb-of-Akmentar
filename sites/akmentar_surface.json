@@ -1,0 +1,53 @@
+{
+	"_help": "The 12 surface sites of Akmentar (Act 4). Format: scripts/sites/site_spot.gd; the draft block: scripts/boards/site_draft.gd.",
+	"place": "Akmentar, the surface",
+	"sites": {
+		"anubis": {"name": "Statue of Anubis", "desc": "Symbols of death and guardianship, and of something sealed below",
+			"clue": {"id": "clue_anubis", "title": "The jackal guards a door",
+				"text": "The jackal's left paw rests on a carved slab, not on the plinth. Press where the paw points and the stone gives: the guardian is pointing at the way in, not standing in front of it."}},
+		"horus": {"name": "Statue of Horus", "desc": "Damaged inscriptions of a struggle over royal authority",
+			"clue": {"id": "clue_horus", "title": "Two names on one throne",
+				"text": "Two kings share one throne in the carving. One name was cut out so deeply the chisel broke through the stone. Whoever ruled here was not meant to be remembered as king."}},
+		"ra": {"name": "Statue of Ra", "desc": "A solar inscription about the purpose of the place",
+			"clue": {"id": "clue_ra", "title": "The sun must not reach him",
+				"text": "The sun disc is carved upside down, setting into the ground. The text beneath it asks that the light never touch the one below, 'lest he remember himself'."}},
+		"scarabs": {"name": "Wall of Glimmering Scarabs", "desc": "Green stone scarabs with markings hidden among them",
+			"clue": {"id": "clue_scarabs", "title": "One scarab faces the wrong way",
+				"text": "Of the two hundred scarabs, one faces east instead of west. Its underside is worn smooth by hands that pressed it, again and again."}},
+		"hieroglyphs": {"name": "Wall of Hieroglyphs", "desc": "A historical account, partly damaged or deliberately altered",
+			"clue": {"id": "clue_hieroglyphs", "title": "History rewritten",
+				"text": "The account was re-carved over an older one. Where the new plaster has fallen away, the old text speaks of a priest-king who 'did not stay dead'."}},
+		"greetings": {"name": "Hall of Greetings", "desc": "Ceremonial images of important visitors arriving",
+			"clue": {"id": "clue_greetings", "title": "Guests who carry jars",
+				"text": "Every visitor in the procession carries a sealed jar, and none carries a gift. The jars are being brought in, not offered."}},
+		"mummification": {"name": "Hall of Mummification", "desc": "Unusual preparations for one particular person",
+			"clue": {"id": "clue_mummification", "title": "Buried alive",
+				"text": "The embalming scenes skip the first rite entirely. The figure on the table still has open eyes."}},
+		"souls": {"name": "Hall of Souls", "desc": "The body, the soul and the afterlife, kept apart",
+			"clue": {"id": "clue_souls", "title": "The soul kept elsewhere",
+				"text": "The ba-bird is shown locked in a box, carried far from the body. Here the soul was separated on purpose, so that the body could not rest and the soul could not return."}},
+		"obelisk": {"name": "The Broken Obelisk", "desc": "Royal names and dates that disagree with history",
+			"clue": {"id": "clue_obelisk", "title": "A reign that never ended",
+				"text": "The king's years are counted to forty, then the count simply stops. There is no death date, only a line of guardians' names that goes on to the bottom of the stone."}},
+		"offering": {"name": "The Offering Court", "desc": "Ceremonies with a purpose beyond worship",
+			"clue": {"id": "clue_offering", "title": "Offerings to keep him away",
+				"text": "The offerings face away from the temple, as if laid outside a door to keep something in, not to welcome it."}},
+		"storeroom": {"name": "The Sealed Storeroom", "desc": "Objects hidden during the site's last days",
+			"clue": {"id": "clue_storeroom", "title": "Left in a hurry",
+				"text": "Tools, lamps and half-wrapped linen lie where they were dropped. Someone sealed this room from the inside, and there is no other way out."}},
+		"astronomer": {"name": "The Astronomer's Platform", "desc": "Markings that follow particular stars",
+			"clue": {"id": "clue_astronomer", "title": "A star that returns",
+				"text": "One star is marked with a warning sign and a count of years. By the count, it rises over Akmentar again this very season."}}
+	},
+	"draft": {
+		"picks": 3,
+		"player_step": {"flag": "race_step", "default": 3},
+		"parties": {
+			"germans": {"name": "The Germans", "step": 4, "color": [0.32, 0.38, 0.48],
+				"priority": ["horus", "hieroglyphs", "obelisk", "astronomer", "souls", "ra"]},
+			"americans": {"name": "The Americans", "step": 5, "color": [0.5, 0.22, 0.2],
+				"priority": ["anubis", "scarabs", "storeroom", "mummification", "ra", "greetings"]}
+		},
+		"advisor": {"who": "eleanor", "order": ["anubis", "horus", "ra"]}
+	}
+}

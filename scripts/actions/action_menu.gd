@@ -32,9 +32,10 @@ var _msg_t := 0.0
 var _font: Font
 
 
-## True while any talk / action / day-end UI owns the mouse (main.gd and hud.gd check this).
+## True while any talk / action / day-end / board UI owns the mouse (main.gd and hud.gd check this).
 static func ui_open() -> bool:
-	return Conversation.current != null or current != null or DaySummary.current != null
+	return Conversation.current != null or current != null or DaySummary.current != null \
+			or ModalScreen.open_count > 0
 
 
 static func open(parent: Node, menu_title: String, menu_rows: Array, player: Node = null) -> ActionMenu:
