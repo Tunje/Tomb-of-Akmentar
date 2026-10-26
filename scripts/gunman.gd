@@ -45,6 +45,11 @@ const STAGGER_TIME := 0.6
 const GRAVITY := 20.0
 const MASK_WORLD := 1
 const MASK_SHOT := 1 | 2         # world + player
+const SEARCH := 30.0             # only spots this close to the player are considered
+const MAX_TRAVEL := 14.0         # cover farther than this isn't worth the run (flanks, retreats: twice)
+const MOVE_FIRE_GAP := 4.0       # a gunman on the move who sees the player stops for a burst
+const STUCK_TIME := 1.2          # no progress this long while moving = stuck
+const BAD_SPOT_TIME := 20.0      # a spot we got stuck going to is skipped this long
 
 ## Cover spot key -> the Gunman holding it.
 static var _claims := {}
@@ -83,6 +88,12 @@ var _retreat_pending := false
 var _flash := 0.0
 var _push := Vector3.ZERO
 var _repath := 0.0
+var _progress_at := Vector3.ZERO
+var _progress_t := 0.0
+var _detour := Vector3.ZERO
+var _detour_t := 0.0
+var _last_burst := -100.0
+var _bad_spots := {}  # spot key -> time it proved unreachable
 
 var model: Node3D
 var rig: GunmanBody
@@ -191,6 +202,10 @@ func _enter(s: State) -> void:
 	match s:
 		State.COVER:
 			_wait = randf_range(0.6, 1.6) if _seen_t < 4.0 else randf_range(0.3, 0.8)
+		State.MOVE:
+			_progress_at = global_position
+			_progress_t = 0.0
+			_detour_t = 0.0
 		State.AIM:
 			_aimed = 0.0
 			_aim_need = FIRST_AIM * randf_range(0.85, 1.2)
@@ -250,8 +265,14 @@ func _physics_process(delta: float) -> void:
 				else:
 					_spot_age = 0.0
 					_enter(State.COVER)
-			elif _t > 12.0:
-				_pick("hold")  # stuck
+			elif _fire_on_the_move(has_target):
+				pass
+			elif _stuck(delta) or _t > 15.0:
+				# Something the navmesh doesn't know about is in the way (it misses props, the
+				# truck, other gunmen): give this spot up for a while and choose again.
+				if _spot.key != "":
+					_bad_spots[_spot.key] = _now()
+				_pick("hold")
 		State.COVER:
 			crouched = true
 			cover_time += delta
@@ -332,7 +353,24 @@ func _aim_step(delta: float, has_target: bool) -> void:
 		_after_burst()
 
 
+## Seen across open ground on the way to cover: stop and shoot a burst from here.
+func _fire_on_the_move(has_target: bool) -> bool:
+	if not has_target or not _sees or retreating or ammo <= 0 or _t < 1.0:
+		return false
+	if alive_time - _last_burst < MOVE_FIRE_GAP or _shooters() >= MAX_SHOOTERS:
+		return false
+	if _flat((_spot.pos as Vector3) - global_position).length() < 4.0:
+		return false  # nearly there
+	if global_position.distance_to(target.global_position) > SEARCH:
+		return false
+	var here := global_position
+	_set_spot({"key": "", "pos": here, "peek": here, "normal": Vector3.ZERO, "tall": false, "exposed": true})
+	_enter(State.AIM)
+	return true
+
+
 func _after_burst() -> void:
+	_last_burst = alive_time
 	if not _spot.exposed:
 		_enter(State.COVER)
 	elif ammo <= 0:
@@ -416,11 +454,15 @@ func _pick(mode: String) -> void:
 		var holder: Variant = _claims.get(s.key)
 		if holder != null and holder != self and is_instance_valid(holder) and (holder as Gunman).is_active():
 			continue
+		if _now() - float(_bad_spots.get(s.key, -100.0)) < BAD_SPOT_TIME:
+			continue
 		var pos: Vector3 = s.pos
 		var d := _flat(p - pos).length()
-		if d < MIN_RANGE:
+		if d < MIN_RANGE or d > SEARCH:
 			continue
 		var travel := _flat(pos - global_position).length()
+		if travel > MAX_TRAVEL * (2.0 if mode in ["retreat", "flank"] else 1.0):
+			continue
 		var score := 0.0
 		match mode:
 			"retreat":
@@ -436,7 +478,7 @@ func _pick(mode: String) -> void:
 					continue
 				if mode == "reposition" and s.key == _spot.get("key", ""):
 					continue
-				score = -absf(d - PREFERRED) - travel * 0.35
+				score = -absf(d - PREFERRED) - travel * 0.5
 				if _clear((s.peek as Vector3) + Vector3.UP * STAND_EYE, p + Vector3.UP * 1.4):
 					score += 5.0
 				if mode == "hold" and s.key == _spot.get("key", ""):
@@ -501,7 +543,27 @@ func _move_to(dest: Vector3, speed: float, delta: float, path: bool) -> Vector3:
 		var next := _flat(_agent.get_next_path_position() - global_position)
 		if next.length() > 0.05 and not _agent.is_navigation_finished():
 			dir = next.normalized()
+	# Head-on into a wall: walk along it for a moment, on the side nearer the goal.
+	_detour_t -= delta
+	if _detour_t > 0.0:
+		dir = _detour
+	elif is_on_wall() and path:
+		var n := _flat(get_wall_normal()).normalized()
+		if n.dot(dir) < -0.7:
+			var along := Vector3(-n.z, 0, n.x)
+			_detour = along if along.dot(to) >= 0.0 else -along
+			_detour_t = 0.6
+			dir = _detour
 	return dir * minf(speed, to.length() / maxf(delta, 0.001) * 0.5)
+
+
+## True when MOVE has made under 0.4 m of progress in STUCK_TIME.
+func _stuck(delta: float) -> bool:
+	_progress_t += delta
+	if global_position.distance_to(_progress_at) > 0.4:
+		_progress_at = global_position
+		_progress_t = 0.0
+	return _progress_t > STUCK_TIME
 
 
 func _arrived(dest: Vector3) -> bool:
