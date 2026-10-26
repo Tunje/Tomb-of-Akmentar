@@ -74,6 +74,9 @@ var _hitboxes: Array[StaticBody3D] = []
 var _awake_t := 0.0
 var _nav_iter := 0
 var _recover_time := RECOVER
+var _stand_on: Node3D  # stand_on(): held on the water in this node's frame
+var _stand_local := Vector3.ZERO
+var _stand_y := 0.0
 var stuck_events := 0
 var climbs := 0
 ## --guardian-trace (after "--"): a line every 2 s and on every catch / climb / unstick.
@@ -166,6 +169,28 @@ func resume() -> void:
 		_enter(State.CHASE)
 
 
+## Stands on the water (Act 8's boat: "standing on the river like it's a road"): held at `local`
+## in `anchor`'s frame (the boat, so it keeps its distance as she drifts), feet at `water_y`,
+## turned toward `target`. No collision with the world (nothing under it); its hitboxes stay, so
+## shooting it slows nothing that matters. stand_on(null) lets it go (then pause() / resume()).
+func stand_on(anchor: Node3D, local: Vector3, water_y := 0.0) -> void:
+	_stand_on = anchor
+	_stand_local = local
+	_stand_y = water_y
+	collision_mask = 0 if anchor else 1 | 2 | 4
+	if anchor:
+		pause()
+
+
+## Sinks into the river over `seconds` and is gone (the fight on the boat is over).
+func sink(seconds := 3.0) -> void:
+	_stand_on = null
+	set_physics_process(false)
+	var tw := create_tween()
+	tw.tween_property(self, "global_position:y", global_position.y - 3.2, seconds).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	tw.tween_callback(queue_free)
+
+
 func is_active() -> bool:
 	return true  # it never dies
 
@@ -200,6 +225,16 @@ func _physics_process(delta: float) -> void:
 	_slow = maxf(_slow - SLOW_RECOVER * delta, 0.0)
 	_stagger_pts = maxf(_stagger_pts - delta * 0.8, 0.0)
 	_update_lean(delta)
+	if is_instance_valid(_stand_on):
+		# Standing on the river (Act 8): held at its spot in the anchor's frame, watching.
+		global_position = _stand_on.to_global(_stand_local)
+		global_position.y = _stand_y
+		velocity = Vector3.ZERO
+		if _alive(target):
+			var look := target.global_position - global_position
+			rotation.y = lerp_angle(rotation.y, atan2(-look.x, -look.z), minf(delta * 2.0, 1.0))
+		_animate(0.0)
+		return
 	if state == State.CLIMB:
 		if _hop.step(self, delta):
 			_hop = null
