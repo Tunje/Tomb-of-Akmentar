@@ -42,6 +42,7 @@ func _ready() -> void:
 	add_child(_level)
 	print("RESULT build_ms %d" % (Time.get_ticks_msec() - t0))
 	_level.place_people()
+	_level.place_people({}, Cairo.LATER_PEOPLE)  # Act 7's, so their stand points are checked too
 	_cam = Camera3D.new()
 	_cam.fov = 62.0
 	_cam.far = 900.0

@@ -65,9 +65,14 @@ const NPC_POINTS := {
 	"karim": [Vector3(66.2, 0, 46.9), Vector3(65, 0, 50)],
 	"clara": [Vector3(46.2, 0, 46.9), Vector3(45, 0, 50)],
 	"hamdi": [Vector3(116, 0, 51), Vector3(110, 0, 50)],
+	# Act 7's.
 	"watkins": [Vector3(0.9, 0, 47.9), Vector3(6, 0, 50)],
 	"khalaf": [Vector3(8.9, 0, 53.4), Vector3(7, 0, 49)],
+	"salim": [Vector3(48.8, 0, 78.4), Vector3(50, 0, 76)],
+	"blackwood": [Vector3(63.4, 0, 47.2), Vector3(65, 0, 50)],
 }
+## People who only appear when the city is under the countdown (Act 7 lists them in `only`).
+const LATER_PEOPLE := ["watkins", "khalaf", "salim", "blackwood"]
 ## Hitching places in the caravanserai yard (the act puts the expedition's horses here).
 const HORSE_POINTS := [Vector3(86, 0, 58.6), Vector3(90, 0, 58.6), Vector3(94, 0, 58.6), Vector3(98, 0, 58.6)]
 ## Where the riverboat ties up: alongside the pier's south face, bow to the east (+X).
@@ -187,10 +192,10 @@ func _ready() -> void:
 
 
 ## The recruits and hosts at their places. `conversations`: Characters id -> dialogue id (none =
-## no Talk). `only`: just these ids (an act without the recruits, e.g. Act 7); empty = everyone.
+## no Talk). `only`: just these ids (Act 7 names its own); empty = everyone but LATER_PEOPLE.
 func place_people(conversations := {}, only: Array = []) -> Dictionary:
 	for id in NPC_POINTS:
-		if not only.is_empty() and not id in only:
+		if (only.is_empty() and id in LATER_PEOPLE) or (not only.is_empty() and not id in only):
 			continue
 		var p: Array = NPC_POINTS[id]
 		var n := Npc.make(self, id, p[0], conversations.get(id, ""), Characters.glb(id))
