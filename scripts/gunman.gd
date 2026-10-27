@@ -424,11 +424,12 @@ func _choose_target() -> void:
 			_seen_t = 0.0
 		target = focus_target
 		return
+	var sight := SIGHT * lerpf(0.35, 1.0, Weather.visibility())  # a sandstorm shortens it
 	var keep := _target_alive(target) and _seen_t < 3.0
 	var best: Node3D = target if keep else null
-	var best_d := global_position.distance_to(target.global_position) - 5.0 if keep else SIGHT
+	var best_d := global_position.distance_to(target.global_position) - 5.0 if keep else sight
 	var unseen: Node3D = null  # companions: the nearest enemy in the fight, seen or not
-	var unseen_d := SIGHT
+	var unseen_d := sight
 	for n in _candidates():
 		if n == target and keep:
 			continue
@@ -1477,6 +1478,7 @@ func _fire() -> void:
 		+ SPREAD_TARGET_MOVE * clampf(_flat(target_v).length() / Player.WALK, 0.0, 1.5)
 	if team != PARTY:
 		spread *= Difficulty.f("enemy_spread")
+	spread *= lerpf(1.0, 2.5, 1.0 - Weather.visibility())  # a sandstorm spoils everyone's aim
 	var fwd := (aim_at - from).normalized()
 	var right := fwd.cross(Vector3.UP).normalized()
 	var up := right.cross(fwd)
