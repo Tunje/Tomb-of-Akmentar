@@ -33,6 +33,7 @@ var _cam: Camera3D
 func _ready() -> void:
 	get_window().set_flag(Window.FLAG_NO_FOCUS, true)
 	args = TestDriver.parse_args()
+	Crowd.debug_freeze = str(args.get("freeze", ""))
 	Controls.setup()  # the player's input actions (without them it logs errors every frame)
 	if DisplayServer.get_name() != "headless":
 		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)

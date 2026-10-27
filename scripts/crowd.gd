@@ -28,6 +28,11 @@ const CULL := 80.0
 const ALARM_RADIUS := 30.0
 const HIDE_SECS := Vector2(16.0, 24.0)
 const THINK := 0.5
+## Tests (crowd_test --freeze=anim|think|both): what a frame costs without the people's
+## animation (and so their pose copies), their own think, or both.
+static var debug_freeze := ""
+const LOD_NEAR := 18.0
+const LOD_FAR := 40.0
 const MURMURS := 3              # positional murmur loops, moved to the busiest knots of people near you
 const MURMUR_NEAR := 30.0
 
@@ -39,6 +44,7 @@ var keep_clear: Array[Vector3] = []
 var level: Node3D
 var active := 0
 var cam_at := Vector3.INF
+var minders: Array[Node3D] = []    # who the people step aside for (the party, the player): every THINK
 var night := false
 var alarm_radius := ALARM_RADIUS
 var _t := 0.0
@@ -321,12 +327,28 @@ func _process(delta: float) -> void:
 		return
 	var at := cam.global_position
 	cam_at = at
+	var max_lod := clampi(int(Engine.get_frames_per_second() / 30.0), 1, 3)
+	minders.clear()
+	for n in get_tree().get_nodes_in_group("party"):
+		if n is Node3D:
+			minders.append(n)
+	var pl := _find_player()
+	if pl:
+		minders.append(pl)
 	for p in people:
 		var on := p.about and p.global_position.distance_to(at) < CULL
 		if on != p.visible:
 			p.visible = on
 			p.process_mode = Node.PROCESS_MODE_INHERIT if on else Node.PROCESS_MODE_DISABLED
-		p.set_animated(on and cam.is_position_in_frustum(p.global_position + Vector3.UP))
+		p.set_animated(on and cam.is_position_in_frustum(p.global_position + Vector3.UP) and not debug_freeze in ["anim", "both"])
+		if debug_freeze in ["think", "both"]:
+			p.set_process(false)
+		# Near: every frame; past LOD_NEAR every 2nd; past LOD_FAR every 3rd (fleeing: always 1);
+		# never under ~30 updates a second (at 60 fps: 2 at most).
+		if on:
+			var d := p.global_position.distance_to(at)
+			var want := 1 if d < LOD_NEAR or p.state == "flee" else (2 if d < LOD_FAR else 3)
+			p.set_lod(mini(want, max_lod))
 	for b in beasts:
 		# An animal nobody can see stands still (its legs are animated in code, every frame).
 		var seen := b.global_position.distance_to(at) < CULL and cam.is_position_in_frustum(b.global_position + Vector3.UP * 0.6)

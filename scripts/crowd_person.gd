@@ -50,6 +50,9 @@ var _carrying := false
 var _rod_node: Node3D
 var _looks: Array[ShaderMaterial] = []   # dress()'s recolours (mourn() darkens them)
 var _clink := 1.0             # digging: till the next pick on stone (SoundLife)
+var lod := 1                  # think and animate every lod-th frame (Crowd sets it by distance)
+var _lod_acc := 0.0
+var _lod_frame := randi() % 12  # (out of step with the others)
 
 
 ## Starts the role (stall keepers, diggers and sitters already in place, so the place isn't empty).
@@ -134,6 +137,15 @@ func set_animated(on: bool) -> void:
 		_tree.active = on
 
 
+## Far off, they think and move every `n`-th frame, and their AnimationTree advances by hand then
+## (so the skeleton, and the pose copied onto the body, update less often too).
+func set_lod(n: int) -> void:
+	if n == lod or _tree == null:
+		return
+	lod = n
+	_tree.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_IDLE if n <= 1 else AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
+
+
 func _play(a: String) -> void:
 	if a in SPOT_CLIPS and not _at_spot():
 		push_warning("CROWD %s: %s away from its spot (state %s), idling instead" % [name, a, state])
@@ -144,7 +156,17 @@ func _play(a: String) -> void:
 	_tree.set("parameters/state/transition_request", a)
 
 
-func _process(delta: float) -> void:
+func _process(frame_delta: float) -> void:
+	var delta := frame_delta
+	if lod > 1:
+		_lod_acc += frame_delta
+		_lod_frame += 1
+		if _lod_frame % lod != 0:
+			return
+		delta = _lod_acc
+		_lod_acc = 0.0
+		if _tree and _tree.active:
+			_tree.advance(delta)
 	match state:
 		"walk", "flee":
 			_walk(delta)
@@ -157,10 +179,30 @@ func _process(delta: float) -> void:
 					SoundLife.play(self, "clink", global_position + global_basis.z * -0.6, 0.0, 0.15)
 			if _hold <= 0.0:
 				_next()
-	if _load and _load.visible:
+	if _load and _load.visible and _tree and _tree.active:  # (off screen it can wait)
 		_hold_load()
 	if _near():
 		_update_fade(delta)
+
+
+## Townsperson's look ahead for someone in the way, over the crowd's list (made twice a second,
+## not a group lookup per person per frame).
+func _blocker(fwd: Vector3) -> Dictionary:
+	var best := {}
+	for o in crowd.minders:
+		if not is_instance_valid(o) or not o.is_visible_in_tree():
+			continue
+		var rel := o.global_position - global_position
+		rel.y = 0.0
+		var dist := rel.length()
+		if dist > NOTICE:
+			continue
+		var ahead := fwd.dot(rel / dist) if dist > 0.01 else 1.0
+		if ahead < 0.2 and (dist > 1.8 or ahead < -0.6):
+			continue  # well behind them (one alongside still holds them aside)
+		if best.is_empty() or dist < float(best.dist):
+			best = {"rel": rel, "dist": dist}
+	return best
 
 
 func _near() -> bool:
