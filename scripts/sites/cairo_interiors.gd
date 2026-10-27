@@ -21,30 +21,30 @@ const WARM := Color(1.0, 0.72, 0.42)
 ## floor and ceiling heights, the kind of furnishing) and its doors (on the ground at the facade's
 ## face, outward normal, width, height).
 const VENUES := [
-	{"id": "tavern", "rect": Rect2(14, 60, 12, 12), "h": 8.0,
+	{"id": "tavern", "faces": [Vector2(1, 0)], "rect": Rect2(14, 60, 12, 12), "h": 8.0,
 		"rooms": [{"id": "bar", "rect": Rect2(14.3, 60.3, 11.4, 11.4), "floor": 0.0, "ceil": 3.8, "kind": "bar"}],
 		"doors": [[Vector3(26, 0, 66), Vector2(1, 0), 2.0, 2.8]]},
-	{"id": "hotel", "rect": Rect2(38, 30, 18, 16), "h": 16.0,
+	{"id": "hotel", "faces": [Vector2(0, 1), Vector2(0, -1), Vector2(-1, 0)], "rect": Rect2(38, 30, 18, 16), "h": 16.0,
 		"rooms": [{"id": "lobby", "rect": Rect2(39.5, 37.0, 15.2, 8.7), "floor": 0.0, "ceil": 5.0, "kind": "lobby"}],
 		"doors": [[Vector3(47.5, 0, 46), Vector2(0, 1), 2.6, 3.0]]},
-	{"id": "museum", "rect": Rect2(80, 0, 24, 26), "h": 13.0,
+	{"id": "museum", "faces": [Vector2(0, 1), Vector2(-1, 0), Vector2(1, 0)], "rect": Rect2(80, 0, 24, 26), "h": 13.0,
 		"rooms": [{"id": "museum_hall", "rect": Rect2(84.3, 12.3, 15.4, 13.4), "floor": 0.45, "ceil": 7.0, "kind": "hall"},
 			{"id": "museum_office", "rect": Rect2(88.3, 6.3, 7.4, 5.7), "floor": 0.45, "ceil": 3.6, "kind": "study"}],
 		"doors": [[Vector3(92, 0.45, 26), Vector2(0, 1), 2.6, 3.6], [Vector3(92, 0.45, 12.15), Vector2(0, 1), 1.4, 2.4]]},
-	{"id": "outfitter", "rect": Rect2(40, 54, 10, 8), "h": 7.5,
+	{"id": "outfitter", "faces": [Vector2(0, -1)], "rect": Rect2(40, 54, 10, 8), "h": 7.5,
 		"rooms": [{"id": "outfitter", "rect": Rect2(40.3, 54.3, 9.4, 7.4), "floor": 0.0, "ceil": 3.6, "kind": "outfitter"}],
 		"doors": [[Vector3(45, 0, 54), Vector2(0, -1), 1.8, 2.8]]},
-	{"id": "telegraph", "rect": Rect2(64, 4, 8, 10), "h": 7.0,
+	{"id": "telegraph", "faces": [Vector2(1, 0)], "rect": Rect2(64, 4, 8, 10), "h": 7.0,
 		"rooms": [{"id": "telegraph", "rect": Rect2(64.3, 4.3, 7.4, 9.4), "floor": 0.0, "ceil": 3.6, "kind": "telegraph"}],
 		"doors": [[Vector3(72, 0, 9), Vector2(1, 0), 1.6, 2.6]]},
-	{"id": "club", "rect": Rect2(56, 54, 14, 10), "h": 9.0,
+	{"id": "club", "faces": [Vector2(0, -1)], "rect": Rect2(56, 54, 14, 10), "h": 9.0,
 		"rooms": [{"id": "club", "rect": Rect2(60.3, 54.3, 9.4, 9.4), "floor": 0.0, "ceil": 4.0, "kind": "club"},
 			{"id": "freddie_office", "rect": Rect2(56.3, 54.3, 3.7, 9.4), "floor": 0.0, "ceil": 3.4, "kind": "office"}],
 		"doors": [[Vector3(63, 0, 54), Vector2(0, -1), 2.0, 3.0], [Vector3(58.15, 0, 54), Vector2(0, -1), 1.4, 2.4]]},
-	{"id": "gunsmith", "rect": Rect2(32, 56, 8, 10), "h": 7.0,
+	{"id": "gunsmith", "faces": [Vector2(-1, 0)], "rect": Rect2(32, 56, 8, 10), "h": 7.0,
 		"rooms": [{"id": "gunsmith", "rect": Rect2(32.3, 56.3, 7.4, 9.4), "floor": 0.0, "ceil": 3.4, "kind": "gunsmith"}],
 		"doors": [[Vector3(32, 0, 61), Vector2(-1, 0), 1.6, 2.7]]},
-	{"id": "dealer", "rect": Rect2(36, 80, 8, 8), "h": 8.0,
+	{"id": "dealer", "faces": [Vector2(0, -1)], "rect": Rect2(36, 80, 8, 8), "h": 8.0,
 		"rooms": [{"id": "dealer", "rect": Rect2(36.3, 80.3, 7.4, 7.4), "floor": 0.0, "ceil": 3.6, "kind": "dealer"}],
 		"doors": [[Vector3(40, 0, 80), Vector2(0, -1), 1.5, 2.6]]},
 ]
@@ -455,14 +455,19 @@ func _windows(r: Rect2, fl: float, doors: Array) -> void:
 	add_child(m)
 
 
-## A wall segment that lies on its building's outside face (within the wall's thickness).
+## A wall segment on one of its building's street faces ("faces": cairo.gd's facades with
+## windows; the other sides back onto the neighbours), within the wall's thickness.
 func _on_face(a: Vector3, b: Vector3) -> bool:
 	var mid := (a + b) * 0.5
 	for v: Dictionary in VENUES:
 		var r: Rect2 = v.rect
-		if r.grow(0.5).has_point(Vector2(mid.x, mid.z)):
-			return absf(mid.x - r.position.x) < WALL + 0.05 or absf(mid.x - r.end.x) < WALL + 0.05 \
-				or absf(mid.z - r.position.y) < WALL + 0.05 or absf(mid.z - r.end.y) < WALL + 0.05
+		if not r.grow(0.5).has_point(Vector2(mid.x, mid.z)):
+			continue
+		for f: Vector2 in v.get("faces", []):
+			var edge := r.end.x if f.x > 0.0 else (r.position.x if f.x < 0.0 else (r.end.y if f.y > 0.0 else r.position.y))
+			var d := absf(mid.x - edge) if f.x != 0.0 else absf(mid.z - edge)
+			if d < WALL + 0.05:
+				return true
 	return false
 
 
@@ -652,7 +657,7 @@ func _hall(k: Kit, r: Rect2, fl: float) -> void:
 	for c: Array in [[Vector3(88.0, y, 17.0)], [Vector3(96.4, y, 18.4)], [Vector3(88.0, y, 21.5)], [Vector3(96.4, y, 22.6)]]:
 		var at: Vector3 = c[0]
 		k.box(at + Vector3.UP * 0.45, Vector3(1.4, 0.9, 0.8), DARK_WOOD, true)
-		k.lit(at + Vector3.UP * 1.25, Vector3(1.3, 0.7, 0.7), Color(0.4, 0.42, 0.38))   # lit glass
+		k.box(at + Vector3.UP * 1.25, Vector3(1.3, 0.7, 0.7), Color(0.6, 0.68, 0.68))   # the glass
 		k.box(at + Vector3.UP * 1.1, Vector3(0.3, 0.3, 0.2), Color(0.65, 0.5, 0.2))
 	# The king on his throne, against the back wall (clear of the office door).
 	k.box(Vector3(86.6, y + 0.5, 13.4), Vector3(2.0, 1.0, 1.4), Color(0.6, 0.55, 0.45), true)
