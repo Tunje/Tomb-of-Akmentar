@@ -175,6 +175,8 @@ func _start_tree(root: AnimationNode) -> void:
 
 ## Our bone (by UAL name) as a world point now.
 func bone_point(ual: String) -> Vector3:
+	if not is_inside_tree():
+		return Vector3.ZERO  # a scene being freed: no world transform to give
 	var i := skeleton.find_bone(bone_map.get(ual, BONE_MAP.get(ual, "")))
 	return skeleton.global_transform * skeleton.get_bone_global_pose(i).origin if i >= 0 else global_position
 

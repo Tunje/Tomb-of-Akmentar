@@ -198,7 +198,7 @@ func die() -> void:
 
 
 func _orient_gun() -> void:
-	if gun_holder:
+	if gun_holder and is_inside_tree():  # (skeleton_updated still fires while a scene is freed)
 		gun_holder.global_transform = _gun_transform()
 
 
