@@ -390,28 +390,64 @@ func _fight_thieves() -> void:
 			continue  # inside a building
 		if not _walkable(map, centre, on) or not _in_view(centre, on):
 			continue  # behind a wall from the meeting place (the road gate: outside it; its leaf isn't in the navmesh)
-		var g := Gunman.new()
-		g.team = Gunman.BANDITS
-		g.glb = Characters.glb(ids[placed])
-		add_child(g)
-		g.global_position = on
-		g.max_health = GUARD_HP
-		g.health = GUARD_HP
-		g.target = player
-		guards.append(g)
+		_guard(ids[placed], on)
 		placed += 1
-	print("RESULT act7 fight guards=%d at %s" % [guards.size(), _intercept_at])
+	# Any that found no spot near (a dead end, like inside the closed road gate) come running a few
+	# seconds in, out of a side street: reinforcements.
+	var late := ids.slice(placed)
+	if not late.is_empty():
+		get_tree().create_timer(3.0).timeout.connect(func():
+			var at := _reinforcement_spot(map, centre)
+			for k in late.size():
+				_guard(late[k], at + Vector3(k * 1.2, 0, 0))
+			hud.toast("More of them, out of the side street!", 2.5)
+			print("RESULT act7 reinforcements=%d" % late.size()))
+	print("RESULT act7 fight guards=%d (+%d coming) at %s" % [guards.size(), late.size(), _intercept_at])
+	await get_tree().create_timer(0.5).timeout
 	while true:
 		await get_tree().create_timer(0.5).timeout
 		var standing := 0
 		for g in guards:
 			standing += int(is_instance_valid(g) and g.is_active() and not g.surrendered)
-		if standing == 0 or not player.alive:
+		if (standing == 0 and guards.size() >= ids.size()) or not player.alive:
 			break
 	if not player.alive:
 		return
 	player.set_armed(false)
 	Game.set_flag("artifacts_recovered")  # -> _recovered
+
+
+func _guard(id: String, at: Vector3) -> void:
+	var g := Gunman.new()
+	g.team = Gunman.BANDITS
+	g.glb = Characters.glb(id)
+	add_child(g)
+	g.global_position = at
+	g.max_health = GUARD_HP
+	g.health = GUARD_HP
+	g.target = player
+	guards.append(g)
+
+
+## Where reinforcements come from: open, reachable ground 18-30 m from the meeting place (out of
+## sight is fine: they come round a corner). The meeting place itself if there's none.
+func _reinforcement_spot(map: RID, centre: Vector3) -> Vector3:
+	for ring: float in [18.0, 24.0, 30.0]:
+		for k in 12:
+			var a := TAU * k / 12.0
+			var want := centre + Vector3(cos(a), 0, sin(a)) * ring
+			var on := NavigationServer3D.map_get_closest_point(map, want)
+			if Vector2(on.x - want.x, on.z - want.z).length() > 0.6:
+				continue  # inside a building
+			var path := NavigationServer3D.map_get_path(map, on, NavigationServer3D.map_get_closest_point(map, centre), true)
+			if path.size() < 2 or path[path.size() - 1].distance_to(centre) > 1.5:
+				continue  # can't get there from here (outside the closed gate)
+			var length := 0.0
+			for i in range(1, path.size()):
+				length += path[i - 1].distance_to(path[i])
+			if length < 45.0:
+				return on
+	return centre
 
 
 ## The artifacts are yours (peacefully or not): the Keepers' messenger, then Blackwood and Act 8.
@@ -580,10 +616,10 @@ func _auto() -> void:
 	if args.has("skill-bot"):  # tests/difficulty_test fights them: wait it out
 		while player.alive and not Game.flag("artifacts_recovered", false):
 			await get_tree().create_timer(0.5).timeout
-	for g in guards:
-		if is_instance_valid(g):
-			g.take_damage(1000.0, player.global_position)
 	for i in 20:
+		for g in guards:  # (again each time: reinforcements come a few seconds in)
+			if is_instance_valid(g) and g.is_active():
+				g.take_damage(1000.0, player.global_position)
 		await get_tree().create_timer(0.5).timeout
 		if _may_leave:
 			break
