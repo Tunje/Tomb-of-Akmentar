@@ -67,6 +67,7 @@ func _ready() -> void:
 	level = DesertRoute.new()
 	level.coast = coast
 	add_child(level)
+	Warmup.start(self, Warmup.BANDITS)  # what spawns mid-fight, loaded now (tests/perf_test)
 	Ambience.play(self, "desert")
 	player = Player.new()
 	add_child(player)

@@ -487,6 +487,10 @@ func _build_tomb() -> void:
 		_side_stair(s[0], s[1])
 	_main_stairs()
 	_glyph_walls()
+	# Every still piece of the five levels as a few meshes per 24 m (2525 meshes were ~5800 draw
+	# calls with their shadows); the doors (scripted), the amulet and the lid stay their own.
+	if not "--no-merge" in OS.get_cmdline_user_args():  # (tests: the before, to compare)
+		print("TOMB merged: %d draw calls fewer" % RenderBudget.merge_static(self, 24.0, [amulet, sarc_lid]))
 
 
 ## One level: its rock (only what faces something: the inside of the mass is never seen or

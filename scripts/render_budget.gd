@@ -47,14 +47,15 @@ static func _ensure(light: Node) -> void:
 ## Combine the still meshes under `node` into one mesh per `cell` m square, per material, per
 ## shadow and draw-distance setting (so culling, shadows and fades still work by area). Materials
 ## stay shared: changing one (dusk lighting a window) still shows on every merged copy. Skinned,
-## blend-shaped and animated (under an AnimationPlayer's scene, or a moving body) meshes, and any
-## with children, are left alone. Returns how many draw calls it saved.
-static func merge_static(node: Node3D, cell := 24.0) -> int:
+## blend-shaped and animated (under an AnimationPlayer's scene, or a moving body) meshes, any with
+## children, anything under a node with a script of its own (doors, interactables: they move, hide
+## or get looked up) and anything under `keep` are left alone. Returns how many draw calls it saved.
+static func merge_static(node: Node3D, cell := 24.0, keep: Array = []) -> int:
 	var groups := {}  # key -> {"st": SurfaceTool, "mat", "shadow", "end", ...}
 	var merged: Array[MeshInstance3D] = []
 	var to_local := node.global_transform.affine_inverse()
 	for m: MeshInstance3D in node.find_children("*", "MeshInstance3D", true, false):
-		if m.mesh == null or not m.is_visible_in_tree() or _going(m, node) or m.get_node_or_null(m.skeleton) is Skeleton3D:
+		if m.mesh == null or not m.is_visible_in_tree() or _going(m, node) or _kept(m, node, keep) or m.get_node_or_null(m.skeleton) is Skeleton3D:
 			continue
 		if (m.mesh is ArrayMesh and (m.mesh as ArrayMesh).get_blend_shape_count() > 0) or m.get_child_count() > 0 or _animated(m, node):
 			continue
@@ -90,6 +91,16 @@ static func merge_static(node: Node3D, cell := 24.0) -> int:
 		m.get_parent().remove_child(m)
 		m.queue_free()
 	return merged.size() - groups.size()
+
+
+## Under one of `keep`, or under a node with its own script (below `top`, which has one).
+static func _kept(m: Node, top: Node, keep: Array) -> bool:
+	var n := m
+	while n != null and n != top:
+		if n in keep or (n != m and n.get_script() != null):
+			return true
+		n = n.get_parent()
+	return false
 
 
 ## Freed this frame (queue_free: still in the tree until the frame ends), or under something that is.
