@@ -14,7 +14,9 @@ extends Node3D
 ## they step aside for the player and the party (Townsperson's manners, which they inherit).
 ##   var crowd := Crowd.populate(level, "cairo")      # level: a Level with a navmesh (spots, npcs)
 ##   Crowd.alarm(get_tree(), global_position)          # from anything that makes a racket
-## Looks are pluggable: the data's "models" (Characters.DIR paths) until image-to-3d's townsfolk.
+## Looks are pluggable: the data's "models" (Characters.DIR paths) until image-to-3d's townsfolk;
+## the "tint" models (the bandit stand-ins) are recoloured per person from "looks": galabeyas,
+## striped and blue robes, effendis in suits and a fez, women in the black melaya, and skin tones.
 
 const DIR := "res://crowd"
 const CULL := 80.0              # m from the camera: hidden and paused past this
@@ -116,6 +118,8 @@ func _build(count: int) -> void:
 		p.glb = model
 		p.crowd = self
 		p.role = role
+		if models[i % models.size()] in data.get("tint", []):
+			p.look = _pick_look(rng)
 		p.name = "Townsfolk_%d_%s" % [i, role]
 		add_child(p)
 		p.begin(rng)
@@ -125,6 +129,29 @@ func _build(count: int) -> void:
 	active = people.size()
 	print("CROWD %d people (%s), %d waypoints, %d stalls, %d seats, %d beasts" % [people.size(),
 		", ".join(people.map(func(q: CrowdPerson) -> String: return q.role)), waypoints.size(), stalls.size(), seats.size(), beasts.size()])
+
+
+## An outfit for a stand-in (data "looks", weighted) and a skin tone from the "skin" range.
+func _pick_look(rng: RandomNumberGenerator) -> Dictionary:
+	var looks: Array = data.get("looks", [])
+	if looks.is_empty():
+		return {}
+	var total := 0.0
+	for l: Dictionary in looks:
+		total += float(l.get("w", 1))
+	var r := rng.randf() * total
+	var pick: Dictionary = looks[0]
+	for l: Dictionary in looks:
+		r -= float(l.get("w", 1))
+		if r <= 0.0:
+			pick = l
+			break
+	var look := pick.duplicate()
+	var sk: Array = data.get("skin", [[0.7, 0.5, 0.38], [0.7, 0.5, 0.38]])
+	var a := Color(sk[0][0], sk[0][1], sk[0][2])
+	var b := Color(sk[1][0], sk[1][1], sk[1][2])
+	look["skin_color"] = a.lerp(b, rng.randf())
+	return look
 
 
 ## 1 everyone about .. 0 nobody (the curse's sickness empties the streets).

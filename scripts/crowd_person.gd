@@ -15,6 +15,7 @@ const WALK_SPEED := 1.25
 const CARRY_SPEED := 1.0
 const RUN_SPEED := 3.4
 const ARRIVE := 0.35
+const FEZ_UP := 0.17           # m from the head bone to the crown, where the fez sits
 const NEAR := 18.0            # m from the camera: closer than this they mind the player and fade
 ## The clips, each the state's input on the transition.
 const CLIPS := {"idle": "Idle", "walk": "Walk", "carry": "ual2/Walk_Carry", "run": "Jog_Fwd",
@@ -24,8 +25,11 @@ const MORE_LOOPS := ["Idle_Talking", "Sitting_Talking", "PickUp_Table", "ual2/Wa
 
 static var _looped := false
 
+const LOOK_SHADER := "res://crowd/look.gdshader"
+
 var crowd: Crowd
 var role := "walk"
+var look := {}                # an outfit (Crowd's "looks"): recolours the stand-in's baked texture
 var about := true             # set_fraction: false = not in the streets now
 var state := "idle"           # walk, pause, stall, sit, flee, hide
 var anim := "idle"
@@ -41,6 +45,8 @@ var _crate: MeshInstance3D
 ## Starts the role (stall keepers and sitters already in place, so the street isn't empty at first).
 func begin(rng: RandomNumberGenerator) -> void:
 	_rng.seed = rng.randi()
+	if not look.is_empty():
+		dress(look)
 	var start: Vector3 = crowd.random_waypoint(_rng, Vector3(_rng.randf_range(0, 120), 0, _rng.randf_range(0, 100)))
 	_base = start
 	global_position = start
@@ -236,6 +242,58 @@ func _arrive_at_spot(what: String) -> void:
 	else:
 		_hold = _rng.randf_range(8.0, 20.0)
 		_play(["fold", "pick", "talk"][_rng.randi_range(0, 2)])
+
+
+## Recolour the baked texture (crowd/look.gdshader): the robe, its stripes, the skin; a fez on the
+## head for the effendis.
+func dress(l: Dictionary) -> void:
+	var shader := load(LOOK_SHADER) as Shader
+	if shader == null or body == null:
+		return
+	var cloth: Array = l.get("cloth", [0.9, 0.88, 0.82])
+	for mi: MeshInstance3D in body.find_children("*", "MeshInstance3D", true, false):
+		if mi.mesh == null:
+			continue
+		for s in mi.mesh.get_surface_count():
+			var src := mi.get_active_material(s) as BaseMaterial3D
+			if src == null or src.albedo_texture == null:
+				continue
+			var m := ShaderMaterial.new()
+			m.shader = shader
+			m.set_shader_parameter("albedo_tex", src.albedo_texture)
+			if src.normal_enabled and src.normal_texture:
+				m.set_shader_parameter("normal_tex", src.normal_texture)
+				m.set_shader_parameter("has_normal", true)
+			m.set_shader_parameter("cloth", Color(cloth[0], cloth[1], cloth[2]))
+			if l.has("stripe"):
+				var st: Array = l.stripe
+				m.set_shader_parameter("stripe", Color(st[0], st[1], st[2]))
+				m.set_shader_parameter("stripes", 1.0)
+			m.set_shader_parameter("skin", l.get("skin_color", Color(0.7, 0.5, 0.38)))
+			mi.set_surface_override_material(s, m)
+	if l.get("fez", false):
+		_fez()
+
+
+func _fez() -> void:
+	var at := BoneAttachment3D.new()
+	at.bone_name = str(bone_map.get("Head", BONE_MAP["Head"]))
+	skeleton.add_child(at)
+	var fez := MeshInstance3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = 0.07
+	cm.bottom_radius = 0.085
+	cm.height = 0.12
+	fez.mesh = cm
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.62, 0.08, 0.06)
+	mat.roughness = 0.7
+	fez.material_override = mat
+	fez.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	at.add_child(fez)
+	# The bone's frame is the model's: up its own axis to the crown (scaled back from the fit).
+	fez.position = Vector3(0, FEZ_UP, 0) / maxf(skeleton.global_basis.get_scale().y, 0.01)
+	fez.scale = Vector3.ONE / maxf(skeleton.global_basis.get_scale().y, 0.01)
 
 
 func _make_crate() -> void:

@@ -1,27 +1,86 @@
 {
-	"_help": "Cairo's crowd (scripts/crowd.gd). density: people per graphics quality. models: their looks (Characters.DIR paths; image-to-3d's townsfolk replace the stand-ins here). waypoints: street points walkers path between over the navmesh (none within keep_clear m of a door, an action spot or a standing NPC). stalls: [x, z, facing yaw] where a customer stands at a bazaar table. seats: [x, z, facing yaw, stool] where someone sits (stool: put a stool there, for the tavern tables). beasts: donkeys walking a street [[x, z], [x, z]]. Positions are from scripts/acts/cairo.gd's layout.",
-	"density": {"low": 12, "medium": 24, "high": 40},
-	"roles": {"sit": 0.18, "stall": 0.2, "carry": 0.15},
+	"_help": "Cairo's crowd (scripts/crowd.gd). density: people per graphics quality. models: their looks (Characters.DIR paths; image-to-3d's townsfolk replace the stand-ins here). waypoints: street points walkers path between over the navmesh (none within keep_clear m of a door, an action spot or a standing NPC). stalls: [x, z, facing yaw] where a customer stands at a bazaar table. seats: [x, z, facing yaw, stool] where someone sits (stool: put a stool there, for the tavern tables). beasts: donkeys walking a street [[x, z], [x, z]]. Positions are from scripts/acts/cairo.gd's layout. tint: the models whose baked look is recoloured (the stand-ins; real townsfolk leave themselves out). looks: weighted outfits (cloth colour, optional stripe colour, a fez), seeded per person; skin: the range of skin tones.",
+	"density": {
+		"low": 12,
+		"medium": 24,
+		"high": 40
+	},
+	"roles": {
+		"sit": 0.18,
+		"stall": 0.2,
+		"carry": 0.15
+	},
 	"models": ["bandits/bandit_scout.glb", "bandits/bandit_raider.glb"],
 	"keep_clear": 3.0,
-	"waypoints": [
-		[4, 49], [34, 49], [60, 51], [100, 51], [40, 50.5], [72, 50.5], [30.5, 4], [30.5, 44], [30.3, 56], [30.3, 96],
-		[77, 2], [77, 44], [75, 58], [75, 98], [35, 76.3], [69, 76.3], [106, 4], [106, 44], [106.5, 76], [106.5, 98],
-		[88, 34], [96, 34], [96, 43], [88, 43], [86, 66], [98, 66],
-		[54, 77], [92, 36.5], [56, 49.5], [20, 50], [88, 50], [62, 76.6], [44, 76.8]
-	],
-	"stalls": [
-		[36, 76.2, 0], [50, 76.2, 0], [62, 76.2, 0],
-		[57, 77.8, 3.14159], [66, 77.8, 3.14159], [46.6, 77.8, 3.14159]
-	],
-	"seats": [
-		[29.15, 62.0, 1.5708, true], [28.2, 62.95, 0.0, true],
-		[29.15, 70.0, 1.5708, true], [28.2, 70.95, 0.0, true],
-		[86.0, 38.0, -1.5708, false], [86.0, 39.1, -1.5708, false],
-		[98.0, 38.0, 1.5708, false], [98.0, 39.1, 1.5708, false]
-	],
+	"waypoints": [[4, 49], [34, 49], [60, 51], [100, 51], [40, 50.5], [72, 50.5], [30.5, 4], [30.5, 44], [30.3, 56], [30.3, 96], [77, 2], [77, 44], [75, 58], [75, 98], [35, 76.3], [69, 76.3], [106, 4], [106, 44], [106.5, 76], [106.5, 98], [88, 34], [96, 34], [96, 43], [88, 43], [86, 66], [98, 66], [54, 77], [92, 36.5], [56, 49.5], [20, 50], [88, 50], [62, 76.6], [44, 76.8]],
+	"stalls": [[36, 76.2, 0], [50, 76.2, 0], [62, 76.2, 0], [57, 77.8, 3.14159], [66, 77.8, 3.14159], [46.6, 77.8, 3.14159]],
+	"seats": [[29.15, 62.0, 1.5708, true], [28.2, 62.95, 0.0, true], [29.15, 70.0, 1.5708, true], [28.2, 70.95, 0.0, true], [86.0, 38.0, -1.5708, false], [86.0, 39.1, -1.5708, false], [98.0, 38.0, 1.5708, false], [98.0, 39.1, 1.5708, false]],
 	"beasts": [
 		[[35, 76.3], [69, 76.3]],
 		[[75, 60], [75, 96]]
-	]
+	],
+	"tint": ["bandits/bandit_scout.glb", "bandits/bandit_raider.glb"],
+	"looks": [
+		{
+			"name": "white galabeya",
+			"w": 26,
+			"cloth": [0.93, 0.91, 0.85]
+		},
+		{
+			"name": "cream galabeya",
+			"w": 18,
+			"cloth": [0.87, 0.8, 0.65]
+		},
+		{
+			"name": "sand galabeya",
+			"w": 14,
+			"cloth": [0.76, 0.66, 0.5]
+		},
+		{
+			"name": "striped galabeya",
+			"w": 8,
+			"cloth": [0.88, 0.86, 0.8],
+			"stripe": [0.3, 0.36, 0.62]
+		},
+		{
+			"name": "brown striped",
+			"w": 5,
+			"cloth": [0.8, 0.72, 0.58],
+			"stripe": [0.42, 0.28, 0.18]
+		},
+		{
+			"name": "blue robe",
+			"w": 7,
+			"cloth": [0.27, 0.38, 0.62]
+		},
+		{
+			"name": "effendi's suit",
+			"w": 7,
+			"cloth": [0.2, 0.2, 0.22],
+			"fez": true
+		},
+		{
+			"name": "linen suit",
+			"w": 4,
+			"cloth": [0.78, 0.74, 0.64],
+			"fez": true
+		},
+		{
+			"name": "galabeya and fez",
+			"w": 4,
+			"cloth": [0.92, 0.9, 0.84],
+			"fez": true
+		},
+		{
+			"name": "black melaya",
+			"w": 6,
+			"cloth": [0.07, 0.07, 0.08]
+		},
+		{
+			"name": "dark-blue melaya",
+			"w": 4,
+			"cloth": [0.1, 0.12, 0.26]
+		}
+	],
+	"skin": [[0.84, 0.64, 0.5], [0.38, 0.25, 0.18]]
 }
