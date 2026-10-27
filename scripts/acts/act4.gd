@@ -49,6 +49,7 @@ func _ready() -> void:
 	add_child(CountdownBars.new())
 	player.hit_confirmed.connect(hud.on_hit)
 	player.damaged.connect(hud.on_damaged)
+	player.died.connect(_on_died)
 	level.interactables["camp_fire"].used.connect(func(_by): _save())
 	level.interactables["camp_bed"].used.connect(func(_by): _end_day())
 	# The rivals at their camps (stand-in bodies until image-to-3d's leaders exist).
@@ -71,11 +72,21 @@ func _ready() -> void:
 	_arrive()
 
 
+## The night raid stops when you fall (NightRaid leaves it to this screen).
+func _on_died() -> void:
+	hud.show_message("YOU DIED", "Enter  load the last save")
+	print("RESULT act4 died step=%s t=%.1f" % [Step.keys()[step], _t])
+	if args.has("auto"):
+		get_tree().quit(1)
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if args.size() > 0:
 		return
 	if step == Step.END and event is InputEventKey and event.pressed and event.keycode in [KEY_ENTER, KEY_KP_ENTER]:
 		get_tree().change_scene_to_file("res://act5.tscn")  # Game (the party, the ally) carries over
+	elif not player.alive and event is InputEventKey and event.pressed and event.keycode in [KEY_ENTER, KEY_KP_ENTER]:
+		SaveRoute.resume(get_tree())  # the last save: the camp fire's, or the start of Act 4
 	elif event.is_action_pressed("journal"):
 		JournalScreen.toggle(self, player)
 	elif event.is_action_pressed("party_order"):
