@@ -178,8 +178,8 @@ static func _table(rows: Array, label: String, seeds: int) -> String:
 			won += 1 if r.outcome == "won" else 0
 			deaths += 1 if r.outcome in ["died", "ko"] else 0
 			timeouts += 1 if r.outcome == "timeout" else 0
-			dmg += float(r.dmg_pct)
-			dmax = maxf(dmax, float(r.dmg_pct))
+			dmg += minf(float(r.dmg_pct), 100.0)  # the guardian's grab deals 100000
+			dmax = maxf(dmax, minf(float(r.dmg_pct), 100.0))
 			t += float(r.t)
 			lost += (r.lost as Array).size()
 			party += (r.party as Array).size()
@@ -370,7 +370,7 @@ func _finish_seg(outcome: String) -> void:
 		_seg_dmg = _trucks_hp - _trucks_health()
 	var lost := _seg_party.filter(func(id): return not Game.in_party(id))
 	var r := {"name": s.name, "seed": _seed, "outcome": outcome, "t": snappedf(_seg_t, 0.1), "dmg": snappedf(_seg_dmg, 0.1),
-		"dmg_pct": snappedf(100.0 * _seg_dmg / full, 0.1), "party": _seg_party, "lost": lost, "fired": _shots.x, "hit": _shots.y}
+		"dmg_pct": snappedf(minf(100.0 * _seg_dmg / full, 100.0), 0.1), "party": _seg_party, "lost": lost, "fired": _shots.x, "hit": _shots.y}
 	print("DIFF %s" % JSON.stringify(r))
 	var f := FileAccess.open(_out, FileAccess.READ_WRITE if FileAccess.file_exists(_out) else FileAccess.WRITE)
 	f.seek_end()
