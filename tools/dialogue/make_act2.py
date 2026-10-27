@@ -420,7 +420,7 @@ TALKS["act2_mahmoud"] = talk(
 khalil = crew_intro("khalil", FATIMA + "Khalil Darwish's men are dockworkers without docks. Strong, and cheap.")
 khalil.update({
     "already": L("khalil", "My men are fed and ready.", "end_left"),
-    "first": L("khalil", "Khalil Darwish. My men lift anything, dig anything. Two hundred and fifty pounds.", choices=[
+    "first": L("khalil", "Khalil Darwish. Ten men who lift anything, dig anything. Two hundred and fifty pounds.", choices=[
         C("Hire the crew", "Two hundred and fifty, up front.", "joined", if_={"money": 250}, do=[pay(250), trust("khalil", 1)]),
         C("Half now, half later", "Half now, the rest when we're back.", "joined_owed",
           if_={"money": 130}, do=[pay(130), trust("khalil", -1), flag("owe_khalil", 120)]),
@@ -438,7 +438,7 @@ TALKS["act2_khalil"] = talk(
 naguib = crew_intro("naguib", FATIMA + "Naguib Sabet runs porters. If it must be carried, he carries it.")
 naguib.update({
     "already": L("naguib", "Loads weighed, camels shod. We are ready.", "end_left"),
-    "first": L("naguib", "Naguib Sabet. Porters, camels, tents, cooks. Four hundred and fifty pounds.", choices=[
+    "first": L("naguib", "Naguib Sabet. Eight porters, with camels, tents and a cook. Four hundred and fifty pounds.", choices=[
         C("Hire the porters", "Four hundred and fifty. Done.", "joined", if_={"money": 450}, do=[pay(450)]),
         C("Leave", "Too much.", "end_left"),
     ]),

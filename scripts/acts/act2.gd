@@ -252,12 +252,32 @@ func _shot(file: String) -> void:
 ## Hire one recruit through his spot's talk effects directly, then sleep through the days.
 func _auto() -> void:
 	print("RESULT act2 start money=%d spots=%d npcs=%d" % [Game.money, get_tree().get_nodes_in_group("interactable").size(), level.npcs.size()])
-	# Through the real talks, fees and all (-f9): the museum (Eleanor, £100), then Mahmoud's crew (£600).
-	Game.spend_action(1)
-	await BotTalk.run(self, "act2_museum", player, level.npcs.get("archivist", player))
-	Game.spend_action(1)
-	await BotTalk.run(self, "act2_mahmoud", player, level.npcs.get("mahmoud", player))
+	# --hire=eleanor,hassan,...: hire those through their own talks, an action each, sleeping when
+	# the day's are spent (Simon: several of a role, as many as time and money allow).
+	var hire := str(args.get("hire", ""))
+	if hire != "":
+		for id: String in hire.split(",", false):
+			if Game.day >= _start_day + int(plan.get("days", 2)):
+				break
+			if Game.actions_left <= 0:
+				_sleep()
+				await get_tree().create_timer(0.5).timeout
+				if DaySummary.current:
+					DaySummary.current._close()
+				await get_tree().create_timer(0.5).timeout
+				if _leaving:
+					break  # the days are up: whoever's left wasn't hired
+			Game.spend_action(1)
+			await BotTalk.run(self, "act2_" + id, player, level.npcs.get(id, player))
+			print("RESULT act2 hire %s ok=%s money=%d actions=%d day=%d" % [id, Game.in_party(id), Game.money, Game.actions_left, Game.day])
+	else:
+		# Through the real talks, fees and all (-f9): the museum (Eleanor, £100), then Mahmoud's crew (£600).
+		Game.spend_action(1)
+		await BotTalk.run(self, "act2_museum", player, level.npcs.get("archivist", player))
+		Game.spend_action(1)
+		await BotTalk.run(self, "act2_mahmoud", player, level.npcs.get("mahmoud", player))
 	await get_tree().create_timer(1.0).timeout
+	print("RESULT act2 crews=%s men=%d" % [Crews.hired().map(func(c: Dictionary) -> String: return c.kind), Crews.men()])
 	print("RESULT act2 party=%s followers=%d" % [Game.party(), companions.size()])
 	for d in int(plan.get("days", 2)):
 		_sleep()

@@ -128,8 +128,11 @@ func _convoy() -> void:
 			# Three seats behind the driver in each truck.
 			if i < own_truck.seats.size() - 1:
 				passengers[id] = Rider.mount(self, own_truck, Characters.glb(id), i + 1)
-			else:
+			elif i - own_truck.seats.size() + 2 < truck.seats.size():
 				riders[id] = Rider.mount(self, truck, Characters.glb(id), i - own_truck.seats.size() + 2)
+			else:  # a big expedition: both trucks full, the rest ride behind
+				var h := Horse.make(level, "horse_" + str(id), _slot(z, i))
+				riders[id] = Rider.mount(self, h, Characters.glb(id))
 		else:
 			var h := Horse.make(level, "horse_" + str(id), _slot(z, i))
 			riders[id] = Rider.mount(self, h, Characters.glb(id))
