@@ -1,13 +1,13 @@
 extends Node
 ## Resume sweep: for one place in SaveRoute.SCENES (--place=<id>), writes a test-slot save as the
-## act would have left it, loads it the way Continue does (Game.load_game, SaveRoute.scene_for),
-## changes to that scene, and after 3 s of play checks: the player exists, is alive and has ground
+## act would have left it, opens the title screen and presses its Continue (TitleScreen._continue:
+## Game.load_game, SaveRoute.scene_for, or main.tscn for a rest in the range), and after 3 s of play checks: the player exists, is alive and has ground
 ## under them (not falling; tombs sit lower, so no fixed height), the act hasn't already ended (act9_end: that one
 ## opens the album), and every companion stands clear of walls. Prints
-## "RESULT resume <place> ok|FAIL <why>" and exits 0 / 1. One place per run (a shell loop runs
-## them all, one Godot at a time):
+## "RESULT resume <place> ok|FAIL <why>" and exits 0 / 1. One place per run, each with its own save
+## (--save-slot; a shell loop runs them all, one Godot at a time):
 ##   for p in $(godot --headless --path . res://tests/resume_test.tscn -- --list | grep ^PLACE | cut -d' ' -f2); do
-##     godot --headless --path . res://tests/resume_test.tscn -- --place=$p; done
+##     godot --headless --path . res://tests/resume_test.tscn -- --place=$p --save-slot=resume_$p; done
 
 const WAIT := 3.0
 const PARTY := ["mahmoud", "eleanor"]
@@ -59,18 +59,13 @@ func _ready() -> void:
 		print("RESULT resume %s FAIL couldn't write the test save" % place)
 		get_tree().quit(1)
 		return
-	# Continue's way in.
+	# Continue's way in: the title screen, and its Continue.
 	Game.reset()
-	if not Game.load_game():
-		print("RESULT resume %s FAIL couldn't load the test save" % place)
-		get_tree().quit(1)
-		return
-	var scene := SaveRoute.scene_for(Game.place)
 	var checker := Checker.new()
 	checker.place = place
-	checker.scene = scene
-	get_tree().root.add_child.call_deferred(checker)  # outlives the scene change
-	get_tree().change_scene_to_file.call_deferred(scene)
+	checker.scene = SaveRoute.scene_for(place)
+	get_tree().root.add_child.call_deferred(checker)  # outlives the scene changes
+	get_tree().change_scene_to_file.call_deferred("res://title.tscn")
 
 
 class Checker extends Node:
@@ -82,11 +77,28 @@ class Checker extends Node:
 		_check.call_deferred()
 
 	func _check() -> void:
+		var t0 := Time.get_ticks_msec()
+		while not get_tree().current_scene is TitleScreen:
+			if Time.get_ticks_msec() - t0 > 20000:
+				_done("no title screen")
+				return
+			await get_tree().process_frame
+		var title := get_tree().current_scene
+		await get_tree().create_timer(0.5, true, false, true).timeout
+		title.call("_continue")  # the button's own handler
+		t0 = Time.get_ticks_msec()
+		while get_tree().current_scene == title or get_tree().current_scene == null:
+			if Time.get_ticks_msec() - t0 > 20000:
+				_done("Continue went nowhere (couldn't load the save?)")
+				return
+			await get_tree().process_frame
 		await get_tree().create_timer(WAIT - 1.0, true, false, true).timeout
 		var p := _player()
 		var y1 := p.global_position.y if p else 0.0
 		await get_tree().create_timer(1.0, true, false, true).timeout
-		var why := _why(p, y1)
+		_done(_why(p, y1))
+
+	func _done(why: String) -> void:
 		print("RESULT resume %s %s" % [place, "ok" if why == "" else "FAIL " + why])
 		get_tree().quit(0 if why == "" else 1)
 
