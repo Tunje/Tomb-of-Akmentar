@@ -63,6 +63,7 @@ var _quiet := 99.0
 var _camp_spot: ActionSpot
 var _rng := RandomNumberGenerator.new()
 var _pending: Array = []        # an assign() waiting for the navmesh (a level baking it on a thread)
+var _to_free: Array = []        # cleared crews, freed a few a frame
 var _wait := 0.0
 
 
@@ -405,6 +406,10 @@ func _on_talk(by: Node, id: String) -> void:
 # ---------------------------------------------------------------- the tick
 
 func _process(delta: float) -> void:
+	for k in mini(3, _to_free.size()):
+		var n: Variant = _to_free.pop_front()
+		if n is Node and is_instance_valid(n):
+			(n as Node).queue_free()
 	if not _pending.is_empty():
 		_wait += delta
 		_assign(_pending[0], _pending[1], _pending[2], _pending[3])
@@ -546,12 +551,18 @@ static func staff_sites(lvl: Node3D, sites: Dictionary, crew_sizes := {}) -> Arr
 	return h.crews
 
 
+## Gone at once from view, freed a few a frame (500 nodes in one frame were a 0.1 s hitch).
 static func clear_sites(lvl: Node3D) -> void:
 	var h := lvl.get_node_or_null("CampJobs") as CampJobs
 	if h:
 		for c in h.crews:
 			if is_instance_valid(c):
-				c.queue_free()
+				c.visible = false
+				c.process_mode = Node.PROCESS_MODE_DISABLED
+				for p in c.people:
+					p.visible = false
+				h._to_free.append_array(c.people)
+				h._to_free.append(c)
 		h.crews.clear()
 
 
