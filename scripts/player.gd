@@ -42,7 +42,8 @@ var max_health := 100.0
 var health := 100.0
 var alive := true
 var controls_enabled := true
-var _fire_lock := false  # see _physics_process: held through a menu, ignored until released
+var _fire_lock := false  # see _physics_process: a click that closed a menu doesn't fire
+var _fire_lock_t := 0.0
 
 var weapons: Array[WeaponData] = []
 var ammo: Array[int] = []
@@ -273,10 +274,13 @@ func _physics_process(delta: float) -> void:
 	_hurt_cd = maxf(_hurt_cd - delta, 0.0)
 	# A click that picked something in a menu is still held when the menu closes: no shot (or
 	# drawing the gun) until it's let go (Simon: buying supplies fired the gun).
+	# A short window, not "until released": a test bot (or a player) holding fire through a talk
+	# must still be able to shoot after it (-bf: a bot fired 0 shots all Act 6).
 	if not controls_enabled or ActionMenu.ui_open():
-		_fire_lock = true
-	elif _fire_lock and not Input.is_action_pressed("fire") and not Input.is_action_pressed("aim"):
-		_fire_lock = false
+		_fire_lock_t = 0.35
+	else:
+		_fire_lock_t = maxf(_fire_lock_t - delta, 0.0)
+	_fire_lock = _fire_lock_t > 0.0
 	_pad_look(delta)
 	var w := weapons[current]
 
