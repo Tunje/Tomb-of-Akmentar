@@ -128,9 +128,49 @@ func _temple() -> void:
 			if rng.randf() < 0.65:
 				_cylinder(_nav, p + Vector3.UP * 2.6, 0.7, 5.2)
 			else:
-				var size := Vector3(0.9, 0.9, rng.randf_range(2.6, 4.2))
-				var fallen := _box(_nav, p + Vector3(side * 1.5, 0.45, 0), size, _stone)
-				_mark_cover(fallen, size)
+				_broken_column(p, side, rng)
+
+
+## A column that came down (Simon: the fallen ones were whole columns lying in a straight line
+## beside their places): a jagged stump where it stood, and its drums thrown down every which way,
+## out from the colonnade, some cracked in two. The drums are low cover.
+func _broken_column(p: Vector3, side: float, rng: RandomNumberGenerator) -> void:
+	var stump_h := rng.randf_range(0.5, 1.7)
+	_drum(p + Vector3.UP * stump_h * 0.5, stump_h, Basis(), rng)
+	var fall := Vector3(side, 0, rng.randf_range(-0.9, 0.9)).normalized()
+	var at := p + fall * (1.2 + rng.randf_range(0.0, 0.6))
+	for j in rng.randi_range(2, 3):
+		var length := rng.randf_range(0.9, 1.5)
+		var lie := Basis(Vector3.UP, rng.randf() * TAU) * Basis(Vector3.RIGHT, PI * 0.5)  # on its side, any heading
+		var drum := _drum(at + Vector3.UP * 0.62, length, lie, rng)
+		_mark_cover(drum, Vector3(1.1, 1.0, length))
+		at += fall.rotated(Vector3.UP, rng.randf_range(-0.7, 0.7)) * (length + rng.randf_range(0.2, 0.9))
+
+
+## One column drum: a stone cylinder (r 0.62) of `length`, at `centre`, turned by `turn`.
+func _drum(centre: Vector3, length: float, turn: Basis, rng: RandomNumberGenerator) -> StaticBody3D:
+	var body := StaticBody3D.new()
+	body.collision_layer = 1
+	body.collision_mask = 0
+	body.set_meta("drum", true)
+	var cs := CollisionShape3D.new()
+	var shape := CylinderShape3D.new()
+	shape.radius = 0.62
+	shape.height = length
+	cs.shape = shape
+	body.add_child(cs)
+	var mi := MeshInstance3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = 0.6 * rng.randf_range(0.9, 1.0)  # weathered, not turned on a lathe
+	cm.bottom_radius = 0.62
+	cm.height = length
+	cm.radial_segments = 14
+	mi.mesh = cm
+	mi.material_override = _stone
+	body.add_child(mi)
+	_nav.add_child(body)
+	body.global_transform = Transform3D(turn, centre)
+	return body
 
 
 func _site_landmark(id: String, p: Vector3) -> void:
@@ -156,6 +196,12 @@ func _site_landmark(id: String, p: Vector3) -> void:
 			_mark_cover(table, Vector3(2.2, 1.0, 1.0))
 		"souls":
 			_box(_nav, p + Vector3.UP * 0.15, Vector3(8.0, 0.3, 8.0), _floor_mat)  # a raised floor
+			# ...with a shallow ramp up onto it on every side (Simon: you couldn't get up on it).
+			for dir in [Vector3.FORWARD, Vector3.BACK, Vector3.LEFT, Vector3.RIGHT]:
+				var ramp := _box(_nav, Vector3.ZERO, Vector3(5.0, 0.3, 2.05), _floor_mat)
+				# Its length (-Z) points out from the edge, tipped so the outer end meets the sand.
+				var tilt := Basis.looking_at(dir, Vector3.UP) * Basis(Vector3.RIGHT, -atan2(0.3, 2.0))
+				ramp.global_transform = Transform3D(tilt, p + dir * 5.0 + Vector3.UP * 0.15 - tilt.y * 0.15)
 			for c in [Vector3(-3, 0, -3), Vector3(3, 0, -3), Vector3(-3, 0, 3), Vector3(3, 0, 3)]:
 				_cylinder(_nav, p + c + Vector3.UP * 2.0, 0.45, 4.0)
 		"obelisk":
@@ -250,8 +296,8 @@ func _dress_ruins() -> void:
 			continue
 		var mi := body.get_child(1) as MeshInstance3D
 		var cs := body.get_child(0) as CollisionShape3D
-		if mi == null or cs == null or mi.material_override != _stone:
-			continue
+		if mi == null or cs == null or mi.material_override != _stone or body.has_meta("drum"):
+			continue  # (a fallen column's drums and stump stay plain broken stone)
 		n += 1
 		if cs.shape is CylinderShape3D:
 			var cyl := cs.shape as CylinderShape3D

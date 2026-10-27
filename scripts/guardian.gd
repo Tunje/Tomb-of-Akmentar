@@ -12,8 +12,27 @@ extends CharacterBody3D
 ## Visuals: the Tomb Guard (MummyBody) scaled SCALE; hitboxes like any mummy (meta "mummy").
 
 signal caught(victim: Node3D)
+## commander mode: he stops and raises his arms, calling up the dead near `at` (the act spawns them).
+signal commanded(at: Vector3)
 
-enum State { DORMANT, RISING, CHASE, WINDUP, RECOVER, STAGGER, PAUSED, CLIMB }
+enum State { DORMANT, RISING, CHASE, WINDUP, RECOVER, STAGGER, PAUSED, CLIMB, COMMAND, SAND }
+
+## Act 5's commander (Simon: "akmentar should be more like Imhotep in the movie, sending other mummies
+## after you", not running you down): he walks, never lengthens his stride to catch up; every
+## COMMAND_EVERY s with you out of reach he stops and raises his arms (commanded: the act wakes the
+## dead ahead of you), and when you've left him far behind he goes to sand and comes up again on
+## your trail (SAND_*). Off (the default) he's the old relentless follower (Acts 8 and 9).
+var commander := false
+const COMMAND_SPEED := 2.1
+const COMMAND_EVERY := 8.0
+const COMMAND_TIME := 1.6
+const SAND_FROM := 38.0      # gap (m) beyond which he travels as sand...
+const SAND_EVERY := 22.0     # ...at most this often...
+const SAND_BEHIND := 18.0    # ...coming up this far behind you along the way he'd walk
+const SAND_TIME := 2.2
+var _since_command := 0.0
+var _since_sand := 0.0
+var _sand_to := Vector3.ZERO
 
 const SCALE := 1.25
 const RADIUS := 0.42             # its capsule: bulky, but it has to fit 2 m corridors and corners
@@ -260,11 +279,23 @@ func _physics_process(delta: float) -> void:
 		State.CHASE:
 			_awake_t += delta
 			_since_slam += delta
+			_since_command += delta
+			_since_sand += delta
 			if dist < REACH and _facing(to) > 0.5 and _awake_t > GRAB_GRACE and _since_slam > Difficulty.f("grab_cooldown"):
 				_enter(State.WINDUP)
+			elif commander and dist > SAND_FROM and _since_sand > SAND_EVERY and _awake_t > GRAB_GRACE:
+				_go_sand()
+			elif commander and dist > 7.0 and _since_command > COMMAND_EVERY:
+				_since_command = 0.0
+				_enter(State.COMMAND)
+				if rig:
+					rig.attack(COMMAND_TIME)  # arms up
+				Sfx.play_at(get_parent(), Sfx.groan(), global_position + Vector3.UP * 2.0, 4.0, 0.05)
+				commanded.emit(target.global_position)
 			elif _alive(target):
 				var k := clampf((dist - CATCH_UP_FROM) / (CATCH_UP_DIST - CATCH_UP_FROM), 0.0, 1.0)
-				var speed := lerpf(SPEED, CATCH_UP_SPEED, k) * (1.0 - _slow) * Difficulty.f("guardian_pace")
+				var pace := COMMAND_SPEED if commander else lerpf(SPEED, CATCH_UP_SPEED, k)
+				var speed := pace * (1.0 - _slow) * Difficulty.f("guardian_pace")
 				move = _path_dir(delta) * speed
 				_climb_or_unstick(move, delta)
 				if state == State.CHASE:
@@ -280,6 +311,12 @@ func _physics_process(delta: float) -> void:
 		State.STAGGER:
 			if _t >= STAGGER_TIME:
 				_enter(State.CHASE)
+		State.COMMAND:
+			if _t >= COMMAND_TIME:
+				_enter(State.CHASE)
+		State.SAND:
+			_sand_step()
+			return
 	if state == State.CLIMB:
 		return
 	if to.length() > 0.1 and state in [State.CHASE, State.WINDUP]:
@@ -290,6 +327,91 @@ func _physics_process(delta: float) -> void:
 	velocity.y = 0.0 if is_on_floor() else velocity.y - GRAVITY * delta
 	move_and_slide()
 	_animate(move.length())
+
+
+## Into sand: he sinks into a swirl of it, and rises SAND_BEHIND m behind the target along the way
+## he'd have walked (so a slab or a long lead buys time, never safety).
+func _go_sand() -> void:
+	_since_sand = 0.0
+	var map := get_world_3d().navigation_map
+	var path := NavigationServer3D.map_get_path(map, global_position, target.global_position, true)
+	if path.size() < 2:
+		return
+	var left := SAND_BEHIND
+	var to := path[path.size() - 1]
+	for i in range(path.size() - 1, 0, -1):
+		var seg := path[i].distance_to(path[i - 1])
+		if seg >= left:
+			to = path[i].lerp(path[i - 1], left / seg)
+			break
+		left -= seg
+		to = path[i - 1]
+	_sand_to = to
+	_enter(State.SAND)
+	_sand_swirl(global_position)
+	Sfx.play_at(get_parent(), Sfx.groan(), global_position + Vector3.UP * 1.5, 0.0, 0.1)
+	var tw := create_tween()
+	tw.tween_property(model, "scale", Vector3(SCALE * 1.3, 0.02, SCALE * 1.3), SAND_TIME * 0.4)
+	_hitboxes_on(false)
+
+
+func _sand_step() -> void:
+	velocity = Vector3.ZERO
+	if _t >= SAND_TIME * 0.45 and global_position.distance_to(_sand_to) > 0.5:
+		global_position = _sand_to
+		_sand_swirl(_sand_to)
+		var tw := create_tween()
+		tw.tween_property(model, "scale", Vector3.ONE * SCALE, SAND_TIME * 0.5)
+		if _alive(target):
+			var to := target.global_position - global_position
+			rotation.y = atan2(-to.x, -to.z)
+		Barks.say_any(get_tree(), "guardian_seen", global_position)
+	if _t >= SAND_TIME:
+		_hitboxes_on(true)
+		_awake_t = GRAB_GRACE - 1.5  # a breath after rising before he can grab
+		_enter(State.CHASE)
+		_replan()
+
+
+func _hitboxes_on(on: bool) -> void:
+	for box in _hitboxes:
+		if is_instance_valid(box):
+			for cs in box.find_children("*", "CollisionShape3D", false, false):
+				(cs as CollisionShape3D).set_deferred("disabled", not on)
+
+
+## A column of blown sand where he goes or comes.
+func _sand_swirl(at: Vector3) -> void:
+	var p := CPUParticles3D.new()
+	p.one_shot = true
+	p.explosiveness = 0.3
+	p.amount = 90
+	p.lifetime = 1.6
+	p.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+	p.emission_sphere_radius = 0.7
+	p.direction = Vector3.UP
+	p.spread = 25.0
+	p.gravity = Vector3(0, -1.0, 0)
+	p.initial_velocity_min = 1.0
+	p.initial_velocity_max = 3.2
+	p.orbit_velocity_min = 0.4
+	p.orbit_velocity_max = 0.9
+	p.scale_amount_min = 1.0
+	p.scale_amount_max = 2.5
+	var qm := QuadMesh.new()
+	qm.size = Vector2(0.25, 0.25)
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.albedo_texture = Fx.soft_dot()
+	m.albedo_color = Color(0.72, 0.6, 0.42, 0.7)
+	qm.material = m
+	p.mesh = qm
+	get_parent().add_child(p)
+	p.global_position = at + Vector3.UP * 0.8
+	p.emitting = true
+	get_tree().create_timer(2.5).timeout.connect(p.queue_free)
 
 
 func _replan() -> void:

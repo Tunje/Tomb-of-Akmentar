@@ -646,10 +646,22 @@ func _dress(body: StaticBody3D, file: String, native: Vector3) -> void:
 	if not ResourceLoader.exists(PROPS + file):
 		return
 	var size: Vector3 = (body.get_child(0) as CollisionShape3D).shape.size
-	var p: Node3D = (load(PROPS + file) as PackedScene).instantiate()
-	body.add_child(p)
-	p.position = Vector3(0, -size.y * 0.5, 0)
-	p.scale = Vector3(size.x / native.x, size.y / native.y, size.z / native.z)
+	# Crates fill a long box with several crates in a row (and stacked), each near its own shape:
+	# one crate stretched to 3 m smeared its planks (Simon). Anything else is fitted whole.
+	var n := Vector3i.ONE
+	if "crate" in file:
+		n = Vector3i(maxi(roundi(size.x / native.x), 1), maxi(roundi(size.y / native.y), 1), maxi(roundi(size.z / native.z), 1))
+	var each := Vector3(size.x / n.x, size.y / n.y, size.z / n.z)
+	var scene := load(PROPS + file) as PackedScene
+	for ix in n.x:
+		for iy in n.y:
+			for iz in n.z:
+				var p: Node3D = scene.instantiate()
+				body.add_child(p)
+				p.position = Vector3(-size.x * 0.5 + each.x * (ix + 0.5), -size.y * 0.5 + each.y * iy, -size.z * 0.5 + each.z * (iz + 0.5))
+				p.scale = Vector3(each.x / native.x, each.y / native.y, each.z / native.z)
+				if n != Vector3i.ONE:
+					p.rotation.y = PI * ((ix + iy * 3 + iz * 5) % 2)  # not every lid the same way round
 	(body.get_child(1) as MeshInstance3D).visible = false
 
 

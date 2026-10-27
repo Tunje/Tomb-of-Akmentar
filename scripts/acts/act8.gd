@@ -58,8 +58,8 @@ func _ready() -> void:
 			ActionSpot.make(cairo, "act8_" + id, cairo.spots[id])
 	var bed: Interactable = cairo.interactables.get("hotel_bed")
 	if bed:
-		bed.prompt = "Set out for Akmentar"
-		bed.used.connect(func(_by): _set_out())
+		bed.prompt = "Your room: set out, or sleep"
+		bed.used.connect(func(_by): _room())
 	player = Player.new()
 	add_child(player)
 	player.global_position = cairo.player_spawn
@@ -112,6 +112,45 @@ func _spawn_party() -> void:
 
 
 # ---------------------------------------------------------------- setting out
+
+## The hotel room: set out for Akmentar, or sleep and let a day go by. With no way to travel (no
+## money, no horse, no truck, no boat, no pilot) the days still pass, and the mummy reaches Cairo:
+## the worst ending, not a softlock (Simon).
+func _room() -> void:
+	if ActionMenu.ui_open() or Game.flag("act8_set_out", false) or _lost:
+		return
+	var rows := [{"label": "Set out for Akmentar", "enabled": true, "action": {}},
+		{"label": "Sleep until morning (a day passes)", "enabled": true, "action": {}}]
+	var menu := ActionMenu.open(self, "Your room at the hotel", rows, player)
+	var pick := [-1]
+	menu.picked.connect(func(i: int) -> void:
+		pick[0] = i
+		menu.close())
+	await menu.closed
+	if pick[0] == 0:
+		_set_out()
+	elif pick[0] == 1:
+		Game.place = "act8_start"
+		Game.save_game()
+		Game.end_day()  # the countdowns tick
+		hud.toast("Day %d. The mummy reaches Cairo in %d days." % [Game.day, int(Game.countdowns.get("mummy", 0))], 4.0)
+		if int(Game.countdowns.get("mummy", 99)) <= 0:
+			_city_of_the_dead()
+
+
+var _lost := false
+
+
+func _city_of_the_dead() -> void:
+	_lost = true
+	Game.set_flag("mummy_in_cairo")
+	level.call("set_curse", 1.0, 1.0)
+	level.call("set_crowd", 0.0)
+	print("RESULT act8 ending mummy_in_cairo day=%d" % Game.day)
+	hud.show_message("THE CITY OF THE DEAD", "You never got the artifacts home. He has reached Cairo, and the dead walk its streets.
+
+Enter  return to the title")
+
 
 func _set_out() -> void:
 	if Game.flag("act8_set_out", false):
@@ -305,6 +344,9 @@ func _talk(id: String) -> String:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if args.size() > 0:
+		return
+	if _lost and event is InputEventKey and event.pressed and event.keycode in [KEY_ENTER, KEY_KP_ENTER]:
+		Loader.go(get_tree(), "res://title.tscn")
 		return
 	if _done and not Game.flag("player_sacrificed", false) and event is InputEventKey and event.pressed \
 			and event.keycode in [KEY_ENTER, KEY_KP_ENTER]:

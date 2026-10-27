@@ -19,7 +19,7 @@ const AT_ONCE := 5
 const SHOT_RANGE := 25.0
 const HIT_CHANCE := 0.35
 const SHOT_DAMAGE := 9.0
-const DROVER_GLB := "res://assets/characters/explorer/explorer.glb"  # crew stand-in
+const DROVER_GLB := Characters.DIR + Characters.CREW_STAND_IN  # crew stand-in (not the player's model)
 
 var level: CoastRoad
 var player: Player

@@ -683,7 +683,11 @@ func _draw_map() -> void:
 	var to_px := func(v: Array) -> Vector2: return m.position + Vector2(float(v[0]), float(v[1])) * m.size
 	var first := RouteBoard.load_board(MAP_BOARDS[0][0])
 	_draw_geography(first, m, to_px)
-	for b: Array in MAP_BOARDS:  # the ways not taken
+	# Nobody has heard of Akmentar before Karim's offer, and the roads there are only known once
+	# you sit down to choose one (Act 3's board): until then the map is just Egypt and Cairo.
+	var knows_tomb: bool = Game.act >= 2 or bool(Game.flag("act1_offer_accepted", false))
+	var knows_roads: bool = Game.act >= 3
+	for b: Array in (MAP_BOARDS if knows_roads else []):  # the ways not taken
 		for o: Dictionary in RouteBoard.load_board(b[0]).get("options", []):
 			var pts: Array = o.get("path", [])
 			for i in pts.size() - 1:
@@ -703,7 +707,7 @@ func _draw_map() -> void:
 	_draw_marks(m)
 	if taken.is_empty():
 		_line("No road taken yet.", Vector2(m.position.x, key_y), fs(16), Color(INK, 0.6))
-	for end: String in ["from", "to"]:
+	for end: String in (["from", "to"] if knows_tomb else ["from"]):
 		var c: Dictionary = first.get(end, {})
 		if c.is_empty():
 			continue

@@ -36,7 +36,7 @@ const WITHDRAW_UNSEEN := 20.0    # a bandit who hasn't seen anyone to shoot this
 const LAST_WAVE_LIMIT := 120.0   # after the last wave arrives, whoever's left withdraws by then
 ## Rival gunmen's bodies (Armour 01 rig) until their own GLBs arrive.
 static var rival_glb := {
-	"americans": "res://assets/characters/explorer/explorer.glb",
+	"americans": "res://assets/characters/act4/callahan.glb",
 	"germans": "res://assets/characters/bandits/bandit_scout.glb",
 }
 

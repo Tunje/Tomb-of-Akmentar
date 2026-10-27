@@ -125,10 +125,8 @@ func _quickstart() -> void:
 ## The level points on Act 5's map: the stairs' top, the low hall, the antechamber, the altar.
 func _points() -> void:
 	points.surface = level.stair_top
-	var low: Rect2i = AkmentarBelow.CHAMBERS["low"]
-	points.halls = level._cell(low.position.y + low.size.y / 2, low.position.x + low.size.x / 2)
-	var ante: Rect2i = AkmentarBelow.ANTE
-	points.royal = level._cell(ante.position.y + 1, ante.position.x + ante.size.x / 2)
+	points.halls = level.points["halls"]  # level 1's low hall (the tomb is five levels deep now)
+	points.royal = level.points["royal"]
 	points.altar = level.royal_pois.get("4", level.guardian_spawn)
 
 
@@ -210,6 +208,9 @@ func _arrival() -> void:
 		_end()
 
 
+const STRAY_AFTER := 25.0
+
+
 ## One level's threat: its talk, then (end_fight) its fight, until the minions are down.
 func _level(id: String, talk_id: String, line: String) -> void:
 	step = {"surface": Step.SURFACE, "halls": Step.HALLS, "royal": Step.ROYAL}[id]
@@ -218,14 +219,39 @@ func _level(id: String, talk_id: String, line: String) -> void:
 	print("RESULT act9 %s -> %s" % [id, end])
 	if end != "end_fight":
 		return
-	var around: Vector3 = points.halls if id == "surface" else points[id]  # the surface's fight comes up the stairs
+	var around: Vector3 = level.points["south"] if id == "surface" else points[id]  # the surface's fight comes up the main stairs
 	_wake_foes(around, int(FIGHT[id]))
 	Hints.once("aim_fire", self)
 	Hints.once("orders", self)
 	hud.toast("They're coming!", 2.5)
 	Barks.say_any(get_tree(), "mummy_seen", player.global_position)
+	var trace_t := 0.0
+	var closest := {}  # foe -> [nearest it's come, seconds since it last came nearer]
 	while _active_foes() > 0 and player.alive:
 		await get_tree().create_timer(0.3).timeout
+		trace_t += 0.3
+		# One that hasn't come any nearer in STRAY_AFTER s has lost the way (wedged on a corner, gone
+		# round the long way through the levels): it sinks back into the dark, so the fight can end.
+		for m in _foes:
+			if not is_instance_valid(m) or not m.is_active():
+				continue
+			var d := (m as Node3D).global_position.distance_to(player.global_position)
+			var rec: Array = closest.get(m, [INF, 0.0])
+			if d < float(rec[0]) - 1.0:
+				rec = [d, 0.0]
+			else:
+				rec[1] = float(rec[1]) + 0.3
+			closest[m] = rec
+			if float(rec[1]) > STRAY_AFTER and d > 12.0:
+				print("RESULT act9 %s stray at=%s" % [id, (m as Node3D).global_position.snapped(Vector3.ONE)])
+				(m as Node).queue_free()
+		if args.has("foe-trace") and trace_t >= 5.0:
+			trace_t = 0.0
+			var at := []
+			for m in _foes:
+				if is_instance_valid(m) and m.is_active():
+					at.append(str((m as Node3D).global_position.snapped(Vector3.ONE)))
+			print("FOES %s player=%s %s" % [id, player.global_position.snapped(Vector3.ONE), at])
 	print("RESULT act9 %s cleared t=%.1f" % [id, _t])
 
 
@@ -443,9 +469,32 @@ func _fell(id: String) -> void:
 func _wake_foes(around: Vector3, n: int) -> void:
 	var spots: Array = level.mummy_spawns.duplicate()
 	spots.append_array(level.minion_spawns)
-	spots.sort_custom(func(a: Vector3, b: Vector3) -> bool: return a.distance_to(around) < b.distance_to(around))
-	for k in mini(n, spots.size()):
-		_spawn_minion(spots[k], true)
+	# On the fight's own level first (the tomb is five deep: a spawn straight above or below is near
+	# in metres but a long way round, and the fight never ended), nearest across the floor.
+	var rank := func(p: Vector3) -> float:
+		return Vector2(p.x - around.x, p.z - around.z).length() + 1000.0 * absi(AkmentarBelow.deck_of(p.y) - AkmentarBelow.deck_of(around.y))
+	spots.sort_custom(func(a: Vector3, b: Vector3) -> bool: return rank.call(a) < rank.call(b))
+	# The tomb's own spawn points on this level, then open floor round the fight (a level with too
+	# few spawns of its own: the surface level has one).
+	var here := AkmentarBelow.deck_of(around.y)
+	var picked: Array[Vector3] = []
+	for p: Vector3 in spots:
+		if picked.size() < n and AkmentarBelow.deck_of(p.y) == here:
+			picked.append(p)
+	var map := get_world_3d().navigation_map
+	var tries := 0
+	while picked.size() < n and tries < 60:
+		tries += 1
+		var want := around + Vector3(randf_range(-22.0, 22.0), 0.0, randf_range(-22.0, 22.0))
+		var p := NavigationServer3D.map_get_closest_point(map, want)
+		if AkmentarBelow.deck_of(p.y) != here or Vector2(p.x - around.x, p.z - around.z).length() < 7.0:
+			continue
+		# Only floor you can walk to from the fight (the rock's hollow insides have navmesh too).
+		var way := NavigationServer3D.map_get_path(map, around, p, true)
+		if way.size() > 1 and way[way.size() - 1].distance_to(p) < 1.0:
+			picked.append(p)
+	for p in picked:
+		_spawn_minion(p, true)
 
 
 func _spawn_minion(at: Vector3, level_fight := false) -> void:

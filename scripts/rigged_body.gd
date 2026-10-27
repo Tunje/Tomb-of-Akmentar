@@ -70,6 +70,7 @@ func _setup_rig(glb: String) -> void:
 	_retarget = ModelRetarget.new()
 	add_child(_retarget)
 	_retarget.setup(_src, skeleton, bone_map, UNALIGNED)
+	FaceRig.attach(body)  # eyes, blinks and jaw when the head has them (named characters' new heads)
 
 
 func _build_tree() -> void:

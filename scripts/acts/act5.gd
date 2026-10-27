@@ -14,8 +14,9 @@ const LEVEL2_SITES := "res://sites/akmentar_below.json"
 const TOMB_SITES := "res://sites/royal_tomb.json"
 ## The slab across the main stairs' neck comes down on its own this long into the escape: slower
 ## than that and it's one of the side shafts.
-const NECK_SLAB_AFTER := 45.0
-const WAIT_AT_TOP := 8.0  # how long the survivors at the top wait for the rest
+const NECK_SLAB_AFTER := 150.0  # five levels up: the neck closes on the slow, not the steady
+const WAIT_AT_TOP := 8.0  # how long the survivors at the top wait once someone stops coming
+const WAIT_MAX := 60.0
 ## The allied expedition (the thieves) running out ahead of you: its leader and two of its people.
 const ALLY_TEAMS := {"americans": ["whitfield", "maggie", "callahan"], "germans": ["adler", "kruger", "vogel"]}
 
@@ -101,6 +102,8 @@ func _ready() -> void:
 		_view(str(args.view))
 	if args.has("holes"):
 		_scan_holes()
+	if args.has("reach"):
+		_scan_reach()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -122,7 +125,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func _resume_at_door() -> void:
 	step = Step.LEVEL2
 	var door := level.royal_door.global_position
-	player.global_position = Vector3(door.x, AkmentarBelow.FLOOR_Y, door.z + 3.0)
+	player.global_position = Vector3(door.x, AkmentarBelow.deck_y(AkmentarBelow.DECKS - 1), door.z + 3.0)
 	player.yaw = 0.0  # facing the door
 	_bring_party()
 	var ally: String = Game.flag("ally", "")
@@ -144,7 +147,7 @@ func _resume_escape() -> void:
 	level._nav.bake_navigation_mesh(false)
 	var door := level.royal_door.global_position
 	var at := door.lerp(level.guardian_spawn, 0.5)
-	at.y = AkmentarBelow.FLOOR_Y
+	at.y = AkmentarBelow.deck_y(AkmentarBelow.DECKS - 1)
 	player.global_position = at
 	var d := door - at
 	player.yaw = atan2(-d.x, -d.z)  # facing the way out
@@ -163,8 +166,8 @@ func _bring_party() -> void:
 
 func _descend() -> void:
 	step = Step.DESCEND
-	hud.show_message("BELOW AKMENTAR", "The air is cold and old. Somewhere ahead, the royal tomb.")
-	Objective.set_goal("Find the way to the royal tomb")
+	hud.show_message("BELOW AKMENTAR", "The air is cold and old. Somewhere far below, the royal tomb.")
+	Objective.set_goal("Find the way down to the royal tomb")
 	await get_tree().create_timer(2.5).timeout
 	hud.show_message("")
 	# The ally's leader comes down with you: the morning talk (what they found, what they hide).
@@ -188,9 +191,9 @@ func _level2() -> void:
 	if FileAccess.file_exists(LEVEL2_SITES):
 		for id in level.pois:
 			SiteSpot.make(level, "akmentar_below", AkmentarBelow.SITE_IDS[id], level.pois[id])
-	hud.toast("Level 2: you can study %d places before the royal door (%s)" % [budget,
+	hud.toast("On the way down you can study %d places before the royal door (%s)" % [budget,
 		"your allies insist on two of them" if ally != "" else "choose well"], 4.0)
-	Objective.set_goal("Study what you can, then open the royal door")
+	Objective.set_goal("Study what you can on the way down, then open the royal door at the bottom")
 	# Sleepers in the maze's dead ends: they wake when you come close or shoot near them.
 	for p in level.mummy_spawns:
 		var m := Mummy.new()
@@ -245,7 +248,7 @@ func _door_traps() -> void:
 	# -bf's TombTrap: darts from the side walls, then ceiling blocks, in front of the door.
 	var ts := _ready_script("res://scripts/tomb_trap.gd", "spring")
 	if ts:
-		var at := Vector3(level.royal_door.global_position.x, AkmentarBelow.FLOOR_Y, level.royal_door.global_position.z + 0.5)
+		var at := Vector3(level.royal_door.global_position.x, AkmentarBelow.deck_y(AkmentarBelow.DECKS - 1), level.royal_door.global_position.z + 0.5)
 		ts.spring(self, Transform3D(Basis(Vector3.UP, PI), at), [])
 		return
 	for i in 6:
@@ -294,6 +297,9 @@ func _awaken() -> void:
 	var gs := _ready_script(GUARDIAN, "spawn")
 	if gs:
 		guardian = gs.spawn(self, level.guardian_spawn, player)
+		guardian.set("commander", true)
+		if guardian.has_signal("commanded"):
+			guardian.connect("commanded", _summon)
 	else:
 		var m := Mummy.new()
 		m.priest = true
@@ -306,13 +312,60 @@ func _awaken() -> void:
 	if ss:
 		for v in level.vents:
 			ss.burst(self, v, player)
+	# Only the dead down here rise with him; the rest wait in the levels above until he calls them.
 	for p in level.minion_spawns:
-		var mm := Mummy.new()
-		add_child(mm)
-		mm.global_position = p
-		mm.target = player
-		mm.wake()
+		if AkmentarBelow.deck_of(p.y) == AkmentarBelow.DECKS - 1:
+			_raise(p)
+		else:
+			_dormant.append(p)
 	_escape()
+
+
+## His call (Guardian.commanded): the dead nearest `at` and ahead of it (the levels above you, the
+## way you're going) rise and come for you. A few at a time; at most MAX_RAISED walking at once.
+const PER_CALL := 2
+const MAX_RAISED := 9
+var _dormant: Array[Vector3] = []
+
+
+func _summon(at: Vector3) -> void:
+	if step != Step.ESCAPE:
+		return
+	var walking := 0
+	for m in get_tree().get_nodes_in_group("mummies"):
+		if m != guardian and is_instance_valid(m) and (m as Node).has_method("is_active") and m.call("is_active"):
+			walking += 1
+	var here := AkmentarBelow.deck_of(at.y)
+	_dormant.sort_custom(func(a: Vector3, b: Vector3) -> bool: return _call_rank(a, at, here) < _call_rank(b, at, here))
+	var n := 0
+	while n < PER_CALL and walking + n < MAX_RAISED and not _dormant.is_empty():
+		var p: Vector3 = _dormant[0]
+		if _call_rank(p, at, here) > 200.0:
+			break
+		_dormant.remove_at(0)
+		_raise(p)
+		n += 1
+	if n > 0:
+		hud.toast("Somewhere ahead, stone scrapes on stone. He's calling them up.", 3.0)
+	if args.has("auto"):
+		print("RESULT summon raised=%d walking=%d left=%d level=%d t=%.1f" % [n, walking, _dormant.size(), here, _t])
+
+
+## Lower = called first: on your level or the next one up (where you're heading), 8-40 m off.
+func _call_rank(p: Vector3, at: Vector3, here: int) -> float:
+	var lvl := AkmentarBelow.deck_of(p.y)
+	var d := Vector2(p.x - at.x, p.z - at.z).length()
+	if lvl > here or lvl < here - 1 or d < 8.0:
+		return 999.0
+	return d + (0.0 if lvl == here else 10.0)
+
+
+func _raise(p: Vector3) -> void:
+	var mm := Mummy.new()
+	add_child(mm)
+	mm.global_position = p
+	mm.target = player
+	mm.wake()
 
 
 func _escape() -> void:
@@ -344,7 +397,7 @@ func _escape() -> void:
 		level._mark_cover(rubble, size)
 		k += 1
 		_rubble_hint(rubble)
-	level._nav.bake_navigation_mesh(false)  # paths round the rubble (or vault it)
+	_rebake()  # paths round the rubble (or vault it)
 	_arm_slabs()
 	if args.has("auto"):
 		_auto_escape()
@@ -456,7 +509,7 @@ func _arm_slabs() -> void:
 		s.target = player
 		s.people = people
 		s.armed = true
-		s.shut.connect(func(): level._nav.bake_navigation_mesh(false))
+		s.shut.connect(_rebake)
 		if args.has("auto"):
 			s.started.connect(func(): print("RESULT slab start at=%s t=%.1f" % [s._floor, _t]))
 			s.shut.connect(func():
@@ -524,18 +577,29 @@ func _out(c: Node3D) -> bool:
 ## At the top: a few seconds for the companions still coming; whoever isn't out by then (cut off
 ## behind a slab, caught, lost in the dark) is a casualty.
 func _wait_for_companions() -> void:
+	# Five levels is a long climb: you wait as long as someone is still coming (getting nearer the
+	# way out), and give up on whoever has stopped coming for WAIT_AT_TOP s (cut off, caught, down).
 	var t := 0.0
+	var since_progress := 0.0
+	var best := {}
 	var waiting := true
-	while waiting and t < WAIT_AT_TOP:
+	while waiting and since_progress < WAIT_AT_TOP and t < WAIT_MAX:
 		waiting = false
-		for c in companions.values():
+		var closer := false
+		for id in companions:
+			var c: Node3D = companions[id]
 			if is_instance_valid(c) and c.alive and not _out(c):
 				waiting = true
+				var d := c.global_position.distance_to(level.stair_top)
+				if d < float(best.get(id, INF)) - 0.5:
+					best[id] = d
+					closer = true
 		if waiting:
 			if t == 0.0:
 				hud.toast("You wait at the top, listening for footsteps...", 3.0)
 			await get_tree().create_timer(0.5).timeout
 			t += 0.5
+			since_progress = 0.0 if closer else since_progress + 0.5
 	var lost: Array = []
 	for id in companions:
 		var c: Gunman = companions[id]
@@ -594,6 +658,22 @@ func _spawn_party() -> void:
 
 # ---------------------------------------------------------------- test bot
 
+var _rebake_again := false
+
+
+## Mid-escape rebakes run on a thread (a synchronous one stalled ~220 ms when the rubble fell,
+## -7f's perf sweep); one asked for while another is baking runs once that one finishes.
+func _rebake() -> void:
+	if level._nav.is_baking():
+		if not _rebake_again:
+			_rebake_again = true
+			level._nav.bake_finished.connect(func():
+				_rebake_again = false
+				_rebake(), CONNECT_ONE_SHOT)
+		return
+	level._nav.bake_navigation_mesh(true)
+
+
 var _death_logged := false
 var _still := 0
 
@@ -609,6 +689,13 @@ func _process(delta: float) -> void:
 	if args.has("auto") and not player.alive and not _death_logged:
 		_death_logged = true
 		print("RESULT act5 died step=%s at=%s t=%.1f" % [Step.keys()[step], player.global_position, _t])
+	if args.has("party-trace") and step == Step.ESCAPE and int(_t * 10) % 40 == 0:
+		var line := []
+		for id in companions:
+			var c: Gunman = companions[id]
+			if is_instance_valid(c):
+				line.append("%s %s %s" % [id, c.global_position.snapped(Vector3.ONE * 0.5), Gunman.State.keys()[c.state]])
+		print("PARTY t=%.1f player=%s %s" % [_t, player.global_position.snapped(Vector3.ONE * 0.5), line])
 	if args.has("seconds") and _t > float(args.seconds):
 		print("RESULT act5 timeout step=%s player=%s" % [Step.keys()[step], player.global_position])
 		get_tree().quit(1)
@@ -650,47 +737,78 @@ func _auto_tomb() -> void:
 
 ## Escape: walk the navmesh path to the stairs' top at a sprint (god mode in the test).
 ## Test views of the maze: --view=<name> --shot-dir=... stands the player there and takes one shot.
-const VIEWS := {"bridge": [20, 13, 0.0, -0.45], "pit": [24, 13, 0.0, 0.4], "ramp": [23, 9, -PI / 2, 0.15],
-	"secret": [21, 40, PI / 2, -0.1], "secret2": [34, 21, PI / 2, -0.05], "deadend": [13, 31, 0.0, -0.1],
-	"hall": [18, 40, 0.0, -0.05], "hub": [19, 24, 0.0, -0.05], "walkway": [27, 26, -PI / 2, -0.35],
-	"deep": [30, 30, 0.3, 0.45], "sarc": [6, 22, -0.3, -0.25], "jars": [3, 18, 0.0, -0.5], "amulet": [3, 29, 0.0, -0.6]}
+## Test views of the tomb: --view=<name> --shot-dir=... stands the player there and takes one shot.
+## [level, row, col, yaw, pitch]
+const VIEWS := {"shaft": [0, 19, 38, PI * 0.75, -0.7], "stair": [2, 32, 25, 0.0, 0.15], "bridge1": [1, 25, 31, -PI / 2, -0.1],
+	"bridge3": [3, 26, 31, 0.0, -0.2], "forecourt": [4, 30, 31, 0.0, 0.75], "royal": [4, 7, 31, 0.0, -0.1],
+	"hall2": [2, 50, 30, -PI / 2, -0.05], "secret": [2, 26, 49, -PI / 2, -0.05], "rails": [0, 20, 37, PI * 0.75, -0.25],
+	"west1": [1, 33, 9, 0.0, -0.05], "south": [0, 42, 31, 0.0, 0.0]}
 
 
 func _view(name: String) -> void:
 	await get_tree().create_timer(4.0).timeout
-	var v: Array = VIEWS.get(name, VIEWS.bridge)
-	player.global_position = level._cell(v[0], v[1]) + Vector3.UP * 0.3
-	player.yaw = v[2]
-	player.pitch = v[3]
+	var v: Array = VIEWS.get(name, VIEWS.shaft)
+	player.global_position = level.dcell(v[0], v[1], v[2]) + Vector3.UP * 0.3
+	player.yaw = v[3]
+	player.pitch = v[4]
 	var i := 0
 	for c in companions.values():
-		(c as Node3D).global_position = player.global_position + Basis(Vector3.UP, v[2]) * Vector3(i * 0.9 - 0.45, 0, 2.0)
+		(c as Node3D).global_position = player.global_position + Basis(Vector3.UP, v[3]) * Vector3(i * 0.9 - 0.45, 0, 2.0)
 		i += 1
 	await get_tree().create_timer(2.5).timeout
 	await _shot("act5_view_%s.png" % name)
 	get_tree().quit(0)
 
 
-## Test: --holes. Every walkable cell, at its centre and near its corners: something solid to land
-## on within 7 m below the upper floor (the deep halls' floors are 5 m down). Prints each hole.
+## Test: --holes. Every walkable cell on every level, at its centre and near its corners: floor
+## within 3 m below (the well's open cells and the stairwells' holes are skipped). Prints each hole.
 func _scan_holes() -> void:
 	await get_tree().physics_frame
 	await get_tree().physics_frame
 	var space := get_world_3d().direct_space_state
 	var holes := 0
-	for r in AkmentarBelow.H:
-		for c in AkmentarBelow.W:
-			var ch := level._ch(r, c)
-			if ch in ["#", "L", "D", "?"]:
-				continue
-			var p := level._cell(r, c)
-			for off in [Vector2.ZERO, Vector2(0.8, 0.8), Vector2(-0.8, 0.8), Vector2(0.8, -0.8), Vector2(-0.8, -0.8)]:
-				var from := Vector3(p.x + off.x, AkmentarBelow.FLOOR_Y + 1.5, p.z + off.y)
-				var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(from, from + Vector3.DOWN * 8.5, 1))
-				if hit.is_empty():
-					holes += 1
-					print("RESULT hole r=%d c=%d ch=%s at=%s" % [r, c, ch, from])
+	for k in AkmentarBelow.DECKS:
+		for r in AkmentarBelow.H:
+			for c in AkmentarBelow.W:
+				var ch := level.dch(k, r, c)
+				if ch in ["#", "L", "D", "?", "O", "s"]:
+					continue
+				var p := level.dcell(k, r, c)
+				for off in [Vector2.ZERO, Vector2(0.8, 0.8), Vector2(-0.8, 0.8), Vector2(0.8, -0.8), Vector2(-0.8, -0.8)]:
+					var from := Vector3(p.x + off.x, p.y + 1.5, p.z + off.y)
+					var hit := space.intersect_ray(PhysicsRayQueryParameters3D.create(from, from + Vector3.DOWN * 3.0, 1))
+					if hit.is_empty():
+						holes += 1
+						print("RESULT hole level=%d r=%d c=%d ch=%s at=%s" % [k, r, c, ch, from])
 	print("RESULT holes=%d" % holes)
+	get_tree().quit(0)
+
+
+## Test: --reach. From every walkable cell on every level (every 3rd, for speed), a navmesh path to
+## the main stairs' top must arrive. Prints each cell that can't get out (walls in the way, a gap).
+func _scan_reach() -> void:
+	await get_tree().create_timer(1.0).timeout
+	var map := get_world_3d().navigation_map
+	var bad := 0
+	var n := 0
+	for k in AkmentarBelow.DECKS:
+		for r in range(0, AkmentarBelow.H, 3):
+			for c in range(0, AkmentarBelow.W, 3):
+				var ch := level.dch(k, r, c)
+				if ch in ["#", "L", "D", "?", "O", "s", "|"]:
+					continue
+				var p := level.dcell(k, r, c)
+				var from := NavigationServer3D.map_get_closest_point(map, p)
+				if from.distance_to(p) > 1.2:
+					bad += 1
+					print("RESULT reach nonav level=%d r=%d c=%d ch=%s" % [k, r, c, ch])
+					continue
+				n += 1
+				var way := NavigationServer3D.map_get_path(map, from, level.stair_top, true)
+				if way.size() < 2 or way[way.size() - 1].distance_to(level.stair_top) > 3.0:
+					bad += 1
+					print("RESULT reach stuck level=%d r=%d c=%d ch=%s ends=%s" % [k, r, c, ch, way[way.size() - 1] if way.size() > 0 else Vector3.ZERO])
+	print("RESULT reach checked=%d bad=%d" % [n, bad])
 	get_tree().quit(0)
 
 

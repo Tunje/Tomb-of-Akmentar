@@ -114,21 +114,27 @@ func _on_changed(what: String) -> void:
 
 
 ## Hired people join: a companion following the player for everyone in the party.
+## Nobody trails after you round Cairo (Simon: "they should not start instantly following you"):
+## whoever you've hired goes off to wait at the hotel, and you'll find them there, standing about
+## its door, until the expedition leaves.
 func _sync_party() -> void:
+	var at_hotel := 0
 	for id in Game.party():
 		if companions.has(id):
+			at_hotel += 1
 			continue
-		var c := Gunman.make_companion(id, player, Characters.glb(id))
-		if c == null:
-			continue
-		add_child(c)
 		var npc: Node3D = level.npcs.get(id)
-		c.global_position = npc.global_position if npc else player.global_position + Vector3(1.5, 0, 2.0)
+		var seen := npc != null and npc.global_position.distance_to(player.global_position) < 12.0
 		if npc:
-			npc.queue_free()  # the standing figure becomes the follower
+			npc.queue_free()
 			level.npcs.erase(id)
-		companions[id] = c
-		Hints.once("orders")  # the first follower: G for hold / follow
+		var spot := level.open_point(level.near_spot("hotel", -3.0 + at_hotel * 1.4, 2.5))
+		var waiting := Npc.make(level, id, spot, "", Characters.glb(id))
+		waiting.face_towards(spot + Vector3(0, 0, 4))
+		companions[id] = waiting
+		at_hotel += 1
+		if seen and Game.flag("act2_started", false):
+			hud.toast("%s will wait for you at the hotel." % DayLog.person(id), 3.0)
 
 
 func _on_event(name: String) -> void:

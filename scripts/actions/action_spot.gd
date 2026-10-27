@@ -113,20 +113,55 @@ func run(a: Dictionary) -> bool:
 		if menu:
 			menu.flash(NO_TIME)
 		return false
+	var conv := str(a.get("conversation", ""))
+	# A purchase that costs no action keeps the shop open, says what you bought and what you now
+	# have (Simon: "you do buy them, it's just not shown in any way").
+	if conv == "" and cost == 0 and menu:
+		var before := Game.money
+		Game.apply(a.get("do", []))
+		_mark_done(a)
+		DayLog.add(str(a.get("log", a.get("label", ""))))
+		menu.flash(_bought_line(a, before))
+		menu.set_rows(rows())
+		action_done.emit(str(a.get("id", "")))
+		return true
 	if menu:
 		menu.close()
 		menu = null
 	Game.spend_action(cost)
 	_mark_done(a)
 	DayLog.add(str(a.get("log", a.get("label", ""))))
-	var conv := str(a.get("conversation", ""))
-	if conv != "":
-		var c := _talk(conv, str(a.get("with", "")))
-		c.finished.connect(func(_end: String) -> void: _after(a))
-	else:
+	if conv == "":
+		var before := Game.money
 		Game.apply(a.get("do", []))
+		_toast(_bought_line(a, before))
 		_after(a)
+		return true
+	var c := _talk(conv, str(a.get("with", "")))
+	c.finished.connect(func(_end: String) -> void: _after(a))
 	return true
+
+
+## "Bought: rations, a week for the party · −£100 (£240 left) · rations 7".
+func _bought_line(a: Dictionary, money_before: int) -> String:
+	var parts: Array[String] = [str(a.get("log", a.get("label", "Done")))]
+	var spent := money_before - Game.money
+	if spent != 0:
+		parts.append("%s£%d (£%d left)" % ["−" if spent > 0 else "+", absi(spent), Game.money])
+	for d in a.get("do", []):
+		if d is Dictionary and d.has("item"):
+			var it: Array = d["item"]
+			parts.append("%s %d" % [str(it[0]).replace("_", " "), int(Game.inventory.get(it[0], 0))])
+	return " · ".join(parts)
+
+
+func _toast(text: String) -> void:
+	if text == "":
+		return
+	for n in get_tree().current_scene.get_children():
+		if n is Hud:
+			(n as Hud).toast(text, 3.0)
+			return
 
 
 func _talk(conv: String, with_id: String) -> Conversation:

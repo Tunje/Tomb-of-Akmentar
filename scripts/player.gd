@@ -42,6 +42,7 @@ var max_health := 100.0
 var health := 100.0
 var alive := true
 var controls_enabled := true
+var _fire_lock := false  # see _physics_process: held through a menu, ignored until released
 
 var weapons: Array[WeaponData] = []
 var ammo: Array[int] = []
@@ -270,6 +271,12 @@ func _physics_process(delta: float) -> void:
 	_dodge_cd = maxf(_dodge_cd - delta, 0.0)
 	_face_aim_t = maxf(_face_aim_t - delta, 0.0)
 	_hurt_cd = maxf(_hurt_cd - delta, 0.0)
+	# A click that picked something in a menu is still held when the menu closes: no shot (or
+	# drawing the gun) until it's let go (Simon: buying supplies fired the gun).
+	if not controls_enabled or ActionMenu.ui_open():
+		_fire_lock = true
+	elif _fire_lock and not Input.is_action_pressed("fire") and not Input.is_action_pressed("aim"):
+		_fire_lock = false
 	_pad_look(delta)
 	var w := weapons[current]
 
@@ -292,8 +299,8 @@ func _physics_process(delta: float) -> void:
 	var want_fire := false
 	if controls_enabled and alive:
 		input = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-		want_aim = _held("aim")
-		want_fire = Input.is_action_pressed("fire")
+		want_aim = _held("aim") and not _fire_lock
+		want_fire = Input.is_action_pressed("fire") and not _fire_lock
 		if input.length() < 0.3:
 			_latched.erase("sprint")  # a toggled sprint ends when you stop
 		var sprint_held := _held("sprint")

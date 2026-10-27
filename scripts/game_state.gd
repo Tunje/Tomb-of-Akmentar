@@ -87,7 +87,8 @@ func companion(id: String) -> Dictionary:
 
 func in_party(id: String) -> bool:
 	var c: Dictionary = companions.get(id, {})
-	return c.get("recruited", false) and c.get("alive", true)
+	# left_behind: stayed in Cairo when there weren't mounts for everyone (Act 8)
+	return c.get("recruited", false) and c.get("alive", true) and not c.get("left_behind", false)
 
 
 func party() -> Array:

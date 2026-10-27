@@ -27,7 +27,7 @@ const MODELS := {
 }
 const COMPANIONS := ["mahmoud", "khalil", "naguib", "pembroke", "hassan", "hargreaves", "idris", "isabelle",
 	"saleh", "youssef", "farid"]
-const CREW_STAND_IN := "explorer/explorer.glb"
+const CREW_STAND_IN := "bandits/bandit_gunhand.glb"  # never the player's own model (Simon: "a copy of me on the boat")
 const STAND_IN := "bandits/bandit_scout.glb"
 
 

@@ -106,8 +106,77 @@ func prompt() -> String:
 
 
 func _process(_delta: float) -> void:
-	if interactable and Engine.get_process_frames() % 30 == 0:
-		interactable.prompt = prompt()
+	if Engine.get_process_frames() % 30 == 0:
+		if interactable:
+			interactable.prompt = prompt()
+		_show_state()
+
+
+# ---------------------------------------------------------------- its marker
+# Simon: "it's not marking locations anymore... it feels arbitrary which ones I'm allowed to
+# click". Every site shows itself: a ring on the ground and its name over it, gold while you can
+# study it, red-brown with the reason when you can't (claimed, locked, no studies left), grey once
+# studied. Seen from MARK_SEEN m.
+
+const MARK_SEEN := 32.0
+const GOLD := Color(1.0, 0.78, 0.35)
+const BARRED := Color(0.75, 0.35, 0.25)
+const DONE := Color(0.55, 0.52, 0.48)
+var _ring: MeshInstance3D
+var _label: Label3D
+var _ring_mat: StandardMaterial3D
+
+
+func _show_state() -> void:
+	if _ring == null:
+		_build_marker()
+	var why := refusal()
+	var col := GOLD
+	var line := "E  study it"
+	if Journal.has(clue_id()):
+		col = DONE
+		line = "studied"
+	elif why != "":
+		col = BARRED
+		line = why.get_slice(".", 0)  # the reason's first sentence
+	elif has_budget() and SiteBudget.is_ally_site(area, site_id):
+		line = "E  study it (your ally's pick)"
+	_ring_mat.albedo_color = Color(col, 0.55 if col != DONE else 0.3)
+	_ring_mat.emission = col
+	_label.modulate = col
+	_label.text = "%s\n%s" % [site.get("name", site_id), line]
+
+
+func _build_marker() -> void:
+	_ring = MeshInstance3D.new()
+	var tm := TorusMesh.new()
+	tm.inner_radius = 1.05
+	tm.outer_radius = 1.2
+	tm.rings = 24
+	tm.ring_segments = 6
+	_ring.mesh = tm
+	_ring.scale = Vector3(1.0, 0.15, 1.0)
+	_ring_mat = StandardMaterial3D.new()
+	_ring_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_ring_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_ring_mat.emission_enabled = true
+	_ring_mat.emission_energy_multiplier = 1.5
+	_ring.material_override = _ring_mat
+	_ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_ring.visibility_range_end = MARK_SEEN
+	add_child(_ring)
+	_ring.position = Vector3.UP * 0.04
+	_label = Label3D.new()
+	_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_label.font_size = 40
+	_label.pixel_size = 0.004
+	_label.outline_size = 10
+	_label.outline_modulate = Color(0, 0, 0, 0.8)
+	_label.visibility_range_end = MARK_SEEN * 0.6
+	_label.visibility_range_end_margin = 3.0
+	_label.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
+	add_child(_label)
+	_label.position = Vector3.UP * 2.4
 
 
 func inspect(by: Node) -> bool:

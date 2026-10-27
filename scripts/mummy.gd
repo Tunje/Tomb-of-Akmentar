@@ -384,6 +384,11 @@ func _gib(part: String, dir: Vector3) -> void:
 	if ResourceLoader.exists(piece_file):
 		var piece: Node3D = (load(piece_file) as PackedScene).instantiate()
 		rb.add_child(piece)
+		var tall := 0.0  # fit its length to the hitbox's, whatever scale it was packed at
+		for mi: MeshInstance3D in piece.find_children("*", "MeshInstance3D", true, false):
+			tall = maxf(tall, (mi.transform * mi.get_aabb()).end.y)
+		if tall > 0.01:
+			piece.scale = Vector3.ONE * (cap.height / tall)
 		piece.position = Vector3.DOWN * cap.height * 0.5
 	else:
 		var cm := CapsuleMesh.new()

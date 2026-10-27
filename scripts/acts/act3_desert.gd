@@ -25,7 +25,7 @@ static var next_scene := "res://act4.tscn"
 ## The coast road by truck instead of the desert by horse.
 @export var coast := false
 
-const DROVER_GLB := "res://assets/characters/explorer/explorer.glb"  # crew stand-in
+const DROVER_GLB := Characters.DIR + Characters.CREW_STAND_IN  # crew stand-in (not the player's model)
 
 var level: DesertRoute
 var player: Player

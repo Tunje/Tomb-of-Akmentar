@@ -22,6 +22,12 @@ const FIRE_RADIUS := 3.2
 const LIFE := 30.0
 const DRAIN_TIME := 2.5
 const SIGHT := 45.0
+## The swarm is a stream, not a ball rolling at you (Simon: "the scarabs coming in straight there
+## feels bad"): a head where the biting is, and a tail of beetles pouring along the way it came;
+## it comes on in surges, and far off it casts about (weaving) rather than homing in.
+const TAIL := 6.0                # m of stream behind the head
+const HEAD_SHARE := 0.35         # of the beetles in the head
+const SENSE := 9.0               # inside this it surges straight for you; beyond, it weaves
 
 var origin := Vector3.ZERO
 var normal := Vector3.FORWARD
@@ -46,6 +52,8 @@ var _path := PackedVector3Array()
 var _repath := 0.0
 var _retarget := 0.0
 var _rng := RandomNumberGenerator.new()
+var _trail := PackedVector3Array()  # where the head has been, newest last
+var _phase := 0.0
 static var _player_cache: Player
 
 
@@ -112,6 +120,7 @@ func _ready() -> void:
 	top_level = true
 	global_transform = Transform3D.IDENTITY
 	_rng.randomize()
+	_phase = _rng.randf() * TAU
 	# The floor under the crack.
 	var space := get_world_3d().direct_space_state
 	var down := space.intersect_ray(PhysicsRayQueryParameters3D.create(origin + normal * 0.6 + Vector3.UP * 1.5, origin + normal * 0.6 + Vector3.DOWN * 3.0, 1))
@@ -178,6 +187,10 @@ func _physics_process(delta: float) -> void:
 				queue_free()
 				return
 	_keep_off_fire(fire)
+	if _trail.is_empty() or _trail[_trail.size() - 1].distance_to(_centre) > 0.3:
+		_trail.append(_centre)
+		if _trail.size() > int(TAIL / 0.3) + 2:
+			_trail.remove_at(0)
 	_move_beetles(delta, fire)
 	if _state != "drain":
 		_bite(delta)
@@ -239,7 +252,16 @@ func _flow_to(goal: Vector3, delta: float) -> void:
 	var next: Vector3 = _path[0] if not _path.is_empty() else goal
 	var step := Vector3(next.x - _centre.x, 0, next.z - _centre.z)
 	if step.length() > 0.02:
-		_centre += step.normalized() * minf(SPEED * delta, step.length())
+		var far := Vector2(goal.x - _centre.x, goal.z - _centre.z).length() > SENSE and _state == "hunt"
+		# Surges: quick, then almost still, out of step with any other swarm.
+		var pace := SPEED * (0.45 + 0.85 * maxf(sin(_t * 1.9 + _phase), 0.0))
+		var dir := step.normalized()
+		if far:  # casting about: a weave across the way, slower
+			dir = dir.rotated(Vector3.UP, sin(_t * 1.1 + _phase) * 0.6)
+			pace *= 0.6
+		_centre += dir * minf(pace * delta, step.length() if not far else pace * delta)
+		if far and NavigationServer3D.map_get_iteration_id(map) > 0:
+			_centre = NavigationServer3D.map_get_closest_point(map, _centre)  # the weave stays on the floor
 	_centre.y = lerpf(_centre.y, next.y, minf(delta * 4.0, 1.0))
 	_floor_y = _centre.y
 
@@ -263,6 +285,12 @@ func _move_beetles(delta: float, fire: Array[Dictionary]) -> void:
 		var o := _off[i].rotated(Vector3.UP, swirl * (0.5 + float(i % 7) * 0.12))
 		var goal := _centre + o
 		goal.y = _floor_y + 0.03
+		var u := float(i) / COUNT
+		if u >= HEAD_SHARE and _trail.size() > 2:  # the tail: strung back along the way it came
+			var back := (u - HEAD_SHARE) / (1.0 - HEAD_SHARE) * (_trail.size() - 1)
+			var k := clampi(_trail.size() - 1 - int(back), 0, _trail.size() - 1)
+			goal = _trail[k] + o * 0.45
+			goal.y = _trail[k].y + 0.03
 		var v := _vel[i]
 		v = v.lerp((goal - p) * 4.0, minf(delta * 6.0, 1.0))
 		v += Vector3(_rng.randf_range(-1, 1), 0, _rng.randf_range(-1, 1)) * 2.0
