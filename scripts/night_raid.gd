@@ -58,6 +58,7 @@ var _t := 0.0
 var _wave := 0
 var _wave_t := 0.0
 var _wave_members: Array[Gunman] = []
+var _spawning := 0  # a wave still coming in (one bandit a frame): no next wave or end meanwhile
 var _waves: Array = WAVES
 var _far := {}  # team -> {wiped, end, deaths: Array[float], kills, fx_t}
 var _party_start: Array[String] = []
@@ -136,7 +137,14 @@ func _next_wave() -> void:
 	var from := _wave_origin(centre, dir)
 	dir = _flat(from - centre).normalized()
 	var side := Vector3(-dir.z, 0, dir.x)
+	_spawning += 1
 	for i in count:
+		if i > 0:
+			# One a rendered frame: four rigged bandits at once were a 379 ms stall (tests/perf_test,
+			# Act 4). Not physics_frame: after a slow frame, the catch-up physics steps all come in one.
+			await get_tree().process_frame
+			if _done or not is_inside_tree():
+				break
 		var b := Gunman.new()
 		b.glb = GunmanBody.BANDITS[(i + _wave) % GunmanBody.BANDITS.size()]
 		b.name = "Bandit_%d_%d" % [_wave, i + 1]
@@ -154,6 +162,7 @@ func _next_wave() -> void:
 		b.killed.connect(func(_g): bandits_killed += 1)
 		bandits.append(b)
 		_wave_members.append(b)
+	_spawning -= 1
 	print("NightRaid: wave %d (%d bandits) at the %s camp" % [_wave, count, here])
 
 
@@ -173,7 +182,7 @@ func _physics_process(delta: float) -> void:
 	if player and not player.alive:
 		_done = true  # the normal death screen takes over
 		return
-	if _wave < _waves.size() and (_fighting(_wave_members) <= NEXT_WAVE_WHEN or _wave_t > NEXT_WAVE_AFTER):
+	if _spawning == 0 and _wave < _waves.size() and (_fighting(_wave_members) <= NEXT_WAVE_WHEN or _wave_t > NEXT_WAVE_AFTER):
 		_next_wave()
 	# Defenders at the real fight open up once the order is close.
 	if here in RIVALS:
@@ -195,7 +204,7 @@ func _physics_process(delta: float) -> void:
 		print("NightRaid: t=%.0f wave %d/%d, %d fighting: %s" % [_t, _wave, _waves.size(), parts.size(), "; ".join(parts)])
 	if _wave >= _waves.size():
 		_withdraw_stragglers()
-	if _wave >= _waves.size() and _fighting(bandits) == 0:
+	if _spawning == 0 and _wave >= _waves.size() and _fighting(bandits) == 0:
 		if _end_t < 0.0:
 			_end_t = _t
 			if end_reason == "":

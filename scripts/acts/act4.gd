@@ -51,7 +51,7 @@ func _ready() -> void:
 		get_window().set_flag(Window.FLAG_NO_FOCUS, true)
 	level = AkmentarSurface.new()
 	add_child(level)
-	Warmup.start(self, NightRaid.rival_glb.values())  # the raiders, loaded now (tests/perf_test)
+	Warmup.start(self, NightRaid.rival_glb.values() + Warmup.BANDITS)  # the rival camps and the raid's bandits, loaded now (tests/perf_test)
 	Ambience.play(self, "desert")
 	level.set_night(0.0)
 	level.place_sites()
@@ -135,7 +135,7 @@ func _draft() -> void:
 	_mark_claims()
 	for id in level.site_spots:
 		(level.site_spots[id] as SiteSpot).set_marker_only()
-	_camp_jobs("staff_sites", [level, _claimed_sites(), {}])
+	_camp_jobs("staff_sites", [level, _claimed_sites(), Crews.by_kind()])  # {kind: men} of the crews hired
 	_camp_jobs("assign", [level, companions, "act4_day", false, {"anchor": level.camps.party, "sites": _claimed_sites()}])
 	_day()
 
