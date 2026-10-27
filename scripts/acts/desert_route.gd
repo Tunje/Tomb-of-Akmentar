@@ -75,6 +75,7 @@ func _ready() -> void:
 	_env.fog_density = 0.003
 	_env.fog_light_color = Color(0.8, 0.66, 0.48)
 	_nav.bake_navigation_mesh(false)
+	Crowd.populate(self, "desert_town")  # villagers, goats and a donkey by the town (-f9's Crowd)
 
 
 # ---------------------------------------------------------------- the coast
