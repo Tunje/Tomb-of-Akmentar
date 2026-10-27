@@ -89,6 +89,7 @@ func _ready() -> void:
 		_route_event = back
 		_to_the_road(true)
 		return
+	CampJobs.assign(cairo, companions, "act8_prep")  # about town at their own errands, not behind you
 	hud.show_message("THE WAY BACK", "The jars and the amulet must go home to Akmentar, and the guardian is coming for them.\nGet ready in Cairo, then set out from the hotel.")
 	Objective.set_goal("Get ready in Cairo, then set out from the hotel")
 	await get_tree().create_timer(3.5).timeout
@@ -175,6 +176,7 @@ func _set_out() -> void:
 	while not closed[0]:
 		await get_tree().process_frame
 	var route := str(Game.flag("route_act8_route", ""))
+	CampJobs.release(level)
 	if route in ["desert", "coast"]:
 		await _choose_riders(route)
 	for e in _events:

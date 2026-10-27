@@ -162,7 +162,12 @@ func _after_road() -> void:
 		Game.set_flag("act3_camp_done")
 		hud.toast("Night on the road. A fire, and time to talk.", 3.0)
 		await get_tree().create_timer(1.0).timeout
+		# The camp: everyone to their own job round it, not standing behind you (-f9's CampJobs).
+		var camp := CampJobs.make_camp(level, player.global_position + Vector3(9.0, 0, 0))
+		CampJobs.assign(level, companions, "act3_camp", true, {"anchor": camp})
+		await get_tree().create_timer(4.0).timeout  # (they walk over and settle)
 		await _talk("act3_camp")
+	CampJobs.release(level)
 	await _talk("act3_race")
 	_end()
 
