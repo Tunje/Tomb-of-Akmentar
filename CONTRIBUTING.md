@@ -11,6 +11,17 @@ It loads every `.gd` and every `.tscn` in the project and prints one `RESULT par
 line per broken file, then `RESULT parse_all failures=N`. It exits with 1 if anything failed.
 Fix your own failures before committing, and tell the owner about anyone else's.
 
+A new `class_name` (yours or someone else's) isn't known until the class cache is refreshed. Until
+then, every file that uses it fails with "Identifier ... not declared". So after adding one, or when
+failures name a class you can see in the tree, refresh first:
+
+```
+godot --headless --path . --import
+```
+
+To check that every save resumes (Continue's path), run `tests/resume_test.tscn` once per place.
+The loop is in that file's header.
+
 A few habits that keep it green:
 
 - Save edits in an order that compiles at every step: add a new function before its first caller.
