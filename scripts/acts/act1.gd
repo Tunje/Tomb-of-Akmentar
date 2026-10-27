@@ -13,9 +13,9 @@ extends Node3D
 
 const PLAN := "res://actions/act1_plan.json"
 ## Where the scenes happen on the Cairo map (its spot ids).
-const OFFICE := "club"
+const OFFICE := "freddie"  # his office, inside (CairoInteriors)
 const STREET := "bazaar"
-const CAFE := "tavern"
+const CAFE := "cafe"  # the café side of the tavern, inside
 
 enum Step { ARRIVE, OFFICE, COLLECTORS, ARMED, OFFER, END }
 
@@ -81,7 +81,8 @@ func _ready() -> void:
 func _to_office() -> void:
 	step = Step.OFFICE
 	var at: Vector3 = level.spots[OFFICE]
-	var umm := Npc.make(level, "umm_sayed", level.near_spot(OFFICE, 1.4), "", Characters.glb("umm_sayed"))
+	var umm := Npc.make(level, "umm_sayed", CairoInteriors.UMM_SAYED[0], "", Characters.glb("umm_sayed"))
+	umm.face_towards(CairoInteriors.UMM_SAYED[1])  # in Freddie's office, turned to the door
 	_office = Interactable.make(level, at, "Freddie's office", "act1_office", 1.4)
 	_office.used.connect(func(_by): _talk("act1_office", umm, _after_office))
 	hud.toast("Find Freddie's office, by the club.", 4.0)
@@ -141,7 +142,7 @@ func _armed_men() -> void:
 func _to_cafe() -> void:
 	step = Step.OFFER
 	var at: Vector3 = level.spots[CAFE]
-	_karim = Npc.make(level, "karim", level.near_spot(CAFE, -1.4, 0.3), "", Characters.glb("karim"))
+	_karim = Npc.make(level, "karim", CairoInteriors.ROOM_PEOPLE.karim[0], "", Characters.glb("karim"))  # on his café chair: he sits
 	_cafe = Interactable.make(level, at, "Meet Karim Fahmy", "act1_cafe", 1.4)
 	_cafe.used.connect(func(_by): _talk("act1_offer", _karim, _after_offer))
 	hud.toast("A man called Karim Fahmy left word: he's waiting at the café by the tavern.", 4.0)

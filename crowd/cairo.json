@@ -1,11 +1,11 @@
 {
-	"_help": "Cairo's crowd (scripts/crowd.gd). density: people per graphics quality. models: their looks (Characters.DIR paths; image-to-3d's townsfolk replace the stand-ins here). groups: the streets and the docks, each with its share of the crowd, roles, waypoints and spots. waypoints: street points walkers path between over the navmesh (none within keep_clear m of a door, an action spot or a standing NPC). stalls: [x, z, facing yaw] where a customer stands at a bazaar table. seats: [x, z, facing yaw, stool] where someone sits (stool: put a stool there, for the tavern tables). beasts: donkeys walking a street [[x, z], [x, z]]. Positions are from scripts/acts/cairo.gd's layout. tint: the models whose baked look is recoloured (the stand-ins; real townsfolk leave themselves out). looks: weighted outfits (cloth colour, optional stripe colour, a fez), seeded per person; skin: the range of skin tones. The docks: porters with sacks between the pier and the labour market (routes), fishermen on the pier's edges (seats: [x, z, yaw, height, \"rod\"]). ambient: AmbientLife (scripts/ambient_life.gd): birds circling high, pigeon flocks on the ground, critters (lizards, scorpions) round the player.",
+	"_help": "Cairo's crowd (scripts/crowd.gd). density: people per graphics quality. models: their looks (Characters.DIR paths; image-to-3d's townsfolk, weighted by repeats, with the two tinted bandit stand-ins kept as a minority for variety; a group may have its own models: the docks' porters). groups: the streets and the docks, each with its share of the crowd, roles, waypoints and spots. waypoints: street points walkers path between over the navmesh (none within keep_clear m of a door, an action spot or a standing NPC). stalls: [x, z, facing yaw] where a customer stands at a bazaar table. seats: [x, z, facing yaw, stool] where someone sits (stool: put a stool there, for the tavern tables). beasts: donkeys walking a street [[x, z], [x, z]]. Positions are from scripts/acts/cairo.gd's layout. tint: the models whose baked look is recoloured (the stand-ins; real townsfolk leave themselves out). looks: weighted outfits (cloth colour, optional stripe colour, a fez), seeded per person; skin: the range of skin tones. The docks: porters with sacks between the pier and the labour market (routes), fishermen on the pier's edges (seats: [x, z, yaw, height, \"rod\"]). ambient: AmbientLife (scripts/ambient_life.gd): birds circling high, pigeon flocks on the ground, critters (lizards, scorpions) round the player.",
 	"density": {
 		"low": 12,
 		"medium": 24,
 		"high": 40
 	},
-	"models": ["bandits/bandit_scout.glb", "bandits/bandit_raider.glb"],
+	"models": ["townsfolk/townsman.glb", "townsfolk/townswoman.glb", "townsfolk/townsman.glb", "townsfolk/tourist.glb", "townsfolk/townswoman.glb", "bandits/bandit_scout.glb", "townsfolk/townsman.glb", "townsfolk/townswoman.glb", "bandits/bandit_raider.glb"],
 	"keep_clear": 3.0,
 	"beasts": [
 		[[35, 76.3], [69, 76.3]],
@@ -90,6 +90,7 @@
 		},
 		{
 			"name": "docks",
+			"models": ["townsfolk/porter.glb", "townsfolk/porter.glb", "townsfolk/townsman.glb"],
 			"share": 0.16,
 			"prop": "sack",
 			"roles": {

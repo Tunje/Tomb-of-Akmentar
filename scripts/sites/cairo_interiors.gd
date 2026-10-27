@@ -148,9 +148,11 @@ func crowd_groups() -> Array:
 func _materials() -> void:
 	_solid_mat = StandardMaterial3D.new()
 	_solid_mat.vertex_color_use_as_albedo = true
+	_solid_mat.vertex_color_is_srgb = true
 	_solid_mat.roughness = 0.85
 	_glow_mat = StandardMaterial3D.new()
 	_glow_mat.vertex_color_use_as_albedo = true
+	_glow_mat.vertex_color_is_srgb = true
 	_glow_mat.emission_enabled = true
 	_glow_mat.emission = WARM
 	_glow_mat.emission_energy_multiplier = 1.6

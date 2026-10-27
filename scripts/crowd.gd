@@ -165,7 +165,8 @@ func _group(g: Dictionary) -> Dictionary:
 		"roles": g.get("roles", data.get("roles", {})), "share": float(g.get("share", 1.0)),
 		"waypoints": [], "routes": [], "stalls": _spots(g.get("stalls", []), 2.0), "digs": _spots(g.get("digs", []), 0.0),
 		"seats": _spots(g.get("seats", []), 0.0), "night_seats": _spots(g.get("night_seats", []), 0.0),
-		"sleep": _spots(g.get("sleep", []), 0.0), "anims": g.get("anims", {}), "indoor": bool(g.get("indoor", false))}
+		"sleep": _spots(g.get("sleep", []), 0.0), "anims": g.get("anims", {}), "indoor": bool(g.get("indoor", false)),
+		"models": g.get("models", [])}
 	for w in g.get("waypoints", []):
 		var p := Vector3(float(w[0]), 0, float(w[1]))
 		if _clear_of_doors(p, clear):
@@ -207,10 +208,16 @@ func _build(count: int) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = int(data.get("seed", 1926))
 	var i := 0
+	var cum := 0.0
+	var placed := 0
 	for g: Dictionary in groups:
-		var n := roundi(total * float(g.share) / maxf(shares, 0.001))
+		# By running sums, so the groups always add up to the total (each rounded alone may not).
+		cum += float(g.share)
+		var n := roundi(total * cum / maxf(shares, 0.001)) - placed
+		placed += n
+		var gm: Array = g.models if not (g.models as Array).is_empty() else models   # a group's own (the docks' porters)
 		for k in n:
-			var model := Characters.DIR + str(models[i % maxi(models.size(), 1)]) if not models.is_empty() else ""
+			var model := Characters.DIR + str(gm[i % maxi(gm.size(), 1)]) if not gm.is_empty() else ""
 			if model == "" or not RiggedBody.assets_present(model):
 				i += 1
 				continue
@@ -220,7 +227,7 @@ func _build(count: int) -> void:
 			p.group = g
 			p.role = _role_for(g, float(k) / maxf(n, 1))
 			p.name = "Townsfolk_%d_%s" % [i, p.role]
-			if models[i % models.size()] in data.get("tint", []):
+			if gm[i % gm.size()] in data.get("tint", []):
 				p.look = pick_look(data, rng)
 			add_child(p)
 			p.begin(rng)
