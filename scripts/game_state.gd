@@ -216,8 +216,9 @@ static func _slot(slot: String) -> String:
 			name = a.substr(12).validate_filename()
 	if slot == "main" or slot == "test":
 		return name
-	if slot.begins_with(name + "_") or slot.begins_with("test_"):
-		return slot  # already a test file's name
+	# Already mapped (load_game maps, then has_save maps again): left as it is.
+	if slot == name or slot.begins_with(name + "_") or slot.begins_with("test_"):
+		return slot
 	return name + "_" + slot
 
 

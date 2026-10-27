@@ -57,6 +57,10 @@ func _save_and_load() -> void:
 	_check(Game._slot("main") == own and Game._slot("slot2") == own + "_slot2" and Game._slot("test") == own,
 		"this run's own save files (--save-slot): %s, %s" % [Game._slot("main"), Game._slot("slot2")])
 	_check(FileAccess.file_exists(Game.SAVE_DIR.path_join(own + "_slot2.json")), "it went to the test file (%s_slot2.json)" % own)
+	_check(Game._slot(Game._slot("main")) == own and Game._slot(Game._slot("slot2")) == own + "_slot2",
+		"mapping twice changes nothing (load_game, then has_save)")
+	Game.save_game()
+	_check(Game.has_save() and Game.load_game(), "this run's own last rest saves and loads back")
 	if DisplayServer.get_name() != "headless":
 		_check(FileAccess.file_exists(SaveSlots.thumb_path("slot2")), "its thumbnail exists (%s)" % SaveSlots.thumb_path("slot2"))
 		var img := Image.load_from_file(ProjectSettings.globalize_path(SaveSlots.thumb_path("slot2")))
