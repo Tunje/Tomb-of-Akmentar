@@ -133,6 +133,52 @@ static func route_taken(board: String) -> String:
 	return ""
 
 
+## Where you've been along the roads, for the map's ink dots: [{name, at (0-1 of the map)}].
+## The branch boards have their own little maps (the fork to Akmentar); their points are laid
+## along the main map's road from its last bend to Akmentar.
+static func map_marks() -> Array:
+	var out := []
+	var main := RouteBoard.load_board("act3_route")
+	var branches := {"act3_desert_branch": ["desert", {"temple": "the temple", "town": "the desert town"}],
+		"act3_coast_branch": ["coast", {"town": "the town"}]}
+	for id: String in branches:
+		var picked := str(Game.flag("route_" + id, ""))
+		var names: Dictionary = branches[id][1]
+		if not names.has(picked):
+			continue
+		var board := RouteBoard.load_board(id)
+		var road: Array = []
+		for o: Dictionary in main.get("options", []):
+			if o.get("id", "") == branches[id][0]:
+				road = o.get("path", [])
+		for o: Dictionary in board.get("options", []):
+			var pts: Array = o.get("path", [])
+			if o.get("id", "") == picked and pts.size() >= 3 and road.size() >= 2:
+				out.append({"name": names[picked], "at": _branch_to_main(pts[pts.size() / 2], board, road)})
+	if Game.flag("boat_attacked", false):  # mid-river, between the riverboat road's bends
+		for o: Dictionary in main.get("options", []):
+			var pts: Array = o.get("path", [])
+			if o.get("id", "") == "riverboat" and pts.size() >= 3:
+				out.append({"name": "the riverboat attack", "at": (_v(pts[1]) + _v(pts[2])) * 0.5})
+	return out
+
+
+static func _v(a: Array) -> Vector2:
+	return Vector2(float(a[0]), float(a[1]))
+
+
+## A branch board's point on the main map: along the road's last leg (fork -> Akmentar) by its x,
+## off it by its y.
+static func _branch_to_main(p: Array, board: Dictionary, road: Array) -> Vector2:
+	var f0 := _v(board.from.at)
+	var t0 := _v(board.to.at)
+	var fork := _v(road[road.size() - 2])
+	var end := _v(road[road.size() - 1])
+	var k := clampf((float(p[0]) - f0.x) / maxf(t0.x - f0.x, 0.01), 0.0, 1.0)
+	var off := (float(p[1]) - lerpf(f0.y, t0.y, k)) * (end - fork).length() * 0.6
+	return fork.lerp(end, k) + Vector2(0, off)
+
+
 ## The routes taken, for the map: [{board, journey, label, path}] in the order travelled.
 static func map_routes() -> Array:
 	var out := []
@@ -570,6 +616,62 @@ func _draw_list() -> void:
 		y += _para_top("· " + str(n), Vector2(p.position.x, y), p.size.x, fs(16), Color(INK, 0.8)) + 8.0
 
 
+## The land under the roads: the river in blue ink (wavy), the coast with the sea hatched below,
+## the desert lettered, a compass rose, and ink dots where you've been (map_marks).
+func _draw_geography(board: Dictionary, m: Rect2, to_px: Callable) -> void:
+	var marks: Array = board.get("marks", [])
+	var water := Color(0.16, 0.3, 0.5, 0.75)
+	if marks.size() > 0:  # the river
+		var pts: PackedVector2Array = []
+		var line: Array = marks[0]
+		for i in line.size() - 1:
+			var a: Vector2 = to_px.call(line[i])
+			var b: Vector2 = to_px.call(line[i + 1])
+			var n := (b - a).orthogonal().normalized()
+			var steps := maxi(int(a.distance_to(b) / 6.0), 1)
+			for j in steps:
+				var q := a.lerp(b, j / float(steps))
+				pts.append(q + n * sin(q.x * 0.11 + q.y * 0.07) * 3.0)
+		pts.append(to_px.call(line[-1]))
+		root.draw_polyline(pts, water, 2.5, true)
+		_hand("the Nile", to_px.call(line[1]) + Vector2(-30, 14), fs(17), water)
+	if marks.size() > 1:  # the coast, the sea hatched on its far side
+		var line: Array = marks[1]
+		for i in line.size() - 1:
+			var a: Vector2 = to_px.call(line[i])
+			var b: Vector2 = to_px.call(line[i + 1])
+			root.draw_line(a, b, Color(INK, 0.6), 2.0, true)
+			var steps := maxi(int(a.distance_to(b) / 14.0), 1)
+			for j in steps:
+				var q := a.lerp(b, (j + 0.5) / steps)
+				root.draw_line(q + Vector2(0, 4), q + Vector2(-6, 12), Color(water, 0.35), 1.0)
+		_hand("the sea", to_px.call(line[1]) + Vector2(0, 18), fs(16), Color(water, 0.9))
+	_hand("Western  Desert", m.position + m.size * Vector2(0.47, 0.06), fs(22), Color(INK, 0.35))
+	# The compass rose, top right.
+	var c := Vector2(m.end.x - 30.0, m.position.y + 34.0)
+	var k := 24.0 * Subtitles.scale()
+	for d: Vector2 in [Vector2.UP, Vector2.RIGHT, Vector2.DOWN, Vector2.LEFT]:
+		var side := d.orthogonal() * k * 0.22
+		root.draw_colored_polygon(PackedVector2Array([c + d * k, c + side, c - side]), INK if d == Vector2.UP else Color(INK, 0.55))
+	root.draw_arc(c, k * 0.55, 0, TAU, 32, Color(INK, 0.6), 1.2, true)
+	_line("N", c + Vector2(0, -k - font.get_height(fs(15)) - 2.0), fs(15), INK, HORIZONTAL_ALIGNMENT_CENTER)
+
+
+## Ink dots where you've been (map_marks), over the roads.
+func _draw_marks(m: Rect2) -> void:
+	for mk: Dictionary in map_marks():
+		var at: Vector2 = m.position + (mk.at as Vector2) * m.size
+		root.draw_circle(at, 4.5, INK)
+		var w := font.get_string_size(str(mk.name), HORIZONTAL_ALIGNMENT_LEFT, -1, fs(15)).x
+		root.draw_rect(Rect2(at + Vector2(-w * 0.5 - 4.0, 8.0), Vector2(w + 8.0, font.get_height(fs(15)))), Color(PAPER, 0.75))
+		_hand(str(mk.name), at + Vector2(0, 8), fs(15), Color(INK, 0.85))
+
+
+## A hand-lettered label: centred on `at` (its top), in faded ink with no outline.
+func _hand(s: String, top: Vector2, size: int, color: Color) -> void:
+	_line(s, top, size, color, HORIZONTAL_ALIGNMENT_CENTER)
+
+
 ## A map sheet laid over the spread: Cairo and Akmentar, every way the boards offered faint, the
 ## ones taken in ink and colour, with a key.
 func _draw_map() -> void:
@@ -580,6 +682,7 @@ func _draw_map() -> void:
 	var m := Rect2(sheet.position + Vector2(40, 30), sheet.size - Vector2(80, 60 + key_h))
 	var to_px := func(v: Array) -> Vector2: return m.position + Vector2(float(v[0]), float(v[1])) * m.size
 	var first := RouteBoard.load_board(MAP_BOARDS[0][0])
+	_draw_geography(first, m, to_px)
 	for b: Array in MAP_BOARDS:  # the ways not taken
 		for o: Dictionary in RouteBoard.load_board(b[0]).get("options", []):
 			var pts: Array = o.get("path", [])
@@ -597,6 +700,7 @@ func _draw_map() -> void:
 		root.draw_line(Vector2(m.position.x, key_y + j * (font.get_height(fs(16)) + 6.0) + font.get_height(fs(16)) * 0.5),
 			Vector2(m.position.x + 30.0, key_y + j * (font.get_height(fs(16)) + 6.0) + font.get_height(fs(16)) * 0.5), col, 4.0)
 		_line("%s: %s" % [t.journey, t.label], Vector2(m.position.x + 42.0, key_y + j * (font.get_height(fs(16)) + 6.0)), fs(16), INK)
+	_draw_marks(m)
 	if taken.is_empty():
 		_line("No road taken yet.", Vector2(m.position.x, key_y), fs(16), Color(INK, 0.6))
 	for end: String in ["from", "to"]:

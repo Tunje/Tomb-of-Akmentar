@@ -39,6 +39,8 @@ func _ready() -> void:
 	Codex.meet("pembroke")
 	Game.set_flag("route_act3_route", "desert")
 	Game.set_flag("route_act6_return", "coast")
+	Game.set_flag("route_act3_desert_branch", "temple")
+	Game.set_flag("boat_attacked", true)  # (a test's mix: the map shows whatever the flags say)
 	for i in 3:
 		await get_tree().process_frame
 
@@ -94,6 +96,12 @@ func _ready() -> void:
 	_check(j.tab == "map", "5: Map")
 	var routes: Array = JournalScreen.map_routes()
 	_check(routes.size() == 2 and routes[0].label == "Across the desert" and routes[1].label == "Along the coast", "the map: the roads out and back (%s)" % [routes.map(func(r): return r.label)])
+	var marks: Array = JournalScreen.map_marks()
+	_check(marks.map(func(k): return k.name) == ["the temple", "the riverboat attack"], "ink dots where you've been: %s" % [marks.map(func(k): return k.name)])
+	var on_map := true
+	for k: Dictionary in marks:
+		on_map = on_map and Rect2(0, 0, 1, 1).has_point(k.at)
+	_check(on_map, "inside the map")
 	await _shot("journal_map.png")
 
 	# Text size: bigger text, the pages flow on; every column stays inside its page.
