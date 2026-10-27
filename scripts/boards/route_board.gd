@@ -157,7 +157,7 @@ func _select(i: int) -> void:
 
 func _map() -> Rect2:
 	var s := root.size
-	return Rect2(40, 90, s.x - 80 - 420, s.y - 150)
+	return Rect2(40, 90, maxf(s.x - 80 - 420, 1.0), maxf(s.y - 150, 1.0))  # headless: a zero-size root
 
 
 func _card() -> Rect2:
