@@ -21,6 +21,7 @@ var _toast: Label
 var _toast_t := 0.0
 ## O opens the options while the game is paused, or when this is on (main's start screen).
 var allow_options := false
+var _scale := 1.0   # the text size the labels have now (_rescale)
 
 
 func _ready() -> void:
@@ -59,7 +60,8 @@ func _layout() -> void:
 func _label(font_size: int, align: HorizontalAlignment, box: Vector2) -> Label:
 	var l := Label.new()
 	l.size = box
-	l.add_theme_font_size_override("font_size", font_size)
+	l.set_meta("base_size", font_size)  # the options' text size scales it (_rescale)
+	l.add_theme_font_size_override("font_size", Subtitles.size(font_size))
 	l.add_theme_color_override("font_color", Color(0.95, 0.88, 0.7))
 	l.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
 	l.add_theme_constant_override("outline_size", 6)
@@ -100,6 +102,7 @@ func _process(delta: float) -> void:
 	_info.text = "Day %d   Actions %s   £%d" % [Game.day, "●".repeat(Game.actions_left) + "○".repeat(maxi(Game.ACTIONS_PER_DAY - Game.actions_left, 0)), Game.money]
 	_toast_t = maxf(_toast_t - delta, 0.0)
 	_toast.modulate.a = clampf(_toast_t, 0.0, 1.0)
+	_rescale()
 	_layout()
 	_canvas.queue_redraw()
 
@@ -122,12 +125,15 @@ func _draw_overlay() -> void:
 		var half_fov := deg_to_rad(player.camera.fov * 0.5)
 		var gap := tan(deg_to_rad(player.current_spread())) / tan(half_fov) * size.y * 0.5
 		gap = maxf(gap, 3.0)
-		var col := Color(1, 1, 1, 0.85)
-		var l := 9.0
+		# The options' crosshair: normal, bold (thicker) or large (thicker and longer); its colour.
+		var style := crosshair_style()
+		var col: Color = style.color
+		var l := 9.0 * float(style.length)
+		var wide := float(style.width)
 		for d in [Vector2.RIGHT, Vector2.LEFT, Vector2.UP, Vector2.DOWN]:
-			_canvas.draw_line(c + d * gap, c + d * (gap + l), Color(0, 0, 0, 0.6), 4.0)
-			_canvas.draw_line(c + d * gap, c + d * (gap + l), col, 2.0)
-		_canvas.draw_circle(c, 1.5, col)
+			_canvas.draw_line(c + d * gap, c + d * (gap + l), Color(0, 0, 0, 0.6), wide + 2.0)
+			_canvas.draw_line(c + d * gap, c + d * (gap + l), col, wide)
+		_canvas.draw_circle(c, 0.75 * wide, col)
 		if player.is_reloading():
 			_canvas.draw_arc(c, 22.0, -PI * 0.5, -PI * 0.5 + TAU * player.reload_progress(), 32, col, 3.0)
 	if _hit_t > 0.0:
@@ -152,8 +158,32 @@ func _draw_overlay() -> void:
 
 ## A short notice in the upper middle ("Game saved", "Day 2").
 func toast(text: String, secs := 2.5) -> void:
+	# A spoken line (a quote) goes to the subtitle line when subtitles are on.
+	if text.begins_with("\"") and Subtitles.say(get_tree(), "", "", Controls.fill(text), maxf(secs, 2.5)):
+		return
 	_toast.text = Controls.fill(text)  # "{dodge}" -> the key bound now
 	_toast_t = secs
+
+
+const CROSSHAIR_COLORS := {"white": Color(1, 1, 1, 0.85), "yellow": Color(1.0, 0.9, 0.2, 0.95), "cyan": Color(0.35, 0.95, 1.0, 0.95)}
+const CROSSHAIR_SIZES := {"normal": [1.0, 2.0], "bold": [1.2, 3.5], "large": [1.7, 4.0]}  # [length factor, line width]
+
+
+## The crosshair the options ask for: {color, length (factor), width (px)}.
+func crosshair_style() -> Dictionary:
+	var sz: Array = CROSSHAIR_SIZES.get(str(Settings.value("crosshair")), CROSSHAIR_SIZES.normal)
+	return {"color": CROSSHAIR_COLORS.get(str(Settings.value("crosshair_color")), CROSSHAIR_COLORS.white),
+		"length": sz[0], "width": sz[1]}
+
+
+## The options' text size on every label here (checked each frame; it changes rarely).
+func _rescale() -> void:
+	var k := Subtitles.scale()
+	if is_equal_approx(k, _scale):
+		return
+	_scale = k
+	for l: Label in [_title, _sub, _ammo, _gun, _count, _prompt, _info, _toast]:
+		l.add_theme_font_size_override("font_size", roundi(int(l.get_meta("base_size", 20)) * k))
 
 
 ## Listens for O while everything else is paused (the Hud itself pauses with its act).

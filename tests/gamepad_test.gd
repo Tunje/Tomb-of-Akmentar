@@ -66,7 +66,7 @@ func _walk_and_sprint() -> void:
 	_check(player.sprinting, "L3 sprints, and stays on while the stick is held")
 	_stick(JOY_AXIS_LEFT_Y, 0.0)
 	await _wait(0.2)
-	_check(not player.sprinting and not player._pad_sprint, "the stick back to rest ends the sprint")
+	_check(not player.sprinting and not player._latched.has("sprint"), "the stick back to rest ends the sprint")
 
 
 func _look() -> void:

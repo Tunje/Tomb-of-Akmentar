@@ -14,6 +14,16 @@ const DEFAULTS := {
 	"fullscreen": false, "barks": true, "hints": true,
 	"vibration": true, "aim_assist": true,              # the pad: rumble, the aim slowdown
 	"keys": {},                                         # rebound keys (Controls.bindings); {} = defaults
+	# Accessibility (the options' second page).
+	"subtitles": true,              # remarks and spoken lines in the subtitle line (Subtitles)
+	"text_size": "M",               # S / M / L / XL: the HUD, toasts, hints, subtitles, the talk wheel
+	"subtitle_bg": 0.5,             # the box behind subtitles, 0..1
+	"aim_mode": "hold",             # hold / toggle
+	"sprint_mode": "auto",          # auto (hold on keys, toggle on a pad) / hold / toggle
+	"crouch_mode": "hold",          # hold / toggle
+	"shake": 1.0,                   # camera shake, 0..1
+	"crosshair": "normal",          # normal / bold / large
+	"crosshair_color": "white",     # white / yellow / cyan
 }
 ## Quality presets: shadowed lights near you (RenderBudget), the sun's shadows, 3D render scale,
 ## anti-aliasing.
@@ -62,25 +72,41 @@ static func _testing() -> bool:
 	return tree != null and tree.current_scene != null and tree.current_scene.scene_file_path.begins_with("res://tests/")
 
 
+## Where the options are kept: FILE, except a test that wants persistence points this at a file of
+## its own (a test never reads or writes FILE).
+static var file_path := FILE
+
+
+static func _may_use_file() -> bool:
+	return file_path != FILE or not _testing()
+
+
 static func _load() -> void:
 	_loaded = true
-	values = DEFAULTS.duplicate()
-	if _testing():
+	values = DEFAULTS.duplicate(true)
+	if not _may_use_file():
 		return
 	var cf := ConfigFile.new()
-	if cf.load(FILE) != OK:
+	if cf.load(file_path) != OK:
 		return
 	for k in DEFAULTS:
 		values[k] = cf.get_value("options", k, DEFAULTS[k])
 
 
+## Forget what's loaded and read the file again (tests: does a setting persist?). Not "reload":
+## Settings.reload() is the script resource's own (it resets every static to its default).
+static func reload_file() -> void:
+	_loaded = false
+	_load()
+
+
 static func save() -> void:
-	if _testing():
+	if not _may_use_file():
 		return
 	var cf := ConfigFile.new()
 	for k in values:
 		cf.set_value("options", k, values[k])
-	cf.save(FILE)
+	cf.save(file_path)
 
 
 static func apply(tree: SceneTree) -> void:

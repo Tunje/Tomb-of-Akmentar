@@ -57,7 +57,8 @@ func _ready() -> void:
 
 func _label(font_size: int, color: Color) -> Label:
 	var l := Label.new()
-	l.add_theme_font_size_override("font_size", font_size)
+	l.set_meta("base_size", font_size)
+	l.add_theme_font_size_override("font_size", Subtitles.size(font_size))  # the options' text size
 	l.add_theme_color_override("font_color", color)
 	l.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
 	l.add_theme_constant_override("outline_size", 6)
@@ -71,6 +72,11 @@ func _label(font_size: int, color: Color) -> Label:
 func show_line(speaker_name: String, text: String) -> void:
 	_speaker.text = speaker_name
 	_line.text = text
+	# The subtitle style (Subtitles): their colour, the options' text size and box.
+	_speaker.add_theme_color_override("font_color", Subtitles.speaker_color(speaker_name) if speaker_name != "" else SPEAKER)
+	for l: Label in [_speaker, _line]:
+		l.add_theme_font_size_override("font_size", Subtitles.size(int(l.get_meta("base_size", 24))))
+	_line.add_theme_stylebox_override("normal", Subtitles.box())
 
 
 func clear_line() -> void:

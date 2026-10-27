@@ -31,7 +31,7 @@ func _init() -> void:
 	_label.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	_label.offset_bottom = -170
 	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_label.add_theme_font_size_override("font_size", 24)
+	_label.add_theme_font_size_override("font_size", Subtitles.size(24))  # the options' text size
 	_label.add_theme_color_override("font_color", Color(0.95, 0.88, 0.7))
 	_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
 	_label.add_theme_constant_override("outline_size", 6)

@@ -50,6 +50,7 @@ static func say(who: Node3D, situation: String, id := "") -> String:
 	last = {"who": speaker, "situation": situation, "text": text}
 	print("BARK %s (%s): %s" % [speaker, situation, text])
 	_show(who, text)
+	Subtitles.say(who.get_tree(), speaker, DayLog.person(speaker), text)  # and in the subtitle line
 	return text
 
 
@@ -138,7 +139,7 @@ static func _show(who: Node3D, text: String) -> void:
 	l.no_depth_test = true
 	l.fixed_size = true
 	l.pixel_size = 0.0012
-	l.font_size = 22
+	l.font_size = Subtitles.size(22)  # the options' text size
 	l.outline_size = 8
 	l.modulate = Color(1.0, 0.94, 0.8)
 	l.outline_modulate = Color(0, 0, 0, 0.85)

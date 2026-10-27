@@ -101,7 +101,7 @@ var _audio: AudioStreamPlayer
 var _base_fov := BASE_FOV
 var _sens := 1.0
 var _invert_y := false
-var _pad_sprint := false   # L3 latches sprint until the left stick comes back to rest
+var _latched := {}         # action -> on, for actions the options set to toggle (_held)
 var _drive_vel := Vector3.ZERO  # the vehicle's velocity last tick (bumps rumble)
 var _jolt_cd := 0.0
 var _assist := 1.0         # the aim slowdown now (1 = none, ASSIST_SLOW over a target)
@@ -290,14 +290,15 @@ func _physics_process(delta: float) -> void:
 	var want_fire := false
 	if controls_enabled and alive:
 		input = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-		want_aim = Input.is_action_pressed("aim")
+		want_aim = _held("aim")
 		want_fire = Input.is_action_pressed("fire")
-		crouching = Input.is_action_pressed("crouch") and _dodge_t <= 0.0
-		if Controls.last_pad and Input.is_action_just_pressed("sprint"):
-			_pad_sprint = true
 		if input.length() < 0.3:
-			_pad_sprint = false
-		sprinting = (Input.is_action_pressed("sprint") or _pad_sprint) and input.y < -0.3 and not want_aim \
+			_latched.erase("sprint")  # a toggled sprint ends when you stop
+		var sprint_held := _held("sprint")
+		if sprint_held and input.y < -0.3:
+			_latched.erase("crouch")  # breaking into a run stands you up
+		crouching = _held("crouch") and _dodge_t <= 0.0
+		sprinting = sprint_held and input.y < -0.3 and not want_aim \
 			and not want_fire and not crouching and _reload_t <= 0.0
 	else:
 		sprinting = false
@@ -391,7 +392,7 @@ func _process(delta: float) -> void:
 
 	trauma = maxf(trauma - delta * 1.8, 0.0)
 	_shake_t += delta
-	var s := trauma * trauma
+	var s := trauma * trauma * clampf(float(Settings.value("shake")), 0.0, 1.0)  # the options' camera shake
 	var shake := Vector3(
 		sin(_shake_t * 41.0) * 0.6 + sin(_shake_t * 73.0) * 0.4,
 		sin(_shake_t * 37.0 + 1.3) * 0.6 + sin(_shake_t * 67.0) * 0.4,
@@ -629,7 +630,7 @@ func _gunner_step(delta: float) -> void:
 		exit_vehicle()
 		return
 	var want_fire := controls_enabled and armed and Input.is_action_pressed("fire")
-	aiming = controls_enabled and armed and Input.is_action_pressed("aim")
+	aiming = controls_enabled and armed and _held("aim")
 	if want_fire:
 		try_fire()
 	bloom = move_toward(bloom, 0.0, delta * (4.0 + bloom * 3.0))
@@ -666,6 +667,22 @@ func _drive_step(delta: float) -> void:
 		var k := clampf((jolt - BUMP) / (BUMP * 3.0), 0.15, 1.0)
 		if Controls.rumble(0.3 + k * 0.5, 0.2 + k * 0.8, 0.08 + k * 0.2):
 			_jolt_cd = 0.15
+
+
+## Aim, sprint and crouch, held or toggled as the options say ("aim_mode", "sprint_mode",
+## "crouch_mode"). Sprint's "auto" toggles on a pad (a stick click is awkward to hold while you
+## steer) and is held on the keyboard. A toggle flips on each press and stays until pressed again
+## (or until something ends it: stopping ends a sprint, holstering ends aim).
+func _held(action: String) -> bool:
+	var mode := str(Settings.value(action + "_mode"))
+	if mode == "auto":
+		mode = "toggle" if Controls.last_pad else "hold"
+	if mode != "toggle":
+		_latched.erase(action)
+		return Input.is_action_pressed(action)
+	if Input.is_action_just_pressed(action):
+		_latched[action] = not _latched.get(action, false)
+	return _latched.get(action, false)
 
 
 ## The right stick looks (and aims): the options' sensitivity and invert Y apply, and it's as
@@ -761,6 +778,8 @@ func set_armed(on: bool) -> void:
 		return
 	armed = on
 	gun_pivot.visible = on
+	if not on:
+		_latched.erase("aim")  # a toggled aim ends with the gun away
 	if on:
 		Hints.once("switch_guns")
 		Hints.once("holster")
