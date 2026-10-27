@@ -72,6 +72,7 @@ var _stuck_at := Vector3.ZERO
 var _stuck_t := 0.0
 var _hitboxes: Array[StaticBody3D] = []
 var _awake_t := 0.0
+var _since_slam := 100.0  # s since his last slam (Difficulty "grab_cooldown": Story waits between grabs)
 var _nav_iter := 0
 var _recover_time := RECOVER
 var _stand_on: Node3D  # stand_on(): held on the water in this node's frame
@@ -155,9 +156,12 @@ func awaken(delay := 1.5) -> void:
 	Sfx.play_at(get_parent(), Sfx.groan(), global_position + Vector3.UP * 2.0, 2.0, 0.05)
 	Barks.say_any(get_tree(), "guardian_seen", global_position)
 	Hints.once("guardian")
-	get_tree().create_timer(delay).timeout.connect(func():
-		if state == State.RISING:
-			_enter(State.CHASE))
+	get_tree().create_timer(delay).timeout.connect(_risen)  # bound: the timer may outlive the scene
+
+
+func _risen() -> void:
+	if state == State.RISING:
+		_enter(State.CHASE)
 
 
 ## Holds it where it stands (a threshold the escape paces on); resume() lets it come on again.
@@ -255,7 +259,8 @@ func _physics_process(delta: float) -> void:
 	match state:
 		State.CHASE:
 			_awake_t += delta
-			if dist < REACH and _facing(to) > 0.5 and _awake_t > GRAB_GRACE:
+			_since_slam += delta
+			if dist < REACH and _facing(to) > 0.5 and _awake_t > GRAB_GRACE and _since_slam > Difficulty.f("grab_cooldown"):
 				_enter(State.WINDUP)
 			elif _alive(target):
 				var k := clampf((dist - CATCH_UP_FROM) / (CATCH_UP_DIST - CATCH_UP_FROM), 0.0, 1.0)
@@ -403,6 +408,7 @@ func _grab(dist: float, to: Vector3) -> void:
 ## The first grab on the player: a slam. Heavy damage, flung back and floored, while it takes its
 ## time recovering; the next grab kills.
 func _slam(p: Player, to: Vector3) -> void:
+	_since_slam = 0.0
 	var dir := to.normalized() if to.length() > 0.01 else -global_basis.z
 	if not p.take_damage(SLAM_DAMAGE * Difficulty.f("monster_damage"), global_position):
 		return  # rolled clear (i-frames)

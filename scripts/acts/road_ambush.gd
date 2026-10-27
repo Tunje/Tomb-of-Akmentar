@@ -24,6 +24,7 @@ signal finished(result: Dictionary)
 signal riders_coming
 
 const HIRED := 5
+const DYNAMITE_HIRED := 2  # hired guns with a stick of dynamite (Gunman.dynamite)
 const RIDERS := 4
 const RIDERS_AFTER := 14.0        # s after the first shot, at the latest
 const RIDERS_WHEN := 2            # or once this few of the hired guns are still fighting
@@ -162,6 +163,8 @@ func _spawn_hired() -> void:
 	for i in HIRED:
 		var at: Vector3 = posts[i % posts.size()] if not posts.is_empty() else zone.centre + Vector3(0, 0, -20)
 		var b := _bandit("Bandit_%d" % (i + 1), HIRED_GLB[i % HIRED_GLB.size()], at)
+		if i < DYNAMITE_HIRED:
+			b.dynamite = 1  # a stick each: for a man who stays put behind the truck
 		_hired.append(b)
 	print("RoadAmbush: %d hired guns open fire" % HIRED)
 

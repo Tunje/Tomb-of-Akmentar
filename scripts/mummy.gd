@@ -27,6 +27,9 @@ var _retarget := 0.0
 var state := State.DORMANT
 var health := 100.0
 var speed := 1.5
+## "lurcher" (bursts of speed), "shambler" (slow, tough) or "" (a steady walk): picked in _ready.
+var gait := ""
+var _lurch_t := 0.0
 var crawling := false
 
 var _t := 0.0  # time in state
@@ -65,6 +68,13 @@ func _ready() -> void:
 	collision_layer = 4
 	collision_mask = 1 | 2 | 4
 	speed = randf_range(1.25, 1.8)
+	# Variety in the pack: some lurch in bursts, some shamble (slow, hard to put down); the average
+	# pace is as before. (Crawling from the start wants a crawl clip the rig doesn't have yet.)
+	var r := randf()
+	gait = "shambler" if r < SHAMBLER_SHARE else ("lurcher" if r < SHAMBLER_SHARE + LURCHER_SHARE else "")
+	if gait == "shambler":
+		speed *= SHAMBLE_PACE
+	_lurch_t = randf() * (float(LURCH[0]) + float(LURCH[2]))  # out of step with the rest of the pack
 	_shape = CollisionShape3D.new()
 	var cap := CapsuleShape3D.new()
 	cap.radius = 0.35
@@ -226,7 +236,7 @@ func _physics_process(delta: float) -> void:
 			if dist < _reach():
 				_enter(State.WINDUP)
 			elif target and target.alive:
-				move = _path_dir() * (0.55 if crawling else speed)
+				move = _path_dir() * (0.55 if crawling else speed * _gait_pace(delta))
 		State.WINDUP:
 			if _t >= WINDUP:
 				_strike(dist, to_player)
@@ -304,6 +314,8 @@ func take_hit(part: String, dmg: float, dir: Vector3, point: Vector3, stagger: f
 	if state == State.DEAD:
 		return {"killed": false}
 	dmg /= Difficulty.f("enemy_health")  # Story / Hard (Normal: 1)
+	if gait == "shambler":
+		dmg /= SHAMBLE_TOUGH
 	if state == State.DORMANT:
 		wake()
 	var amount: float = dmg * PART_MULT.get(part, 1.0)
@@ -489,3 +501,18 @@ func _animate(delta: float, moving: float) -> void:
 			_:
 				swing = sin(_phase + (0.0 if side == "arm_l" else PI)) * 0.1
 		pivot.rotation.x = swing
+
+
+const SHAMBLER_SHARE := 0.2
+const LURCHER_SHARE := 0.2
+const SHAMBLE_PACE := 0.65
+const SHAMBLE_TOUGH := 1.35  # a shambler takes this much less from each hit
+const LURCH := [0.8, 2.2, 1.4, 0.8]  # s of burst, its pace, s of drag, its pace (averages ~1.3x)
+
+
+## A lurcher's pace now: a burst, then a drag, round and round. Others walk steadily.
+func _gait_pace(delta: float) -> float:
+	if gait != "lurcher":
+		return 1.0
+	_lurch_t = fmod(_lurch_t + delta, float(LURCH[0]) + float(LURCH[2]))
+	return float(LURCH[1]) if _lurch_t < float(LURCH[0]) else float(LURCH[3])

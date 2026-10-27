@@ -68,6 +68,10 @@
 			"text": "The guardian can't be killed. Bullets only slow him. Run, or lead him away.",
 			"secs": 6
 		},
+		"dynamite": {
+			"text": "Dynamite! Hear the fuse: get away from it ({dodge} rolls), or shoot it before it lands.",
+			"secs": 5
+		},
 		"brawl": {
 			"text": "Fists: left mouse punches (again for a cross), right mouse blocks, {shove} shoves.",
 			"secs": 6

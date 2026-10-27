@@ -25,6 +25,7 @@ const COVER_REACH := 7.0
 const BACK_OFF := 4.0  # m: a mummy this close, it backs off while shooting
 const KITE := 7.0  # m: the guardian this close, it walks away from it
 const DODGE_CHANCE := 0.45
+const DYNAMITE_CLEAR := 6.0  # m: a lit stick this close, it moves away from it
 const BLOCK_CHANCE := 0.45
 const JAB_GAP := Vector2(0.45, 0.8)
 const CROSS_CHANCE := 0.35
@@ -269,6 +270,16 @@ func _shoot(p: Player, foes: Array[Node3D], delta: float) -> void:
 	if near and p.vehicle == null and p.global_position.distance_to(near.global_position) < BACK_OFF:
 		move = (p.global_position - near.global_position).normalized()
 		_maybe_dodge(p, near)
+	# Dynamite: a person hears the fuse and gets clear (a roll when it's close).
+	var stick := _nearest(p, get_tree().get_nodes_in_group("dynamite"))
+	if stick and p.vehicle == null and p.global_position.distance_to(stick.global_position) < DYNAMITE_CLEAR:
+		move = _away(p, stick.global_position)
+		crouch = false
+		_hide_t = 0.0
+		if p.global_position.distance_to(stick.global_position) < 3.0 and not _seen_windup.has(stick.get_instance_id()):
+			_seen_windup[stick.get_instance_id()] = true
+			if rng.randf() < DODGE_CHANCE:
+				p.dodge()
 	# The guardian can't be killed: keep away from him (lead him round, as the game tells you).
 	var gd: Variant = _guardian()
 	if gd != null and p.vehicle == null and foes.has(gd) and (gd as Node3D).global_position.distance_to(p.global_position) < KITE:

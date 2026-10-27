@@ -144,6 +144,7 @@ func _next_wave() -> void:
 		b.surrender_chance = ORDER_SURRENDER
 		b.hunt_at = centre  # this camp's fight only: not the idle gunmen of a camp across the ruins
 		b.hunt_radius = HUNT_RADIUS
+		b.dynamite = 1 if i == 0 else 0  # one stick a wave
 		add_child(b)
 		var spread := (float(i) - (count - 1) * 0.5) * 2.2
 		b.global_position = _on_navmesh(from + dir * rng.randf_range(-2.0, 2.0) + side * spread)

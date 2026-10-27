@@ -18,13 +18,14 @@ const BLURBS := {
 ## Multipliers on the baseline (1.0 = Normal), except where a key says seconds or a count.
 const TABLE := {
 	"player_damage": {"story": 0.6, "normal": 1.0, "hard": 1.35},  # all damage the player takes
-	"monster_damage": {"story": 0.7, "normal": 1.0, "hard": 1.25},  # mummies' and the guardian's, on top
+	"monster_damage": {"story": 0.5, "normal": 1.0, "hard": 1.25},  # mummies' and the guardian's, on top
 	"enemy_spread": {"story": 1.5, "normal": 1.0, "hard": 0.8},  # enemy gunmen's aim spread
 	"enemy_react": {"story": 1.35, "normal": 1.0, "hard": 0.8},  # their time to aim (first and next)
 	"enemy_health": {"story": 0.8, "normal": 1.0, "hard": 1.2},  # enemy gunmen and mummies
 	"bleed_out": {"story": 120.0, "normal": 60.0, "hard": 40.0},  # s a downed companion lasts, enemies close
 	"downed_grace": {"story": 10.0, "normal": 6.0, "hard": 4.0},  # s enemies leave the downed alone
 	"guardian_pace": {"story": 0.8, "normal": 1.0, "hard": 1.1},  # his walk and catch-up
+	"grab_cooldown": {"story": 8.0, "normal": 0.0, "hard": 0.0},  # s after a slam before his next grab
 	"ritual_slams": {"story": 6, "normal": 2, "hard": 1},  # the ritual's guardian: slams before the kill (Story at 3: the bot still died 3 in 5)
 	"ammo_pickups": {"story": 1.5, "normal": 1.0, "hard": 0.7},  # for pickups (the game has none yet)
 }

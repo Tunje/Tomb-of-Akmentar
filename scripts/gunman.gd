@@ -93,6 +93,7 @@ static var _claims := {}
 static var _allies := {}
 static var _allies_scene := 0  # instance id of the scene that set them (_scene_check)
 static var _last_flank := -100.0
+static var _last_dynamite := {}  # team -> when its last stick was thrown
 
 ## Who they're shooting at (Player, Gunman or Mummy). Enemies wait until it's first set.
 var target: Node3D
@@ -106,6 +107,14 @@ var ammo := MAG
 var glb := ""
 var flanking := false
 var retreating := false
+## Enemies: "rifleman" (holds at long range, keeps firing at the cover you're behind), "rusher"
+## (the one who flanks when you're pinned ~6 s), "leader" (one per side: when he falls the rest
+## waver: likelier to give up or fall back), or "" (as before). Picked on spawn unless an act
+## sets it first (roles keep the fight's average: one rusher flanks instead of anyone).
+var role := ""
+## Enemies: sticks of dynamite to throw at a player pinned in cover (Dynamite), 0 = none.
+var dynamite := 0
+var _suppress := false  # this AIM fires at the cover he's behind, not at him (riflemen)
 ## Crouched in cover now (others aim lower at him).
 var crouched := false
 ## Companions: Game companion id, who they follow, and "follow" / "hold".
@@ -277,6 +286,8 @@ func _ready() -> void:
 	add_to_group("gunmen")
 	if team == PARTY:
 		add_to_group("party")
+	elif role == "":
+		role = _pick_role()
 	var shape := CollisionShape3D.new()
 	var cap := CapsuleShape3D.new()
 	cap.radius = 0.35
@@ -481,6 +492,8 @@ static func _point_on(n) -> Vector3:  # untyped: it may have been freed
 # ---------------------------------------------------------------- tick
 
 func _enter(s: State) -> void:
+	if s != State.AIM:
+		_suppress = false
 	state = s
 	_t = 0.0
 	match s:
@@ -697,10 +710,16 @@ func _cover_think(has_target: bool) -> void:
 		if _wants_flank():
 			_pick("flank")
 			return
+		if _maybe_throw():
+			return
 		if _spot_age > 10.0 and _seen_t > 6.0:
 			_pick("reposition")
 			return
 	if _t < _wait:
+		return
+	if _wants_suppress():
+		_suppress = true
+		_enter(State.AIM)
 		return
 	if _shooters() < MAX_SHOOTERS and (_clear(_peek_eye(), _target_point()) or _seen_t < 2.5):
 		_enter(State.AIM)
@@ -716,16 +735,17 @@ func _aim_step(delta: float, has_target: bool) -> void:
 		_pick("hold")  # too close: back off first
 		return
 	var at_peek := _flat(_spot.peek - global_position).length() < 0.25
-	if _sees and at_peek:
+	var can := _sees or _suppress  # suppressing: the cover he's behind will do
+	if can and at_peek:
 		_aimed += delta
-	if _aimed >= _aim_need and _sees:
+	if _aimed >= _aim_need and can:
 		_fire()
 		_burst -= 1
 		_aimed = 0.0
 		_aim_need = NEXT_AIM * randf_range(0.85, 1.2) * _react()
 		if _burst <= 0 or ammo <= 0:
 			_after_burst()
-	elif not _sees and _t > _aim_need + HOLD_AIM:
+	elif not can and _t > _aim_need + HOLD_AIM:
 		_after_burst()
 
 
@@ -747,6 +767,7 @@ func _fire_on_the_move(has_target: bool) -> bool:
 
 func _after_burst() -> void:
 	_last_burst = alive_time
+	_suppress = false
 	if not _spot.exposed:
 		_enter(State.COVER)
 	elif ammo <= 0:
@@ -756,8 +777,10 @@ func _after_burst() -> void:
 
 
 func _wants_flank() -> bool:
-	if team == PARTY or flanking or _camp_t < CAMP_TIME or _seen_t < 1.5:
+	if team == PARTY or flanking or _camp_t < CAMP_TIME * (RUSHER_CAMP if role == "rusher" else 1.0) or _seen_t < 1.5:
 		return false
+	if role != "rusher" and _rusher_up():
+		return false  # the rusher goes round; the rest keep you busy
 	if _now() - _last_flank < FLANK_COOLDOWN or _now() - _flank_try < FLANK_COOLDOWN:
 		return false
 	if _clear(_peek_eye(), target.global_position + Vector3.UP * 0.8):
@@ -878,10 +901,14 @@ func _go_down() -> void:
 	_over_t = 0.0
 	_bleed = 0.0
 	set_meta("downed_grace", true)  # mummies (ignore_downed) and gunmen leave them alone this long
-	get_tree().create_timer(Difficulty.f("downed_grace")).timeout.connect(func():
-		if is_instance_valid(self):
-			remove_meta("downed_grace"))
+	# A bound method, not a lambda: the timer outlives a retried scene, and a freed node's methods
+	# drop their connections (a lambda capturing it errors).
+	get_tree().create_timer(Difficulty.f("downed_grace")).timeout.connect(_end_grace)
 	stumble()
+
+
+func _end_grace() -> void:
+	remove_meta("downed_grace")
 
 
 ## Killed outright, never downed: a falling block.
@@ -1077,10 +1104,15 @@ static func spots(pieces: Array) -> Array:
 ## corner), and a gunman sent there stood chest-deep in stone. Low pieces lose any blocked
 ## lean-round points. Checked once per spot.
 static var _free := {}  # spot key -> [fits: bool, alts that fit]
+static var _free_scene := 0  # the scene they were checked in: gone (next act, a retry), so are they
 
 func _spot_free(s: Dictionary) -> bool:
 	if s.exposed or s.key == "":
 		return true
+	if _free_scene == 0 or not is_instance_id_valid(_free_scene):
+		_free.clear()  # a spot key can come back in another level, with other walls round it
+		var sc := get_tree().current_scene
+		_free_scene = sc.get_instance_id() if sc else 0
 	if not _free.has(s.key):
 		var ok: bool = _fits(s.pos) and (not s.tall or _fits(s.peek))
 		var alts: Array = []
@@ -1154,13 +1186,13 @@ func _pick(mode: String) -> void:
 			"flank":
 				if s.key == _spot.get("key", "") or not _clear((s.peek as Vector3) + Vector3.UP * STAND_EYE, p + Vector3.UP * 0.8):
 					continue
-				score = -absf(d - PREFERRED) * 0.5 - travel * 0.3 + (6.0 if _protects(s, p) else 0.0)
+				score = -absf(d - _preferred()) * 0.5 - travel * 0.3 + (6.0 if _protects(s, p) else 0.0)
 			_:
 				if not _protects(s, p):
 					continue
 				if mode == "reposition" and s.key == _spot.get("key", ""):
 					continue
-				score = -absf(d - PREFERRED) - travel * 0.5
+				score = -absf(d - _preferred()) - travel * 0.5
 				s["shot"] = _shot_from(s, p)
 				if s.shot:
 					score += 5.0
@@ -1251,7 +1283,7 @@ func _exposed_spot(p: Vector3) -> Dictionary:
 		if away.length() < 0.1:
 			away = Vector3.BACK
 		var side := Vector3(-away.z, 0, away.x) * randf_range(-3.0, 3.0)
-		want = p + away * PREFERRED * 0.8 + side
+		want = p + away * _preferred() * 0.8 + side
 	return _on_navmesh({"key": "", "pos": want, "peek": want, "normal": Vector3.ZERO, "tall": false, "exposed": true})
 
 
@@ -1660,6 +1692,8 @@ func _die() -> void:
 		tw.parallel().tween_property(model, "position:y", 0.2, 0.5)
 	if team != PARTY:
 		Barks.say_any(get_tree(), "enemy_down", global_position)
+		if role == "leader":
+			_leader_fell()
 	killed.emit(self)
 
 
@@ -1687,3 +1721,72 @@ func bleed_left() -> float:
 ## Enemies' time to aim on this difficulty (companions are always as made).
 func _react() -> float:
 	return Difficulty.f("enemy_react") if team != PARTY else 1.0
+
+
+# ---------------------------------------------------------------- roles
+
+const RIFLEMAN_RANGE := 1.6      # x PREFERRED: riflemen hold farther off
+const RUSHER_CAMP := 0.85        # x CAMP_TIME: a rusher goes round you after ~6 s pinned
+const LEADER_WAVER := 0.25       # his side's surrender_chance up this much when the leader falls
+const LEADER_FALL_BACK := 0.5    # chance each of them falls back (out of sight: the acts' "withdrew")
+const DYNAMITE_PINNED := 4.0     # s you've stayed put before a stick comes over
+const DYNAMITE_RANGE := Vector2(7.0, 22.0)
+const DYNAMITE_GAP := 12.0       # s between two sticks from one side
+
+
+## One leader per side (the first to arrive with none up), then riflemen and rushers by chance.
+func _pick_role() -> String:
+	for n in get_tree().get_nodes_in_group("gunmen"):
+		var g := n as Gunman
+		if g and g != self and g.team == team and g.role == "leader" and g.is_active():
+			return "rifleman" if randf() < 0.25 else ("rusher" if randf() < 0.27 else "")
+	return "leader"
+
+
+func _preferred() -> float:
+	return PREFERRED * (RIFLEMAN_RANGE if role == "rifleman" else 1.0)
+
+
+## A rusher of this side still up: flanking is his job.
+func _rusher_up() -> bool:
+	for n in get_tree().get_nodes_in_group("gunmen"):
+		var g := n as Gunman
+		if g and g != self and g.team == team and g.role == "rusher" and g.is_active() and not g.surrendered:
+			return true
+	return false
+
+
+## The leader is down: the rest of his side waver.
+func _leader_fell() -> void:
+	var n_back := 0
+	for n in get_tree().get_nodes_in_group("gunmen"):
+		var g := n as Gunman
+		if g == null or g == self or g.team != team or not g.is_active() or g.surrendered:
+			continue
+		g.surrender_chance = minf(g.surrender_chance + LEADER_WAVER, 1.0)
+		if not g.retreating and randf() < LEADER_FALL_BACK:
+			g.retreating = true
+			g._retreat_pending = true
+			n_back += 1
+	print("GUNMAN leader %s (%s) down: %d of his side fall back" % [name, team, n_back])
+
+
+## Riflemen: you're behind cover he can see the top of: keep it busy (rounds into the cover).
+func _wants_suppress() -> bool:
+	if role != "rifleman" or not (target is Player) or not (target as Player).cover.in_cover() or _seen_t > 10.0:
+		return false
+	return _shooters() < MAX_SHOOTERS and _clear(_peek_eye(), target.global_position + Vector3.UP * 1.05)
+
+
+## Dynamite: you've stayed put behind cover, in throwing range, and his side hasn't thrown lately.
+func _maybe_throw() -> bool:
+	if dynamite <= 0 or not (target is Player) or _camp_t < DYNAMITE_PINNED:
+		return false
+	var d := global_position.distance_to(target.global_position)
+	if d < DYNAMITE_RANGE.x or d > DYNAMITE_RANGE.y or _now() - float(_last_dynamite.get(team, -100.0)) < DYNAMITE_GAP:
+		return false
+	_last_dynamite[team] = _now()
+	dynamite -= 1
+	Dynamite.throw(get_parent(), _eye() + Vector3.UP * 0.2, target.global_position, self)
+	print("GUNMAN %s throws dynamite at %.0f m" % [name, d])
+	return true
