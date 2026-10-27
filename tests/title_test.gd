@@ -62,6 +62,17 @@ func _ready() -> void:
 	_check(_has_label("Start a new game? Your last rest stays until you rest again."), "New game asks first when there's a save")
 	_find("No").pressed.emit()
 	await _frames(3)
+	# Yes: the difficulty first (Normal picked), each with its line; Back returns.
+	_find("New game").pressed.emit()
+	await _frames(2)
+	_find("Yes").pressed.emit()
+	await _frames(3)
+	var normal := _find("Normal")
+	_check(_find("Story") != null and normal != null and _find("Hard") != null, "a new game asks the difficulty: Story / Normal / Hard")
+	_check(normal != null and normal.has_focus(), "Normal is the default")
+	_check(_has_label(Difficulty.BLURBS["hard"]), "each with its line")
+	_find("Back").pressed.emit()
+	await _frames(3)
 	if DisplayServer.get_name() != "headless":
 		await get_tree().create_timer(1.0).timeout
 		await RenderingServer.frame_post_draw

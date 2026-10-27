@@ -162,8 +162,27 @@ func _new_game() -> void:
 		_start_new()
 
 
+## A new game: first the difficulty (Normal picked), then Act 1. The act's first save records it.
 func _start_new() -> void:
+	_clear()
+	_menu.add_child(_label("How hard should it be?", 24, INK))
+	var normal: Button = null
+	for id: String in Difficulty.IDS:
+		var b := _button(Difficulty.name_of(id), _begin.bind(id))
+		_menu.add_child(b)
+		var blurb := _label(Difficulty.BLURBS[id], 16, DIM)
+		blurb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		blurb.custom_minimum_size = Vector2(380, 0)
+		_menu.add_child(blurb)
+		if id == "normal":
+			normal = b
+	_menu.add_child(_button("Back", _main_menu))
+	normal.grab_focus.call_deferred()
+
+
+func _begin(difficulty: String) -> void:
 	Game.reset()
+	Difficulty.set_level(difficulty)
 	DayLog.begin_day()
 	get_tree().change_scene_to_file("res://act1.tscn")
 

@@ -90,6 +90,15 @@ func _ready() -> void:
 		_check(grid, "First-time hints", "hints")
 		_check(grid, "Controller vibration", "vibration")
 		_check(grid, "Aim assist (controller)", "aim_assist")
+		_row(grid, "Difficulty")  # this game's (saved with it); changeable mid-game
+		var diff := OptionButton.new()
+		for id in Difficulty.IDS:
+			diff.add_item(Difficulty.name_of(id))
+		diff.selected = maxi(Difficulty.IDS.find(Difficulty.level()), 0)
+		diff.tooltip_text = "
+".join(Difficulty.IDS.map(func(id): return "%s: %s" % [Difficulty.name_of(id), Difficulty.BLURBS[id]]))
+		diff.item_selected.connect(func(i: int) -> void: Difficulty.set_level(Difficulty.IDS[i]))
+		grid.add_child(diff)
 		buttons.add_child(_button("Controls…", func() -> void: ControlsScreen.open(get_tree())))
 		buttons.add_child(_button("Accessibility…", func() -> void: OptionsScreen.open_accessibility(get_tree())))
 	else:

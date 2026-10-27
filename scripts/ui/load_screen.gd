@@ -99,7 +99,7 @@ func _row(slot: String, info: Dictionary) -> Control:
 	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	text.add_child(_label(NAMES.get(slot, slot), 22, INK))
 	if info.exists:
-		text.add_child(_label("Act %d · %s · day %d" % [info.act, info.place, info.day], 18, INK))
+		text.add_child(_label("Act %d · %s · day %d · %s" % [info.act, info.place, info.day, info.get("difficulty", "Normal")], 18, INK))
 		text.add_child(_label("With: " + (", ".join(info.party) if not info.party.is_empty() else "nobody"), 16, DIM))
 		text.add_child(_label("£%d · %s · %s" % [info.money, SaveSlots.date_text(info.saved_at), SaveSlots.play_time_text(info.play_time)], 16, DIM))
 	else:

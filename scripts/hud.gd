@@ -235,7 +235,7 @@ func _draw_strip(size: Vector2) -> void:
 	var row := 22.0 * _scale
 	var list := companions()
 	var y := size.y - (100.0 if not (player.melee and player.melee.enabled) else 128.0) - row * list.size()
-	var near := Gunman.hostiles(get_tree()) if not list.is_empty() else []
+	var near: Array = Gunman.hostiles(get_tree()) if not list.is_empty() else []
 	# Columns: the names (as wide as the longest), the bar, then the status (DOWN and the ring).
 	var name_w := 0.0
 	for g in list:
@@ -267,7 +267,7 @@ static func _first_name(g: Gunman) -> String:
 
 ## Bleeding (down with an enemy close): a ring that fills toward the bleed-out.
 func _draw_bleed_ring(at: Vector2, g: Gunman) -> void:
-	var k := clampf(g._bleed / Gunman.BLEED_OUT, 0.0, 1.0)  # (Normal's; Difficulty's once it's in)
+	var k := 1.0 - g.bleed_left()  # (the difficulty's bleed-out; hits while down drain it faster)
 	_canvas.draw_arc(at, 7.0 * _scale, 0, TAU, 24, Color(0, 0, 0, 0.6), 3.0)
 	_canvas.draw_arc(at, 7.0 * _scale, -PI * 0.5, -PI * 0.5 + TAU * k, 24, DOWN_RED, 3.0)
 

@@ -63,7 +63,8 @@ static func info(slot: String) -> Dictionary:
 	out.merge({"exists": true, "act": int(d.get("act", 1)), "place": place_name(str(d.get("place", ""))),
 		"party": party, "money": int(d.get("money", 0)), "day": int(d.get("day", 1)),
 		"saved_at": float(d.get("saved_at", 0.0)), "play_time": float(d.get("play_time", 0.0)),
-		"thumb": thumb_path(slot) if FileAccess.file_exists(thumb_path(slot)) else ""}, true)
+		"thumb": thumb_path(slot) if FileAccess.file_exists(thumb_path(slot)) else "",
+		"difficulty": Difficulty.name_of(str((d.get("flags", {}) as Dictionary).get("difficulty", "normal")))}, true)
 	if out.saved_at <= 0.0:  # an old save: its file's own time
 		out.saved_at = float(FileAccess.get_modified_time(path(slot)))
 	return out
