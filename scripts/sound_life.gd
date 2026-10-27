@@ -20,6 +20,8 @@ const MIX := {"flap": [-8.0, 3.0, 30.0], "bray": [-6.0, 6.0, 45.0], "bleat": [-1
 	"murmur": [-14.0, 6.0, 35.0], "paddle": [-10.0, 6.0, 40.0], "prayer": [-12.0, 60.0, 400.0]}
 
 static var _cache := {}
+static var _mutex := Mutex.new()   # the cache, when prewarm builds on a worker thread
+static var _warming := {}
 var _pool: Array[AudioStreamPlayer3D] = []
 var _next := 0
 
@@ -132,10 +134,33 @@ func _shot(kind: String, pos: Vector3, db: float, jitter: float) -> AudioStreamP
 
 # ---------------------------------------------------------------- the sounds
 
+## Build `kind` on a worker thread now (the murmur loop takes a while in GDScript), so its first
+## use doesn't stall a frame; is_ready() says when it's there.
+static func prewarm(kind: String, looped := false) -> void:
+	var key := kind + ("_loop" if looped else "")
+	_mutex.lock()
+	var go := not _cache.has(key) and not _warming.has(key)
+	if go:
+		_warming[key] = true
+	_mutex.unlock()
+	if go:
+		WorkerThreadPool.add_task(func() -> void: stream(kind, looped), false, "sound " + key)
+
+
+static func is_ready(kind: String, looped := false) -> bool:
+	_mutex.lock()
+	var yes := _cache.has(kind + ("_loop" if looped else ""))
+	_mutex.unlock()
+	return yes
+
+
 static func stream(kind: String, looped := false) -> AudioStream:
 	var key := kind + ("_loop" if looped else "")
-	if _cache.has(key):
-		return _cache[key]
+	_mutex.lock()
+	var have: AudioStream = _cache.get(key)
+	_mutex.unlock()
+	if have:
+		return have
 	var s: AudioStream = null
 	for ext in [".ogg", ".wav"]:
 		if ResourceLoader.exists(AUDIO_DIR + kind + ext):
@@ -151,7 +176,13 @@ static func stream(kind: String, looped := false) -> AudioStream:
 	elif s is AudioStreamOggVorbis and looped:
 		s = (s as AudioStreamOggVorbis).duplicate()
 		(s as AudioStreamOggVorbis).loop = true
-	_cache[key] = s
+	_mutex.lock()
+	if _cache.has(key):
+		s = _cache[key]  # built meanwhile on the other thread: keep the one
+	else:
+		_cache[key] = s
+	_warming.erase(key)
+	_mutex.unlock()
 	return s
 
 
@@ -288,18 +319,21 @@ static func _murmur(rng: RandomNumberGenerator) -> PackedFloat32Array:
 	var n := int(RATE * secs)
 	var buf := PackedFloat32Array()
 	buf.resize(n)
-	var voices := []
+	# A voice at a time (locals, no dictionaries: this was 0.4 s of GDScript per sample-by-voice).
 	for v in 7:
-		voices.append({"hz": rng.randf_range(110.0, 240.0), "ph": 0.0, "rate": float(rng.randi_range(1, 4)) / secs, "off": rng.randf() * TAU})
+		var step := rng.randf_range(110.0, 240.0) / RATE
+		var rate := float(rng.randi_range(1, 4)) / secs
+		var off := rng.randf() * TAU
+		var w_mod := TAU * rate * 3.0 / RATE
+		var w_syl := TAU * rate * 6.0 / RATE
+		var ph := 0.0
+		for i in n:
+			ph += step * (1.0 + 0.04 * sin(w_mod * i))
+			var syll := maxf(0.0, sin(w_syl * i + off))
+			buf[i] += sin(ph * TAU) * syll * syll
 	var lp := 0.0
 	for i in n:
-		var t := float(i) / RATE
-		var s := 0.0
-		for v: Dictionary in voices:
-			v.ph = fmod(float(v.ph) + float(v.hz) * (1.0 + 0.04 * sin(t * TAU * float(v.rate) * 3.0)) / RATE, 1.0)
-			var syll := maxf(0.0, sin(t * TAU * float(v.rate) * 6.0 + float(v.off)))
-			s += sin(float(v.ph) * TAU) * syll * syll
-		lp += (s / 7.0 - lp) * 0.25
+		lp += (buf[i] / 7.0 - lp) * 0.25
 		buf[i] = (lp + rng.randf_range(-1, 1) * 0.03) * 0.7
 	return _seam(buf)
 
