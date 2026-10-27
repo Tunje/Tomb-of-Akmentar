@@ -18,7 +18,10 @@ enum Step { KEEPERS, BOARD, ROAD, ARRIVAL, END, OVER }
 const PLAN := "res://routes/act6_plan.json"
 const NEXT_ACT := "res://act7.tscn"
 const RIVALS := ["americans", "germans"]   # the expeditions that can lend horses (if alive)
-const SERVANTS := 10                       # mummies at the night camp
+const SERVANT_HP := 130.0                  # (mummy.gd: 100) at 100 the party shot them down unhurt (tests/difficulty_test)
+const SERVANT_PACE := 1.5                  # x their walk
+const SERVANTS := 12                       # mummies at the night camp
+const SERVANTS_THEN := 2                   # after the first three, this many together every 2.5-4 s (one at a time: shot down unhurt)
 
 var level: Level
 var player: Player
@@ -283,11 +286,11 @@ func _servants(camp: Vector3) -> void:
 	var t0 := Time.get_ticks_msec()
 	while player.alive:
 		if spawned < SERVANTS and t >= next_t:
-			for k in (3 if spawned == 0 else 1):
+			for k in (3 if spawned == 0 else mini(SERVANTS_THEN, SERVANTS - spawned)):
 				var a := first_a + TAU * k / 3.0 if spawned < 3 else randf() * TAU
 				_servant(camp, a, spawned == 0, down)
 				spawned += 1
-			next_t = t + randf_range(3.0, 5.0)
+			next_t = t + randf_range(2.5, 4.0)
 		if spawned >= SERVANTS and down[0] >= SERVANTS:
 			break
 		await get_tree().create_timer(0.25).timeout
@@ -307,6 +310,8 @@ func _servant(camp: Vector3, a: float, priest: bool, down: Array) -> void:
 	var m := Mummy.new()
 	m.priest = priest
 	add_child(m)
+	m.health = SERVANT_HP
+	m.speed *= SERVANT_PACE
 	var p := camp + Vector3(cos(a), 0, sin(a)) * randf_range(11.0, 15.0)  # out of the dark close by (16-22 m: shot down before they arrived)
 	p.y = DesertRoute.ground_y(p.z)
 	m.global_position = p
