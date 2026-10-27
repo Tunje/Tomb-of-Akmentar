@@ -313,7 +313,8 @@ func _servants(camp: Vector3) -> void:
 		return
 	print("RESULT act6 servants=%d over %.0f s" % [servants.size(), (Time.get_ticks_msec() - t0) / 1000.0])
 	player.set_armed(false)
-	# Anyone still down when it's over: the dark takes them.
+	# Anyone still down gets up by themselves (Gunman.UP_AFTER); the dead are the ones left down
+	# too long with servants about, or finished where they lay.
 	var lost: Array[String] = []
 	for c in companions.values():
 		if is_instance_valid(c):
@@ -321,15 +322,14 @@ func _servants(camp: Vector3) -> void:
 				c.max_health = float(c.get_meta("camp_max_hp"))
 				c.health = minf(c.health, c.max_health)
 				c.remove_meta("camp_max_hp")
-			if c.stumbled and c.alive:
-				c.take_damage(1000.0, c.global_position)
+			if not c.alive:
 				lost.append(DayLog.person(c.companion_id))
 	Game.set_flag("act6_camp_held")
 	print("RESULT act6 camp_held lost=%s" % [lost])
 	if lost.is_empty():
 		hud.toast("The last of them falls into the fire. Nobody sleeps.", 3.0)
 	else:
-		hud.toast("The last of them falls. You didn't reach %s in time: the dark has them." % " or ".join(lost), 4.5)
+		hud.toast("The last of them falls. The dark took %s." % " and ".join(lost), 4.5)
 	await get_tree().create_timer(2.0).timeout
 
 

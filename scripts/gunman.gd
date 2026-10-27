@@ -77,7 +77,10 @@ const ESCAPE_FAR := 4.0
 const ESCAPE_SPEED := 7.2        # (the player sprints 6.6)
 const HELP_REACH := 3.2          # E this close helps a stumbled companion up (across low rubble too)
 const DOWNED_GRACE := 6.0        # s enemies leave a downed companion alone: time to get to them
-const OVER_GRACE := 5.0          # s after the fight's over to help the downed up, or they die
+const BLEED_OUT := 60.0          # s down with an enemy within ENEMY_NEAR before they die of it
+const ENEMY_NEAR := 20.0
+const BLEED_PER_DAMAGE := 0.5    # s of BLEED_OUT a point of damage takes while down
+const UP_AFTER := 3.0            # s after the fight's over that the downed get up by themselves
 const HOP_MAX := 1.3             # rubble this high (or lower) gets climbed while following
 # Surrender (enemies only)
 const SURRENDER_AT := 0.25       # share of max health
@@ -129,13 +132,15 @@ var escape := false
 ## Down on the floor (stumble()): stays put until the player helps (E) or something gets him.
 var stumbled := false
 ## Companions (a companion_id), the whole game: a blow that would kill one downs them instead
-## (stumble(), `downed`): "E help up", no time limit. Enemies leave them alone DOWNED_GRACE s, then
-## any hit finishes them; still down OVER_GRACE s after the fight's over (fight_on()), they die.
-## crush() (a falling block) kills outright; so do a wrecked truck and the story (Game "kill").
+## (stumble(), `downed`): "E help up". Enemies leave them alone DOWNED_GRACE s; after that, hits
+## bleed them faster (BLEED_PER_DAMAGE); left BLEED_OUT s with enemies close, they bleed out; the
+## fight over (fight_on()), they get up by themselves after UP_AFTER s. crush() (a falling block)
+## kills outright; so do a wrecked truck and the story (Game "kill").
 var down_not_dead := true
 var downed := false
 var _over_t := 0.0
 var _over_check := 0.0
+var _bleed := 0.0  # s down with an enemy close
 ## Hands up: out of the fight, hostile to no one (shooting him anyway is the story's mean choice).
 var surrendered := false
 ## Enemies only: whether this one may give up at all (a fanatic of the order might not), and how
@@ -858,6 +863,7 @@ func _go_down() -> void:
 	health = 1.0
 	downed = true
 	_over_t = 0.0
+	_bleed = 0.0
 	set_meta("downed_grace", true)  # mummies (ignore_downed) and gunmen leave them alone this long
 	get_tree().create_timer(DOWNED_GRACE).timeout.connect(func():
 		if is_instance_valid(self):
@@ -874,34 +880,53 @@ func crush(from: Vector3) -> void:
 	_die()
 
 
-## Whether there's still a fight on: anything hostile to the party up and about.
-static func fight_on(tree: SceneTree) -> bool:
+## Everything hostile to the party that's up and about: enemy gunmen in the fight, awake mummies,
+## the guardian, chariots.
+static func hostiles(tree: SceneTree) -> Array[Node3D]:
+	var out: Array[Node3D] = []
 	for n in tree.get_nodes_in_group("gunmen"):
 		var g := n as Gunman
 		if g and g.is_active() and not g.surrendered and g.target != null and not allied(g.team, PARTY):
-			return true
+			out.append(g)
 	for n in tree.get_nodes_in_group("mummies"):
 		var m := n as Mummy
 		if m and not (m.state in [Mummy.State.DORMANT, Mummy.State.RISING, Mummy.State.DEAD]):
-			return true
+			out.append(m)
 	for n in tree.get_nodes_in_group("guardians"):
 		if n.get("state") != Guardian.State.DORMANT and n.get("state") != Guardian.State.PAUSED:
-			return true
+			out.append(n as Node3D)
 	for n in tree.get_nodes_in_group("chariots"):
 		if n.get("alive"):
-			return true
-	return false
+			out.append(n as Node3D)
+	return out
 
 
-## Downed and the fight's over: OVER_GRACE s to be helped up, then they're gone.
+## Whether there's still a fight on.
+static func fight_on(tree: SceneTree) -> bool:
+	return not hostiles(tree).is_empty()
+
+
+## Down: they bleed while an enemy is within ENEMY_NEAR, and die after BLEED_OUT of it; once the
+## fight's been over UP_AFTER s, they get up by themselves.
 func _downed_step(delta: float) -> void:
 	_over_check -= delta
 	if _over_check > 0.0:
 		return
 	_over_check = 0.5
-	_over_t = 0.0 if fight_on(get_tree()) else _over_t + 0.5
-	if _over_t >= OVER_GRACE:
-		print("COMPANION %s left down after the fight: dies" % companion_id)
+	var foes := hostiles(get_tree())
+	if foes.is_empty():
+		_over_t += 0.5
+		if _over_t >= UP_AFTER:
+			print("COMPANION %s gets up after the fight (bled %.0f s)" % [companion_id, _bleed])
+			help_up()
+		return
+	_over_t = 0.0
+	for f in foes:
+		if f.global_position.distance_to(global_position) < ENEMY_NEAR:
+			_bleed += 0.5
+			break
+	if _bleed >= BLEED_OUT:
+		print("COMPANION %s bled out (down %.0f s with enemies close)" % [companion_id, _bleed])
 		_die()
 
 
@@ -1468,6 +1493,16 @@ func take_damage(amount: float, from: Vector3) -> bool:
 
 func _hurt(part: String, dmg: float, dir: Vector3, stagger: float, knock: float) -> Dictionary:
 	if state == State.DEAD:
+		return {"killed": false}
+	if downed and stumbled:
+		# Hit while down: it bleeds them faster (a swipe ~10 s of BLEED_OUT); the guardian's grab
+		# (100000) is the end at once.
+		_bleed += dmg * PART_MULT.get(part, 1.0) * BLEED_PER_DAMAGE
+		_flash = 0.12
+		if _bleed >= BLEED_OUT:
+			print("COMPANION %s finished while down (bled %.0f s)" % [companion_id, _bleed])
+			_die()
+			return {"killed": true}
 		return {"killed": false}
 	health -= dmg * PART_MULT.get(part, 1.0)
 	_flash = 0.12

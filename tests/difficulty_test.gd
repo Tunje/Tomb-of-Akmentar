@@ -376,12 +376,8 @@ func _finish_seg(outcome: String) -> void:
 	if s.get("dmg", "") == "trucks":
 		full = 100.0 * (act.get("trucks") as Array).size()
 		_seg_dmg = _trucks_hp - _trucks_health()
-	# Still down at the end counts as lost: Gunman lets them go OVER_GRACE s after the fight.
-	var left := {}
-	for n in get_tree().get_nodes_in_group("gunmen"):
-		if n is Gunman and (n as Gunman).downed and (n as Gunman).is_active():
-			left[(n as Gunman).companion_id] = true
-	var lost := _seg_party.filter(func(id): return not Game.in_party(id) or left.has(id))
+	# Still down at the end isn't lost: the fight over, Gunman gets them up (UP_AFTER).
+	var lost := _seg_party.filter(func(id): return not Game.in_party(id))
 	var r := {"name": s.name, "seed": _seed, "outcome": outcome, "t": snappedf(_seg_t, 0.1), "dmg": snappedf(_seg_dmg, 0.1),
 		"dmg_pct": snappedf(minf(100.0 * _seg_dmg / full, 100.0), 0.1), "party": _seg_party, "lost": lost, "fired": _shots.x, "hit": _shots.y, "downs": _downs.size()}
 	print("DIFF %s" % JSON.stringify(r))
