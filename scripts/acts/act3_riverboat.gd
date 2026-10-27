@@ -78,6 +78,7 @@ func _ready() -> void:
 	add_child(level)
 	Ambience.play(self, "river")
 	boat = RiverBoat.make(level, level.path, "act3_steamer", 30.0)
+	boat.add_folk()  # passengers and crew, who go below at the first shots (-f9)
 	player = Player.new()
 	add_child(player)
 	player.global_position = boat.to_global(Vector3(2.4, RiverBoat.DECK_Y + 0.1, 13.0))

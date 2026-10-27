@@ -88,6 +88,7 @@ func _ready() -> void:
 	Ambience.play(self, "river")
 	_night()
 	boat = RiverBoat.make(level, level.path, "act8_steamer", 120.0)
+	boat.add_folk()  # passengers and crew, who go below at the first shots (-f9)
 	boat.cruise = DRIFT
 	player = Player.new()
 	add_child(player)

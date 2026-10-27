@@ -61,6 +61,7 @@ func _ready() -> void:
 	player.yaw = 0.0  # facing north, into the tomb
 	# Her lantern: the maze between the torches is black without it.
 	player.add_lantern()
+	TombDust.add(self, player)  # motes in the lantern light, grit from the ceiling (-f9)
 	hud = Hud.new()
 	hud.player = player
 	add_child(hud)
