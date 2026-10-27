@@ -259,7 +259,7 @@ func _physics_process(delta: float) -> void:
 				_enter(State.WINDUP)
 			elif _alive(target):
 				var k := clampf((dist - CATCH_UP_FROM) / (CATCH_UP_DIST - CATCH_UP_FROM), 0.0, 1.0)
-				var speed := lerpf(SPEED, CATCH_UP_SPEED, k) * (1.0 - _slow)
+				var speed := lerpf(SPEED, CATCH_UP_SPEED, k) * (1.0 - _slow) * Difficulty.f("guardian_pace")
 				move = _path_dir(delta) * speed
 				_climb_or_unstick(move, delta)
 				if state == State.CHASE:

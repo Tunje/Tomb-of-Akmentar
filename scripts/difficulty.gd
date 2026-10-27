@@ -24,7 +24,8 @@ const TABLE := {
 	"enemy_health": {"story": 0.8, "normal": 1.0, "hard": 1.2},  # enemy gunmen and mummies
 	"bleed_out": {"story": 120.0, "normal": 60.0, "hard": 40.0},  # s a downed companion lasts, enemies close
 	"downed_grace": {"story": 10.0, "normal": 6.0, "hard": 4.0},  # s enemies leave the downed alone
-	"ritual_slams": {"story": 3, "normal": 2, "hard": 1},  # the ritual's guardian: slams before the kill
+	"guardian_pace": {"story": 0.8, "normal": 1.0, "hard": 1.1},  # his walk and catch-up
+	"ritual_slams": {"story": 6, "normal": 2, "hard": 1},  # the ritual's guardian: slams before the kill (Story at 3: the bot still died 3 in 5)
 	"ammo_pickups": {"story": 1.5, "normal": 1.0, "hard": 0.7},  # for pickups (the game has none yet)
 }
 
