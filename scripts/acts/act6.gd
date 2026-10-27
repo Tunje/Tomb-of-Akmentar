@@ -266,6 +266,7 @@ func _road(route: String) -> void:
 	_darken(0.85)
 	Ambience.play(self, "night")
 	_camp(camp)
+	CampJobs.assign(level, companions, "act6_stop", true, {"anchor": camp})  # -f9's: each at their job at the stop, fighting from their posts
 	hud.show_message("THE ROAD BACK", "The %s road. Night falls; you make camp." % route)
 	await get_tree().create_timer(2.5).timeout
 	hud.show_message("")
@@ -286,6 +287,7 @@ func _road(route: String) -> void:
 		hud.toast("You break camp and ride through the dark, the servants' shapes keeping pace on the dunes.", 4.0)
 		await get_tree().create_timer(2.0).timeout
 	Weather.sandstorm(self, 40.0)  # -f9's: the last miles to Cairo in blowing sand
+	CampJobs.release(level)
 	_arrival()
 
 
