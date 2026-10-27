@@ -6,17 +6,21 @@ extends Node3D
 ## - The takeoff and the flight south over the desert at dusk; the camera rides behind the plane.
 ## - The guardian comes after the amulet: a sandstorm wall rises behind and catches up. Its gusts
 ##   roll the plane: hold it level with A / D. Let it roll too far and it drops: the plane takes
-##   damage and the companion is thrown about (hurt; twice and they're injured).
+##   damage and the companion is thrown about (hurt; twice and they're injured). Each drop costs
+##   height (Fletcher climbs back between them); below CRASH_ALT, or when the drops have wrecked
+##   her (damage 100), she goes into the dunes: YOU CRASHED, Enter tries the flight again
+##   (Checkpoint: Game as it was on entry).
 ## - A rough landing in the ruins at Akmentar (AkmentarSurface): the plane won't fly again.
 ## When it's over `finished` gets the result and Enter goes to `next_scene` (set by act8.gd).
-## Test args (after --): --auto[=steady|sloppy] (a bot holds the plane level, or doesn't),
+## Test args (after --): --auto[=steady|sloppy] (a bot holds the plane level, or doesn't: sloppy crashes),
 ## --companion=<id>, --seconds=N, --shots=t1,t2, --shot-dir=path.
 
 signal finished(result: Dictionary)
 
 static var next_scene := "res://act8.tscn"
+static var _chosen := ""  # who flew on the try before (a retry doesn't ask again)
 
-enum Step { STRIP, TAKEOFF, FLIGHT, STORM, LANDING, END }
+enum Step { STRIP, TAKEOFF, FLIGHT, STORM, LANDING, END, CRASHED }
 
 const CRUISE := 45.0          # m/s
 const ALTITUDE := 85.0
@@ -25,6 +29,9 @@ const STORM_SECS := 32.0
 const LIMIT := 0.6            # rad of roll before it drops
 const LIMIT_SECS := 0.5       # held that long
 const STEER := 1.5            # rad/s of correction at full A / D
+const DROP := 12.0            # m of height a drop costs
+const CLIMB := 2.0            # m/s Fletcher climbs back between drops
+const CRASH_ALT := 12.0       # below this over the dunes she goes in
 const LANDING_SPOT := Vector3(24, 0, 128)  # at Akmentar, west of our camp
 
 var level: Level
@@ -52,6 +59,7 @@ var _looked_mid := false
 var _t := 0.0
 var _shots: Array[float] = []
 var _done := false
+var _retrying := false  # after a crash: no talk, no takeoff, back in the air before the storm
 
 
 func _ready() -> void:
@@ -67,6 +75,8 @@ func _ready() -> void:
 		for id in ["eleanor", "mahmoud"]:
 			Game.companion(id)["recruited"] = true
 	Game.act = 8
+	_retrying = get_tree().has_meta("checkpoint_retry")
+	Checkpoint.take(self)  # a retry after a crash starts from the state on entry
 	level = FlightRange.new()
 	add_child(level)
 	Ambience.play(self, "desert")
@@ -75,6 +85,7 @@ func _ready() -> void:
 	plane.global_position = FlightRange.STRIP_START
 	player = Player.new()
 	add_child(player)
+	player.died.connect(_on_died)
 	player.global_position = level.player_spawn
 	player.yaw = PI * 0.5  # looking west, at the plane
 	player.set_armed(false)
@@ -104,6 +115,12 @@ func _ready() -> void:
 
 func _strip() -> void:
 	step = Step.STRIP
+	if _retrying and _chosen != "":
+		Game.set_flag("plane_companion", _chosen)
+		companion = _chosen if _chosen == "none" or Game.in_party(_chosen) else "none"
+		result.companion = companion
+		_takeoff()
+		return
 	var fletcher := Npc.make(level, "fletcher", FlightRange.STRIP_START + Vector3(3.2, 0, -1.5), "", Characters.glb("fletcher"))
 	fletcher.face_towards(player.global_position)
 	hud.show_message("THE AIRSTRIP", "Fletcher's biplane, engine ticking as it cools. One seat to spare.")
@@ -123,6 +140,7 @@ func _strip() -> void:
 	if companion != "none" and not Game.in_party(companion):
 		companion = "none"
 	result.companion = companion
+	_chosen = companion
 	print("RESULT flight companion=%s" % companion)
 	fletcher.queue_free()
 	_takeoff()
@@ -140,6 +158,14 @@ func _takeoff() -> void:
 	_cam.current = true
 	hud.toast("The engine catches. Fletcher opens the throttle.", 3.0)
 	plane.spin = 1.0
+	if _retrying:  # straight back into the air, the storm not far off
+		plane.global_position = FlightRange.STRIP_START + Vector3(0, ALTITUDE, -260 - CRUISE * 7.0)
+		plane.pitch = 0.0
+		step = Step.FLIGHT
+		_phase_t = CALM_SECS * 0.5
+		hud.toast("Again: south over the desert. Hold her level this time.", 3.5)
+		Objective.set_goal("Fly south to Akmentar")
+		return
 	# Down the strip, then up.
 	var tw := create_tween()
 	tw.tween_property(plane, "global_position", FlightRange.STRIP_START + Vector3(0, 0, -260), 6.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
@@ -175,7 +201,7 @@ func _seat_body(k: int, glb: String) -> Node3D:
 
 func _process(delta: float) -> void:
 	_t += delta
-	if step in [Step.TAKEOFF, Step.FLIGHT, Step.STORM, Step.LANDING]:
+	if step in [Step.TAKEOFF, Step.FLIGHT, Step.STORM, Step.LANDING, Step.CRASHED]:
 		var seat: Marker3D = plane.seats[int(player.get_meta("plane_seat", 1))]
 		player.global_position = seat.global_position - Vector3.UP * 0.55
 		player.model.rotation.y = plane.global_rotation.y
@@ -211,6 +237,7 @@ func _fly(delta: float) -> void:
 	_phase_t += delta
 	plane.global_position += Vector3(0, 0, -CRUISE * delta)
 	(level as FlightRange).set_dusk(clampf(_phase_t / (CALM_SECS + STORM_SECS), 0.0, 1.0))
+	plane.global_position.y = move_toward(plane.global_position.y, FlightRange.STRIP_START.y + ALTITUDE, CLIMB * delta)
 	if step == Step.FLIGHT:
 		plane.roll = move_toward(plane.roll, 0.0, delta * 0.4)
 		if _phase_t >= CALM_SECS:
@@ -243,6 +270,8 @@ func _fly(delta: float) -> void:
 		_over_t += delta
 		if _over_t > LIMIT_SECS:
 			_drop()
+			if step != Step.STORM:
+				return  # she went in
 	else:
 		_over_t = 0.0
 	if p >= 1.0:
@@ -264,8 +293,12 @@ func _drop() -> void:
 	result.drops += 1
 	plane.damage = minf(plane.damage + 18.0, 100.0)
 	plane.roll *= 0.3
-	plane.global_position.y = maxf(plane.global_position.y - 8.0, 30.0)
+	plane.global_position.y -= DROP
 	hud.on_damaged(10.0)
+	print("RESULT flight drop %d damage=%.0f height=%.0f" % [result.drops, plane.damage, plane.global_position.y])
+	if plane.global_position.y < FlightRange.STRIP_START.y + CRASH_ALT or plane.damage >= 100.0:
+		_crash()
+		return
 	if companion != "none":
 		result.hurt += 1
 		Game.apply([{"stat": [companion, "fear", 1]}])
@@ -273,7 +306,6 @@ func _drop() -> void:
 			Game.set_flag(companion + "_injured")
 	hud.toast("The plane drops like a stone, then catches. %s" % ("Hold it level! ({move_left} / {move_right})" if result.drops == 1 else
 		("%s is thrown against the cockpit rim." % DayLog.person(companion) if companion != "none" else "Something in the rigging snaps.")), 3.0)
-	print("RESULT flight drop %d damage=%.0f" % [result.drops, plane.damage])
 
 
 func _storm_begin() -> void:
@@ -302,7 +334,9 @@ func _landing() -> void:
 	step = Step.LANDING
 	hud.toast("The storm swallows the sun. Fletcher puts her down wherever there's ground.", 3.5)
 	var tw := create_tween()
-	tw.tween_property(plane, "global_position", plane.global_position + Vector3(0, -ALTITUDE + 8.0, -CRUISE * 5.0), 5.0)
+	var down := plane.global_position + Vector3(0, 0, -CRUISE * 5.0)
+	down.y = FlightRange.STRIP_START.y + 8.0  # (from wherever the drops left her)
+	tw.tween_property(plane, "global_position", down, 5.0)
 	tw.parallel().tween_property(_fade, "color:a", 1.0, 5.0)
 	await tw.finished
 	# At Akmentar: the ruins, the plane on its nose in the sand.
@@ -348,6 +382,35 @@ func _landing() -> void:
 	_finish()
 
 
+## Too low, or shaken apart: she noses into the dunes. Everyone aboard is lost; Enter tries again.
+func _crash() -> void:
+	step = Step.CRASHED
+	result.crashed = true
+	print("RESULT flight crashed drops=%d damage=%.0f height=%.0f t=%.1f" % [result.drops, plane.damage, plane.global_position.y, _t])
+	hud.toast("She won't answer the stick. The dunes come up to meet you.", 2.5)
+	plane.damage = 100.0
+	var tw := create_tween()
+	var ground := plane.global_position + Vector3(0, 0, -CRUISE * 1.6)
+	ground.y = FlightRange.STRIP_START.y
+	tw.tween_property(plane, "global_position", ground, 1.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tw.parallel().tween_property(plane, "pitch", -0.7, 1.6)
+	tw.parallel().tween_property(_fade, "color:a", 1.0, 1.8)
+	await tw.finished
+	plane.wreck()
+	if player.alive:
+		player.take_damage(player.max_health * 10.0, player.global_position + Vector3.FORWARD)
+
+
+func _on_died() -> void:
+	if step != Step.CRASHED:
+		step = Step.CRASHED  # (only a test kills him any other way)
+	hud.show_message("YOU CRASHED" if result.has("crashed") else "YOU DIED", "Enter to try again")
+	Objective.set_goal("")
+	if args.has("auto"):
+		await get_tree().create_timer(1.0).timeout
+		get_tree().quit(1)
+
+
 func _finish() -> void:
 	if _done:
 		return
@@ -373,6 +436,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	var enter: bool = event is InputEventKey and event.pressed and event.keycode in [KEY_ENTER, KEY_KP_ENTER]
 	if _done and enter:
 		get_tree().change_scene_to_file(next_scene)  # Game (the flags, the companion) carries over
+	elif enter and not player.alive:
+		Checkpoint.retry(self)  # Game as it was on entry, then the flight from the strip
 
 
 func _shot(file: String) -> void:
