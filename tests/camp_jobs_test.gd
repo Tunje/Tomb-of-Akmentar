@@ -41,7 +41,10 @@ func _ready() -> void:
 		Engine.max_fps = 0
 	for s in str(args.get("shots", "")).split(",", false):
 		_shots.append(float(s))
-	for id in CAST:
+	var cast: Array = CAST.duplicate()
+	if str(args.get("what", "")) == "crewless":
+		cast = cast.filter(func(x: String) -> bool: return not x in ["mahmoud", "khalil", "naguib"])
+	for id in cast:
 		Game.apply([{"recruit": id}])
 	var what := str(args.get("what", ""))
 	level = DesertRoute.new() if what == "road" else (Cairo.new() if what == "cairo" else AkmentarSurface.new())
@@ -54,7 +57,7 @@ func _ready() -> void:
 	player.set_armed(false)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	var i := 0
-	for id in CAST:
+	for id in cast:
 		var c := Gunman.make_companion(id, player, Characters.glb(id))
 		if c:
 			add_child(c)
@@ -77,6 +80,8 @@ func _ready() -> void:
 		await _road()
 	elif str(args.get("what", "")) == "cairo":
 		await _cairo()
+	elif str(args.get("what", "")) == "crewless":
+		await _crewless()
 	elif args.has("perf") or args.has("look"):
 		_perf = true
 		if str(args.get("perf", "")) != "off":
@@ -134,6 +139,24 @@ func _cairo() -> void:
 			Vector2(g.global_position.x - j.spot.x, g.global_position.z - j.spot.z).length(), g.state, g.velocity.snapped(Vector3.ONE * 0.1)])
 	_check(not_yet.is_empty(), "cairo: all there in %.0f s (not: %s)" % [secs, str(not_yet)])
 	CampJobs.release(level)
+
+
+## No crews hired: each of our claimed sites still has someone working it by day (a scholar).
+func _crewless() -> void:
+	var h := CampJobs.assign(level, companions, "act4_day", false, {"sites": _sites})
+	var w := 0.0
+	while h.jobs.is_empty() and w < 12.0:
+		await get_tree().create_timer(0.25).timeout
+		w += 0.25
+	var crews := CampJobs.staff_sites(level, _sites, {})
+	var ours: Array = _sites.keys().filter(func(k: String) -> bool: return _sites[k].team == "party")
+	var manned := 0
+	for k in ours:
+		var at: Vector3 = _sites[k].at
+		if h.jobs.values().any(func(j: Dictionary) -> bool: return (j.spot as Vector3).distance_to(at) < 6.0):
+			manned += 1
+	_check(manned == ours.size(), "crewless: each of our %d sites has a scholar working it (%d)" % [ours.size(), manned])
+	_check(crews.filter(func(c: Crowd) -> bool: return c.name.ends_with("party")).is_empty(), "crewless: and no crew of ours (none hired)")
 
 
 func _jobs() -> CampJobs:

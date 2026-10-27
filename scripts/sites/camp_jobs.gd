@@ -19,9 +19,12 @@ extends Node3D
 const JOBS := {
 	"eleanor": ["read", "read"], "pembroke": ["catalogue", "fire"], "hargreaves": ["watch", "watch"],
 	"saleh": ["camels", "camels"], "naguib": ["loads", "fire"], "mahmoud": ["dig", "fire"],
-	"khalil": ["dig", "fire"], "isabelle": ["pistol", "fire"], "hassan": ["stars", "stars"],
+	"khalil": ["dig", "fire"], "isabelle": ["pistol", "fire"], "hassan": ["watch", "stars"],
 	"youssef": ["scout", "fire"],
 }
+## By day, a claimed site of ours with no crew working it (none hired) gets one of these instead,
+## at their own job there: cataloguing finds, copying inscriptions.
+const SITE_SCHOLARS := ["pembroke", "eleanor", "hassan", "isabelle", "clara", "idris"]
 ## The jobs: the clip (CrowdPerson.CLIPS key; "" = stand ready, gun in hand), how far from the
 ## camp's middle, which way they face (the fire, out, the prop in front, an animal), the props, and
 ## whether the gun stays in hand.
@@ -136,13 +139,24 @@ func _assign(companions: Dictionary, where: String, at_night: bool, opts: Dictio
 	var used := {}     # (Cairo: how many have the job already)
 	var ids: Array = companions.keys()
 	ids.sort()
+	# Our sites with no crew (no foreman hired): a scholar each, working there.
+	var crewless := not night and not ours.is_empty() and not CREWS.keys().any(func(f: String) -> bool: return Game.in_party(f))
+	var at_site := {}
+	if crewless:
+		var k := 0
+		for sch: String in SITE_SCHOLARS:
+			if k < ours.size() and companions.has(sch):
+				at_site[sch] = sites[ours[k]].at
+				k += 1
 	for id: String in ids:
 		var g := companions[id] as Gunman
 		if g == null or not is_instance_valid(g) or g.state == Gunman.State.DEAD:
 			continue
 		var kind: String = (JOBS.get(id, ["fire", "fire"]) as Array)[1 if night else 0]
 		var job: Dictionary
-		if where == "act8_prep":
+		if at_site.has(id):
+			job = _site_job(kind if kind in ["read", "catalogue"] else "catalogue", at_site[id])
+		elif where == "act8_prep":
 			job = _cairo_job(kind, used.get(kind, 0))
 			used[kind] = int(used.get(kind, 0)) + 1
 		elif kind == "dig" and not night and not ours.is_empty():
@@ -644,7 +658,7 @@ func _staff(sites: Dictionary, crew_sizes: Dictionary) -> void:
 			d["looks"] = camp_data.get("looks", [])
 			d["skin"] = camp_data.get("skin", [])
 		crews.append(Crowd.populate_with(level, d, total, "Crew_" + team, 2))  # two a frame: no stall
-	print("CAMPJOBS crews: %s" % ", ".join(crews.map(func(c: Crowd) -> String: return "%s %d" % [c.name, c.people.size()])))
+		print("CAMPJOBS crew %s: %d men over %d sites (built two a frame)" % [team, total, groups.size()])
 
 
 ## A site's crew as a Crowd group: digs in a ring round its landmark facing it, the spoil heap
