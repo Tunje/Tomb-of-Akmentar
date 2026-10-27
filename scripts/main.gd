@@ -27,7 +27,6 @@ var wave_done := false
 var elapsed := 0.0
 var _entered_burial := false
 var _sight_t := 0.0
-var _menu_keys := ""  # the key help the start screen shows
 
 
 func _ready() -> void:
@@ -40,6 +39,12 @@ func _ready() -> void:
 	var args := TestDriver.parse_args()
 	if args.get("act", "") in ["1", "2", "3", "4", "5", "6", "7", "8", "9"]:
 		get_tree().change_scene_to_file.call_deferred("res://act%s.tscn" % args.act)
+		return
+	# Started as the game (no test args): the title screen, unless the title sent us here (its
+	# Chapters > Playtest range, or Continue from a rest made in the range).
+	var title_request := TitleScreen.take_request() if args.is_empty() else ""
+	if args.is_empty() and title_request == "":
+		get_tree().change_scene_to_file.call_deferred("res://title.tscn")
 		return
 	if args.has("explorer-glb"):
 		ExplorerBody.glb_path = args["explorer-glb"]
@@ -134,16 +139,13 @@ func _ready() -> void:
 		add_child(d)
 		_start(false)
 	else:
-		player.controls_enabled = false
-		_show_menu()
-		hud.allow_options = true
-
-
-## The start screen; its key help reads the bindings (shown again when the controls change).
-func _show_menu() -> void:
-	_menu_keys = Controls.help_text()
-	var cont := ("\nC  continue from your last rest" if Game.has_save() else "") + "\nL  load game (Y on a pad)" + "\n1  play Act 1: a bad day in Cairo (in progress)" + "\n2  play Act 2: raising the expedition in Cairo (in progress)" + "\n3  play Act 3: the road to Akmentar (in progress)" + "\n4  play Act 4: the tombs of Akmentar (in progress)" + "\n5  play Act 5: the awakening below Akmentar (in progress)" + "\n6  play Act 6: the race back to Cairo (in progress)" + "\n7  play Act 7: Cairo under the curse (in progress)" + "\n8  play Act 8: the way back to Akmentar (in progress)" + "\n9  play Act 9: the last descent (in progress)"
-	hud.show_message("TOMBS OF AKMENTAR", "Click to begin a new game" + cont + "\n\n" + _menu_keys + "\nSave at campfires and beds · Esc pause · O options")
+		# From the title (TitleScreen): the range afresh, or a last rest made here.
+		if title_request == "continue":
+			_continue()
+		else:
+			Game.reset()
+			DayLog.begin_day()
+			_start()
 
 
 ## Rest at a campfire: save here.
@@ -207,10 +209,6 @@ func _start(capture_mouse := true) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not started and not LoadScreen.is_open() and not OptionsScreen.is_open() and ((event is InputEventKey and event.pressed \
-			and not event.echo and event.keycode == KEY_L) or (event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_Y)):
-		LoadScreen.open(get_tree())
-		return
 	if OptionsScreen.is_open() or LoadScreen.is_open() or SavePrompt.is_open():
 		return  # its own keys (a number would start an act behind it)
 	if event is InputEventMouseButton and event.pressed:
@@ -251,8 +249,6 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
-	if not started and hud.allow_options and not OptionsScreen.is_open() and Controls.help_text() != _menu_keys:
-		_show_menu()  # keys rebound in the options
 	if boat and player.global_position.z > river_bank_z and player.global_position.y < RiverBoat.FALL_Y and player.vehicle == null:
 		player.global_position = boat.to_global(boat.deck_spawn)  # fell in the river: back aboard
 		player.velocity = Vector3.ZERO

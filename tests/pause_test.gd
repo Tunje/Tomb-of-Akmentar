@@ -144,9 +144,9 @@ class Watcher extends Node:
 	func _process(delta: float) -> void:
 		_t += delta
 		var s := get_tree().current_scene
-		var at_title := s != null and s.scene_file_path == "res://main.tscn"
-		if at_title or _t > 5.0:
-			print("RESULT %s Quit to title loads main.tscn (%s)" % ["ok  " if at_title else "FAIL", s.scene_file_path if s else "-"])
+		var at_title := s != null and s.scene_file_path == "res://title.tscn"
+		if at_title or _t > 8.0:
+			print("RESULT %s Quit to title loads title.tscn (%s)" % ["ok  " if at_title else "FAIL", s.scene_file_path if s else "-"])
 			fails += int(not at_title)
 			print("RESULT %s (%d failed)" % ["PASS" if fails == 0 else "FAIL", fails])
 			get_tree().quit(0 if fails == 0 else 1)

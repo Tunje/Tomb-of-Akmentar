@@ -1,0 +1,21 @@
+{
+	"_help": "The title screen (scripts/ui/title_screen.gd): the chapter list (titles from gameplan/primaryact.md) and the credits. Edit freely; lines in credits are shown in order, an empty string is a gap.",
+	"chapters": [
+		{"act": 1, "title": "A bad day in Cairo"},
+		{"act": 2, "title": "Assembling the Expedition"},
+		{"act": 3, "title": "The Road to Akmentar"},
+		{"act": 4, "title": "The Tombs of Akmentar"},
+		{"act": 5, "title": "The Awakening of Akmentar"},
+		{"act": 6, "title": "The Race Back to Cairo"},
+		{"act": 7, "title": "Cairo: The City of the Dead"},
+		{"act": 8, "title": "The Return to Akmentar"},
+		{"act": 9, "title": "The Last Guardian"}
+	],
+	"credits": [
+		"TOMBS OF AKMENTAR",
+		"",
+		"A game by Simon",
+		"",
+		"Made with Godot Engine"
+	]
+}
