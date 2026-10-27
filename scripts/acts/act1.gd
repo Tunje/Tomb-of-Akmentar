@@ -296,7 +296,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if args.size() > 0:
 		return
 	if _done and event is InputEventKey and event.pressed and event.keycode in [KEY_ENTER, KEY_KP_ENTER]:
-		get_tree().change_scene_to_file("res://act2.tscn")  # Game carries over: money, flags, debts
+		Loader.go(get_tree(), "res://act2.tscn")  # Game carries over: money, flags, debts
 	elif not player.alive and event is InputEventKey and event.pressed and event.keycode in [KEY_ENTER, KEY_KP_ENTER]:
 		SaveRoute.resume(get_tree())  # the last save: the act's start or a later milestone
 	elif event.is_action_pressed("journal"):

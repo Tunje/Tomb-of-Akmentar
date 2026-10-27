@@ -24,12 +24,15 @@ static func scene_for(place: String) -> String:
 
 
 ## Load the last save and go where it resumes; the title screen if there's none (or it's one
-## main.tscn resumes itself).
-static func resume(tree: SceneTree) -> void:
+## main.tscn resumes itself). `card`: through the loading card (a Load), not at once (a death).
+static func resume(tree: SceneTree, card := false) -> void:
 	tree.paused = false
+	var to := "res://main.tscn"
 	if Game.load_game(Game.resume_slot):  # the last rest, or the slot just loaded (SaveSlots)
 		var s := scene_for(Game.place)
 		if s != "" and ResourceLoader.exists(s):
-			tree.change_scene_to_file(s)
-			return
-	tree.change_scene_to_file("res://main.tscn")
+			to = s
+	if card:
+		Loader.go(tree, to, SaveSlots.thumb_path(Game.resume_slot))
+	else:
+		tree.change_scene_to_file(to)

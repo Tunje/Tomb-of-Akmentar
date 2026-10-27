@@ -371,7 +371,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	var enter: bool = event is InputEventKey and event.pressed and event.keycode in [KEY_ENTER, KEY_KP_ENTER]
 	if enter and not result.is_empty():
-		get_tree().change_scene_to_file(next_scene)  # Game (the flags, the party) carries over
+		Loader.go(get_tree(), next_scene)  # Game (the flags, the party) carries over
 	elif enter and not player.alive:
 		Checkpoint.retry(self)  # Game as it was on entry, then the scene from its start
 	elif event.is_action_pressed("party_order"):

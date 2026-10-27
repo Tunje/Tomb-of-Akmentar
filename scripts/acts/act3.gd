@@ -153,7 +153,7 @@ func _set_piece(e: String) -> bool:
 	if "next_scene" in s:
 		s.set("next_scene", "res://act3.tscn")
 	Game.set_flag("act3_back_from", e)
-	get_tree().change_scene_to_file.call_deferred(scene)
+	(func() -> void: Loader.go(get_tree(), scene)).call_deferred()
 	return true
 
 
@@ -201,7 +201,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if args.size() > 0:
 		return
 	if _done and event is InputEventKey and event.pressed and event.keycode in [KEY_ENTER, KEY_KP_ENTER]:
-		get_tree().change_scene_to_file("res://act4.tscn")
+		Loader.go(get_tree(), "res://act4.tscn")
 	elif event.is_action_pressed("journal") and not _board_open:
 		JournalScreen.toggle(self, player)
 

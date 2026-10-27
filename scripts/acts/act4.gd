@@ -86,7 +86,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if args.size() > 0:
 		return
 	if step == Step.END and event is InputEventKey and event.pressed and event.keycode in [KEY_ENTER, KEY_KP_ENTER]:
-		get_tree().change_scene_to_file("res://act5.tscn")  # Game (the party, the ally) carries over
+		Loader.go(get_tree(), "res://act5.tscn")  # Game (the party, the ally) carries over
 	elif not player.alive and event is InputEventKey and event.pressed and event.keycode in [KEY_ENTER, KEY_KP_ENTER]:
 		SaveRoute.resume(get_tree())  # the last save: the camp fire's, or the start of Act 4
 	elif event.is_action_pressed("journal"):
@@ -304,7 +304,7 @@ func _end() -> void:
 	if args.has("auto"):
 		await get_tree().create_timer(1.5).timeout
 		if args.has("chain"):  # test the hand-over: on into Act 5 with what Act 4 left
-			get_tree().change_scene_to_file("res://act5.tscn")
+			Loader.go(get_tree(), "res://act5.tscn")
 			return
 		get_tree().quit(0)
 

@@ -139,12 +139,23 @@ func fs(base: int) -> int:
 
 ## Aged paper: the colour, faint blotches, a grain and darker edges, with an ink rule round it.
 func paper(r: Rect2) -> void:
+	draw_paper(root, r)
+
+
+## The same, on any canvas item (the loading card).
+static func draw_paper(ci: CanvasItem, r: Rect2) -> void:
 	_paper_textures()
-	root.draw_rect(r, PAPER)
-	root.draw_texture_rect(_blotch, r, false, Color(0.45, 0.3, 0.12, 0.16))
-	root.draw_texture_rect(_grain, r, true, Color(0.35, 0.24, 0.1, 0.1))
-	root.draw_texture_rect(_burn, r, false, Color(1, 1, 1, 1))
-	root.draw_rect(r, Color(INK, 0.45), false, 1.5)
+	ci.draw_rect(r, PAPER)
+	ci.draw_texture_rect(_blotch, r, false, Color(0.45, 0.3, 0.12, 0.16))
+	ci.draw_texture_rect(_grain, r, true, Color(0.35, 0.24, 0.1, 0.1))
+	ci.draw_texture_rect(_burn, r, false, Color(1, 1, 1, 1))
+	ci.draw_rect(r, Color(INK, 0.45), false, 1.5)
+
+
+## Aged paper's darker edges alone (a photo's vignette).
+static func burn_texture() -> Texture2D:
+	_paper_textures()
+	return _burn
 
 
 ## A book open on the table: a leather cover with a brass edge, two paper pages and the spine's

@@ -501,7 +501,7 @@ func _finish() -> void:
 	if args.has("auto"):
 		await get_tree().create_timer(1.0).timeout
 		if args.has("chain") and ResourceLoader.exists(NEXT_ACT[0]):
-			get_tree().change_scene_to_file(NEXT_ACT[0])  # --chain: on into Act 8
+			Loader.go(get_tree(), NEXT_ACT[0])  # --chain: on into Act 8
 		else:
 			get_tree().quit(0)
 
@@ -529,7 +529,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _done and enter:
 		for s in NEXT_ACT:
 			if ResourceLoader.exists(s):
-				get_tree().change_scene_to_file(s)
+				Loader.go(get_tree(), s)
 				return
 		hud.show_message("THE END OF ACT 7", "Act 8 isn't built yet.")
 	elif (_over or not player.alive) and enter:

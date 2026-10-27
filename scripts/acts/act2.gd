@@ -201,7 +201,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _done and event is InputEventKey and event.pressed and event.keycode in [KEY_ENTER, KEY_KP_ENTER]:
 		for s in NEXT_ACT:
 			if ResourceLoader.exists(s):
-				get_tree().change_scene_to_file(s)
+				Loader.go(get_tree(), s)
 				return
 	elif not player.alive and event is InputEventKey and event.pressed and event.keycode in [KEY_ENTER, KEY_KP_ENTER]:
 		SaveRoute.resume(get_tree())  # the last save: the act's start or the last night at the hotel

@@ -395,7 +395,7 @@ func _finish() -> void:
 	if args.has("auto"):
 		await get_tree().create_timer(1.0).timeout
 		if args.has("chain"):
-			get_tree().change_scene_to_file(NEXT_ACT)  # --chain: on into Act 7 with these countdowns
+			Loader.go(get_tree(), NEXT_ACT)  # --chain: on into Act 7 with these countdowns
 		else:
 			get_tree().quit(0)
 
@@ -427,7 +427,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	var enter: bool = event is InputEventKey and event.pressed and event.keycode in [KEY_ENTER, KEY_KP_ENTER]
 	if step == Step.END and enter:
-		get_tree().change_scene_to_file(NEXT_ACT)  # Game (the countdowns, the party) carries over
+		Loader.go(get_tree(), NEXT_ACT)  # Game (the countdowns, the party) carries over
 	elif (step == Step.OVER or not player.alive) and enter:
 		SaveRoute.resume(get_tree())  # the last save, wherever it resumes
 	elif event.is_action_pressed("party_order"):

@@ -167,7 +167,7 @@ func _to_the_road(returned := false) -> void:
 			if "next_scene" in s:
 				s.set("next_scene", "res://act8.tscn")
 			Game.set_flag("act8_back_from", _route_event)
-			get_tree().change_scene_to_file.call_deferred(piece[0])
+			(func() -> void: Loader.go(get_tree(), piece[0])).call_deferred()
 			return
 		hud.toast("Days on the road. The guardian's servants are never far behind.", 3.5)
 	await get_tree().create_timer(1.0).timeout
@@ -268,7 +268,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _done and not Game.flag("player_sacrificed", false) and event is InputEventKey and event.pressed \
 			and event.keycode in [KEY_ENTER, KEY_KP_ENTER]:
 		if ResourceLoader.exists("res://act9.tscn"):
-			get_tree().change_scene_to_file("res://act9.tscn")
+			Loader.go(get_tree(), "res://act9.tscn")
 		else:
 			hud.toast("Act 9 isn't built yet.", 3.0)
 	elif not player.alive and event is InputEventKey and event.pressed and event.keycode in [KEY_ENTER, KEY_KP_ENTER]:

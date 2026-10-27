@@ -111,7 +111,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if args.size() > 0:
 		return
 	if step == Step.END and event is InputEventKey and event.pressed and event.keycode in [KEY_ENTER, KEY_KP_ENTER]:
-		get_tree().change_scene_to_file(next_scene)
+		Loader.go(get_tree(), next_scene)
 	elif event is InputEventKey and event.pressed and event.keycode in [KEY_ENTER, KEY_KP_ENTER] and not player.alive:
 		Checkpoint.retry(self)  # Game as it was on entry, then the scene from its start
 	elif event.is_action_pressed("party_order"):

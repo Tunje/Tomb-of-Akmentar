@@ -107,7 +107,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if args.size() > 0:
 		return
 	if step == Step.END and event is InputEventKey and event.pressed and event.keycode in [KEY_ENTER, KEY_KP_ENTER]:
-		get_tree().change_scene_to_file("res://act6.tscn")  # the Keepers' send-off; Game carries over
+		Loader.go(get_tree(), "res://act6.tscn")  # the Keepers' send-off; Game carries over
 	elif event.is_action_pressed("journal"):
 		JournalScreen.toggle(self, player)
 	elif event.is_action_pressed("party_order"):

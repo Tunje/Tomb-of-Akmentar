@@ -119,7 +119,7 @@ static func load_and_go(tree: SceneTree, slot: String) -> bool:
 	if not FileAccess.file_exists(path(slot)):
 		return false
 	Game.resume_slot = slot
-	SaveRoute.resume(tree)
+	SaveRoute.resume(tree, true)  # with the loading card
 	return true
 
 

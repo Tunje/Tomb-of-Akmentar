@@ -175,7 +175,7 @@ func _continue() -> void:
 	# A save made in an act goes back to that act (the end of one, into the next).
 	var scene := SaveRoute.scene_for(Game.place)  # the one table of where each save resumes
 	if scene != "":
-		get_tree().change_scene_to_file(scene)
+		Loader.go(get_tree(), scene, SaveSlots.thumb_path("main"))  # the loading card
 		return
 	DayLog.ensure()  # the log is saved; begin_day would wipe it
 	var spot: Node3D = level.interactables.get(Game.place)

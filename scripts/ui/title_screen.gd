@@ -148,11 +148,12 @@ func _continue() -> void:
 		return
 	Game.resume_slot = "main"
 	var scene := SaveRoute.scene_for(Game.place)
+	var photo := SaveSlots.thumb_path("main")  # the loading card shows where you rested
 	if scene != "" and ResourceLoader.exists(scene):
-		get_tree().change_scene_to_file(scene)
+		Loader.go(get_tree(), scene, photo)
 	else:
 		request = "continue"  # a rest in the playtest range: main.tscn picks it up
-		get_tree().change_scene_to_file("res://main.tscn")
+		Loader.go(get_tree(), "res://main.tscn", photo)
 
 
 func _new_game() -> void:
@@ -184,7 +185,7 @@ func _begin(difficulty: String) -> void:
 	Game.reset()
 	Difficulty.set_level(difficulty)
 	DayLog.begin_day()
-	get_tree().change_scene_to_file("res://act1.tscn")
+	Loader.go(get_tree(), "res://act1.tscn")
 
 
 func _chapters() -> void:
@@ -208,12 +209,12 @@ func _start_act(act: int) -> void:
 		return
 	Game.reset()
 	Game.set_flag("quickstart_act")
-	get_tree().change_scene_to_file("res://act%d.tscn" % act)
+	Loader.go(get_tree(), "res://act%d.tscn" % act)
 
 
 func _range() -> void:
 	request = "range"
-	get_tree().change_scene_to_file("res://main.tscn")
+	Loader.go(get_tree(), "res://main.tscn")
 
 
 func _credits() -> void:

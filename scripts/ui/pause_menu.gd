@@ -31,7 +31,7 @@ static func is_open() -> bool:
 
 ## May the game be paused now? Not on a start screen, a death, in a talk or another menu.
 static func allowed(tree: SceneTree, hud: Hud) -> bool:
-	if is_open() or ActionMenu.ui_open() or Conversation.current != null:
+	if is_open() or ActionMenu.ui_open() or Conversation.current != null or Loader.is_loading():
 		return false
 	if OptionsScreen.is_open() or LoadScreen.is_open() or SavePrompt.is_open() or ControlsScreen.is_open():
 		return false
@@ -116,7 +116,7 @@ func _restart() -> void:
 func _to_title() -> void:
 	_close()
 	get_tree().paused = false
-	get_tree().change_scene_to_file("res://title.tscn")
+	Loader.go(get_tree(), "res://title.tscn")
 
 
 func _quit() -> void:

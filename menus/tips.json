@@ -1,0 +1,21 @@
+{
+	"_help": "The loading card's tips (scripts/loader.gd), one shown at a time, in turn from a random start. {action} becomes the key bound now (Controls.fill). Edit freely.",
+	"tips": [
+		"{dodge}: a dodge roll. For a moment nothing can touch you, so roll through trouble, not away from it.",
+		"A companion who goes down isn't dead yet. Get to them and press {cover} to help them up before the enemy closes in.",
+		"A downed companion only bleeds while enemies are near. Clear the ground around them and they'll keep.",
+		"Rest at a camp fire or in a hotel bed to save. A fall in a fight brings you back to your last rest, or to the start of the fight.",
+		"{cover} beside a wall or a crate takes cover. Aim to lean out; let go to duck back in.",
+		"In cover behind something low, {move_forward} and {cover} vault over it.",
+		"Count your shots: a revolver holds six, and {reload} takes longer than you'd like.",
+		"{party_order}: tell your companions to hold where they stand, or to follow you again.",
+		"{crouch}: crouch. Harder to see, harder to hit.",
+		"Everything you learn goes in the journal ({journal}): clues, people, places, and the road you took.",
+		"In Cairo every errand costs time: three actions a day. Buying is free; talking is not.",
+		"The first expedition to reach Akmentar picks first. A slow road costs you the best of the ruins.",
+		"{holster}: put the gun away. People talk more easily to someone who isn't pointing a revolver at them.",
+		"Scarabs can't bear fire. Keep to the torchlight and keep moving.",
+		"Hold {objective} to see what you came here to do.",
+		"{sprint}: sprint. Some doors only stay open for those who run."
+	]
+}
