@@ -12,6 +12,7 @@ uniform vec3 stripe : source_color = vec3(0.3, 0.35, 0.6);
 uniform float stripes = 0.0;            // 0 none, 1 striped
 uniform vec3 skin : source_color = vec3(0.7, 0.5, 0.38);
 uniform float roughness_v = 0.85;
+uniform float mourn = 0.0;              // the curse: robes darkening toward mourning (0..1)
 
 varying vec3 model_pos;
 
@@ -40,6 +41,7 @@ void fragment() {
 		if (stripes > 0.5 && fract(model_pos.x * 9.0) < 0.28) {
 			base = stripe;
 		}
+		base = mix(base, base * 0.28 + vec3(0.035, 0.03, 0.025), mourn);
 		outc = base * clamp(lum / 0.17, 0.35, 1.25);
 	}
 	ALBEDO = outc;

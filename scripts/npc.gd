@@ -26,6 +26,8 @@ var body: NpcBody
 
 var _yaw_goal := 0.0
 var _talk_goal := 0.0
+var seated := false           # on a chair (sit): stays facing the way the chair does
+var _seat_checked := false
 var _fade := 0.0              # CameraFade: see-through while between the camera and the player
 var _fade_meshes: Array = []
 
@@ -78,14 +80,41 @@ func talk(by: Node3D, conversation_id := "", log_it := true) -> Conversation:
 	return c
 
 
+## Sit on a chair: at `at` (the floor in front of its seat), facing `yaw`. Talks then leave
+## them seated, facing the way the chair does.
+func sit(at: Vector3, yaw: float) -> void:
+	seated = true
+	global_position = at
+	rotation.y = yaw
+	_yaw_goal = yaw
+	if body:
+		body.sitting = true
+
+
+## Placed where a level's interiors have a chair (CairoInteriors.seat_at): sat down on it.
+func _check_seat() -> void:
+	_seat_checked = true
+	var ints: Variant = get_parent().get("interiors")
+	if not ints is Object:
+		ints = get_parent().get_node_or_null("Interiors")
+	if ints is Object and (ints as Object).has_method("seat_at"):
+		var s: Dictionary = ints.call("seat_at", global_position)
+		if not s.is_empty():
+			sit(s.pos, float(s.yaw))
+
+
 ## Conversation calls this: turn (smoothly) to look at `pos`.
 func face_towards(pos: Vector3) -> void:
+	if seated:
+		return
 	var d := pos - global_position
 	if Vector2(d.x, d.z).length() > 0.01:
 		_yaw_goal = atan2(-d.x, -d.z)
 
 
 func _process(delta: float) -> void:
+	if not _seat_checked:
+		_check_seat()
 	rotation.y = lerp_angle(rotation.y, _yaw_goal, minf(delta * TURN_SPEED, 1.0))
 	if body:
 		body.talk = move_toward(body.talk, _talk_goal, delta * 3.0)

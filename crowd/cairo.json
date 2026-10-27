@@ -112,5 +112,24 @@
 			"height": 42
 		},
 		"pigeons": [[40, 50.2], [88, 51], [76, 30], [22, 49.5]]
+	},
+	"lights": {
+		"_help": "CrowdLights (scripts/crowd_lights.gd), on with the city's lamps (dusk, the curse's gloom): strings [x1, z1, x2, z2, y, sag, bulbs] zigzag over the bazaar lane (z 74-80) and across Sharia by the tavern's tables; glows [x, y, z, yaw, w, h] a lit doorway or interior seen from outside; lamps [x, y, z, range] a warm light in a room (the tavern's room is CairoInteriors' now).",
+		"strings": [
+			[34, 74.4, 38, 79.6, 4.3, 0.55, 7],
+			[38, 79.6, 42, 74.4, 4.3, 0.55, 7],
+			[42, 74.4, 46, 79.6, 4.3, 0.55, 7],
+			[46, 79.6, 50, 74.4, 4.3, 0.55, 7],
+			[50, 74.4, 54, 79.6, 4.3, 0.55, 7],
+			[54, 79.6, 58, 74.4, 4.3, 0.55, 7],
+			[58, 74.4, 62, 79.6, 4.3, 0.55, 7],
+			[62, 79.6, 66, 74.4, 4.3, 0.55, 7],
+			[66, 74.4, 70, 79.6, 4.3, 0.55, 7],
+			[26.1, 61.5, 31.8, 61.5, 4.0, 0.45, 6],
+			[26.1, 66.0, 31.8, 66.0, 4.0, 0.45, 6],
+			[26.1, 70.5, 31.8, 70.5, 4.0, 0.45, 6]
+		],
+		"glows": [],
+		"lamps": []
 	}
 }

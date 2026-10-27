@@ -7,6 +7,7 @@ const SCOUT := "res://assets/characters/bandits/bandit_scout.glb"
 const EXPLORER := "res://assets/characters/explorer/explorer.glb"
 
 var talk := 0.0
+var sitting := false          # on a chair (Npc.sit): the sitting idles instead
 var _glb := SCOUT
 
 
@@ -26,20 +27,32 @@ func _ready() -> void:
 
 
 func _build_tree() -> void:
-	# RiggedBody.LOOPED doesn't list the talking idle; loop it here (the library is shared).
+	# RiggedBody.LOOPED doesn't list the talking idles; loop them here (the library is shared).
 	var lib := anim_player.get_animation_library("")
-	if lib.has_animation("Idle_Talking"):
-		lib.get_animation("Idle_Talking").loop_mode = Animation.LOOP_LINEAR
+	for clip in ["Idle_Talking", "Sitting_Idle", "Sitting_Talking"]:
+		if lib.has_animation(clip):
+			lib.get_animation(clip).loop_mode = Animation.LOOP_LINEAR
 	var bt := AnimationNodeBlendTree.new()
 	bt.add_node("idle", _anim("Idle"))
 	bt.add_node("talking", _anim("Idle_Talking" if lib.has_animation("Idle_Talking") else "Idle"))
 	bt.add_node("talk", AnimationNodeBlend2.new())
 	bt.connect_node("talk", 0, "idle")
 	bt.connect_node("talk", 1, "talking")
-	bt.connect_node("output", 0, "talk")
+	# Seated (a chair indoors: Npc.sit): the same, sitting.
+	bt.add_node("sit_idle", _anim("Sitting_Idle" if lib.has_animation("Sitting_Idle") else "Idle"))
+	bt.add_node("sit_talking", _anim("Sitting_Talking" if lib.has_animation("Sitting_Talking") else "Idle"))
+	bt.add_node("sit_talk", AnimationNodeBlend2.new())
+	bt.connect_node("sit_talk", 0, "sit_idle")
+	bt.connect_node("sit_talk", 1, "sit_talking")
+	bt.add_node("seated", AnimationNodeBlend2.new())
+	bt.connect_node("seated", 0, "talk")
+	bt.connect_node("seated", 1, "sit_talk")
+	bt.connect_node("output", 0, "seated")
 	_start_tree(bt)
 
 
 func _process(_delta: float) -> void:
 	if _tree:
 		_tree.set("parameters/talk/blend_amount", talk)
+		_tree.set("parameters/sit_talk/blend_amount", talk)
+		_tree.set("parameters/seated/blend_amount", 1.0 if sitting else 0.0)

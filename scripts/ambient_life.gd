@@ -6,7 +6,9 @@ extends Node3D
 ## - pigeons: little flocks on the ground pecking about; they burst into the air when the player
 ##   runs near or shots go off (Crowd.alarm), and come back once he's gone;
 ## - critters: lizards and scorpions skittering in short dashes on the ground round the player,
-##   darting away when he comes close.
+##   darting away when he comes close;
+## - flies: little swarms buzzing round you and the people near you, as many as set_flies(f) asks
+##   (Act 7's curse: Crowd sets it from the city's dust).
 ##   AmbientLife.add(level, {"birds": {"count": 6, "center": [x, z], "radius": 40, "height": 40},
 ##       "pigeons": [[x, z], ...], "critters": 10})
 ## Crowd builds one from its data's "ambient"; RiverBoat.add_folk adds kites over the boat.
@@ -41,6 +43,13 @@ var _flapped := -9.0        # when wings last sounded (a flock going up is one f
 var _player: Node3D
 var _rng := RandomNumberGenerator.new()
 var _critter_count := 0
+var flies := 0.0              # 0..1 (set_flies): the share of FLIES specks out
+var _fly_mm: MultiMeshInstance3D
+var _swarms: Array[Vector3] = []
+var _swarm_t := 0.0
+
+const FLIES := 96
+const SWARMS := 8
 
 
 static func add(parent: Node3D, spec: Dictionary) -> AmbientLife:
@@ -158,6 +167,54 @@ func _process(delta: float) -> void:
 		_update_pigeons(delta, player)
 	if _critter_mm and player:
 		_update_critters(delta, player)
+	if _fly_mm and player:
+		_update_flies(delta, player)
+
+
+## Flies about: 0 none .. 1 every swarm full.
+func set_flies(f: float) -> void:
+	flies = clampf(f, 0.0, 1.0)
+	if _fly_mm == null and flies > 0.0:
+		var bm := BoxMesh.new()
+		bm.size = Vector3(0.014, 0.01, 0.014)
+		_fly_mm = _multimesh(bm, FLIES, Color(0.05, 0.05, 0.04), 0.0, true)
+		for i in FLIES:
+			_fly_mm.multimesh.set_instance_color(i, Color(0.06, 0.06, 0.05))
+	if _fly_mm:
+		_fly_mm.multimesh.visible_instance_count = roundi(flies * FLIES)
+
+
+## Each swarm hangs over the ground near you (or by someone in the street); one moves on now and
+## then. A fly orbits its swarm's middle on its own uneven loops.
+func _update_flies(delta: float, player: Node3D) -> void:
+	var n := _fly_mm.multimesh.visible_instance_count
+	if n == 0:
+		return
+	_swarm_t -= delta
+	if _swarms.size() < SWARMS or _swarm_t <= 0.0:
+		_swarm_t = 2.5
+		var crowd := get_tree().get_first_node_in_group("crowd") as Crowd
+		var people: Array = crowd.people.filter(func(q: CrowdPerson) -> bool: return q.visible) if crowd else []
+		var at: Vector3
+		if not people.is_empty() and _rng.randf() < 0.5:
+			at = (people[_rng.randi_range(0, people.size() - 1)] as Node3D).global_position + Vector3.UP * 1.4
+		else:
+			var a := _rng.randf() * TAU
+			at = _ground_at(player.global_position + Vector3(cos(a), 0, sin(a)) * _rng.randf_range(2.0, 9.0)) + Vector3.UP * _rng.randf_range(0.3, 1.3)
+		if at.distance_to(player.global_position) > 25.0:
+			at = player.global_position + Vector3(_rng.randf_range(-6, 6), 0.8, _rng.randf_range(-6, 6))
+		if _swarms.size() < SWARMS:
+			_swarms.append(at)
+		else:
+			_swarms[_rng.randi_range(0, SWARMS - 1)] = at
+	var mm := _fly_mm.multimesh
+	for i in n:
+		var c: Vector3 = _swarms[i % _swarms.size()]
+		var k := float(i) * 1.618
+		var r := 0.25 + fmod(k, 0.35)
+		var t := _t * (2.2 + fmod(k, 1.3))
+		var p := c + Vector3(sin(t + k) * r, sin(t * 1.7 + k * 2.0) * 0.18, cos(t * 1.3 + k) * r)
+		mm.set_instance_transform(i, Transform3D(Basis(), p))
 
 
 func _update_birds() -> void:
@@ -249,6 +306,13 @@ func _update_critters(delta: float, player: Node3D) -> void:
 
 
 ## A point on the ground 6-22 m from `me` (a ray down for the height).
+## The ground under `p` (a ray down from above it), or `p` if there's none.
+func _ground_at(p: Vector3) -> Vector3:
+	var q := PhysicsRayQueryParameters3D.create(p + Vector3.UP * 3.0, p + Vector3.DOWN * 8.0, 1)
+	var hit := get_world_3d().direct_space_state.intersect_ray(q)
+	return hit.position if hit else p
+
+
 func _ground_near(me: Vector3) -> Vector3:
 	var a := _rng.randf() * TAU
 	var r := _rng.randf_range(6.0, 22.0)

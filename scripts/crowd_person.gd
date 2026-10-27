@@ -23,6 +23,9 @@ const CLIPS := {"idle": "Idle", "walk": "Walk", "carry": "ual2/Walk_Carry", "run
 const MORE_LOOPS := ["Idle_Talking", "Sitting_Talking", "PickUp_Table", "ual2/Walk_Carry", "ual2/Idle_FoldArms",
 	"ual2/Farm_Harvest", "ual2/TreeChopping", "Fixing_Kneeling", "ual2/Idle_Rail"]
 const STALL_ANIMS := ["fold", "pick", "talk"]
+## Clips that need their place (a seat, a bed, a rail, a table, the ground being dug): played only
+## at the spot claimed for them; anywhere else the person just stands (idle).
+const SPOT_CLIPS := ["sit", "sit_talk", "sleep", "rail", "pick", "dig", "chop", "kneel"]
 const DIG_ANIMS := ["dig", "chop", "kneel"]
 
 static var _looped := false
@@ -45,6 +48,7 @@ var _route_i := 0
 var _load: MeshInstance3D     # a crate, basket or sack (carriers, porters, diggers on a trip)
 var _carrying := false
 var _rod_node: Node3D
+var _looks: Array[ShaderMaterial] = []   # dress()'s recolours (mourn() darkens them)
 var _clink := 1.0             # digging: till the next pick on stone (SoundLife)
 
 
@@ -81,6 +85,14 @@ func begin(rng: RandomNumberGenerator) -> void:
 		state = "pause"
 	if crowd.night:
 		night_changed()
+
+
+## At the spot claimed for a seat / stall / dig / bed clip (snapped there on arrival).
+func _at_spot() -> bool:
+	if _spot.is_empty() or not state in ["sit", "stall", "dig", "night"]:
+		return false
+	var p: Vector3 = _spot.pos
+	return Vector2(global_position.x - p.x, global_position.z - p.z).length() < 0.35
 
 
 func _list_for(r: String) -> String:
@@ -123,6 +135,9 @@ func set_animated(on: bool) -> void:
 
 
 func _play(a: String) -> void:
+	if a in SPOT_CLIPS and not _at_spot():
+		push_warning("CROWD %s: %s away from its spot (state %s), idling instead" % [name, a, state])
+		a = "idle"
 	if a == anim or _tree == null:
 		return
 	anim = a
@@ -355,8 +370,15 @@ func dress(l: Dictionary) -> void:
 				m.set_shader_parameter("stripes", 1.0)
 			m.set_shader_parameter("skin", l.get("skin_color", Color(0.7, 0.5, 0.38)))
 			mi.set_surface_override_material(s, m)
+			_looks.append(m)
 	if l.get("fez", false):
 		_fez()
+
+
+## The curse: robes darkened toward mourning, 0 none .. 1 (only the recoloured stand-ins).
+func mourn(f: float) -> void:
+	for m in _looks:
+		m.set_shader_parameter("mourn", f)
 
 
 func _on_bone(ual: String) -> BoneAttachment3D:

@@ -32,6 +32,11 @@ func start() -> void:
 			_play("rail")
 
 
+## At their place aboard (boat-local): the rail, the stool.
+func _at_spot() -> bool:
+	return state in ["idle", "duck"] and position.distance_to(spot) < 0.3
+
+
 ## Crowd.alarm reaches anyone in "crowd_listener".
 func crowd_alarm(at: Vector3, radius: float) -> void:
 	if _gone or state == "flee" or global_position.distance_to(at) > maxf(radius, 40.0):

@@ -44,6 +44,9 @@ var alarm_radius := ALARM_RADIUS
 var _t := 0.0
 var _player: Node3D
 var _murmurs: Array[AudioStreamPlayer3D] = []
+var life: AmbientLife              # its data's "ambient"
+var lights: CrowdLights            # its data's "lights" (Cairo by night)
+var _cursed := 0.0
 
 
 static func populate(lvl: Node3D, place := "cairo", count := -1) -> Crowd:
@@ -162,7 +165,7 @@ func _group(g: Dictionary) -> Dictionary:
 		"roles": g.get("roles", data.get("roles", {})), "share": float(g.get("share", 1.0)),
 		"waypoints": [], "routes": [], "stalls": _spots(g.get("stalls", []), 2.0), "digs": _spots(g.get("digs", []), 0.0),
 		"seats": _spots(g.get("seats", []), 0.0), "night_seats": _spots(g.get("night_seats", []), 0.0),
-		"sleep": _spots(g.get("sleep", []), 0.0), "anims": g.get("anims", {})}
+		"sleep": _spots(g.get("sleep", []), 0.0), "anims": g.get("anims", {}), "indoor": bool(g.get("indoor", false))}
 	for w in g.get("waypoints", []):
 		var p := Vector3(float(w[0]), 0, float(w[1]))
 		if _clear_of_doors(p, clear):
@@ -191,6 +194,11 @@ func _build(count: int) -> void:
 				keep_clear.append((n as Node3D).global_position)
 	for g in data.get("groups", [data]):
 		groups.append(_group(g))
+	# Rooms the level has furnished (CairoInteriors): their seated patrons, an indoor group.
+	var ints: Variant = level.get("interiors") if "interiors" in level else null
+	if ints is Object and (ints as Object).has_method("crowd_groups"):
+		for g in ints.call("crowd_groups"):
+			groups.append(_group(g))
 	var models: Array = data.get("models", [])
 	var total := count if count >= 0 else density(data)
 	var shares := 0.0
@@ -224,7 +232,9 @@ func _build(count: int) -> void:
 			float(arr[2]) if arr.size() > 2 else 0.72)
 	active = people.size()
 	if data.has("ambient"):
-		AmbientLife.add(level, data.ambient)
+		life = AmbientLife.add(level, data.ambient)
+	if data.has("lights"):
+		lights = CrowdLights.add(level, data.lights)
 	var roles := {}
 	for p in people:
 		roles[p.role] = int(roles.get(p.role, 0)) + 1
@@ -315,7 +325,23 @@ func _process(delta: float) -> void:
 		var seen := b.global_position.distance_to(at) < CULL and cam.is_position_in_frustum(b.global_position + Vector3.UP * 0.6)
 		b.set_process(seen or (b as Beast)._bolt > 0.0)
 	_murmur(at)
+	_curse()
 	_hook_player()
+
+
+## The curse over the city (a level's `dust` and `gloom`, Cairo's set_curse): flies in the air,
+## the people's robes darker. Only on a change.
+func _curse() -> void:
+	if not "gloom" in level:
+		return
+	var f := maxf(float(level.get("dust")), float(level.get("gloom")))
+	if absf(f - _cursed) < 0.04 and not (f == 0.0 and _cursed > 0.0):
+		return
+	_cursed = f
+	for p in people:
+		p.mourn(f * 0.85)
+	if life:
+		life.set_flies(f)
 
 
 ## The talk of the crowd where it is: up to MURMURS loops placed at knots of people (awake, not
@@ -396,6 +422,8 @@ func refuge(me: Vector3, from: Vector3, _radius: float) -> Vector3:
 	var far := me + (me - from).normalized() * 15.0
 	var fd := mine
 	for g: Dictionary in groups:
+		if g.indoor:
+			continue  # the street runs for the street, not into the bar
 		for w: Vector3 in g.waypoints:
 			var dfrom := w.distance_to(from)
 			var dme := w.distance_to(me)
