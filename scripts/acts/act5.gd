@@ -55,6 +55,7 @@ func _ready() -> void:
 	Game.act = 5
 	level = AkmentarBelow.new()
 	add_child(level)
+	Warmup.start(self, Warmup.MUMMIES)  # what spawns mid-fight, loaded now (tests/perf_test)
 	Ambience.play(self, "tomb")
 	player = Player.new()
 	add_child(player)

@@ -47,6 +47,7 @@ func _ready() -> void:
 			Game.companion(id)["recruited"] = true
 	level = DesertTemple.new()
 	add_child(level)
+	Warmup.start(self, Warmup.MUMMIES)  # what spawns mid-fight, loaded now (tests/perf_test)
 	Ambience.play(self, "desert" if visit else "night")
 	level.set_night(0.0 if visit else 0.85)
 	player = Player.new()

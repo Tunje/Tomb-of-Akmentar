@@ -36,6 +36,7 @@ func _ready() -> void:
 		get_window().set_flag(Window.FLAG_NO_FOCUS, true)
 	level = AkmentarSurface.new()
 	add_child(level)
+	Warmup.start(self, NightRaid.rival_glb.values())  # the raiders, loaded now (tests/perf_test)
 	Ambience.play(self, "desert")
 	level.set_night(0.0)
 	level.place_sites()

@@ -85,6 +85,7 @@ func _ready() -> void:
 		Game.set_flag("carrier", "eleanor" if Game.in_party("eleanor") else "player")
 	level = RiverRoute.new()
 	add_child(level)
+	Warmup.start(self, Warmup.MUMMIES)  # the priest's 5.7 MB GLB was a 175 ms stall mid-fight (tests/perf_test)
 	Ambience.play(self, "river")
 	_night()
 	boat = RiverBoat.make(level, level.path, "act8_steamer", 120.0)

@@ -76,6 +76,7 @@ func _use_level(l: Level, at: Vector3, yaw: float) -> void:
 		level.queue_free()
 	level = l
 	add_child(level)
+	Warmup.start(self, Warmup.MUMMIES)  # what spawns mid-fight, loaded now (tests/perf_test)
 	player.global_position = at
 	player.velocity = Vector3.ZERO
 	player.yaw = yaw

@@ -70,6 +70,7 @@ func _ready() -> void:
 		_quickstart()
 	level = AkmentarBelow.new()
 	add_child(level)
+	Warmup.start(self, Warmup.MUMMIES)  # what spawns mid-fight, loaded now (tests/perf_test)
 	_light_the_surface()
 	Ambience.play(self, "tomb")
 	_points()

@@ -76,6 +76,7 @@ func _ready() -> void:
 	Game.set_flag("route", "riverboat")
 	level = RiverRoute.new()
 	add_child(level)
+	Warmup.start(self, Warmup.BANDITS)  # what spawns mid-fight, loaded now (tests/perf_test)
 	Ambience.play(self, "river")
 	boat = RiverBoat.make(level, level.path, "act3_steamer", 30.0)
 	boat.add_folk()  # passengers and crew, who go below at the first shots (-f9)

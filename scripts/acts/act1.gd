@@ -52,6 +52,7 @@ func _ready() -> void:
 		Game.save_game()
 	level = Cairo.new()
 	add_child(level)
+	Warmup.start(self, Warmup.BANDITS)  # what spawns mid-fight, loaded now (tests/perf_test)
 	Ambience.play(self, "cairo")
 	level.set_night(0.0)
 	player = Player.new()

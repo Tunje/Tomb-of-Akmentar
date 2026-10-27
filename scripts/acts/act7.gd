@@ -80,6 +80,7 @@ func _ready() -> void:
 		Game.set_flag("thieves_americans")  # nobody said who stole them (a test start)
 	level = Cairo.new()
 	add_child(level)
+	Warmup.start(self, GUARDS.get(_thief(), []).map(func(id: String) -> String: return Characters.glb(id)))  # the thieves' guns
 	Ambience.play(self, "cairo")
 	level.set_day_time(Cairo.day_time_for(Game.actions_left, Game.ACTIONS_PER_DAY))
 	level.place_people({}, (plan.get("hosts", {}) as Dictionary).values())
