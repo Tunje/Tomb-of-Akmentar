@@ -139,15 +139,7 @@ func _ready() -> void:
 	_make_materials()
 	_cairo_materials()
 	_nav = NavigationRegion3D.new()
-	var nm := NavigationMesh.new()
-	nm.agent_radius = 0.5
-	nm.agent_height = 1.75
-	nm.agent_max_climb = 0.3
-	nm.agent_max_slope = 40.0
-	nm.cell_size = 0.25
-	nm.cell_height = 0.25
-	nm.geometry_parsed_geometry_type = NavigationMesh.PARSED_GEOMETRY_STATIC_COLLIDERS
-	nm.geometry_collision_mask = 1
+	var nm := Level.nav_mesh()  # (0.3 m climb was 0.25 in whole cells all along)
 	_nav.navigation_mesh = nm
 	add_child(_nav)
 	_deco = Node3D.new()

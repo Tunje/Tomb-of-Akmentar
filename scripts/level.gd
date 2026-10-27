@@ -80,15 +80,7 @@ func _ready() -> void:
 		_cols = maxi(_cols, (line as String).length())
 	_make_materials()
 	_nav = NavigationRegion3D.new()
-	var nm := NavigationMesh.new()
-	nm.agent_radius = 0.5
-	nm.agent_height = 1.75
-	nm.agent_max_climb = 0.25
-	nm.agent_max_slope = 40.0
-	nm.cell_size = 0.25
-	nm.cell_height = 0.25
-	nm.geometry_parsed_geometry_type = NavigationMesh.PARSED_GEOMETRY_STATIC_COLLIDERS
-	nm.geometry_collision_mask = 1
+	var nm := Level.nav_mesh()
 	_nav.navigation_mesh = nm
 	add_child(_nav)
 
@@ -669,3 +661,18 @@ func map_rows() -> Array:
 ## Any other map letter (subclasses use them for points of interest, spawns, etc.).
 func _marker(_ch: String, _p: Vector3, _r: int, _c: int) -> void:
 	pass
+
+## The navmesh every level bakes with (one place): static colliders on layer 1, people 1.75 m tall
+## that step up 0.25 m, with the height and climb in whole cells so Recast doesn't round them
+## itself (and warn about it). `cell`: the map's cell size and height.
+static func nav_mesh(cell := 0.25, radius := 0.5, climb := 0.25) -> NavigationMesh:
+	var nm := NavigationMesh.new()
+	nm.cell_size = cell
+	nm.cell_height = cell
+	nm.agent_radius = radius
+	nm.agent_height = ceilf(1.75 / cell - 0.001) * cell
+	nm.agent_max_climb = maxf(floorf(climb / cell + 0.001), 1.0) * cell
+	nm.agent_max_slope = 40.0
+	nm.geometry_parsed_geometry_type = NavigationMesh.PARSED_GEOMETRY_STATIC_COLLIDERS
+	nm.geometry_collision_mask = 1
+	return nm

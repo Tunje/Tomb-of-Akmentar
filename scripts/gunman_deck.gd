@@ -18,20 +18,12 @@ static func attach(boat: Node3D) -> NavigationRegion3D:
 	# Fine cells: at the default 0.25 the agent radius rounds up to 0.5 and erodes the 1.2 m stair
 	# ramp to nothing. The cell size must be the map's, so set the map's when nothing else is on it
 	# (the river scenes have no other navmesh); otherwise take what the map has.
-	var nm := NavigationMesh.new()
-	nm.cell_size = NavigationServer3D.map_get_cell_size(map)  # the map's, or it warns and merges badly
-	nm.cell_height = NavigationServer3D.map_get_cell_height(map)
+	var cell := NavigationServer3D.map_get_cell_size(map)  # the map's, or it warns and merges badly
 	if NavigationServer3D.map_get_regions(map).is_empty():
 		NavigationServer3D.map_set_cell_size(map, CELL)  # (applies at the map's next sync)
 		NavigationServer3D.map_set_cell_height(map, CELL)
-		nm.cell_size = CELL
-		nm.cell_height = CELL
-	nm.agent_radius = AGENT_RADIUS
-	nm.agent_height = 1.75
-	nm.agent_max_climb = 0.25
-	nm.agent_max_slope = 40.0          # the stairs' ramp is 35 degrees
-	nm.geometry_parsed_geometry_type = NavigationMesh.PARSED_GEOMETRY_STATIC_COLLIDERS
-	nm.geometry_collision_mask = 1
+		cell = CELL
+	var nm := Level.nav_mesh(cell, AGENT_RADIUS)  # 40 degrees: the stairs' ramp is 35
 	# Only the boat: not the river's banks or whatever else is in the scene.
 	nm.geometry_source_geometry_mode = NavigationMesh.SOURCE_GEOMETRY_GROUPS_EXPLICIT
 	nm.geometry_source_group_name = "deck_nav_%d" % boat.get_instance_id()
