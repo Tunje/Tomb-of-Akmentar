@@ -19,7 +19,6 @@ enum Step { ARRIVE, DRAFT, DAY, SUNSET, NIGHT, RAID, DAWN, END }
 ## How long the working day lasts, morning to sunset (s). Simon may want it shorter or longer.
 const DAY_LENGTH := 360.0
 const DUSK := 0.4   # how far set_night goes by sunset (the night itself takes it to 1)
-const CAMP_JOBS := "res://scripts/sites/camp_jobs.gd"  # -f9's crews and companions at their jobs
 
 const NIGHT_RAID := "res://scripts/night_raid.gd"
 
@@ -51,7 +50,7 @@ func _ready() -> void:
 		get_window().set_flag(Window.FLAG_NO_FOCUS, true)
 	level = AkmentarSurface.new()
 	add_child(level)
-	Warmup.start(self, NightRaid.rival_glb.values() + Warmup.BANDITS)  # the rival camps and the raid's bandits, loaded now (tests/perf_test)
+	Warmup.start(self, NightRaid.rival_glb.values() + Warmup.BANDITS + CampJobs.WARM)  # the rival camps, the raid's bandits and the site crews, loaded now (tests/perf_test)
 	Ambience.play(self, "desert")
 	level.set_night(0.0)
 	level.place_sites()
@@ -82,6 +81,9 @@ func _ready() -> void:
 	if ResourceLoader.exists(NIGHT_RAID):
 
 		NightRaid.rival_glb = {"americans": Characters.glb("callahan"), "germans": Characters.glb("vogel")}
+	if args.has("party"):  # test runs: who came (ids, comma-separated)
+		for id in str(args.party).split(",", false):
+			Game.companion(id)["recruited"] = true
 	_spawn_party()
 	if not Game.flags.has("race_step") or args.has("race-step"):
 		Game.set_flag("race_step", int(args.get("race-step", "3")))
@@ -135,8 +137,8 @@ func _draft() -> void:
 	_mark_claims()
 	for id in level.site_spots:
 		(level.site_spots[id] as SiteSpot).set_marker_only()
-	_camp_jobs("staff_sites", [level, _claimed_sites(), Crews.by_kind()])  # {kind: men} of the crews hired
-	_camp_jobs("assign", [level, companions, "act4_day", false, {"anchor": level.camps.party, "sites": _claimed_sites()}])
+	CampJobs.staff_sites(level, _claimed_sites(), Crews.by_kind())  # -f9's crews at work: {kind: men} of those hired
+	CampJobs.assign(level, companions, "act4_day", false, {"anchor": level.camps.party, "sites": _claimed_sites()})
 	_day()
 
 
@@ -150,14 +152,6 @@ func _claimed_sites() -> Dictionary:
 	return out
 
 
-## -f9's CampJobs, once its file is in (called by name so the act runs without it).
-func _camp_jobs(fn: String, call_args: Array) -> void:
-	if ResourceLoader.exists(CAMP_JOBS):
-		var cj: Script = load(CAMP_JOBS)
-		if cj.has_method(fn):
-			cj.callv(fn, call_args)
-
-
 ## Who of ours works a site: the crew leaders' crews first, else the expedition.
 func _ours() -> Array:
 	var out: Array = []
@@ -167,8 +161,8 @@ func _ours() -> Array:
 	return out
 
 
-## Simon: claimed sites should show who claimed them. Two of the team's people work at each
-## claimed landmark, beside a pennant in the team's draft colour.
+## Simon: claimed sites should show who claimed them: a pennant in the team's draft colour at
+## each claimed landmark (the crews working them are CampJobs'; `people` is unused now).
 const CLAIM_LOOK := {
 	"player": {"colour": Color(0.55, 0.36, 0.12), "people": ["mahmoud", "khalil"]},
 	"americans": {"colour": Color(0.45, 0.16, 0.15), "people": ["maggie", "callahan"]},
@@ -187,14 +181,7 @@ func _mark_claims() -> void:
 		toward = toward.normalized()
 		var side: Vector3 = toward.cross(Vector3.UP)
 		var look: Dictionary = CLAIM_LOOK[team]
-		for k in 2:
-			var who: String = look.people[k]
-			# Our crew foremen: stand-ins until their image-to-3d models exist.
-			var model := Characters.glb(who)
-			var at: Vector3 = site + toward * 2.4 + side * (1.8 if k == 0 else -1.8)
-			var w := Worker.make(level, at, site, model)
-			if _team_people.has(team):
-				(_team_people[team] as Array).append(w)
+		# The people working it are -f9's CampJobs.staff_sites (from the draft's end to sunset).
 		_pennant(site + toward * 2.8 + side * 3.2, look.colour)
 
 
@@ -286,7 +273,7 @@ func _sunset() -> void:
 			card.close()
 		else:
 			await card.closed
-	_camp_jobs("clear_sites", [level])
+	CampJobs.clear_sites(level)
 	_evening()
 
 
@@ -300,7 +287,7 @@ func _evening() -> void:
 		if is_instance_valid(c):
 			c.global_position = fire + Vector3(cos(i * 1.1) * 3.2, 0, sin(i * 1.1) * 3.2)
 			i += 1
-	_camp_jobs("assign", [level, companions, "act4_night", true, {"anchor": level.camps.party}])
+	CampJobs.assign(level, companions, "act4_night", true, {"anchor": level.camps.party})
 	var bed: Interactable = level.interactables["camp_bed"]
 	bed.prompt = "Sleep (end the day)"
 	_save()

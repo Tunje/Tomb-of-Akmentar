@@ -278,8 +278,12 @@ func _draw_strip(size: Vector2) -> void:
 		y += row
 
 
+## What the strip calls them: the first name; a doctor by title and surname ("Dr. Pembroke").
 static func _first_name(g: Gunman) -> String:
-	return DayLog.person(g.companion_id).get_slice(" ", 0)
+	var full := DayLog.person(g.companion_id)
+	if full.begins_with("Dr. "):
+		return "Dr. " + full.get_slice(" ", full.get_slice_count(" ") - 1)
+	return full.get_slice(" ", 0)
 
 
 ## Bleeding (down with an enemy close): a ring that fills toward the bleed-out.
