@@ -190,7 +190,7 @@ func _group(g: Dictionary) -> Dictionary:
 
 
 func _build(count: int) -> void:
-	SoundLife.prewarm("murmur", true)  # the street's talk, built on a thread while the scene loads
+	SoundLife.prewarm("murmur", true)  # the street's talk, built now while the scene loads
 	alarm_radius = float(data.get("alarm_radius", ALARM_RADIUS))
 	if "spots" in level:
 		for p in (level.get("spots") as Dictionary).values():
@@ -378,9 +378,6 @@ func _curse() -> void:
 ## fleeing) within MURMUR_NEAR of the camera, louder for more of them. Fewer about (set_fraction),
 ## fewer and quieter knots; none at all and they fall silent.
 func _murmur(at: Vector3) -> void:
-	if _murmurs.is_empty() and not SoundLife.is_ready("murmur", true):
-		SoundLife.prewarm("murmur", true)  # (built on a thread: no frame waits for it)
-		return
 	var near: Array[CrowdPerson] = []
 	for p in people:
 		if p.about and p.state not in ["night", "flee", "hide"] and p.global_position.distance_to(at) < MURMUR_NEAR:

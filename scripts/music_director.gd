@@ -48,7 +48,6 @@ const DUCK_SPEECH := -5.0
 
 static var _inst: MusicDirector
 static var _built := {}           # place -> {layer or "sting_<kind>": AudioStreamWAV}
-static var _mutex := Mutex.new()
 
 var state := "explore"
 var place := ""
@@ -71,6 +70,7 @@ var _clock := 0.0
 var _tick := 0.0
 var _task := -1
 var _task_place := ""
+var _result := {}                 # the worker's palette; read on the main thread once it's done
 var _fade := 1.0                  # whole-mix fade (a palette change)
 var _swap_to := ""
 var _seen_down := {}
@@ -344,10 +344,25 @@ func _build_done() -> void:
 	if _task >= 0 and WorkerThreadPool.is_task_completed(_task):
 		WorkerThreadPool.wait_for_task_completion(_task)
 		_task = -1
+		_built[_task_place] = _result  # (only the main thread touches the cache)
+		_result = {}
 		print("MUSIC built %s" % _task_place)
 	if _task < 0 and _swap_to != "" and not _built.has(_swap_to):
 		_task_place = _swap_to
-		_task = WorkerThreadPool.add_task(MusicDirector._build.bind(_swap_to), false, "music " + _swap_to)
+		_task = WorkerThreadPool.add_task(_build_task.bind(_swap_to), false, "music " + _swap_to)
+
+
+## The worker's job: the palette into this director's _result (nothing shared, no lock).
+func _build_task(p: String) -> void:
+	_result = _make_palette(p)
+
+
+## Gone (a quit, a test's end) with a palette still building: wait for it, so no task outlives
+## the scripts at teardown.
+func _exit_tree() -> void:
+	if _task >= 0:
+		WorkerThreadPool.wait_for_task_completion(_task)
+		_task = -1
 
 
 ## Fade out done: the new palette's stems in, all from the top, together.
@@ -408,7 +423,12 @@ func _bus() -> void:
 
 # ---------------------------------------------------------------- the music (worker thread)
 
+## A palette built here and now, on the main thread (tests: --dump).
 static func _build(p: String) -> void:
+	_built[p] = _make_palette(p)
+
+
+static func _make_palette(p: String) -> Dictionary:
 	var pal: Dictionary = PALETTES[p]
 	var root := float(pal.root)
 	var bl := 60.0 / float(pal.bpm)
@@ -423,9 +443,7 @@ static func _build(p: String) -> void:
 	out.drums = _wav(_drums(n, bl, bool(pal.jingles), float(pal.bright), rng), true)
 	for k in STINGS:
 		out["sting_" + k] = _wav(_sting_buf(k, bl, root, float(pal.bright), rng), false)
-	_mutex.lock()
-	_built[p] = out
-	_mutex.unlock()
+	return out
 
 
 ## Frequency rounded to whole cycles in `n` samples: the loop then repeats without a seam.

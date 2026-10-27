@@ -20,8 +20,6 @@ const MIX := {"flap": [-8.0, 3.0, 30.0], "bray": [-6.0, 6.0, 45.0], "bleat": [-1
 	"murmur": [-14.0, 6.0, 35.0], "paddle": [-10.0, 6.0, 40.0], "prayer": [-12.0, 60.0, 400.0]}
 
 static var _cache := {}
-static var _mutex := Mutex.new()   # the cache, when prewarm builds on a worker thread
-static var _warming := {}
 var _pool: Array[AudioStreamPlayer3D] = []
 var _next := 0
 
@@ -134,33 +132,21 @@ func _shot(kind: String, pos: Vector3, db: float, jitter: float) -> AudioStreamP
 
 # ---------------------------------------------------------------- the sounds
 
-## Build `kind` on a worker thread now (the murmur loop takes a while in GDScript), so its first
-## use doesn't stall a frame; is_ready() says when it's there.
+## Build `kind` now, while a scene loads (the murmur loop takes 0.15 s of GDScript), so its first
+## use mid-scene doesn't stall a frame. (On the main thread: a worker task left running at quit
+## crashed the exit.)
 static func prewarm(kind: String, looped := false) -> void:
-	var key := kind + ("_loop" if looped else "")
-	_mutex.lock()
-	var go := not _cache.has(key) and not _warming.has(key)
-	if go:
-		_warming[key] = true
-	_mutex.unlock()
-	if go:
-		WorkerThreadPool.add_task(func() -> void: stream(kind, looped), false, "sound " + key)
+	stream(kind, looped)
 
 
 static func is_ready(kind: String, looped := false) -> bool:
-	_mutex.lock()
-	var yes := _cache.has(kind + ("_loop" if looped else ""))
-	_mutex.unlock()
-	return yes
+	return _cache.has(kind + ("_loop" if looped else ""))
 
 
 static func stream(kind: String, looped := false) -> AudioStream:
 	var key := kind + ("_loop" if looped else "")
-	_mutex.lock()
-	var have: AudioStream = _cache.get(key)
-	_mutex.unlock()
-	if have:
-		return have
+	if _cache.has(key):
+		return _cache[key]
 	var s: AudioStream = null
 	for ext in [".ogg", ".wav"]:
 		if ResourceLoader.exists(AUDIO_DIR + kind + ext):
@@ -176,13 +162,7 @@ static func stream(kind: String, looped := false) -> AudioStream:
 	elif s is AudioStreamOggVorbis and looped:
 		s = (s as AudioStreamOggVorbis).duplicate()
 		(s as AudioStreamOggVorbis).loop = true
-	_mutex.lock()
-	if _cache.has(key):
-		s = _cache[key]  # built meanwhile on the other thread: keep the one
-	else:
-		_cache[key] = s
-	_warming.erase(key)
-	_mutex.unlock()
+	_cache[key] = s
 	return s
 
 
