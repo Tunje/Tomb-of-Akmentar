@@ -13,6 +13,10 @@ const REACH := 2.2
 @export var id := ""
 var when := {}
 var effects: Array = []
+## Its name in the world (WorldMarker), made with it: the prompt until the owner names it better
+## (an ActionSpot its place, an Npc its person). show_marker false: none.
+var marker: WorldMarker
+var show_marker := true
 
 
 static func make(parent: Node3D, pos: Vector3, prompt_text: String, spot_id := "", radius := 0.9) -> Interactable:
@@ -34,6 +38,9 @@ static func make(parent: Node3D, pos: Vector3, prompt_text: String, spot_id := "
 
 func _ready() -> void:
 	add_to_group("interactable")
+	if show_marker:
+		marker = WorldMarker.attach(self, prompt, 1.4)
+		marker.visible_if = available
 
 
 func available() -> bool:

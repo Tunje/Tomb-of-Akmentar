@@ -114,6 +114,7 @@ func _ready() -> void:
 		_choice(grid, "Crosshair", "crosshair", ["normal", "bold", "large"], ["Normal", "Bold", "Large"])
 		_choice(grid, "Crosshair colour", "crosshair_color", ["white", "yellow", "cyan"], ["White", "Yellow", "Cyan"])
 		_check(grid, "Show objective", "show_objective")
+		_check(grid, "Show markers", "show_markers")
 	buttons.add_child(_button("Back", close))
 	box.add_child(buttons)
 	box.add_child(_label("Esc  back · arrows and Enter, or the mouse · changes are kept", 16, DIM, HORIZONTAL_ALIGNMENT_CENTER))

@@ -400,16 +400,10 @@ func _post_crew(where: String) -> void:
 	leader.face_towards(leader_at + out * 10.0)
 	leader.talked.connect(func(_end: String) -> void: DayLog.add("Confronted the thieves at %s" % str(Cairo.SPOTS[where][2]).to_lower()))
 	crew.leader = leader
-	var mark := Label3D.new()  # you have to be able to find them (Simon couldn't, by the station's door)
-	mark.text = "%s\n▼" % DayLog.person(_leader_id())
-	mark.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	mark.font_size = 40
-	mark.pixel_size = 0.005
-	mark.outline_size = 12
-	mark.modulate = Color(1.0, 0.8, 0.4)
-	mark.no_depth_test = true
-	mark.position = Vector3.UP * 2.5
-	leader.add_child(mark)
+	# Their marker (the Npc's WorldMarker) says who and that they're the thieves, seen from well off:
+	# you have to be able to find them (Simon couldn't, by the station's door).
+	leader.interactable.marker.text = "%s, with the artifacts" % DayLog.person(_leader_id())
+	leader.interactable.marker.range = 45.0
 	var ids: Array = GUARDS.get(_thief(), GUARDS.americans)
 	for k in ids.size():  # posted round the getaway, facing the street
 		var at: Vector3 = level.open_point(getaway + side * (-1.5 + 3.5 * (k - 1)) + out * (2.5 + 1.0 * (k % 2)))

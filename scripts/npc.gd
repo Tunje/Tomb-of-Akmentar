@@ -55,6 +55,7 @@ func _ready() -> void:
 	if conversation != "":
 		interactable = Interactable.make(self, global_position + Vector3.UP * 1.0, prompt, "npc_" + npc_id, 0.9)
 		interactable.when = when
+		interactable.marker.text = display_name()  # who you'd be talking to
 		interactable.used.connect(func(by: Node) -> void:
 			if by is Node3D and not ActionMenu.ui_open():
 				talk(by as Node3D))

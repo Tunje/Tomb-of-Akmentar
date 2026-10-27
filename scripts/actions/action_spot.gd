@@ -68,6 +68,20 @@ func _make_interactable(radius: float) -> void:
 	interactable.used.connect(func(by: Node) -> void:
 		if by is Node3D and not ActionMenu.ui_open():
 			open(by as Node3D))
+	interactable.marker.text = str(data.get("name", interactable.prompt))  # the place's name
+	interactable.marker.reason_of = marker_reason
+
+
+## Why nothing can be done here now, for its marker ("" = something can): the first row's reason,
+## or the place's "empty" line when nothing's left.
+func marker_reason() -> String:
+	var rs := rows()
+	if rs.is_empty():
+		return str(data.get("empty", "Nothing to do here now"))
+	for r: Dictionary in rs:
+		if r.enabled:
+			return ""
+	return str(rs[0].reason)
 
 
 ## The menu rows for now: [{label, cost, enabled, reason, action}] (hidden actions left out).

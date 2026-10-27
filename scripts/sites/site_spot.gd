@@ -56,6 +56,9 @@ static func make(parent: Node3D, area_id: String, id: String, pos: Vector3, radi
 	s.global_position = pos
 	s.interactable = Interactable.make(s, pos + Vector3.UP * 0.9, "Inspect " + str(s.site.get("name", id)), "site_" + id, radius)
 	s.interactable.when = {"not_flag": s.clue_id()}  # gone once studied
+	if s.interactable.marker:  # the site's own ring and name say it (below): not a second one
+		s.interactable.marker.queue_free()
+		s.interactable.marker = null
 	s.interactable.used.connect(func(by: Node) -> void:
 		if not ActionMenu.ui_open():
 			s.inspect(by))
