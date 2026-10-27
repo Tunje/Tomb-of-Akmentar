@@ -4,7 +4,7 @@ extends Node3D
 ## door / spot / NPC, an alarm scatters those near it (running, then crouched away from it) and
 ## they come back to their roles about 20 s later. Windowed runs also measure the frame rate (a PERF
 ## line a second, a PERFSUM) and take screenshots.
-##   --mode=old        Cairo's own townsfolk instead (the before for the frame rate)
+##   --mode=old        no crowd (Cairo's chatting pairs only), the before for the frame rate
 ##   --look            no checks: just run --seconds (frame rate, screenshots)
 ##   --count=N         this many instead of the density
 ##   --seconds=N       how long (default 45; the return check waits at least 45 s after the alarm)   --shots=t1,t2   --shot-dir=path   --cam=market|cafe|museum
@@ -57,13 +57,19 @@ func _ready() -> void:
 		_cam.make_current()
 	await get_tree().physics_frame
 	await get_tree().physics_frame
+	# Cairo makes its own crowd (cairo.gd: level.crowd); --mode=old takes it away (only the chatting
+	# pairs left), --count rebuilds it at another size.
+	var own: Crowd = level.get("crowd") if "crowd" in level else null
 	if str(args.get("mode", "")) == "old":
+		if own:
+			own.queue_free()
 		print("RESULT crowd_test mode=old townsfolk=%d" % level.townsfolk.size())
+	elif own and not args.has("count"):
+		crowd = own
 	else:
-		for t in level.townsfolk:
-			if is_instance_valid(t):
-				t.queue_free()
-		level.townsfolk.clear()
+		if own:
+			own.queue_free()
+			await get_tree().process_frame
 		crowd = Crowd.populate(level, "cairo", int(args.get("count", "-1")))
 	await _run()
 	print("RESULT crowd_test %s fails=%d" % ["PASS" if _fails == 0 else "FAIL", _fails])
