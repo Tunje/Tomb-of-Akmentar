@@ -59,6 +59,7 @@ func switch(bed_id: String, fade := 3.0) -> void:
 	if bed_id == bed or not BEDS.has(bed_id):
 		return
 	bed = bed_id
+	Weather.on_bed(get_parent(), bed_id)  # desert air, sand on the wind (-f9's Weather)
 	_fade = maxf(fade, 0.05)
 	for s in _slots:
 		s.target = 0.0
