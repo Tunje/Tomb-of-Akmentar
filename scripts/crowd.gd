@@ -44,6 +44,7 @@ var keep_clear: Array[Vector3] = []
 var level: Node3D
 var active := 0
 var cam_at := Vector3.INF
+var per_frame := 0                 # populate_with: people built a frame (0 = all at once)
 var minders: Array[Node3D] = []    # who the people step aside for (the party, the player): every THINK
 var night := false
 var alarm_radius := ALARM_RADIUS
@@ -60,6 +61,20 @@ static func populate(lvl: Node3D, place := "cairo", count := -1) -> Crowd:
 	c.name = "Crowd"
 	c.level = lvl
 	c.data = load_data(place)
+	lvl.add_child(c)
+	c._build(count)
+	return c
+
+
+## A crowd from data made in code rather than a file (CampJobs: the crews at the claimed sites).
+## `per_frame` > 0: built that many people a frame (mid-scene: 21 rigged people at once were a
+## 0.9 s stall in Act 4), the list filling as they come.
+static func populate_with(lvl: Node3D, d: Dictionary, count := -1, node_name := "Crowd", per_frame := 0) -> Crowd:
+	var c := Crowd.new()
+	c.name = node_name
+	c.level = lvl
+	c.data = d
+	c.per_frame = per_frame
 	lvl.add_child(c)
 	c._build(count)
 	return c
@@ -240,6 +255,10 @@ func _build(count: int) -> void:
 			p.begin(rng)
 			people.append(p)
 			i += 1
+			if per_frame > 0 and people.size() % per_frame == 0:
+				await get_tree().process_frame
+				if not is_inside_tree():
+					return
 	for b in data.get("beasts", []):
 		var arr: Array = b
 		_beast(Vector3(float(arr[0][0]), 0, float(arr[0][1])), Vector3(float(arr[1][0]), 0, float(arr[1][1])),
