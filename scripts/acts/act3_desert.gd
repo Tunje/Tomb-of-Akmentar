@@ -42,6 +42,7 @@ var riders := {}                  # companion id -> Rider, while they ride
 var result := {}
 var elder: Npc
 var _t := 0.0
+var _storm_rolled := false   # the sandstorm's one chance, at STORM_AT of the road
 var _shots: Array[float] = []
 var _overview: Camera3D
 var _fight_bot: FightBot
@@ -329,10 +330,16 @@ func _on_died() -> void:
 
 # ---------------------------------------------------------------- tick and test bot
 
+## How far along the road (start to the ambush) the sandstorm may blow up, and how likely it is.
+const STORM_AT := 0.4
+const STORM_CHANCE := 0.5
+
+
 func _physics_process(delta: float) -> void:
 	_t += delta
 	if step == Step.ROAD:
 		_keep_formation()
+		_maybe_storm()
 		if player.global_position.z < DesertRoute.AMBUSH_Z:
 			_ambush()
 	elif step == Step.TOWN:
@@ -342,6 +349,31 @@ func _physics_process(delta: float) -> void:
 			_town()
 	if args.has("auto"):
 		_bot(delta)
+
+
+## Once, as the convoy passes STORM_AT of the road: a sandstorm (-f9's Weather) half the time.
+## --storm=on / --storm=off decide it for a test.
+func _maybe_storm() -> void:
+	if _storm_rolled or player.global_position.z > DesertRoute.START_Z - (DesertRoute.START_Z - DesertRoute.AMBUSH_Z) * STORM_AT:
+		return
+	_storm_rolled = true
+	var forced := str(args.get("storm", ""))
+	if forced == "off" or (forced != "on" and randf() >= STORM_CHANCE):
+		return
+	print("RESULT act3_desert sandstorm t=%.1f" % _t)
+	Weather.sandstorm(self, 40.0)
+	# A companion calls it out. Barks space their lines in real seconds (another just said holds
+	# them a few), so keep asking for a while.
+	var t0 := Time.get_ticks_msec()
+	while Time.get_ticks_msec() - t0 < 12000 and not _storm_bark():
+		await get_tree().create_timer(0.5).timeout
+
+
+## Someone on the road calls the storm out (as _bark: the party, then the riders); true if they did.
+func _storm_bark() -> bool:
+	var before := Barks.last
+	_bark("sandstorm")
+	return not is_same(Barks.last, before) and Barks.last.get("situation", "") == "sandstorm"
 
 
 func _process(_delta: float) -> void:
