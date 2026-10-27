@@ -95,11 +95,31 @@ static func pour(parent: Node, point: Vector3, wall_normal: Vector3, seconds := 
 
 ## Where fire is: anything in group "fire" (Node3D; meta "fire_radius" overrides FIRE_RADIUS).
 static func fires(tree: SceneTree) -> Array[Dictionary]:
-	var out: Array[Dictionary] = []
+	# Built once a frame for every swarm: the five-level tomb has hundreds of flames, and each swarm
+	# gathering them all every frame (then every beetle checking each) cost tens of ms (-7f).
+	var frame := Engine.get_physics_frames()
+	if frame == _fire_frame:
+		return _fire_cache
+	_fire_frame = frame
+	_fire_cache = []
 	for n in tree.get_nodes_in_group("fire"):
 		var f := n as Node3D
 		if f and f.is_inside_tree() and f.is_visible_in_tree():
-			out.append({"at": f.global_position, "r": float(f.get_meta("fire_radius", FIRE_RADIUS))})
+			_fire_cache.append({"at": f.global_position, "r": float(f.get_meta("fire_radius", FIRE_RADIUS))})
+	return _fire_cache
+
+
+static var _fire_cache: Array[Dictionary] = []
+static var _fire_frame := -1
+
+
+## The flames within `reach` of `at` (and on its level).
+static func fires_near(tree: SceneTree, at: Vector3, reach: float) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for f in fires(tree):
+		var p: Vector3 = f.at
+		if absf(p.y - at.y) < 4.0 and Vector2(p.x - at.x, p.z - at.z).length() < reach:
+			out.append(f)
 	return out
 
 
@@ -159,7 +179,7 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	_t += delta
-	var fire := fires(get_tree())
+	var fire := fires_near(get_tree(), _centre, TAIL + RADIUS + FIRE_RADIUS + 4.0)
 	match _state:
 		"pour":
 			_centre = _centre.move_toward(Vector3(origin.x, _floor_y, origin.z) + normal * 1.8, delta * 1.0)
@@ -260,7 +280,7 @@ func _flow_to(goal: Vector3, delta: float) -> void:
 			dir = dir.rotated(Vector3.UP, sin(_t * 1.1 + _phase) * 0.6)
 			pace *= 0.6
 		_centre += dir * minf(pace * delta, step.length() if not far else pace * delta)
-		if far and NavigationServer3D.map_get_iteration_id(map) > 0:
+		if far and _repath > 0.3 and NavigationServer3D.map_get_iteration_id(map) > 0:  # just after each re-plan, not every frame
 			_centre = NavigationServer3D.map_get_closest_point(map, _centre)  # the weave stays on the floor
 	_centre.y = lerpf(_centre.y, next.y, minf(delta * 4.0, 1.0))
 	_floor_y = _centre.y

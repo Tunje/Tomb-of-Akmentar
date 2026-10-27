@@ -456,18 +456,28 @@ func _ally_run() -> void:
 func _ally_flee(runner: Node3D) -> void:
 	const SPEED := 6.0
 	var map := get_world_3d().navigation_map
+	var path := PackedVector3Array()
+	var best := INF
+	var replan := 0.0
 	while step == Step.ESCAPE or step == Step.AWAKENING:
-		var path := PackedVector3Array()
-		var best := INF
-		for e in level.exits:
-			var p := NavigationServer3D.map_get_path(map, runner.global_position, e + Vector3(0, 0, 1.0), true)
-			var len := 0.0
-			for k in range(1, p.size()):
-				len += p[k].distance_to(p[k - 1])
-			if p.size() > 1 and len < best:
-				best = len
-				path = p
-		if path.size() < 2 or best < 1.5:
+		# Planned twice a second, not every frame: three paths up five levels each frame cost ~40 ms
+		# (-7f's perf sweep: the escape fell to 21 fps).
+		replan -= get_physics_process_delta_time()
+		if replan <= 0.0 or path.size() < 2:
+			replan = 0.5
+			path = PackedVector3Array()
+			best = INF
+			for e in level.exits:
+				var p := NavigationServer3D.map_get_path(map, runner.global_position, e + Vector3(0, 0, 1.0), true)
+				var len := 0.0
+				for k in range(1, p.size()):
+					len += p[k].distance_to(p[k - 1])
+				if p.size() > 1 and len < best:
+					best = len
+					path = p
+		while path.size() > 1 and runner.global_position.distance_to(path[1]) < 0.3:
+			path.remove_at(0)
+		if path.size() < 2 or (best < 1.5 and path.size() <= 2):
 			break  # out
 		var step_len := SPEED * get_physics_process_delta_time()
 		var to := path[1] - runner.global_position
