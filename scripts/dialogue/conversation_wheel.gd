@@ -248,9 +248,11 @@ func _is_right(i: int) -> bool:
 
 
 func _layout() -> void:
-	var s := _root.size
+	# The root's first frame can be 0 wide: the viewport's then, and never a line narrower than 400
+	# px (it wrapped one letter a line for a frame at the start of a talk).
+	var s := _root.size if _root.size.x > 1.0 else get_viewport().get_visible_rect().size
 	var bar := s.y * BAR_FRACTION
-	var w := minf(s.x * 0.7, 1100.0)
+	var w := maxf(minf(s.x * 0.7, 1100.0), minf(400.0, s.x))
 	_line.size = Vector2(w, 0)
 	_line.position = Vector2((s.x - w) * 0.5, s.y - bar - 12 - _line.get_minimum_size().y)
 	_speaker.size = Vector2(w, 0)

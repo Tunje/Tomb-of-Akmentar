@@ -105,6 +105,13 @@ func _ready() -> void:
 	player.set_armed(false)
 	await _wait(0.1)
 	_check(not hud.holster_hint() and hud._holster.text == "", "holstered: gone")
+	# The day's actions only where days are spent in them (Cairo: Acts 2 and 7).
+	Game.act = 4
+	await _wait(0.1)
+	_check(not "Actions" in hud._info.text, "Act 4: no actions on the info line (%s)" % hud._info.text)
+	Game.act = 2
+	await _wait(0.1)
+	_check("Actions" in hud._info.text, "Act 2: the actions shown")
 	print("RESULT %s (%d failed)" % ["PASS" if _fails == 0 else "FAIL", _fails])
 	get_tree().quit(0 if _fails == 0 else 1)
 

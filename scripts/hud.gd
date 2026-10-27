@@ -19,6 +19,9 @@ var _prompt: Label
 var _info: Label
 var _toast: Label
 var _objective: Label   # the current objective, top left (Objective)
+## The day's actions on the info line: -1 by the act (only Cairo's, Acts 2 and 7, and the
+## proving ground spend them), 0 hidden, 1 shown. An act may set it.
+var show_actions := -1
 var _holster: Label     # "X  put your guns away", by the ammo, once it's been quiet a while
 var _calm_t := 0.0      # s armed with no enemy within HOLSTER_CLEAR
 var _toast_t := 0.0
@@ -32,6 +35,7 @@ var _t := 0.0
 const BRASS := Color(0.62, 0.5, 0.28)
 const DOWN_RED := Color(1.0, 0.3, 0.22)
 const STRIP_W := 150.0
+const ACTION_ACTS := [2, 7]   # the acts whose days are spent in actions (Cairo)
 const HOLSTER_CLEAR := 40.0   # m: no enemy this close ...
 const HOLSTER_AFTER := 6.0    # s: ... this long, armed: the reminder to holster
 
@@ -152,7 +156,10 @@ func _process(delta: float) -> void:
 	_count.text = "Mummies: %d" % remaining if remaining > 0 else ""
 	# Only through the player's own eyes (not a test's overview or chase camera).
 	_prompt.text = Controls.fill(player.cover_prompt()) if player and player.camera and player.camera.current and _title.text == "" else ""
-	_info.text = "Day %d   Actions %s   £%d" % [Game.day, "●".repeat(Game.actions_left) + "○".repeat(maxi(Game.ACTIONS_PER_DAY - Game.actions_left, 0)), Game.money]
+	if actions_shown():
+		_info.text = "Day %d   Actions %s   £%d" % [Game.day, "●".repeat(Game.actions_left) + "○".repeat(maxi(Game.ACTIONS_PER_DAY - Game.actions_left, 0)), Game.money]
+	else:
+		_info.text = "Day %d   £%d" % [Game.day, Game.money]
 	_toast_t = maxf(_toast_t - delta, 0.0)
 	_toast.modulate.a = clampf(_toast_t, 0.0, 1.0)
 	_objective.text = Objective.current()
@@ -299,6 +306,13 @@ func _holster_step(delta: float) -> void:
 	_calm_t = _calm_t + delta if calm else 0.0
 	_holster.text = Controls.fill("{holster}  put your guns away") if holster_hint() else ""
 	_holster.modulate.a = clampf((_calm_t - HOLSTER_AFTER) / 0.6, 0.0, 0.85)
+
+
+func actions_shown() -> bool:
+	if show_actions >= 0:
+		return show_actions == 1
+	var scene := get_tree().current_scene
+	return Game.act in ACTION_ACTS or (scene != null and scene.scene_file_path.ends_with("main.tscn"))
 
 
 ## The holster reminder is up (tests).
