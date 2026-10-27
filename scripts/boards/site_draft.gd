@@ -171,7 +171,7 @@ func _party_color(p: String) -> Color:
 func _cell(i: int) -> Rect2:
 	var s := root.size
 	var cols := 4
-	var w := (s.x - 120 - (cols - 1) * 16) / cols
+	var w := maxf((s.x - 120 - (cols - 1) * 16) / cols, 1.0)  # headless runs have a zero-size root
 	var h := 150.0
 	return Rect2(60 + (i % cols) * (w + 16), 170 + (i / cols) * (h + 16), w, h)
 

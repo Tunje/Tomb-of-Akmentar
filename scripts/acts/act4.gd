@@ -19,6 +19,7 @@ var npcs := {}
 var _team_people := {"americans": [], "germans": []}  # everyone a rival team has about the place
 var companions := {}
 var raid: Node
+var crowd: Crowd  # the camps' diggers (-f9's Crowd; it follows the night itself)
 var _t := 0.0
 var _night_f := 0.0
 var _shots: Array[float] = []
@@ -58,6 +59,7 @@ func _ready() -> void:
 	# Their people about the camps (no talk yet), and the rivals' gunmen in the raid.
 	_team_people.americans = [npcs.whitfield, Npc.make(level, "maggie", level.camps.americans + Vector3(-2.5, 0, 1.0), "", Characters.glb("maggie"))]
 	_team_people.germans = [npcs.adler, Npc.make(level, "kruger", level.camps.germans + Vector3(2.5, 0, 1.0), "", Characters.glb("kruger"))]
+	crowd = Crowd.populate(level, "akmentar_camps")
 	if ResourceLoader.exists(NIGHT_RAID):
 
 		NightRaid.rival_glb = {"americans": Characters.glb("callahan"), "germans": Characters.glb("vogel")}
@@ -270,6 +272,8 @@ func _dawn() -> void:
 	# (Simon: one of the Germans was still standing in their camp after the night).
 	for team in _team_people:
 		if not Game.flag(team + "_alive", false):
+			if crowd:
+				crowd.remove_team(team)
 			for n in _team_people[team]:
 				if is_instance_valid(n):
 					(n as Node).queue_free()
