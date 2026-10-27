@@ -7,16 +7,20 @@ extends Node3D
 ##   stones falling (stones_falling: debris drops round you), the sickness (the streets empty),
 ##   and at 0 mummy_in_cairo: catastrophe, game over, unless the artifacts are already yours.
 ## - Hassan, if he came, talks first (act7_hassan).
-## - The confrontation (act7_intercept) appears once you know where to catch them: the road gate
-##   under the lockdown, else where their plan takes them (docks / station / police yard by
-##   thief), else their lodging (the hotel). It moves if you learn something better.
+## - Once you know where to catch them, the thieves are there, loading their getaway (a truck at the
+##   road gate under the lockdown, else where their plan takes them: a lighter at the docks, a cart
+##   at the station, a truck in the police yard; else their luggage at the hotel): the leader to
+##   talk to (act7_confront, a marker over them) and their guards posted round. They move if you
+##   learn something better, and they're gone when the thieves countdown runs out.
 ## - act7_confront either recovers the artifacts or fires fight_thieves (their guards come at you;
 ##   win and artifacts_recovered is set). Either way act7_recovered follows; then Blackwood waits
 ##   at the bank (data-gated) and the hotel bed takes you on to Act 8.
 ## - The thieves countdown at 0 before that: act7_too_late (thieves_escaped), then Act 8.
 ## Test args (after --): --auto[=intercept|late|mummy] (a bot; RESULT lines), --resume (at game over,
 ## load the last save the way Enter does), --chain (on into Act 8), --plan=fight|talk (the bot at
-## the confrontation; talks are played by BotTalk), --thieves=americans|
+## the confrontation; talks are played by BotTalk), --intercept=lockdown|plan|lodging (where the bot
+## catches them: the road gate, the plan's place, the hotel), --look-crew (stand back and look at them:
+## for screenshots), --thieves=americans|
 ## germans|italians, --seconds=N, --shots=t1,t2, --shot-dir=path.
 
 static var _bot_resumed := false  # --resume: the bot loads the save once, then stops
@@ -40,7 +44,7 @@ var hud: Hud
 var args := {}
 var plan := {}
 var companions := {}
-var intercept: ActionSpot
+var crew := {}   # the thieves at their getaway: {root, leader (Npc), guards [Npc], at}
 var guards: Array[Gunman] = []
 var _intercept_at := ""
 var _fighting := false
@@ -251,6 +255,7 @@ func _catastrophe() -> void:
 
 func _too_late() -> void:
 	_may_leave = true
+	_clear_crew()  # gone, with the artifacts
 	print("RESULT act7 too_late day=%d" % Game.day)
 	if not await _talk("act7_too_late", player):
 		Game.set_flag("thieves_escaped")  # (what the talk sets)
@@ -330,7 +335,8 @@ func _puff(at: Vector3) -> void:
 
 # ---------------------------------------------------------------- the thieves
 
-## Where the confrontation is, from what you know (plan "intercept"); placed or moved there.
+## Where the confrontation is, from what you know (plan "intercept"): the thieves' crew stands
+## there, loading their getaway (_post_crew); it moves if you learn something better.
 func _place_intercept() -> void:
 	var at_plan: Dictionary = (plan.get("intercept", {}) as Dictionary).get("at", {})
 	var where := ""
@@ -340,34 +346,140 @@ func _place_intercept() -> void:
 		where = str((at_plan.get("thieves_plan_known", {}) as Dictionary).get(_thief(), "hotel"))
 	elif Game.flag("thieves_lodging", false):
 		where = str(at_plan.get("thieves_lodging", "hotel"))
-	if where == "" or where == _intercept_at or not level.spots.has(where):
+	if where == "" or where == _intercept_at or not level.spots.has(where) or _done or _may_leave \
+			or Game.flag("artifacts_recovered", false):
 		return
 	_intercept_at = where
-	var pos: Vector3 = level.spots[where]
-	if (plan.get("spots", {}) as Dictionary).has(where):
-		# That place has its own ActionSpot: stand this one a little along the facade.
-		var n: Vector2 = Cairo.SPOTS[where][1]
-		pos += Vector3(-n.y, 0, n.x) * 2.5 if n != Vector2.ZERO else Vector3(0, 0, 2.0)
-	pos = level.open_point(pos)  # never inside a wall or a pillar: you must be able to get to it
-	if intercept == null:
-		var file := str((plan.get("intercept", {}) as Dictionary).get("file", "act7_intercept"))
-		intercept = ActionSpot.make(level, file, pos)
-		# You have to be able to see where it is (Simon couldn't find it by the station's door).
-		var sign := Label3D.new()
-		sign.text = "The Thieves"
-		sign.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		sign.font_size = 48
-		sign.pixel_size = 0.005
-		sign.outline_size = 12
-		sign.modulate = Color(1.0, 0.8, 0.4)
-		sign.no_depth_test = true
-		intercept.add_child(sign)
-		sign.position = Vector3.UP * 2.6
-	else:
-		intercept.global_position = pos
+	_post_crew(where)
+	var place := str(Cairo.SPOTS[where][2]).to_lower()
 	print("RESULT act7 intercept at %s" % where)
-	hud.toast("You know where to catch the thieves: %s." % str(Cairo.SPOTS[where][2]).to_lower(), 4.0)
-	Objective.set_goal("Catch the thieves before they get away")
+	hud.toast("You know where to catch the thieves: %s." % place, 4.0)
+	Objective.set_goal("Catch %s at %s before they leave" % [DayLog.person(_leader_id()), place])
+
+
+## Each crew's leader (the one you talk to) and what they're loading for the getaway.
+const LEADERS := {"americans": "whitfield", "germans": "adler", "italians": "bellini"}
+## The getaway at each place: "cart", "lighter", "truck" or "luggage" (the hotel).
+const GETAWAY := {"station": "cart", "docks": "lighter", "road_gate": "truck", "police": "truck", "hotel": "luggage"}
+
+
+func _leader_id() -> String:
+	return str(LEADERS.get(_thief(), "whitfield"))
+
+
+## The thieves at `where`: their getaway with its crates and luggage, the leader standing by it
+## (talk to them: act7_confront) with a marker over their head, and the guards posted round it
+## (they come at you from there if the talk turns to guns: _fight_thieves).
+func _post_crew(where: String) -> void:
+	_clear_crew()
+	var spot: Array = Cairo.SPOTS[where]
+	var base: Vector3 = spot[0]
+	var n: Vector2 = spot[1]
+	# Out from the facade into the street; a place with no facing faces back into town.
+	var out := Vector3(n.x, 0, n.y) if n != Vector2.ZERO else (level.player_spawn - base) * Vector3(1, 0, 1)
+	out = out.normalized() if out.length() > 0.01 else Vector3.FORWARD
+	var side := out.cross(Vector3.UP).normalized()
+	var face := atan2(side.x, side.z)  # a vehicle lengthwise along the facade
+	var root := Node3D.new()
+	root.name = "ThievesCrew"
+	level.add_child(root)
+	crew = {"root": root, "guards": [], "at": where}
+	var getaway: Vector3 = level.open_point(base + out * 5.0)
+	match str(GETAWAY.get(where, "luggage")):
+		"truck":
+			level._prop(root, "vehicle_truck.glb", getaway, face)
+		"cart":
+			_cart(root, getaway, face)
+		"lighter":
+			_lighter(root, getaway, face)
+	for k in 5:  # their crates and trunks, stacked by the getaway, the last ones still to load
+		var at := getaway + side * (2.2 + 0.9 * (k % 3)) + out * (0.6 * (k / 3))
+		level._prop(root, "prop_crate_small.glb" if k % 2 else "prop_crate_large.glb", level.open_point(at), face + k * 0.4)
+	var leader_at: Vector3 = level.open_point(getaway - side * 2.5 + out * 1.5)
+	var leader := Npc.make(root, _leader_id(), leader_at, "act7_confront", Characters.glb(_leader_id()))
+	leader.face_towards(leader_at + out * 10.0)
+	leader.talked.connect(func(_end: String) -> void: DayLog.add("Confronted the thieves at %s" % str(Cairo.SPOTS[where][2]).to_lower()))
+	crew.leader = leader
+	var mark := Label3D.new()  # you have to be able to find them (Simon couldn't, by the station's door)
+	mark.text = "%s\n▼" % DayLog.person(_leader_id())
+	mark.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	mark.font_size = 40
+	mark.pixel_size = 0.005
+	mark.outline_size = 12
+	mark.modulate = Color(1.0, 0.8, 0.4)
+	mark.no_depth_test = true
+	mark.position = Vector3.UP * 2.5
+	leader.add_child(mark)
+	var ids: Array = GUARDS.get(_thief(), GUARDS.americans)
+	for k in ids.size():  # posted round the getaway, facing the street
+		var at: Vector3 = level.open_point(getaway + side * (-1.5 + 3.5 * (k - 1)) + out * (2.5 + 1.0 * (k % 2)))
+		var g := Npc.make(root, str(ids[k]), at, "", Characters.glb(str(ids[k])))
+		g.face_towards(at + out * 10.0)
+		(crew.guards as Array).append(g)
+	print("RESULT act7 crew at %s leader=%s guards=%d getaway=%s" % [where, _leader_id(), (crew.guards as Array).size(), GETAWAY.get(where, "luggage")])
+	if args.has("look-crew"):  # a test's picture: stand back from them, looking at the getaway
+		player.global_position = level.open_point(getaway + out * 11.0 - side * 3.0)
+		player.yaw = atan2(-(getaway - player.global_position).x, -(getaway - player.global_position).z)
+
+
+## Out of sight now, freed once the talk that framed them is over (the fight starts from inside it).
+func _gone_after_talk(n: Node3D) -> void:
+	n.visible = false
+	n.process_mode = Node.PROCESS_MODE_DISABLED
+	while Conversation.current != null:
+		await get_tree().process_frame
+	if is_instance_valid(n):
+		n.queue_free()
+
+
+func _clear_crew() -> void:
+	if crew.has("root") and is_instance_valid(crew.root):
+		(crew.root as Node).queue_free()
+	crew = {}
+
+
+## A placeholder hand cart (no model yet): a plank bed on two wheels, crates on it.
+func _cart(parent: Node3D, at: Vector3, rot: float) -> void:
+	var wood := StandardMaterial3D.new()
+	wood.albedo_color = Color(0.42, 0.3, 0.18)
+	var cart := Node3D.new()
+	parent.add_child(cart)
+	cart.global_position = at
+	cart.rotation.y = rot
+	var bed := MeshInstance3D.new()
+	var box := BoxMesh.new()
+	box.size = Vector3(1.4, 0.12, 2.4)
+	bed.mesh = box
+	bed.material_override = wood
+	bed.position = Vector3.UP * 0.75
+	cart.add_child(bed)
+	for s: float in [-0.8, 0.8]:
+		var wheel := MeshInstance3D.new()
+		var cyl := CylinderMesh.new()
+		cyl.top_radius = 0.55
+		cyl.bottom_radius = 0.55
+		cyl.height = 0.08
+		wheel.mesh = cyl
+		wheel.material_override = wood
+		wheel.rotation.z = PI * 0.5
+		wheel.position = Vector3(s, 0.55, 0.2)
+		cart.add_child(wheel)
+	level._prop(cart, "prop_crate_small.glb", at + Vector3.UP * 0.82, rot)
+
+
+## A placeholder lighter (no model yet): a low open hull by the quay, crates in it.
+func _lighter(parent: Node3D, at: Vector3, rot: float) -> void:
+	var wood := StandardMaterial3D.new()
+	wood.albedo_color = Color(0.32, 0.22, 0.13)
+	var hull := MeshInstance3D.new()
+	var box := BoxMesh.new()
+	box.size = Vector3(2.0, 0.6, 5.0)
+	hull.mesh = box
+	hull.material_override = wood
+	parent.add_child(hull)
+	hull.global_position = at + Vector3.UP * 0.3
+	hull.rotation.y = rot
+	level._prop(parent, "prop_crate_large.glb", at + Vector3.UP * 0.6, rot)
 
 
 ## A guard's spot must be a short walk from the meeting place, or nobody can get at anybody.
@@ -392,11 +504,23 @@ func _fight_thieves() -> void:
 		return
 	_fighting = true
 	player.set_armed(true)
-	hud.toast("They go for their guns.", 2.5)
-	var centre: Vector3 = intercept.global_position if intercept else player.global_position
+	if not is_instance_valid(crew.get("leader")):
+		hud.toast("They go for their guns.", 2.5)
+	var leader: Node3D = crew.get("leader")
+	var centre: Vector3 = leader.global_position if is_instance_valid(leader) else player.global_position
 	var map := get_world_3d().navigation_map
 	var ids: Array = GUARDS.get(_thief(), GUARDS.americans)
 	var placed := 0
+	# The guards posted at the getaway draw on you from where they stand; the leader ducks away.
+	for g: Node3D in crew.get("guards", []):
+		if is_instance_valid(g) and placed < ids.size():
+			_guard(ids[placed], g.global_position)
+			placed += 1
+			g.queue_free()
+	crew.guards = []
+	if is_instance_valid(leader):
+		hud.toast("%s ducks behind the crates. The guards go for their guns." % DayLog.person(_leader_id()), 2.5)
+		_gone_after_talk(leader)
 	for k in 36:  # 12 round at 8 m, then 12 m, then 16 m: a dead end like the road gate has few spots close
 		if placed >= ids.size():
 			break
@@ -476,6 +600,11 @@ func _recovered() -> void:
 		await get_tree().process_frame
 	if not await _talk("act7_recovered", player):  # no talk file: what it would have set
 		Game.apply([{"set_flag": ["new_objective", "return_artifacts"]}, {"set_flag": "act7_done"}])
+	if is_instance_valid(crew.get("leader")):  # a peaceful end: they leave you the crates and go
+		_gone_after_talk(crew.leader)
+		for g in crew.get("guards", []):
+			if is_instance_valid(g):
+				g.queue_free()
 	_may_leave = true
 	_save("recovered")
 	print("RESULT act7 recovered peaceful=%s" % Game.flag("recovered_peacefully", false))
@@ -614,16 +743,22 @@ func _auto() -> void:
 		print("RESULT act7 FAIL the days ran on")
 		get_tree().quit(1)
 		return
-	Game.set_flag("thieves_plan_known")
+	# --intercept=plan: catch them where their plan takes them (no lockdown); =lodging: at the hotel.
+	var how := str(args.get("intercept", "lockdown"))
+	Game.set_flag("thieves_lodging" if how == "lodging" else "thieves_plan_known")
 	await get_tree().create_timer(0.5).timeout
-	Game.set_flag("lockdown")
-	await get_tree().create_timer(0.5).timeout
-	print("RESULT act7 intercept_ok=%s" % (_intercept_at == "road_gate"))
+	if how == "lockdown":
+		Game.set_flag("lockdown")
+		await get_tree().create_timer(0.5).timeout
+	var want := "road_gate" if how == "lockdown" else ("hotel" if how == "lodging"
+		else str(((plan.get("intercept", {}) as Dictionary).get("at", {}) as Dictionary).get("thieves_plan_known", {}).get(_thief(), "")))
+	print("RESULT act7 intercept_ok=%s crew=%s" % [_intercept_at == want, is_instance_valid(crew.get("leader"))])
 	# The confrontation as the player would have it: --plan=talk lets the bot try the peaceful ways,
 	# otherwise it steers to the fight.
 	var peace := ["Appeal to Sofia", "Appeal to Vogel", "Buy them back", "Pay him", "Point at the sky"]
 	var avoid: Array = BotTalk.AVOID + ([] if args.get("plan", "fight") == "talk" else peace)
-	if not await _talk("act7_confront", player, avoid):
+	var leader: Node3D = crew.get("leader") if is_instance_valid(crew.get("leader")) else player
+	if not await _talk("act7_confront", leader, avoid):
 		Game.apply([{"event": "fight_thieves"}])
 	await get_tree().create_timer(1.0).timeout
 	if args.has("skill-bot"):  # tests/difficulty_test fights them: wait it out

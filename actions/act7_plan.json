@@ -24,7 +24,6 @@
 		"bank": "blackwood"
 	},
 	"intercept": {
-		"file": "act7_intercept",
 		"at": {
 			"lockdown": "road_gate",
 			"thieves_plan_known": {

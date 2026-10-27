@@ -104,10 +104,8 @@ func _run() -> void:
 	_check(Game.flag("hassan_offered_lockdown") and Game.flag("hassan_revealed"), "Hassan confesses and offers the lockdown")
 	r = await _talk("act7_lockdown", [])
 	_check(Game.flag("lockdown") and Game.flag("clue_lockdown"), "the lockdown")
-	var spot := ActionSpot.make(self, "act7_intercept", Vector3(3, 0, 0))
-	await get_tree().process_frame
-	var labels: Array = spot.rows().map(func(x: Dictionary) -> String: return x.label)
-	_check(labels == ["Wait for them at the road gate"], "intercept under the lockdown: %s" % [labels])
+	var at: Dictionary = (ActionSpot.load_data("act7_plan").get("intercept", {}) as Dictionary).get("at", {})
+	_check(at.get("lockdown", "") == "road_gate", "the lockdown sends them out by the road gate (%s)" % at.get("lockdown", ""))
 
 	# ---- The confrontation
 	_fresh([], "americans")
