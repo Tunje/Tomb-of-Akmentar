@@ -78,14 +78,7 @@ func _ready() -> void:
 	player.global_position = points.surface + Vector3(0, 0, 2.0)
 	player.yaw = 0.0  # north, down the stairs
 	player.set_armed(true)
-	var lantern := OmniLight3D.new()
-	lantern.light_color = Color(1.0, 0.72, 0.42)
-	lantern.light_energy = 0.9
-	lantern.omni_range = 9.0
-	lantern.omni_attenuation = 1.4
-	lantern.shadow_enabled = true
-	lantern.position = Vector3(0.3, 1.1, -0.2)
-	player.add_child(lantern)
+	player.add_lantern()
 	hud = Hud.new()
 	hud.player = player
 	add_child(hud)

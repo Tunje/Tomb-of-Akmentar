@@ -60,14 +60,7 @@ func _ready() -> void:
 	player.global_position = level.player_spawn
 	player.yaw = 0.0  # facing north, into the tomb
 	# Her lantern: the maze between the torches is black without it.
-	var lantern := OmniLight3D.new()
-	lantern.light_color = Color(1.0, 0.72, 0.42)
-	lantern.light_energy = 0.9
-	lantern.omni_range = 9.0
-	lantern.omni_attenuation = 1.4
-	lantern.shadow_enabled = true
-	lantern.position = Vector3(0.3, 1.1, -0.2)
-	player.add_child(lantern)
+	player.add_lantern()
 	hud = Hud.new()
 	hud.player = player
 	add_child(hud)

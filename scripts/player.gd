@@ -633,6 +633,30 @@ func _drive_step(delta: float) -> void:
 
 
 ## Explore (false) or combat (true). Drawing plays the weapon-raise; holstering hides the gun.
+## Her lantern below ground (Acts 5 and 9): a wide shadowed beam where you look (one shadow map;
+## the omni it replaces drew six every frame) and a faint shadowless glow round her feet.
+func add_lantern() -> void:
+	var beam := SpotLight3D.new()
+	beam.name = "Lantern"
+	beam.light_color = Color(1.0, 0.72, 0.42)
+	beam.light_energy = 1.6
+	beam.spot_range = 14.0
+	beam.spot_angle = 55.0
+	beam.spot_angle_attenuation = 0.6
+	beam.spot_attenuation = 1.2
+	beam.shadow_enabled = true
+	cam_pitch.add_child(beam)
+	beam.position = Vector3(0.3, -0.5, -0.4)
+	var glow := OmniLight3D.new()
+	glow.name = "LanternGlow"
+	glow.light_color = beam.light_color
+	glow.light_energy = 0.6
+	glow.omni_range = 5.0
+	glow.omni_attenuation = 1.4
+	add_child(glow)
+	glow.position = Vector3(0.3, 1.1, -0.2)
+
+
 func set_armed(on: bool) -> void:
 	if on == armed:
 		return

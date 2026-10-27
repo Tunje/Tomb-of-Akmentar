@@ -80,7 +80,9 @@ static func quiet_minor(node: Node, small := 0.6, small_end := 60.0, thin := 0.1
 		var big := maxf(s.x, maxf(s.y, s.z))
 		var least := minf(s.x, minf(s.y, s.z))
 		if big < small:
-			quiet(m, small_end)
+			# Lamp glass and lit windows glow at dusk: no shadow, but drawn at any distance.
+			var mat := m.get_active_material(0) as BaseMaterial3D
+			quiet(m, 0.0 if mat and mat.emission_enabled else small_end)
 			n += 1
 		elif least < thin and big < flat_max:
 			quiet(m)

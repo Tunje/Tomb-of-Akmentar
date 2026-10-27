@@ -249,7 +249,7 @@ func _wall_torch_at(at: Vector3, n: Vector3) -> Node3D:
 	var holder := Node3D.new()
 	add_child(holder)
 	holder.position = at + n * 0.15
-	_prop(holder, "dungeon/wall_sconce.glb", holder.global_position, atan2(n.x, n.z))
+	RenderBudget.quiet(_prop(holder, "dungeon/wall_sconce.glb", holder.global_position, atan2(n.x, n.z)), 30.0)  # no shadow, not drawn far off
 	_flame(holder, Vector3.UP * 0.3, 1.8, 7.0, false)
 	return holder
 
