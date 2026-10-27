@@ -74,7 +74,7 @@ func _ready() -> void:
 	add_child(CountdownBars.new())
 	player.hit_confirmed.connect(hud.on_hit)
 	player.damaged.connect(hud.on_damaged)
-	player.died.connect(func(): hud.show_message("YOU DIED", "Enter to try again"))
+	player.died.connect(func(): hud.show_message("YOU DIED", "Enter  load the last save"))
 	for s in str(args.get("shots", "")).split(",", false):
 		_shots.append(float(s))
 	# A test or menu start brings a crew, but only a fresh one: after a real Act 4 (night_choice) an empty
@@ -91,7 +91,18 @@ func _ready() -> void:
 			_tomb_done = int(SiteBudget.state("royal_tomb").get("used", 0))
 			_awaken())
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if args.size() > 0 else Input.MOUSE_MODE_CAPTURED
-	_descend()
+	# Saves: the start, the royal door, the escape. A death loads the last (SaveRoute), and a load
+	# at a milestone starts there.
+	var resume_at := Game.place
+	if not resume_at.begins_with("act5_"):
+		Game.place = "act5_start"
+		Game.save_game()
+	if resume_at == "act5_royal_door":
+		_resume_at_door()
+	elif resume_at == "act5_escape":
+		_resume_escape()
+	else:
+		_descend()
 	if args.has("view"):
 		_view(str(args.view))
 	if args.has("holes"):
@@ -108,10 +119,53 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("party_order"):
 		hud.toast("Companions: " + str(Gunman.toggle_party_order(get_tree())))
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_ENTER and not player.alive:
-		get_tree().reload_current_scene()
+		SaveRoute.resume(get_tree())  # the last save: the act's start or a later milestone
 
 
 # ---------------------------------------------------------------- the act
+
+## Loaded at the royal door's save: before it, the level's studies done (their flags kept).
+func _resume_at_door() -> void:
+	step = Step.LEVEL2
+	var door := level.royal_door.global_position
+	player.global_position = Vector3(door.x, AkmentarBelow.FLOOR_Y, door.z + 3.0)
+	player.yaw = 0.0  # facing the door
+	_bring_party()
+	var ally: String = Game.flag("ally", "")
+	if ally != "":
+		var who := "whitfield" if ally == "americans" else "adler"
+		_ally_npc = Npc.make(level, who, player.global_position + Vector3(1.6, 0, 0.5), "", Characters.glb(who))
+	_door_spot = Interactable.make(level, door + Vector3(0, -1.0, 1.6), "Open the royal door", "royal_door", 1.6)
+	_door_spot.used.connect(func(_by): _royal_door())
+	hud.show_message("THE ROYAL DOOR", "Where you stood before.")
+	await get_tree().create_timer(2.0).timeout
+	hud.show_message("")
+	if args.has("auto"):
+		_royal_door()
+
+
+## Loaded at the escape's save: in the tomb as it wakes, and the run again.
+func _resume_escape() -> void:
+	level.open_royal_door()
+	level._nav.bake_navigation_mesh(false)
+	var door := level.royal_door.global_position
+	var at := door.lerp(level.guardian_spawn, 0.5)
+	at.y = AkmentarBelow.FLOOR_Y
+	player.global_position = at
+	var d := door - at
+	player.yaw = atan2(-d.x, -d.z)  # facing the way out
+	_bring_party()
+	_awaken()
+
+
+## The companions to the player (a load at a milestone puts them at the act's start).
+func _bring_party() -> void:
+	var i := 0
+	for c in companions.values():
+		if is_instance_valid(c):
+			c.global_position = player.global_position + Vector3(i * 1.2 - 0.6, 0, 1.5)
+			i += 1
+
 
 func _descend() -> void:
 	step = Step.DESCEND
@@ -164,6 +218,8 @@ func _royal_door() -> void:
 	if step != Step.LEVEL2:
 		return
 	step = Step.ROYAL_DOOR
+	Game.place = "act5_royal_door"  # a death from here on comes back to the door
+	Game.save_game()
 	_door_spot.queue_free()
 	if FileAccess.file_exists("res://dialogue/act5_royal_door.json") and not args.has("auto"):
 		var c := Conversation.new()
@@ -228,6 +284,8 @@ func _tomb_studied() -> void:
 
 func _awaken() -> void:
 	step = Step.AWAKENING
+	Game.place = "act5_escape"  # a death in the escape comes back to the waking
+	Game.save_game()
 	Game.set_flag("awakened", true)
 	hud.show_message("", "")
 	hud.toast("The sarcophagus lid grinds. Something breathes.", 3.0)

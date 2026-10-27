@@ -70,12 +70,20 @@ func _ready() -> void:
 	add_child(CountdownBars.new())
 	player.hit_confirmed.connect(hud.on_hit)
 	player.damaged.connect(hud.on_damaged)
-	player.died.connect(func(): hud.show_message("YOU DIED", "Enter to try again"))
+	player.died.connect(func(): hud.show_message("YOU DIED", "Enter  load the last save"))
 	_spawn_party()
 	Game.event.connect(func(name: String): _events.append(name))
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if args.size() > 0 else Input.MOUSE_MODE_CAPTURED
 	# Back from a route's own set piece (the boat, the temple, the chase): the last night and the end.
 	var back: String = Game.flag("act8_back_from", "")
+	# Saves (a death loads the last, SaveRoute): the start, and back from a route's set piece (with
+	# act8_back_from still set, so a load takes the same way on).
+	if back != "":
+		Game.place = "act8_back"
+		Game.save_game()
+	elif not Game.place.begins_with("act8_"):
+		Game.place = "act8_start"
+		Game.save_game()
 	if back != "":
 		Game.flags.erase("act8_back_from")
 		_route_event = back
@@ -262,7 +270,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		else:
 			hud.toast("Act 9 isn't built yet.", 3.0)
 	elif not player.alive and event is InputEventKey and event.pressed and event.keycode in [KEY_ENTER, KEY_KP_ENTER]:
-		get_tree().reload_current_scene()
+		SaveRoute.resume(get_tree())  # the last save: the act's start or a later milestone
 	elif event.is_action_pressed("journal"):
 		JournalScreen.toggle(self, player)
 

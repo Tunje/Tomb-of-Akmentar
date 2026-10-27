@@ -43,6 +43,9 @@ func _ready() -> void:
 		Game.set_flag("act2_start_day", Game.day)
 		Game.apply(plan.get("start", []))
 	_start_day = int(Game.flag("act2_start_day", Game.day))
+	if not Game.place.begins_with("act2_"):
+		Game.place = "act2_start"  # a death loads the last save: this, or a night at the hotel
+		Game.save_game()
 	level = Cairo.new()
 	add_child(level)
 	Ambience.play(self, "cairo")
@@ -59,7 +62,7 @@ func _ready() -> void:
 	add_child(CountdownBars.new())
 	player.hit_confirmed.connect(hud.on_hit)
 	player.damaged.connect(hud.on_damaged)
-	player.died.connect(func(): hud.show_message("YOU DIED", "Enter to try again"))
+	player.died.connect(func(): hud.show_message("YOU DIED", "Enter  load the last save"))
 	for s in str(args.get("shots", "")).split(",", false):
 		_shots.append(float(s))
 	DayLog.begin_day()
@@ -197,6 +200,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			if ResourceLoader.exists(s):
 				get_tree().change_scene_to_file(s)
 				return
+	elif not player.alive and event is InputEventKey and event.pressed and event.keycode in [KEY_ENTER, KEY_KP_ENTER]:
+		SaveRoute.resume(get_tree())  # the last save: the act's start or the last night at the hotel
 	elif event.is_action_pressed("journal"):
 		JournalScreen.toggle(self, player)
 	elif event.is_action_pressed("party_order"):

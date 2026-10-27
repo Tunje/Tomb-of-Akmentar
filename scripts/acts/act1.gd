@@ -47,6 +47,9 @@ func _ready() -> void:
 	if not Game.flag("act1_started", false):
 		Game.set_flag("act1_started")
 		Game.apply(plan.get("start", []))
+	if not Game.place.begins_with("act1_"):
+		Game.place = "act1_start"  # a death loads this (SaveRoute): Act 1 from the docks
+		Game.save_game()
 	level = Cairo.new()
 	add_child(level)
 	Ambience.play(self, "cairo")
@@ -60,7 +63,7 @@ func _ready() -> void:
 	add_child(hud)
 	player.hit_confirmed.connect(hud.on_hit)
 	player.damaged.connect(hud.on_damaged)
-	player.died.connect(func(): hud.show_message("YOU DIED", "Enter to try again"))
+	player.died.connect(func(): hud.show_message("YOU DIED", "Enter  load the last save"))
 	Game.event.connect(_on_event)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if args.size() > 0 else Input.MOUSE_MODE_CAPTURED
 	hud.show_message("CAIRO, 1926", "A suitcase, a revolver and £%d. Freddie owes you, and his office is near the club." % Game.money)
@@ -282,7 +285,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _done and event is InputEventKey and event.pressed and event.keycode in [KEY_ENTER, KEY_KP_ENTER]:
 		get_tree().change_scene_to_file("res://act2.tscn")  # Game carries over: money, flags, debts
 	elif not player.alive and event is InputEventKey and event.pressed and event.keycode in [KEY_ENTER, KEY_KP_ENTER]:
-		get_tree().reload_current_scene()
+		SaveRoute.resume(get_tree())  # the last save: the act's start or a later milestone
 	elif event.is_action_pressed("journal"):
 		JournalScreen.toggle(self, player)
 	elif event.is_action_pressed("ui_cancel"):

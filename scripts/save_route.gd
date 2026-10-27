@@ -6,6 +6,9 @@ extends RefCounted
 ##   SaveRoute.resume(get_tree())
 
 const SCENES := {
+	"act1_start": "res://act1.tscn", "act2_start": "res://act2.tscn", "act5_start": "res://act5.tscn",
+	"act5_royal_door": "res://act5.tscn", "act5_escape": "res://act5.tscn", "act8_start": "res://act8.tscn",
+	"act8_back": "res://act8.tscn",
 	"act1_end": "res://act2.tscn", "act2_hotel_bed": "res://act2.tscn", "act2_end": "res://act3.tscn",
 	"act3_end": "res://act4.tscn", "act4_camp": "res://act4.tscn", "act4_end": "res://act5.tscn",
 	"act5_end": "res://act6.tscn", "act6_keepers": "res://act6.tscn", "act6_end": "res://act7.tscn",
