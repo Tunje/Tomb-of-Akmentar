@@ -19,7 +19,7 @@ const CAMS := {
 	"sites": [Vector3(70, 9.0, 52), Vector3(70, 0, 40)],
 }
 
-var level: AkmentarSurface
+var level: Node3D
 var player: Player
 var companions := {}
 var args := {}
@@ -43,8 +43,11 @@ func _ready() -> void:
 		_shots.append(float(s))
 	for id in CAST:
 		Game.apply([{"recruit": id}])
-	level = AkmentarSurface.new()
+	var what := str(args.get("what", ""))
+	level = DesertRoute.new() if what == "road" else (Cairo.new() if what == "cairo" else AkmentarSurface.new())
 	add_child(level)
+	if level is DesertRoute:
+		level.player_spawn = DesertRoute.road_point(DesertRoute.START_Z - 30.0)
 	player = Player.new()
 	add_child(player)
 	player.global_position = level.player_spawn
@@ -70,7 +73,11 @@ func _ready() -> void:
 		add_child(cam)
 		cam.look_at_from_position(c[0], c[1])
 		cam.make_current()
-	if args.has("perf") or args.has("look"):
+	if str(args.get("what", "")) == "road":
+		await _road()
+	elif str(args.get("what", "")) == "cairo":
+		await _cairo()
+	elif args.has("perf") or args.has("look"):
 		_perf = true
 		if str(args.get("perf", "")) != "off":
 			CampJobs.assign(level, companions, "act4_night" if args.has("night") else "act4_day", args.has("night"), {"sites": _sites})
@@ -85,6 +92,48 @@ func _ready() -> void:
 		_release()
 	print("RESULT camp_jobs_test %s fails=%d" % ["PASS" if _fails == 0 else "FAIL", _fails])
 	get_tree().quit(0 if _fails == 0 else 1)
+
+
+## Act 3's night on the road: a camp made where there's none, everyone placed round it.
+func _road() -> void:
+	var camp := CampJobs.make_camp(level, player.global_position + Vector3(9.0, 0, 0))
+	var h := CampJobs.assign(level, companions, "act3_camp", true, {"anchor": camp})
+	var w := 0.0
+	while h.jobs.is_empty() and w < 12.0:
+		await get_tree().create_timer(0.25).timeout
+		w += 0.25
+	_check(h.jobs.size() == CAST.size() and level.get_node_or_null("RoadCamp") != null, "road: a camp made, %d of %d at their places round it" % [h.jobs.size(), CAST.size()])
+	player.global_position = camp + Vector3(-14, 0.1, 0)
+	var secs := 0.0
+	while secs < 40.0 and _settled(h).size() < h.jobs.size():
+		await get_tree().create_timer(1.0).timeout
+		secs += 1.0
+	_check(_settled(h).size() == h.jobs.size(), "road: all settled in %.0f s" % secs)
+	CampJobs.release(level)
+
+
+## Act 8's prep in Cairo: each at their place in town (the lobby, the outfitters, the hotel door,
+## the caravanserai's animals, the docks).
+func _cairo() -> void:
+	var h := CampJobs.assign(level, companions, "act8_prep")
+	var w := 0.0
+	while h.jobs.is_empty() and w < 12.0:
+		await get_tree().create_timer(0.25).timeout
+		w += 0.25
+	_check(h.jobs.size() == CAST.size(), "cairo: %d of %d given a place in town" % [h.jobs.size(), CAST.size()])
+	player.global_position = Vector3(60, 0.1, 50)
+	var secs := 0.0
+	while secs < 50.0 and _settled(h).size() < h.jobs.size():
+		await get_tree().create_timer(1.0).timeout
+		secs += 1.0
+	var not_yet: Array = h.jobs.keys().filter(func(id: String) -> bool: return not id in _settled(h))
+	for id in not_yet:
+		var j: Dictionary = h.jobs[id]
+		var g := j.g as Gunman
+		print("RESULT info %s in cairo: at %s, spot %s (%.2f m), state %s vel %s" % [id, g.global_position.snapped(Vector3.ONE * 0.1), (j.spot as Vector3).snapped(Vector3.ONE * 0.1),
+			Vector2(g.global_position.x - j.spot.x, g.global_position.z - j.spot.z).length(), g.state, g.velocity.snapped(Vector3.ONE * 0.1)])
+	_check(not_yet.is_empty(), "cairo: all there in %.0f s (not: %s)" % [secs, str(not_yet)])
+	CampJobs.release(level)
 
 
 func _jobs() -> CampJobs:

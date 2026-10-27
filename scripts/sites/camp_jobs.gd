@@ -43,8 +43,8 @@ const CAIRO_PREP := {
 	"catalogue": [Vector3(45.0, 0, 58.9), PI, "pick"],
 	"watch": [Vector3(47.5, 0, 48.2), PI, "watch"],
 	"camels": [Vector3(88.0, 0, 60.2), PI, "camels"],
-	"loads": [Vector3(41.6, 0, 54.0), 0.0, "loads"],
-	"dig": [Vector3(48.4, 0, 54.0), 0.0, "loads"],
+	"loads": [Vector3(41.6, 0, 51.9), PI, "loads"],     # at the outfitters' crates, from the street side
+	"dig": [Vector3(48.4, 0, 51.9), PI, "loads"],
 	"pistol": [Vector3(34.4, 0, 61.0), PI * 0.5, "pistol_stand"],
 	"stars": [Vector3(110.0, 0, 52.0), -PI * 0.5, "watch"],
 	"scout": [Vector3(108.5, 0, 47.0), -PI * 0.5, "watch"],
@@ -87,6 +87,24 @@ static func assign(lvl: Node3D, companions: Dictionary, where: String, at_night 
 	return h
 
 
+## A night camp where a level has none (Act 3's road): a fire (the level's flame, budgeted
+## shadows, a crackle) and two tents off to one side, facing it. Returns the fire's point.
+static func make_camp(lvl: Node3D, at: Vector3) -> Vector3:
+	var root := Node3D.new()
+	root.name = "RoadCamp"
+	lvl.add_child(root)
+	root.global_position = at
+	if lvl.has_method("_flame"):
+		lvl.call("_flame", root, Vector3.UP * 0.45, 2.6, 12.0, true)
+	if lvl.has_method("_prop"):
+		lvl.call("_prop", root, "prop_campfire.glb", at)
+		for k in 2:
+			var a := PI * 0.8 + k * 0.7
+			var t: Vector3 = at + Vector3(cos(a), 0, sin(a)) * 6.0
+			lvl.call("_prop", root, "prop_tent.glb", t, atan2(-(at - t).x, -(at - t).z))
+	return at
+
+
 static func release(lvl: Node3D) -> void:
 	var h := lvl.get_node_or_null("CampJobs") as CampJobs
 	if h:
@@ -115,6 +133,7 @@ func _assign(companions: Dictionary, where: String, at_night: bool, opts: Dictio
 	var ours: Array = sites.keys().filter(func(k: String) -> bool: return str(sites[k].get("team", "")) == "party")
 	var dig_i := 0
 	var fire_i := 0
+	var used := {}     # (Cairo: how many have the job already)
 	var ids: Array = companions.keys()
 	ids.sort()
 	for id: String in ids:
@@ -124,7 +143,8 @@ func _assign(companions: Dictionary, where: String, at_night: bool, opts: Dictio
 		var kind: String = (JOBS.get(id, ["fire", "fire"]) as Array)[1 if night else 0]
 		var job: Dictionary
 		if where == "act8_prep":
-			job = _cairo_job(kind)
+			job = _cairo_job(kind, used.get(kind, 0))
+			used[kind] = int(used.get(kind, 0)) + 1
 		elif kind == "dig" and not night and not ours.is_empty():
 			# With the crews at one of our sites, on its camp side.
 			var s: Vector3 = sites[ours[dig_i % ours.size()]].at
@@ -208,8 +228,13 @@ func _job_at(kind: String, spot: Vector3, look: Vector3, out := false) -> Dictio
 	return {"kind": kind, "clip": str(k.clip), "spot": spot, "yaw": yaw, "gun": bool(k.get("gun", false))}
 
 
-func _cairo_job(kind: String) -> Dictionary:
-	var c: Array = CAIRO_PREP.get(kind, CAIRO_PREP.fire)
+func _cairo_job(kind: String, nth := 0) -> Dictionary:
+	var c: Array = (CAIRO_PREP.get(kind, CAIRO_PREP.fire) as Array).duplicate()
+	if nth > 0:  # a second at the same job stands beside the first
+		c[0] = (c[0] as Vector3) + Basis(Vector3.UP, float(c[1])) * Vector3(1.3 * nth, 0, 0)
+	var w := _walkable(c[0])
+	if w != Vector3.INF:
+		c[0] = w
 	var as_kind: String = c[2]
 	var clip: String = {"read_chair": "sit", "pick": "pick", "watch": "", "camels": "talk", "loads": "kneel",
 		"pistol_stand": "fold", "talk": "talk"}.get(as_kind, "idle")
