@@ -299,6 +299,7 @@ func _open_doors(v: Dictionary) -> void:
 		var panel := at + Vector3.UP * float(d[3]) * 0.5 + n * 0.05
 		for c in deco.get_children():
 			if c is MeshInstance3D and (c as MeshInstance3D).material_override == dark and (c as MeshInstance3D).position.distance_to(panel) < 0.6:
+				deco.remove_child(c)  # out now, not at the frame's end: Cairo merges its decoration in this _ready
 				c.queue_free()
 
 
