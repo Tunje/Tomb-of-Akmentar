@@ -19,9 +19,15 @@ var _prompt: Label
 var _info: Label
 var _toast: Label
 var _toast_t := 0.0
+## O opens the options while the game is paused, or when this is on (main's start screen).
+var allow_options := false
 
 
 func _ready() -> void:
+	(func() -> void: Settings.ensure(get_tree())).call_deferred()  # the options, on this scene
+	var keys := OptionsKey.new()
+	keys.hud = self
+	add_child(keys)
 	_canvas = Control.new()
 	_canvas.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_canvas.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -64,6 +70,8 @@ func _label(font_size: int, align: HorizontalAlignment, box: Vector2) -> Label:
 
 
 func show_message(title: String, sub := "") -> void:
+	if title == "PAUSED" and sub != "":
+		sub += " · O options"
 	_title.text = title
 	_sub.text = sub
 
@@ -146,3 +154,17 @@ func _draw_overlay() -> void:
 func toast(text: String, secs := 2.5) -> void:
 	_toast.text = text
 	_toast_t = secs
+
+
+## Listens for O while everything else is paused (the Hud itself pauses with its act).
+class OptionsKey extends Node:
+	var hud: Hud
+
+	func _ready() -> void:
+		process_mode = Node.PROCESS_MODE_ALWAYS
+
+	func _unhandled_input(event: InputEvent) -> void:
+		var o: bool = event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_O
+		if o and (get_tree().paused or hud.allow_options) and not OptionsScreen.is_open():
+			get_viewport().set_input_as_handled()
+			OptionsScreen.open(get_tree())

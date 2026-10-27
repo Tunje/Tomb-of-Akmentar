@@ -67,6 +67,7 @@ func switch(bed_id: String, fade := 3.0) -> void:
 		var p := AudioStreamPlayer.new()
 		p.stream = stream(layer[0])
 		p.volume_db = -80.0
+		p.bus = "Ambience"  # the options' ambience volume
 		add_child(p)
 		p.play(randf() * 2.0)
 		slot.players.append([p, float(layer[1]), bool(layer[2])])
@@ -110,6 +111,7 @@ func _fires() -> void:
 		var p := AudioStreamPlayer3D.new()
 		p.name = "Crackle"
 		p.stream = stream("fire")
+		p.bus = "Ambience"
 		p.volume_db = FIRE_DB
 		p.unit_size = 2.5
 		p.max_distance = FIRE_RANGE

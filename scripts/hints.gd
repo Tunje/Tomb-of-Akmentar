@@ -20,7 +20,7 @@ const SPACING := 3.5           # seconds between two hints
 
 ## Shows hint `id` if it has never been shown. True if it was shown or queued now.
 static func once(id: String, parent: Node = null) -> bool:
-	if Game.flag("hints_off", false) or Game.flag("hint_" + id, false) or id in _pending:
+	if Game.flag("hints_off", false) or not Settings.value("hints") or Game.flag("hint_" + id, false) or id in _pending:
 		return false
 	if not hints().has(id):
 		push_warning("Hints: no hint '%s'" % id)

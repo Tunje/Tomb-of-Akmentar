@@ -135,7 +135,8 @@ func _ready() -> void:
 	else:
 		player.controls_enabled = false
 		var cont := ("\nC  continue from your last save" if Game.has_save() else "") + "\n1  play Act 1: a bad day in Cairo (in progress)" + "\n2  play Act 2: raising the expedition in Cairo (in progress)" + "\n3  play Act 3: the road to Akmentar (in progress)" + "\n4  play Act 4: the tombs of Akmentar (in progress)" + "\n5  play Act 5: the awakening below Akmentar (in progress)" + "\n6  play Act 6: the race back to Cairo (in progress)" + "\n7  play Act 7: Cairo under the curse (in progress)" + "\n8  play Act 8: the way back to Akmentar (in progress)" + "\n9  play Act 9: the last descent (in progress)"
-		hud.show_message("TOMBS OF AKMENTAR", "Click to begin a new game" + cont + "\n\nWASD move · Shift sprint · C crouch · Space dodge · E use / cover (W+E vault)\nRight mouse aim · Left mouse fire · R reload · 1 2 3 guns · X holster\nSave at campfires and beds · Esc pause")
+		hud.show_message("TOMBS OF AKMENTAR", "Click to begin a new game" + cont + "\n\nWASD move · Shift sprint · C crouch · Space dodge · E use / cover (W+E vault)\nRight mouse aim · Left mouse fire · R reload · 1 2 3 guns · X holster\nSave at campfires and beds · Esc pause · O options")
+		hud.allow_options = true
 
 
 ## Rest at a campfire: save here.
@@ -192,12 +193,15 @@ func _spawn_mummy(priest := false) -> Mummy:
 func _start(capture_mouse := true) -> void:
 	started = true
 	player.controls_enabled = true
+	hud.allow_options = false  # in play: O works from the pause screen
 	hud.show_message("")
 	if capture_mouse:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if OptionsScreen.is_open():
+		return  # its own keys (a number would start an act behind it)
 	if event is InputEventMouseButton and event.pressed:
 		if not started:
 			Game.reset()

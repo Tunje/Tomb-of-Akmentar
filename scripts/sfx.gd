@@ -83,6 +83,7 @@ static func play_at(parent: Node, stream: AudioStream, pos: Vector3, db := 0.0, 
 	var p := AudioStreamPlayer3D.new()
 	p.stream = stream
 	p.volume_db = db
+	p.bus = "SFX"  # the options' effects volume
 	p.pitch_scale = 1.0 + randf_range(-pitch_jitter, pitch_jitter)
 	p.max_distance = 60.0
 	parent.add_child(p)

@@ -30,7 +30,7 @@ static var _rng := RandomNumberGenerator.new()
 
 ## Says a line for `situation` as `who` (or `id`). Returns the text, or "" if nothing was said.
 static func say(who: Node3D, situation: String, id := "") -> String:
-	if who == null or not is_instance_valid(who) or Conversation.current != null:
+	if who == null or not is_instance_valid(who) or Conversation.current != null or not Settings.value("barks"):
 		return ""
 	var speaker := id if id != "" else speaker_of(who)
 	if speaker == "":

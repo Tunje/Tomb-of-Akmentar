@@ -93,6 +93,10 @@ var muzzle: Marker3D
 var _shape: CollisionShape3D
 var _capsule: CapsuleShape3D
 var _audio: AudioStreamPlayer
+## From the options (Settings): field of view, mouse speed and invert Y.
+var _base_fov := BASE_FOV
+var _sens := 1.0
+var _invert_y := false
 
 
 func _ready() -> void:
@@ -103,6 +107,7 @@ func _ready() -> void:
 		ammo.append(w.mag_size)
 	_build_body()
 	_build_camera()
+	apply_settings()  # the options: field of view, mouse
 	_equip(0, true)
 
 
@@ -176,6 +181,7 @@ func _build_body() -> void:
 		melee.install(explorer)
 
 	_audio = AudioStreamPlayer.new()
+	_audio.bus = "SFX"
 	add_child(_audio)
 
 
@@ -195,7 +201,6 @@ func _build_camera() -> void:
 	arm.shape = probe
 	shoulder.add_child(arm)
 	camera = Camera3D.new()
-	camera.fov = BASE_FOV
 	camera.near = 0.05
 	arm.add_child(camera)
 	camera.current = true
@@ -215,8 +220,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not controls_enabled or not alive:
 		return
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		var sens := MOUSE_SENS * camera.fov / BASE_FOV
-		look(-event.relative.x * sens, -event.relative.y * sens)
+		var sens := MOUSE_SENS * _sens * camera.fov / _base_fov
+		look(-event.relative.x * sens, event.relative.y * sens * (1.0 if _invert_y else -1.0))
 	elif event.is_action_pressed("weapon_1"):
 		switch_to(0)
 	elif event.is_action_pressed("weapon_2"):
@@ -395,7 +400,7 @@ func _process(delta: float) -> void:
 	_drive_blend = move_toward(_drive_blend, 1.0 if vehicle and gunner_seat < 0 else 0.0, delta / 0.4)  # a gunner keeps the shoulder camera
 	arm.spring_length = lerpf(ARM_LEN, AIM_ARM_LEN, e) - 0.5 * _cover_blend * (1.0 - e)
 	arm.spring_length += (3.2 if vehicle is Truck or vehicle == null else 1.4) * _drive_blend  # behind the truck / the horse
-	camera.fov = lerpf(BASE_FOV, w.aim_fov, e)
+	camera.fov = lerpf(_base_fov, w.aim_fov, e)
 	camera.h_offset = shake.x * 0.06
 	camera.v_offset = shake.y * 0.06
 	# Pushed in against a wall: hide the body (keep its shadow) so it doesn't fill the screen.
@@ -633,6 +638,15 @@ func _drive_step(delta: float) -> void:
 
 
 ## Explore (false) or combat (true). Drawing plays the weapon-raise; holstering hides the gun.
+## The options that live on the player (Settings.apply calls this; so does _ready).
+func apply_settings() -> void:
+	_base_fov = float(Settings.value("fov"))
+	_sens = float(Settings.value("mouse_sens"))
+	_invert_y = bool(Settings.value("invert_y"))
+	if camera:
+		camera.fov = _base_fov
+
+
 ## Her lantern below ground (Acts 5 and 9): a wide shadowed beam where you look (one shadow map;
 ## the omni it replaces drew six every frame) and a faint shadowless glow round her feet.
 func add_lantern() -> void:

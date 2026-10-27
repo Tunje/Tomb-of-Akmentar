@@ -1,7 +1,7 @@
 class_name RenderBudget
 extends Node
 ## Frame-time savers with no visible loss (the performance pass):
-## - Shadowed lights: a light that wants shadows joins SHADOW_GROUP; only the MAX_SHADOWED nearest
+## - Shadowed lights: a light that wants shadows joins SHADOW_GROUP; only the max_shadowed nearest
 ##   the camera within SHADOW_RANGE actually cast them (re-picked 4 times a second). Act 5's 18
 ##   shadowed braziers each re-rendered the tomb six times (a cube map) every frame.
 ## - quiet(): no shadow casting (and optionally a draw distance) on a prop's meshes: a 24k-tri
@@ -11,8 +11,9 @@ extends Node
 ##   RenderBudget.quiet(prop, 30.0)
 
 const SHADOW_GROUP := "budget_shadow_light"
-const MAX_SHADOWED := 4
 const SHADOW_RANGE := 15.0
+## How many may cast shadows at once (the options' quality: 0 low, 2 medium, 4 high).
+static var max_shadowed := 4
 
 var _t := 0.0
 
@@ -111,4 +112,4 @@ func _process(delta: float) -> void:
 			l.shadow_enabled = false
 	near.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
 	for i in near.size():
-		(near[i][1] as Light3D).shadow_enabled = i < MAX_SHADOWED
+		(near[i][1] as Light3D).shadow_enabled = i < max_shadowed
