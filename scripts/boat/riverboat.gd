@@ -362,6 +362,59 @@ func _rail(at: Vector3, length: float, along_z: bool) -> void:
 
 ## A crate: solid on the boat's body, plus a shape-less StaticBody3D marker in group "cover"
 ## (Cover and Gunman read its transform and meta), riding the boat as a child.
+## Passengers and crew who aren't in the fight (crowd/riverboat.json): the deckhand at the wheel,
+## someone at the rail, a couple on stools aft. They ride the boat; at the first shots the deckhand
+## ducks and the rest go below (BoatFolk). Kites circle overhead, following the boat (AmbientLife).
+## Returns them.
+func add_folk(file := "riverboat") -> Array[BoatFolk]:
+	var out: Array[BoatFolk] = []
+	var d := Crowd.load_data(file)
+	var models: Array = d.get("models", [])
+	if models.is_empty():
+		return out
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(name)
+	var doors: Array[Vector3] = []
+	for v in d.get("doors", []):
+		doors.append(Vector3(float(v[0]), float(v[1]), float(v[2])))
+	var i := 0
+	for f in d.get("folk", []):
+		var model := Characters.DIR + str(models[i % models.size()])
+		if not RiggedBody.assets_present(model):
+			continue
+		var b := BoatFolk.new()
+		b.glb = model
+		b.job = str(f[4])
+		b.spot = Vector3(float(f[0]), float(f[1]), float(f[2]))
+		b.yaw = float(f[3])
+		b.doors = doors
+		b.name = "Folk_%d_%s" % [i, b.job]
+		if models[i % models.size()] in d.get("tint", []):
+			b.look = Crowd.pick_look(d, rng)
+		add_child(b)
+		if not b.look.is_empty():
+			b.dress(b.look)
+		b.start()
+		if b.job == "sit":
+			var stool := MeshInstance3D.new()
+			var cm := CylinderMesh.new()
+			cm.top_radius = 0.2
+			cm.bottom_radius = 0.17
+			cm.height = 0.45
+			stool.mesh = cm
+			stool.material_override = _mat("trim")
+			add_child(stool)
+			stool.position = b.spot + Basis(Vector3.UP, b.yaw) * Vector3(0, 0, 0.12) + Vector3.UP * 0.225
+		out.append(b)
+		i += 1
+	Crowd.ensure_noise_hook(self)
+	if d.has("birds") and get_parent():
+		var birds: Dictionary = (d.birds as Dictionary).duplicate()
+		birds.follow = self
+		AmbientLife.add(get_parent(), {"birds": birds})
+	return out
+
+
 func _crate(base: Vector3, size: Vector3) -> void:
 	var centre := Vector3(base.x, DECK_Y + base.y + size.y * 0.5, base.z)
 	_part(size, centre, "crate")

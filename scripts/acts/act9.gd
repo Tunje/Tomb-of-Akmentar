@@ -79,6 +79,7 @@ func _ready() -> void:
 	player.yaw = 0.0  # north, down the stairs
 	player.set_armed(true)
 	player.add_lantern()
+	TombDust.add(self, player)  # motes in the lantern's beam, grit from the cracks
 	hud = Hud.new()
 	hud.player = player
 	add_child(hud)

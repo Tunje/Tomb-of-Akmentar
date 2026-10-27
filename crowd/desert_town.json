@@ -1,5 +1,5 @@
 {
-	"_help": "Act 3's small town on the desert road (scripts/acts/desert_route.gd's _town: houses either side of the road from z 16 to 44, a well at road_point(40) - 7 m). Villagers walk the road and stand at the well, some sit outside their houses; goats and donkeys wander. They hear the shooting in the wadi far to the south (alarm_radius) and scatter. Coordinates follow road_x(z) = 80 + 9 sin(z/40) + 4 sin(z/17). Played by scripts/crowd.gd.",
+	"_help": "Act 3's small town on the desert road (scripts/acts/desert_route.gd's _town: houses either side of the road from z 16 to 44, a well at road_point(40) - 7 m). Villagers walk the road and stand at the well, some sit outside their houses; goats and donkeys wander. They hear the shooting in the wadi far to the south (alarm_radius) and scatter. Coordinates follow road_x(z) = 80 + 9 sin(z/40) + 4 sin(z/17). Played by scripts/crowd.gd. ambient: AmbientLife (scripts/ambient_life.gd): birds circling high, pigeon flocks on the ground, critters (lizards, scorpions) round the player.",
 	"density": {
 		"low": 6,
 		"medium": 10,
@@ -111,5 +111,14 @@
 			"cloth": [0.1, 0.12, 0.26]
 		}
 	],
-	"skin": [[0.84, 0.64, 0.5], [0.38, 0.25, 0.18]]
+	"skin": [[0.84, 0.64, 0.5], [0.38, 0.25, 0.18]],
+	"ambient": {
+		"birds": {
+			"count": 3,
+			"center": [85, 30],
+			"radius": 30,
+			"height": 45
+		},
+		"critters": 8
+	}
 }

@@ -68,6 +68,46 @@ static func alarm(tree: SceneTree, at: Vector3, radius := -1.0) -> void:
 	for n in tree.get_nodes_in_group("crowd"):
 		var c := n as Crowd
 		c._alarm(at, radius if radius > 0.0 else c.alarm_radius)
+	# Anyone else who minds a racket (the steamer's passengers, pigeons): crowd_alarm(at, radius).
+	for n in tree.get_nodes_in_group("crowd_listener"):
+		if n.has_method("crowd_alarm"):
+			n.call("crowd_alarm", at, radius if radius > 0.0 else ALARM_RADIUS)
+
+
+## One per scene: the player's shots and any fight / attack / battle event raise Crowd.alarm
+## (for listeners with no Crowd of their own, like the steamer's passengers).
+static func ensure_noise_hook(near: Node) -> void:
+	var scene := near.get_tree().current_scene if near.is_inside_tree() else null
+	var host: Node = scene if scene else near
+	if host.has_node("CrowdNoise"):
+		return
+	var h := NoiseHook.new()
+	h.name = "CrowdNoise"
+	host.add_child.call_deferred(h)
+
+
+class NoiseHook extends Node:
+	var _t := 0.0
+	var _player: Node3D
+
+	func _ready() -> void:
+		Game.event.connect(func(e: String) -> void:
+			if e.begins_with("fight") or "attack" in e or "battle" in e:
+				var at := _player.global_position if is_instance_valid(_player) else Vector3.ZERO
+				Crowd.alarm(get_tree(), at, 60.0))
+
+	func _process(delta: float) -> void:
+		_t += delta
+		if _t < 0.5 or is_instance_valid(_player):
+			return
+		_t = 0.0
+		for c in get_parent().get_children():
+			if c is Player:
+				_player = c
+				if not c.has_meta("crowd_hooked"):
+					c.set_meta("crowd_hooked", true)
+					var p := c as Player
+					p.fired.connect(func() -> void: Crowd.alarm(get_tree(), p.global_position))
 
 
 func _ready() -> void:
@@ -161,7 +201,7 @@ func _build(count: int) -> void:
 			p.role = _role_for(g, float(k) / maxf(n, 1))
 			p.name = "Townsfolk_%d_%s" % [i, p.role]
 			if models[i % models.size()] in data.get("tint", []):
-				p.look = _pick_look(rng)
+				p.look = pick_look(data, rng)
 			add_child(p)
 			p.begin(rng)
 			people.append(p)
@@ -171,6 +211,8 @@ func _build(count: int) -> void:
 		_beast(Vector3(float(arr[0][0]), 0, float(arr[0][1])), Vector3(float(arr[1][0]), 0, float(arr[1][1])),
 			float(arr[2]) if arr.size() > 2 else 0.72)
 	active = people.size()
+	if data.has("ambient"):
+		AmbientLife.add(level, data.ambient)
 	var roles := {}
 	for p in people:
 		roles[p.role] = int(roles.get(p.role, 0)) + 1
@@ -188,8 +230,9 @@ func _role_for(g: Dictionary, r: float) -> String:
 	return "walk"
 
 
-func _pick_look(rng: RandomNumberGenerator) -> Dictionary:
-	var looks: Array = data.get("looks", [])
+## An outfit for a stand-in from data `d`'s weighted "looks", with a skin tone from its "skin".
+static func pick_look(d: Dictionary, rng: RandomNumberGenerator) -> Dictionary:
+	var looks: Array = d.get("looks", [])
 	if looks.is_empty():
 		return {}
 	var total := 0.0
@@ -203,7 +246,7 @@ func _pick_look(rng: RandomNumberGenerator) -> Dictionary:
 			pick = l
 			break
 	var look := pick.duplicate()
-	var sk: Array = data.get("skin", [[0.7, 0.5, 0.38], [0.7, 0.5, 0.38]])
+	var sk: Array = d.get("skin", [[0.7, 0.5, 0.38], [0.7, 0.5, 0.38]])
 	look["skin_color"] = Color(sk[0][0], sk[0][1], sk[0][2]).lerp(Color(sk[1][0], sk[1][1], sk[1][2]), rng.randf())
 	return look
 

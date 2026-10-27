@@ -18,9 +18,10 @@ const LOOK_SHADER := "res://crowd/look.gdshader"
 const CLIPS := {"idle": "Idle", "walk": "Walk", "carry": "ual2/Walk_Carry", "run": "Jog_Fwd",
 	"sit": "Sitting_Idle", "sit_talk": "Sitting_Talking", "fold": "ual2/Idle_FoldArms",
 	"pick": "PickUp_Table", "talk": "Idle_Talking", "cower": "Crouch_Idle",
-	"dig": "ual2/Farm_Harvest", "chop": "ual2/TreeChopping", "kneel": "Fixing_Kneeling", "sleep": "ual2/LayToIdle"}
+	"dig": "ual2/Farm_Harvest", "chop": "ual2/TreeChopping", "kneel": "Fixing_Kneeling", "sleep": "ual2/LayToIdle",
+	"rail": "ual2/Idle_Rail"}
 const MORE_LOOPS := ["Idle_Talking", "Sitting_Talking", "PickUp_Table", "ual2/Walk_Carry", "ual2/Idle_FoldArms",
-	"ual2/Farm_Harvest", "ual2/TreeChopping", "Fixing_Kneeling"]
+	"ual2/Farm_Harvest", "ual2/TreeChopping", "Fixing_Kneeling", "ual2/Idle_Rail"]
 const STALL_ANIMS := ["fold", "pick", "talk"]
 const DIG_ANIMS := ["dig", "chop", "kneel"]
 
