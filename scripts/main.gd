@@ -37,6 +37,10 @@ func _ready() -> void:
 			n.process_mode = Node.PROCESS_MODE_PAUSABLE)
 	_setup_input()
 	var args := TestDriver.parse_args()
+	if args.has("chain") and not args.has("act"):  # the whole campaign from a new game (tests/soak_test)
+		Game.reset()
+		get_tree().change_scene_to_file.call_deferred("res://act1.tscn")
+		return
 	if args.get("act", "") in ["1", "2", "3", "4", "5", "6", "7", "8", "9"]:
 		get_tree().change_scene_to_file.call_deferred("res://act%s.tscn" % args.act)
 		return

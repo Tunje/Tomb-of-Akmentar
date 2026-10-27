@@ -210,8 +210,7 @@ func _finish() -> void:
 		("Out through the priests' door, into the dunes." if result.get("escaped", false) else "The court is yours. Nothing else moves."))
 		+ "\n\nEnter  go on")
 	if args.has("auto"):
-		await get_tree().create_timer(1.0).timeout
-		get_tree().quit(0)
+		TestDriver.auto_end(self, next_scene)  # --chain: on, as Enter would
 
 
 func _talk(id: String) -> void:

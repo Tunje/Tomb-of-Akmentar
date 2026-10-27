@@ -242,8 +242,7 @@ func _final() -> void:
 		hud.show_message("THE LAST DOOR", "The guardian waits below. Two of its keepers still live.\n\nEnter  go down into Akmentar (Act 9)")
 		Objective.set_goal("Go down into Akmentar")
 	if args.has("auto"):
-		await get_tree().create_timer(1.0).timeout
-		get_tree().quit(0)
+		TestDriver.auto_end(self, "" if Game.flag("player_sacrificed", false) else "res://act9.tscn")  # --chain: on, as Enter would
 
 
 ## A talk with the first companion standing (or the road); its end id. Bots play it (BotTalk).

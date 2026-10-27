@@ -176,8 +176,7 @@ func _end() -> void:
 	print("RESULT act3 end route=%s branch=%s race_step=%s party=%s day=%d" % [Game.flag("route_act3_route", ""),
 		Game.flag("route_act3_desert_branch", Game.flag("route_act3_coast_branch", "")), Game.flag("race_step", 3), Game.party(), Game.day])
 	if args.has("auto"):
-		await get_tree().create_timer(1.0).timeout
-		get_tree().quit(0)
+		TestDriver.auto_end(self, "res://act4.tscn")  # --chain: on, as Enter would
 
 
 ## A talk with the first companion standing (or the road); bots play it through (BotTalk).

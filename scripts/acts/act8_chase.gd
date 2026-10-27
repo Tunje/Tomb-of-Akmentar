@@ -365,8 +365,7 @@ func _finish() -> void:
 		"Everyone made it." if (result.dead as Array).is_empty() else "Lost: %s." % ", ".join((result.dead as Array).map(func(i): return str(i).capitalize()))])
 	Objective.set_goal("")
 	if args.has("auto"):
-		await get_tree().create_timer(1.0).timeout
-		get_tree().quit(0)
+		TestDriver.auto_end(self, next_scene)  # --chain: on, as Enter would
 
 
 func _unhandled_input(event: InputEvent) -> void:

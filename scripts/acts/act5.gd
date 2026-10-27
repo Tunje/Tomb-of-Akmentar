@@ -578,8 +578,7 @@ func _end() -> void:
 		Game.flag("escaped", false), Game.flag("escape_exit", ""), Game.flag("act5_casualties", []), Game.flag("thieves_fled", false),
 		Game.flag("thieves", ""), _t])
 	if args.has("auto"):
-		await get_tree().create_timer(1.5).timeout
-		get_tree().quit(0)
+		TestDriver.auto_end(self, "res://act6.tscn", 1.5)  # --chain: on, as Enter would
 
 
 func _spawn_party() -> void:

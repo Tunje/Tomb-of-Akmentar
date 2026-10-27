@@ -341,8 +341,7 @@ func _held() -> void:
 		_carrier_id, player.health, _t])
 	finished.emit(result)
 	if args.has("auto"):
-		await get_tree().create_timer(1.0).timeout
-		get_tree().quit(0)
+		TestDriver.auto_end(self, next_scene)  # --chain: on, as Enter would
 
 
 func _on_died() -> void:

@@ -426,8 +426,7 @@ func _finish() -> void:
 	hud.show_message("AKMENTAR", "The plane is finished; the ruins are a short walk away.\n\nEnter  go on")
 	Objective.set_goal("")
 	if args.has("auto"):
-		await get_tree().create_timer(1.0).timeout
-		get_tree().quit(0)
+		TestDriver.auto_end(self, next_scene)  # --chain: on, as Enter would
 
 
 func _unhandled_input(event: InputEvent) -> void:

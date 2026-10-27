@@ -31,6 +31,18 @@ const TOUR := [
 ]
 
 
+## The end of an act's (or set piece's) --auto run: quit, or with --chain go on to `next` as the
+## player's Enter would (the whole campaign in one run: tests/soak_test). "" = the end of the line.
+static func auto_end(node: Node, next: String, wait := 1.0) -> void:
+	var tree := node.get_tree()
+	await tree.create_timer(wait).timeout
+	if parse_args().has("chain") and next != "" and ResourceLoader.exists(next):
+		print("RESULT chain -> %s" % next)
+		tree.change_scene_to_file(next)
+	else:
+		tree.quit(0)
+
+
 static func parse_args() -> Dictionary:
 	var out := {}
 	for a in OS.get_cmdline_user_args():

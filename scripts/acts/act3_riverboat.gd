@@ -404,8 +404,7 @@ func _end() -> void:
 		result.get("americans_standing", 0), player.health, _t])
 	finished.emit(result)
 	if args.has("auto"):
-		await get_tree().create_timer(1.5).timeout
-		get_tree().quit(0)
+		TestDriver.auto_end(self, next_scene, 1.5)  # --chain: on, as Enter would
 
 
 func _on_died() -> void:

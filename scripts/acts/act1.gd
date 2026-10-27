@@ -167,8 +167,7 @@ func _end() -> void:
 	print("RESULT act1 end money=%d gunfight=%s brawl_lost=%s musa=%s" % [Game.money, Game.flag("act1_gunfight_won", false),
 		Game.flag("brawl_lost", false), "respect" if Game.flag("musa_respect", false) else ("enemy" if Game.flag("musa_enemy", false) else "-")])
 	if args.has("auto"):
-		await get_tree().create_timer(1.0).timeout
-		get_tree().quit(0)
+		TestDriver.auto_end(self, "res://act2.tscn")  # --chain: on, as Enter would
 
 
 # ---------------------------------------------------------------- the fights

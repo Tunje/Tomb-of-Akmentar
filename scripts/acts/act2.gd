@@ -192,8 +192,7 @@ func _leave() -> void:
 	Objective.set_goal("")
 	print("RESULT act2 end day=%d party=%s money=%d" % [Game.day, Game.party(), Game.money])
 	if args.has("auto"):
-		await get_tree().create_timer(1.0).timeout
-		get_tree().quit(0)
+		TestDriver.auto_end(self, NEXT_ACT[0])  # --chain: on, as Enter would
 
 
 func _unhandled_input(event: InputEvent) -> void:
