@@ -71,6 +71,7 @@ func _physics_process(delta: float) -> void:
 			var on_hit: Callable = b.on_hit
 			if on_hit.is_valid():  # its shooter may be gone (withdrawn, freed) with the round in flight
 				on_hit.call(hit, vel.normalized(), travelled)
+			CombatSound.bullet_hit(hit, vel)  # chips, ricochets, thuds (-f9)
 			streak.queue_free()
 			_live.remove_at(i)
 			continue

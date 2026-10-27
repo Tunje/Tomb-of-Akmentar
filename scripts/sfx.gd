@@ -80,6 +80,8 @@ static func _wav(data: PackedByteArray) -> AudioStreamWAV:
 
 ## Fire-and-forget 3D sound.
 static func play_at(parent: Node, stream: AudioStream, pos: Vector3, db := 0.0, pitch_jitter := 0.06) -> void:
+	if CombatSound.take(parent, stream, pos, db):  # gunshots become the place's report (-f9)
+		return
 	var p := AudioStreamPlayer3D.new()
 	p.stream = stream
 	p.volume_db = db
