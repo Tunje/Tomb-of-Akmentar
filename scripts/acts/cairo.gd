@@ -190,6 +190,9 @@ func _ready() -> void:
 	crowd = Crowd.populate(self, "cairo")
 	_townsfolk()
 	RenderBudget.quiet_minor(_deco)  # small and wall-flat decoration casts no sun shadow (draw calls)
+	if not "--no-merge" in OS.get_cmdline_user_args():  # (tests: the before, to compare)
+		var saved := RenderBudget.merge_static(_deco)  # still decoration: a few meshes per 24 m of street
+		print("CAIRO deco merged: %d draw calls fewer" % saved)
 
 
 ## The recruits and hosts at their places. `conversations`: Characters id -> dialogue id (none =

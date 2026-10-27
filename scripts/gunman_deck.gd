@@ -32,8 +32,8 @@ static func attach(boat: Node3D) -> NavigationRegion3D:
 	region.name = "DeckNav"
 	region.navigation_mesh = nm
 	boat.add_child(region)
-	region.bake_navigation_mesh(false)  # small: a frame's work, and needed now
+	# On a thread: at 0.1 m cells it was a 175 ms stall mid-fight (tests/perf_test, the Act 8 boat).
+	# Until it's done there's no deck path, and gunmen steer straight as they did without one.
+	region.bake_navigation_mesh(true)
 	boat.set_meta("deck_nav", region)
-	print("DECKNAV %s: %d polygons, cell %.2f (map regions %d)" % [boat.name, nm.get_polygon_count(), nm.cell_size,
-		NavigationServer3D.map_get_regions(map).size()])
 	return region
