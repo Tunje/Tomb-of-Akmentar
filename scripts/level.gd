@@ -482,8 +482,9 @@ func _flame(parent: Node3D, pos: Vector3, energy: float, light_range: float, sha
 	l.set_meta("base", energy)
 	l.omni_range = light_range
 	l.omni_attenuation = 1.3
-	l.shadow_enabled = shadows
 	parent.add_child(l)
+	if shadows:
+		RenderBudget.want_shadows(l)  # only the few nearest the camera cast them
 	l.position = pos
 	torches.append(l)
 	# Scarabs keep out of firelight (scarabs.gd reads group "fire"): a wall torch guards a little,
@@ -522,6 +523,7 @@ func _flame(parent: Node3D, pos: Vector3, energy: float, light_range: float, sha
 	fm.vertex_color_use_as_albedo = true
 	qm.material = fm
 	fire.mesh = qm
+	RenderBudget.quiet(fire, 35.0)  # its glow sprites cast no shadows, and stop past 35 m
 	parent.add_child(fire)
 	fire.position = pos - Vector3.UP * 0.25
 
@@ -560,6 +562,7 @@ func _wall_torch(r: int, c: int) -> void:
 		var sconce := _prop(holder, "dungeon/wall_sconce.glb", holder.global_position, atan2(float(d.x), float(d.y)))
 		if sconce:
 			sconce.position = Vector3(d.x, 0, d.y) * -0.12 + Vector3.UP * -0.15
+			RenderBudget.quiet(sconce, 30.0)  # 24k tris beside its own flame: no shadow, not drawn far off
 			stick.visible = false
 		_flame(holder, Vector3.UP * 0.4, 2.2, 8.0, false)
 		return
