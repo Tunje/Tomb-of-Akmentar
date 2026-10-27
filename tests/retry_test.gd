@@ -23,8 +23,10 @@ const KEYS := ["money", "flags", "companions", "countdowns", "inventory", "trans
 const KEEPERS := ["Subtitles", "HintsPump"]
 
 ## Every set piece with a death in it. scene, its args, how to tell the fight's on (as in
-## tests/difficulty_test; prop:<name> = the act's var is set), setup: positioning for fights the act's own test flow doesn't reach,
+## tests/difficulty_test; prop:<name> = the act's var is set;
+## step:<NAME> = the act's step), setup: positioning for fights the act's own test flow doesn't reach,
 ## retry: "checkpoint" (Checkpoint.take on entry) or "save" (SaveRoute.resume: the last save);
+## mid: the checkpoint is taken mid-scene (retries are compared with each other, not the first entry);
 ## saved: the save the game would have made before the scene (Act 7's fight comes before its first).
 const PIECES := {
 	"act1_brawl": {"scene": "res://act1.tscn", "args": ["--auto"], "start": "brawlers", "retry": "save"},
@@ -47,7 +49,8 @@ const PIECES := {
 	"act8_chase": {"scene": "res://act8_chase.tscn", "args": ["--auto", "--gunner"], "start": "chariots", "retry": "checkpoint"},
 	"act8_flight": {"scene": "res://act8_flight.tscn", "args": ["--auto"], "start": "prop:_storm", "retry": "checkpoint"},
 	"act9_surface": {"scene": "res://act9.tscn", "args": ["--auto"], "start": "event:act9_surface_fight", "retry": "checkpoint"},
-	"act9_ritual": {"scene": "res://act9.tscn", "args": ["--auto"], "start": "event:ritual_defence", "retry": "checkpoint"},
+	"act9_ritual": {"scene": "res://act9.tscn", "args": ["--auto"], "start": "step:RITUAL", "retry": "checkpoint",
+		"mid": true},
 }
 
 
@@ -106,6 +109,7 @@ class Checker extends Node:
 	var _first := {}       # the first try: state on entry, ammo, root nodes
 	var _first_fight := {}  # the first try: enemies and party when the fight began
 	var _expect := {}      # Game as the retry should put it back
+	var _last := {}        # the try before's start (a mid-scene checkpoint's retries compare with it)
 	var _pre := {}         # Game as the new scene came in (before its _ready: the act's own entry
 	                       # may set things again, as on the first try)
 	var _scene_id := 0
@@ -151,12 +155,11 @@ class Checker extends Node:
 		var start := {"game": _norm(_game()), "ammo": p.ammo.duplicate(), "root": _root_nodes(cs), "allies": _alliances()}
 		if _try == 0:
 			_first = start
-			if spec.retry == "checkpoint":
-				_expect = _norm(_pick(Checkpoint._snap))
 		else:
 			var why := _check_start(cs, p, start)
 			if why != "":
 				return why
+		_last = start
 		var from := _t
 		if spec.has("setup"):
 			await call(spec.setup, cs, p)
@@ -188,6 +191,8 @@ class Checker extends Node:
 			return ""
 		if not is_instance_valid(cs) or get_tree().current_scene != cs:
 			return "the scene changed during the fight (%s)" % _scene_path()
+		if spec.retry == "checkpoint":
+			_expect = _norm(_pick(Checkpoint._snap))  # as taken: on entry, or later (Act 9's ritual)
 		if spec.retry == "save":
 			_expect = _saved()
 			if _expect.is_empty():
@@ -199,8 +204,9 @@ class Checker extends Node:
 			return "the player is dead on the retry"
 		if p.health < p.max_health - 0.01:
 			return "health %.0f of %.0f on the retry" % [p.health, p.max_health]
-		if start.ammo != _first.ammo:
-			return "ammo %s on the retry, %s on the first try" % [start.ammo, _first.ammo]
+		var mid: bool = spec.get("mid", false)  # the checkpoint is mid-scene: the first try's entry isn't it
+		if (not mid or _try > 1) and start.ammo != (_last.ammo if mid else _first.ammo):
+			return "ammo %s on the retry, %s the try before" % [start.ammo, (_last.ammo if mid else _first.ammo)]
 		var g: Dictionary = _pre
 		if Game.flag("retry_test_mutation", false):
 			return "the failed try's flag is still set"
@@ -281,6 +287,9 @@ class Checker extends Node:
 			return float(_events.get(what.substr(6), -1.0)) >= from
 		if what.begins_with("prop:"):  # the act's own state (the flight's storm wall)
 			return cs.get(what.substr(5)) != null
+		if what.begins_with("step:"):  # the act's Step (a resume at Act 9's altar skips the talk's event)
+			var steps: Variant = cs.get_script().get_script_constant_map().get("Step")
+			return steps is Dictionary and cs.get("step") == (steps as Dictionary).get(what.substr(5))
 		match what:
 			"brawlers":
 				return not get_tree().get_nodes_in_group("brawlers").is_empty()

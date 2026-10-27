@@ -20,7 +20,11 @@ godot --headless --path . --import
 ```
 
 To check that every save resumes (Continue's path), run `tests/resume_test.tscn` once per place.
-The loop is in that file's header.
+To check that every set piece can be lost and retried (death, Enter, the same start twice), run
+`tests/retry_test.tscn` once per piece (`-- --list` prints each piece's args). Both loops are in
+those files' headers. Give each run its own `--save-slot=<name>` so another session's test can't
+load or overwrite its save, and delete only your own `<name>.json`, never the shared `test.json`.
+If you add a set piece with a death, add it to retry_test's PIECES.
 
 A few habits that keep it green:
 
