@@ -19,7 +19,7 @@ const PLACE_NAMES := {
 	"act6_keepers": "Akmentar, with the Keepers", "act6_end": "Back in Cairo",
 	"act7_hotel_bed": "Cairo, the hotel", "act7_recovered": "Cairo, the artifacts recovered", "act7_end": "Leaving Cairo again",
 	"act8_start": "Cairo, the way back", "act8_back": "The last night on the road", "act8_end": "Akmentar again",
-	"act9_start": "Akmentar, the last descent", "act9_end": "The end",
+	"act9_start": "Akmentar, the last descent", "act9_ritual": "Akmentar, the altar", "act9_end": "The end",
 	"camp_fire": "The proving ground, the camp fire", "camp_bed": "The proving ground, the camp",
 }
 const BACKUP := "main.before-slots.json"   # the one-time copy of Simon's save (migrate)

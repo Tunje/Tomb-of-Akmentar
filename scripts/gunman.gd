@@ -91,6 +91,7 @@ const SURRENDER_CHECK := 2.0
 static var _claims := {}
 ## Allied team pairs ("a|b", sorted): they don't shoot each other. Teams are otherwise hostile.
 static var _allies := {}
+static var _allies_scene := 0  # instance id of the scene that set them (_scene_check)
 static var _last_flank := -100.0
 
 ## Who they're shooting at (Player, Gunman or Mummy). Enemies wait until it's first set.
@@ -238,6 +239,9 @@ static func toggle_party_order(tree: SceneTree) -> String:
 
 ## Make two teams allies (they hold fire on each other) or enemies again.
 static func set_allies(a: String, b: String, on := true) -> void:
+	_scene_check()
+	var s := (Engine.get_main_loop() as SceneTree).current_scene
+	_allies_scene = s.get_instance_id() if s else 0
 	var k := _ally_key(a, b)
 	if on:
 		_allies[k] = true
@@ -246,7 +250,16 @@ static func set_allies(a: String, b: String, on := true) -> void:
 
 
 static func allied(a: String, b: String) -> bool:
+	_scene_check()
 	return a == b or _allies.has(_ally_key(a, b))
+
+
+## The alliances belong to the scene that set them: once it's gone (the next act, a retry's
+## reload), they go too, so the riverboat's PARTY|americans doesn't follow you into Act 4.
+static func _scene_check() -> void:
+	if _allies_scene != 0 and not is_instance_id_valid(_allies_scene):
+		_allies.clear()
+		_allies_scene = 0
 
 
 static func _ally_key(a: String, b: String) -> String:

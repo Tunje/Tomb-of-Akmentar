@@ -13,7 +13,8 @@ const SCENES := {
 	"act3_end": "res://act4.tscn", "act4_camp": "res://act4.tscn", "act4_end": "res://act5.tscn",
 	"act5_end": "res://act6.tscn", "act6_keepers": "res://act6.tscn", "act6_end": "res://act7.tscn",
 	"act7_hotel_bed": "res://act7.tscn", "act7_recovered": "res://act7.tscn", "act7_end": "res://act8.tscn",
-	"act8_end": "res://act9.tscn", "act9_start": "res://act9.tscn", "act9_end": "res://act9.tscn",
+	"act8_end": "res://act9.tscn", "act9_start": "res://act9.tscn", "act9_ritual": "res://act9.tscn",
+	"act9_end": "res://act9.tscn",
 }
 
 

@@ -92,10 +92,14 @@ func _ready() -> void:
 		print("RESULT act9 continued at act9_end: the album")
 		_show_album()
 		return
+	var at_altar := str(Game.place) == "act9_ritual"  # a retry (or a Continue) of the rite itself
 	_spawn_party()
-	_spawn_singers()
+	_spawn_singers(at_altar)
 	Game.event.connect(_on_event)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if args.size() > 0 else Input.MOUSE_MODE_CAPTURED
+	if at_altar:
+		_resume_ritual()
+		return
 	Game.place = "act9_start"
 	Game.save_game(_slot())
 	_arrival()
@@ -129,7 +133,44 @@ func _points() -> void:
 
 func _on_event(name: String) -> void:
 	if name == "ritual_defence":
+		_ritual_checkpoint()
 		_ritual()
+
+
+## The rite's own checkpoint and save: a death in it comes back to the altar, not the surface,
+## with the party, health and ammo as they were when it began.
+func _ritual_checkpoint() -> void:
+	Game.set_flag("act9_ritual_hp", clampf(player.health, 1.0, 100.0))  # (an --auto bot's god mode reads 1e9)
+	Game.set_flag("act9_ritual_ammo", player.ammo.duplicate())
+	Game.place = "act9_ritual"
+	Game.save_game(_slot())
+	Checkpoint.take(self)
+
+
+## Back at the altar (a retry, or a Continue from the rite's save): the royal door already open,
+## everyone in place, straight into the chant.
+func _resume_ritual() -> void:
+	level.open_royal_door(0.05)
+	await get_tree().create_timer(0.2).timeout
+	level._nav.bake_navigation_mesh(false)
+	player.health = float(Game.flag("act9_ritual_hp", player.health))
+	var ammo: Variant = Game.flag("act9_ritual_ammo", null)
+	if ammo is Array:
+		for k in mini((ammo as Array).size(), player.ammo.size()):
+			player.ammo[k] = int(ammo[k])
+	player.global_position = points.altar + Vector3(0, 0.2, 3.0)
+	player.yaw = 0.0
+	var i := 0
+	for g in companions.values():
+		if is_instance_valid(g) and g.alive:
+			g.global_position = points.altar + Vector3(i * 1.2 - 1.2, 0.2, 4.2)
+			i += 1
+	_to_altar()
+	print("RESULT act9 resumed at the altar hp=%d" % int(player.health))
+	hud.show_message("THE ALTAR", "Again. Keep them alive through the chant.")
+	await get_tree().create_timer(2.0).timeout
+	hud.show_message("")
+	_ritual()
 
 
 # ---------------------------------------------------------------- the act
@@ -350,9 +391,13 @@ func _light_the_surface() -> void:
 
 
 ## The last two guardians: party fighters who follow you down, and whose lives are the rite's.
-func _spawn_singers() -> void:
+## `only_alive`: a resume at the altar brings back only the singers alive at its checkpoint.
+func _spawn_singers(only_alive := false) -> void:
 	var i := 0
 	for id in ["noura", "omar"]:
+		if only_alive and not Game.flag(id + "_alive", false):
+			i += 1
+			continue
 		var g := Gunman.new()
 		g.name = id.capitalize()
 		g.team = Gunman.PARTY
