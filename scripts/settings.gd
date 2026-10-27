@@ -12,6 +12,7 @@ const DEFAULTS := {
 	"mouse_sens": 1.0, "invert_y": false, "fov": 72.0,
 	"quality": "high",                                  # low / medium / high
 	"fullscreen": false, "barks": true, "hints": true,
+	"keys": {},                                         # rebound keys (Controls.bindings); {} = defaults
 }
 ## Quality presets: shadowed lights near you (RenderBudget), the sun's shadows, 3D render scale,
 ## anti-aliasing.
@@ -73,6 +74,9 @@ static func save() -> void:
 
 
 static func apply(tree: SceneTree) -> void:
+	var keys: Variant = value("keys")
+	if keys is Dictionary and not (keys as Dictionary).is_empty():
+		Controls.apply(keys)
 	_buses()
 	_volume("Master", float(value("master")))
 	_volume("SFX", float(value("effects")))

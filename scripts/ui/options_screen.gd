@@ -41,10 +41,19 @@ func _ready() -> void:
 	var centre := CenterContainer.new()
 	centre.set_anchors_preset(Control.PRESET_FULL_RECT)
 	shade.add_child(centre)
+	# An opaque panel: the pause card behind (PAUSED, its keys) showed through the shade.
+	var panel := PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.09, 0.075, 0.06)
+	style.border_color = Color(0.45, 0.36, 0.22)
+	style.set_border_width_all(2)
+	style.set_content_margin_all(28)
+	panel.add_theme_stylebox_override("panel", style)
+	centre.add_child(panel)
 	var box := VBoxContainer.new()
 	box.custom_minimum_size = Vector2(620, 0)
 	box.add_theme_constant_override("separation", 14)
-	centre.add_child(box)
+	panel.add_child(box)
 	box.add_child(_label("OPTIONS", 40, INK, HORIZONTAL_ALIGNMENT_CENTER))
 	var grid := GridContainer.new()
 	grid.columns = 2
@@ -61,17 +70,27 @@ func _ready() -> void:
 	_check(grid, "Fullscreen", "fullscreen")
 	_check(grid, "Companions' remarks", "barks")
 	_check(grid, "First-time hints", "hints")
+	var buttons := HBoxContainer.new()
+	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
+	buttons.add_theme_constant_override("separation", 20)
+	var keys := Button.new()
+	keys.text = "Controls…"
+	keys.custom_minimum_size = Vector2(160, 40)
+	keys.pressed.connect(func() -> void: ControlsScreen.open(get_tree()))
 	var back := Button.new()
 	back.text = "Back"
 	back.custom_minimum_size = Vector2(160, 40)
-	back.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	back.pressed.connect(close)
-	box.add_child(back)
+	buttons.add_child(keys)
+	buttons.add_child(back)
+	box.add_child(buttons)
 	box.add_child(_label("Esc  back · arrows and Enter, or the mouse · changes are kept", 16, DIM, HORIZONTAL_ALIGNMENT_CENTER))
 	_first.grab_focus.call_deferred()
 
 
 func close() -> void:
+	if ControlsScreen.is_open():
+		ControlsScreen.current.close()
 	Settings.save()
 	Input.mouse_mode = _mouse_was
 	current = null

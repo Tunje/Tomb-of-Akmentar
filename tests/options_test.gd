@@ -59,12 +59,59 @@ func _ready() -> void:
 	Settings.set_value("hints", false, get_tree())
 	Game.flags.erase("hint_dodge")
 	_check(not Hints.once("dodge", self), "hints off: no first-time hint")
+	await _controls()
 	_key(KEY_ESCAPE)
 	await get_tree().process_frame
 	_check(not OptionsScreen.is_open() and get_tree().paused, "Esc closes the options and the game stays paused")
 	_check(not FileAccess.file_exists(Settings.FILE) or not OS.get_cmdline_user_args().is_empty(), "a test run never writes the settings file")
 	print("RESULT %s (%d failed)" % ["PASS" if _fails == 0 else "FAIL", _fails])
 	get_tree().quit(0 if _fails == 0 else 1)
+
+
+## The controls page: opened from the options' button; a rebind (click, then a key); a key
+## another action had swaps; Esc cancels a listen; the start screen's help follows; reset.
+func _controls() -> void:
+	var opts := OptionsScreen.current
+	var open_btn: Button = null
+	for b in opts.find_children("*", "Button", true, false):
+		if (b as Button).text == "Controls…":
+			open_btn = b
+	_check(open_btn != null, "the options have a Controls… button")
+	open_btn.pressed.emit()
+	await get_tree().process_frame
+	_check(ControlsScreen.is_open(), "it opens the controls page")
+	var page := ControlsScreen.current
+	var rows: int = Controls.LIST.size()
+	_check(rows >= 23 and page._buttons.size() >= 17, "%d rows, %d rebindable" % [rows, page._buttons.size()])
+	await get_tree().create_timer(0.3, true).timeout
+	if DisplayServer.get_name() != "headless":
+		await RenderingServer.frame_post_draw
+		get_viewport().get_texture().get_image().save_png(_dir.path_join("controls.png"))
+		print("RESULT shot %s" % _dir.path_join("controls.png"))
+	var fwd: int = Controls.LIST.map(func(r): return r[1]).find("move_forward")
+	var back_i: int = Controls.LIST.map(func(r): return r[1]).find("move_back")
+	(page._buttons[fwd] as Button).pressed.emit()
+	_key(KEY_K)
+	await get_tree().process_frame
+	_check(Controls.key_name("move_forward") == "K", "move forward rebound to K (%s)" % Controls.key_name("move_forward"))
+	_check((Settings.value("keys") as Dictionary).get("move_forward", []) == [KEY_K], "the new key is in the settings")
+	(page._buttons[back_i] as Button).pressed.emit()
+	_key(KEY_K)
+	await get_tree().process_frame
+	_check(Controls.key_name("move_back") == "K" and Controls.key_name("move_forward") == "S",
+		"K for move back swaps: forward now S (%s / %s)" % [Controls.key_name("move_back"), Controls.key_name("move_forward")])
+	(page._buttons[fwd] as Button).pressed.emit()
+	_key(KEY_ESCAPE)
+	await get_tree().process_frame
+	_check(Controls.key_name("move_forward") == "S" and ControlsScreen.is_open(), "Esc while listening cancels and stays on the page")
+	_check(Controls.help_text().begins_with("SAKD move") or Controls.help_text().begins_with("SAK"), "the start screen's help reads the keys (%s)" % Controls.help_text().get_slice("\n", 0))
+	for b in page.find_children("*", "Button", true, false):
+		if (b as Button).text == "Reset to defaults":
+			(b as Button).pressed.emit()
+	_check(Controls.key_name("move_forward") == "W" and Controls.key_name("move_back") == "S" and (Settings.value("keys") as Dictionary).is_empty(), "reset to defaults")
+	_key(KEY_ESCAPE)
+	await get_tree().process_frame
+	_check(not ControlsScreen.is_open() and OptionsScreen.is_open(), "Esc on the page goes back to the options")
 
 
 func _key(code: Key) -> void:

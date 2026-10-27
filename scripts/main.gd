@@ -27,6 +27,7 @@ var wave_done := false
 var elapsed := 0.0
 var _entered_burial := false
 var _sight_t := 0.0
+var _menu_keys := ""  # the key help the start screen shows
 
 
 func _ready() -> void:
@@ -134,9 +135,15 @@ func _ready() -> void:
 		_start(false)
 	else:
 		player.controls_enabled = false
-		var cont := ("\nC  continue from your last save" if Game.has_save() else "") + "\n1  play Act 1: a bad day in Cairo (in progress)" + "\n2  play Act 2: raising the expedition in Cairo (in progress)" + "\n3  play Act 3: the road to Akmentar (in progress)" + "\n4  play Act 4: the tombs of Akmentar (in progress)" + "\n5  play Act 5: the awakening below Akmentar (in progress)" + "\n6  play Act 6: the race back to Cairo (in progress)" + "\n7  play Act 7: Cairo under the curse (in progress)" + "\n8  play Act 8: the way back to Akmentar (in progress)" + "\n9  play Act 9: the last descent (in progress)"
-		hud.show_message("TOMBS OF AKMENTAR", "Click to begin a new game" + cont + "\n\nWASD move · Shift sprint · C crouch · Space dodge · E use / cover (W+E vault)\nRight mouse aim · Left mouse fire · R reload · 1 2 3 guns · X holster\nSave at campfires and beds · Esc pause · O options")
+		_show_menu()
 		hud.allow_options = true
+
+
+## The start screen; its key help reads the bindings (shown again when the controls change).
+func _show_menu() -> void:
+	_menu_keys = Controls.help_text()
+	var cont := ("\nC  continue from your last save" if Game.has_save() else "") + "\n1  play Act 1: a bad day in Cairo (in progress)" + "\n2  play Act 2: raising the expedition in Cairo (in progress)" + "\n3  play Act 3: the road to Akmentar (in progress)" + "\n4  play Act 4: the tombs of Akmentar (in progress)" + "\n5  play Act 5: the awakening below Akmentar (in progress)" + "\n6  play Act 6: the race back to Cairo (in progress)" + "\n7  play Act 7: Cairo under the curse (in progress)" + "\n8  play Act 8: the way back to Akmentar (in progress)" + "\n9  play Act 9: the last descent (in progress)"
+	hud.show_message("TOMBS OF AKMENTAR", "Click to begin a new game" + cont + "\n\n" + _menu_keys + "\nSave at campfires and beds · Esc pause · O options")
 
 
 ## Rest at a campfire: save here.
@@ -243,6 +250,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
+	if not started and hud.allow_options and not OptionsScreen.is_open() and Controls.help_text() != _menu_keys:
+		_show_menu()  # keys rebound in the options
 	if boat and player.global_position.z > river_bank_z and player.global_position.y < RiverBoat.FALL_Y and player.vehicle == null:
 		player.global_position = boat.to_global(boat.deck_spawn)  # fell in the river: back aboard
 		player.velocity = Vector3.ZERO
