@@ -92,6 +92,7 @@ class Meter extends Node:
 	var _compiles := {}
 	var _nodes := 0
 	var _objects := 0
+	var _res := 0
 	var _hitches: Array[String] = []
 	var _nav_recent := 0.0     # how often the map changes (a moving deck's region: every frame)
 	var _last_hitch := -1      # its index in _hitches, for 2 frames: a bake's map change comes after
@@ -146,6 +147,10 @@ class Meter extends Node:
 			var objects := int(Performance.get_monitor(Performance.OBJECT_COUNT))
 			if objects - _objects > 200:
 				why.append("+%d objects (a load?)" % (objects - _objects))
+			var res := int(Performance.get_monitor(Performance.OBJECT_RESOURCE_COUNT))
+			if res - _res > 3:
+				why.append("+%d resources" % (res - _res))
+			print("HITCHNOW %.0f ms at %.1f s" % [ms, _t])  # (with --verbose: what loaded just before is above this)
 			_last_hitch = _hitches.size()
 			_since_hitch = 0
 			_hitches.append("HITCH %s %s %s t=%.1f ms=%.0f %s: %s" % [piece, quality, "busy" if _from >= 0.0 else "load",
@@ -154,6 +159,7 @@ class Meter extends Node:
 		_compiles = counts
 		_nodes = nodes
 		_objects = int(Performance.get_monitor(Performance.OBJECT_COUNT))
+		_res = int(Performance.get_monitor(Performance.OBJECT_RESOURCE_COUNT))
 		# A synchronous bake stalls this frame; the map it changed syncs a frame or two later.
 		if _last_hitch >= 0:
 			_since_hitch += 1

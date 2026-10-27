@@ -13,7 +13,8 @@ extends Node
 const RIG := [RiggedBody.DRIVER, "res://assets/characters/animations/UAL1_Standard.glb",
 	"res://assets/characters/animations/UAL2_Standard.glb"]
 const MUMMIES := [MummyBody.TOMB_GUARD, MummyBody.HIGH_PRIEST, Mummy.PARTS_DIR + "mummy_head.glb",
-	Mummy.PARTS_DIR + "mummy_arm.glb", Mummy.PARTS_DIR + "mummy_leg.glb"]  # (and what comes off them)
+	Mummy.PARTS_DIR + "mummy_arm.glb", Mummy.PARTS_DIR + "mummy_leg.glb",  # (and what comes off them:
+	Mummy.PARTS_DIR + "mummy_bone.glb", Mummy.PARTS_DIR + "mummy_scrap.glb"]  # the first gib was 337 ms in Act 9)
 const BANDITS := GunmanBody.BANDITS
 const GUNS := ["res://assets/guns/revolver_cairo.glb", "res://assets/guns/rifle_lever.glb",
 	"res://assets/guns/shotgun_tombsweeper.glb"]
