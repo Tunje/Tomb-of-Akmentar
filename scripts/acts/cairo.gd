@@ -112,7 +112,8 @@ var mooring := Transform3D(Basis.IDENTITY, MOORING)
 var day_time := 0.5         # 0 morning .. 0.5 noon .. 1 dusk (set_day_time)
 var dust := 0.0             # the curse (set_curse): ochre dust in the air
 var gloom := 0.0            # the curse: the sky darkening by day
-var townsfolk: Array[Node3D] = []
+var townsfolk: Array[Node3D] = []  # the chatting pairs (the Crowd has the walkers)
+var crowd: Crowd                     # -f9's: walkers, carriers, stall customers, sitters, donkeys
 var _day_tween: Tween
 var _rng := RandomNumberGenerator.new()
 var _deco: Node3D
@@ -190,6 +191,7 @@ func _ready() -> void:
 	_environment()
 	set_day_time(day_time)
 	_nav.bake_navigation_mesh(false)
+	crowd = Crowd.populate(self, "cairo")
 	_townsfolk()
 	RenderBudget.quiet_minor(_deco)  # small and wall-flat decoration casts no sun shadow (draw calls)
 
@@ -1154,6 +1156,8 @@ func set_curse(dust_f: float, gloom_f: float) -> void:
 ## How full the streets are: 1 every townsperson about, 0 nobody (the sickness).
 func set_crowd(f: float) -> void:
 	Ambience.set_crowd(f)  # the street murmur thins with them
+	if crowd:
+		crowd.set_fraction(f)
 	var keep := roundi(clampf(f, 0.0, 1.0) * townsfolk.size())
 	for i in townsfolk.size():
 		var t := townsfolk[i]
@@ -1173,13 +1177,10 @@ func set_indoor(_f: float) -> void:
 
 # ---------------------------------------------------------------- people and animals
 
+## The pairs chatting in the street (the walking townsfolk are the Crowd's now; WALKS stays for
+## tests/cairo_test's clear-walk check).
 func _townsfolk() -> void:
 	var k := 0
-	for w in WALKS:
-		var t := Townsperson.make(self, w, Characters.DIR + TOWNSFOLK_MODELS[k % TOWNSFOLK_MODELS.size()])
-		k += 1
-		if t:
-			townsfolk.append(t)
 	for pair in CHATS:
 		for i in 2:
 			var p: Vector3 = pair[i]

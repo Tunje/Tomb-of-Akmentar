@@ -109,7 +109,8 @@ func _run() -> void:
 					if blocked == "" and _inside(space, p + Vector3.UP * y):
 						blocked = "%s" % p
 		_check(blocked == "", "walk %s..%s is clear%s" % [w[0], w[1], "" if blocked == "" else " (blocked at %s)" % blocked])
-	_check(_level.townsfolk.size() == Cairo.WALKS.size() + Cairo.CHATS.size() * 2, "townsfolk about (%d)" % _level.townsfolk.size())
+	_check(_level.townsfolk.size() == Cairo.CHATS.size() * 2, "chatting pairs about (%d)" % _level.townsfolk.size())
+	_check(_level.crowd != null and _level.crowd.people.size() > 0, "a crowd about (%d)" % (_level.crowd.people.size() if _level.crowd else 0))
 	_check(is_equal_approx(Cairo.day_time_for(3, 3), 0.0) and is_equal_approx(Cairo.day_time_for(0, 3), 1.0), "day_time_for: morning to dusk")
 	if _shots:
 		for t in [0.15, 0.5, 1.0]:
