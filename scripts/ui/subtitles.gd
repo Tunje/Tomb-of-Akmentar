@@ -34,6 +34,13 @@ static func scale() -> float:
 
 
 ## `base` px at the options' text size.
+## The top of the line on screen while one shows (a Notice stacks above it); INF when none.
+static func top() -> float:
+	if current == null or not is_instance_valid(current) or not current._label.visible or current._label.modulate.a <= 0.01:
+		return INF
+	return current._label.position.y
+
+
 static func size(base: int) -> int:
 	return roundi(base * scale())
 

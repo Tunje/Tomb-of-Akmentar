@@ -236,27 +236,40 @@ func _draw_strip(size: Vector2) -> void:
 	var list := companions()
 	var y := size.y - (100.0 if not (player.melee and player.melee.enabled) else 128.0) - row * list.size()
 	var near := Gunman.hostiles(get_tree()) if not list.is_empty() else []
+	# Columns: the names (as wide as the longest), the bar, then the status (DOWN and the ring).
+	var name_w := 0.0
+	for g in list:
+		name_w = maxf(name_w, font.get_string_size(_first_name(g), HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x)
 	for g in list:
 		var col := Subtitles.speaker_color(g.companion_id)
-		var name := DayLog.person(g.companion_id).get_slice(" ", 0)
+		var name := _first_name(g)
 		_canvas.draw_string_outline(font, Vector2(30, y + fs), name, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 4, Color(0, 0, 0, 0.8))
 		_canvas.draw_string(font, Vector2(30, y + fs), name, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col)
-		var bar := Rect2(Vector2(30 + 90.0 * _scale, y + fs * 0.35), Vector2(STRIP_W, 7.0 * _scale))
+		var bar := Rect2(Vector2(30 + name_w + 12.0 * _scale, y + fs * 0.35), Vector2(STRIP_W * _scale, 7.0 * _scale))
 		_canvas.draw_rect(bar.grow(1), Color(0.05, 0.04, 0.03, 0.8))
 		if g.downed or g.stumbled:  # down (or tripped in the escape): needs helping up
-			var pulse := 0.55 + 0.45 * sin(_t * 6.0)
-			var dx := bar.position.x
+			var pulse := 0.75 + 0.25 * sin(_t * 6.0)
+			_canvas.draw_rect(bar, Color(DOWN_RED, 0.35 * pulse))
+			var dx := bar.end.x + 10.0 * _scale
 			_canvas.draw_string_outline(font, Vector2(dx, y + fs), "DOWN", HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 4, Color(0, 0, 0, 0.8 * pulse))
 			_canvas.draw_string(font, Vector2(dx, y + fs), "DOWN", HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(DOWN_RED, pulse))
-			if g.downed and _enemy_near(g, near):  # bleeding: the ring fills toward the bleed-out
-				var k := clampf(g._bleed / Gunman.BLEED_OUT, 0.0, 1.0)  # (Normal's; Difficulty's once it's in)
-				var ring_at := Vector2(dx + font.get_string_size("DOWN", HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x + 14.0 * _scale, y + fs * 0.6)
-				_canvas.draw_arc(ring_at, 7.0 * _scale, 0, TAU, 24, Color(0, 0, 0, 0.6), 3.0)
-				_canvas.draw_arc(ring_at, 7.0 * _scale, -PI * 0.5, -PI * 0.5 + TAU * k, 24, DOWN_RED, 3.0)
+			if g.downed and _enemy_near(g, near):
+				_draw_bleed_ring(Vector2(dx + font.get_string_size("DOWN", HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x + 14.0 * _scale, y + fs * 0.6), g)
 		else:
 			var k := clampf(g.health / maxf(g.max_health, 1.0), 0.0, 1.0)
 			_canvas.draw_rect(Rect2(bar.position, Vector2(bar.size.x * k, bar.size.y)), col.darkened(0.15))
 		y += row
+
+
+static func _first_name(g: Gunman) -> String:
+	return DayLog.person(g.companion_id).get_slice(" ", 0)
+
+
+## Bleeding (down with an enemy close): a ring that fills toward the bleed-out.
+func _draw_bleed_ring(at: Vector2, g: Gunman) -> void:
+	var k := clampf(g._bleed / Gunman.BLEED_OUT, 0.0, 1.0)  # (Normal's; Difficulty's once it's in)
+	_canvas.draw_arc(at, 7.0 * _scale, 0, TAU, 24, Color(0, 0, 0, 0.6), 3.0)
+	_canvas.draw_arc(at, 7.0 * _scale, -PI * 0.5, -PI * 0.5 + TAU * k, 24, DOWN_RED, 3.0)
 
 
 func strip_font_size() -> int:
@@ -299,8 +312,11 @@ func downed_markers() -> Array:
 			var tx := (edge.size.x * 0.5) / maxf(absf(d.x), 0.0001)
 			var ty := (edge.size.y * 0.5) / maxf(absf(d.y), 0.0001)
 			shown = c + d * minf(tx, ty)
+		# In view with their own name tag up ("E help up"): the tag says it; no second label here.
+		var tagged := not off and g._tag != null and g._tag.is_visible_in_tree()
 		out.append({"id": g.companion_id, "at": shown, "off": off, "angle": dir.angle(),
-			"dist": roundi(player.global_position.distance_to(g.global_position))})
+			"dist": roundi(player.global_position.distance_to(g.global_position)), "tagged": tagged,
+			"tag_at": cam.unproject_position(g._tag.global_position) if tagged else shown, "who": g})
 	return out
 
 
@@ -310,8 +326,14 @@ func _draw_downed_arrows(_size: Vector2) -> void:
 	var font := ThemeDB.fallback_font
 	var fs := roundi(14 * _scale)
 	var pulse := 0.6 + 0.4 * sin(_t * 6.0)
+	var near := Gunman.hostiles(get_tree())
 	for m: Dictionary in downed_markers():
 		var at: Vector2 = m.at
+		if m.tagged:  # their tag shows the name and "help up": only the bleed ring, above it
+			var g: Gunman = m.who
+			if g.downed and _enemy_near(g, near):
+				_draw_bleed_ring((m.tag_at as Vector2) + Vector2.UP * 46.0 * _scale, g)
+			continue
 		var col := Subtitles.speaker_color(str(m.id))
 		if m.off:
 			var d := Vector2.from_angle(m.angle)

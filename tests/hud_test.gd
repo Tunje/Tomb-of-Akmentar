@@ -53,6 +53,7 @@ func _ready() -> void:
 	_check(not far_mark.is_empty() and far_mark.dist == far_m, "with the distance (%s m, he's %d m off)" % [far_mark.get("dist", "?"), far_m])
 	_check(not far_mark.is_empty() and far_mark.at.y > hud._canvas.size.y * 0.5, "pointing down the screen, toward behind you (%s)" % far_mark.get("at", "?"))
 	_check(not near_mark.is_empty() and not near_mark.off, "mahmoud, downed in view: marked, no arrow")
+	_check(not near_mark.is_empty() and near_mark.tagged, "his own tag is up (name, help up): the HUD adds no second label")
 	# A bandit near him: the bleed ring (the downed bleed with an enemy close).
 	var bandit := Gunman.new()
 	bandit.team = Gunman.BANDITS
@@ -79,6 +80,13 @@ func _ready() -> void:
 	Settings.set_value("text_size", "M", get_tree())
 	# The revolver's rounds are bullets; other guns a number.
 	_check(hud._ammo.text == "", "the revolver: its rounds drawn, no number")
+	# A hint and a subtitle at once: the hint sits above the line, never over it.
+	Subtitles.say(get_tree(), "mahmoud", "Mahmoud", "They're coming round the left, effendi!", 4.0)
+	var n := Notice.say(self, "Press the dodge key to roll", 4.0)
+	await _wait(0.2)
+	var sub_top := Subtitles.top()
+	var hint_bottom := n._label.get_global_rect().end.y
+	_check(sub_top < INF and hint_bottom <= sub_top, "a hint over a subtitle: stacked (hint ends %.0f, line starts %.0f)" % [hint_bottom, sub_top])
 	# The screenshot: low health (the vignette), a fresh hit, both down.
 	player.health = 22.0
 	player.take_damage(1.0, player.global_position + Vector3(-8, 0, -3))

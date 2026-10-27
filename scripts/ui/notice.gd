@@ -43,5 +43,8 @@ func _process(delta: float) -> void:
 	_t += delta
 	_label.modulate.a = clampf((_seconds - _t) / 0.5, 0.0, 1.0)
 	_label.visible = Conversation.current == null  # never over a talk's subtitle
+	# Low centre, but above a subtitle when one shows: the two never overlap.
+	var h := get_viewport().get_visible_rect().size.y
+	_label.offset_bottom = minf(-170.0, Subtitles.top() - 12.0 - h)
 	if _t >= _seconds:
 		queue_free()
