@@ -124,6 +124,7 @@ func check(cond: Dictionary) -> bool:
 			"stat": ok = int(companion(v[0]).get(v[1], 0)) >= int(v[2])
 			"in_party": ok = in_party(v)
 			"day": ok = day >= int(v)
+			"act": ok = act >= int(v)
 			_:
 				push_warning("Game.check: unknown condition %s" % key)
 				ok = false

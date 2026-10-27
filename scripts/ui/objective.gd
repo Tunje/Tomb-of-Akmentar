@@ -25,7 +25,20 @@ static func set_goal(goal: String) -> void:
 	changed_ms = Time.get_ticks_msec()
 	if goal != "":
 		seen.append(goal)
+		_log(goal)
 		print("RESULT objective %s | %s" % [here.get_file().get_basename(), goal])
+
+
+## The journal's Objectives page: every objective set, by act, kept in Game's flags (saved with
+## the game): [{act, text, day}]. A retry setting one again doesn't repeat it.
+static func _log(goal: String) -> void:
+	var log: Array = Game.flag("objectives", [])
+	for e: Dictionary in log:
+		if int(e.get("act", 0)) == Game.act and str(e.get("text", "")) == goal:
+			return
+	log = log.duplicate()
+	log.append({"act": Game.act, "text": goal, "day": Game.day})
+	Game.set_flag("objectives", log)
 
 
 ## The objective to show now: "" when it was set in another scene (the last act's, a test's).

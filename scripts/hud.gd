@@ -291,6 +291,8 @@ func downed_markers() -> Array:
 		return out
 	var cam := player.camera
 	var rect := Rect2(Vector2.ZERO, _canvas.size if _canvas.size != Vector2.ZERO else get_viewport().get_visible_rect().size)
+	if rect.size.x < 120.0 or rect.size.y < 120.0:
+		return out  # no room for edge arrows (headless, a tiny window)
 	var c := rect.size * 0.5
 	var edge := rect.grow(-48.0)
 	for g in companions():

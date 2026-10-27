@@ -1,0 +1,66 @@
+{
+	"_help": "The journal's Places pages (scripts/sites/journal_screen.gd). Keys are the journal's place names (the clues' \"place\"), so a page counts the clues found there. A page shows once its \"if\" passes (Game.check; \"act\": N = Act N reached) or a clue was found there. \"route\": a route board id: the page says which way you went. Notes as in people.json. Edit freely.",
+	"places": {
+		"Cairo": {
+			"name": "Cairo",
+			"role": "The city, in the 1920s",
+			"if": {"act": 1},
+			"text": "The docks, the bazaar, the museum and the hotels. Where the bad day began, and where the expedition was raised, one day and three errands at a time.",
+			"notes": [
+				{"if": {"act": 7}, "text": "Back again, with the thieves in its streets and the dead not far behind."}
+			]
+		},
+		"The road to Akmentar": {
+			"name": "The road to Akmentar",
+			"role": "Cairo to the tombs",
+			"if": {"act": 3},
+			"route": "act3_route",
+			"text": "A race: the first expedition to reach Akmentar has the first pick of the ruins, and the Americans and the Germans are on the same roads.",
+			"notes": []
+		},
+		"Akmentar, the surface": {
+			"name": "Akmentar, the surface",
+			"role": "The ruins above the tombs",
+			"if": {"act": 4},
+			"text": "Twelve places worth digging, shared out between three expeditions. Whoever arrived first chose first.",
+			"notes": []
+		},
+		"Akmentar, the second level": {
+			"name": "Akmentar, the second level",
+			"role": "Below the ruins",
+			"if": {"act": 5},
+			"text": "The chambers under the surface, where what was learned above decides how safely the burial chamber can be opened.",
+			"notes": []
+		},
+		"Akmentar, the royal tomb": {
+			"name": "Akmentar, the royal tomb",
+			"role": "The burial chamber",
+			"if": {"act": 6},
+			"text": "The last door below Akmentar, and what lay behind it.",
+			"notes": []
+		},
+		"The road back to Cairo": {
+			"name": "The road back to Cairo",
+			"role": "The race back",
+			"if": {"act": 6},
+			"route": "act6_return",
+			"text": "Back across the desert to Cairo, with the thieves ahead and the dead behind, and every day counted.",
+			"notes": []
+		},
+		"The return to Akmentar": {
+			"name": "The return to Akmentar",
+			"role": "The last journey",
+			"if": {"act": 8},
+			"route": "act8_route",
+			"text": "The jars and the amulet have to go back where they came from, and the mummy follows wherever they go.",
+			"notes": []
+		},
+		"Akmentar, the last descent": {
+			"name": "Akmentar, the last descent",
+			"role": "The ruins, overrun",
+			"if": {"act": 9},
+			"text": "The places dug in the first days, now held by the mummy's servants, and the altar at the bottom of it all.",
+			"notes": []
+		}
+	}
+}
