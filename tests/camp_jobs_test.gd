@@ -91,6 +91,11 @@ func _jobs() -> CampJobs:
 	return level.get_node_or_null("CampJobs") as CampJobs
 
 
+## The player out of everyone's way (stood still on a path, he stops them: they won't push past).
+func _step_aside() -> void:
+	player.global_position = level.camps.party + Vector3(-12.0, 0.1, 6.0)
+
+
 func _settled(h: CampJobs) -> Array:
 	var out := []
 	for id in h.jobs:
@@ -113,6 +118,7 @@ func _day() -> void:
 		await get_tree().create_timer(0.25).timeout
 		w += 0.25
 	print("RESULT info assigned after %.2f s (the navmesh)" % w)
+	_step_aside()
 	_check(h.jobs.size() == CAST.size(), "day: %d of %d companions given a job" % [h.jobs.size(), CAST.size()])
 	var kinds := {}
 	for id in h.jobs:
@@ -212,6 +218,7 @@ func _fight() -> void:
 	await get_tree().create_timer(1.0).timeout
 	if is_instance_valid(g) and g.is_active():
 		g.queue_free()
+	_step_aside()
 	var secs := 0.0
 	while secs < 40.0 and _settled(h).size() < h.jobs.size():
 		await get_tree().create_timer(1.0).timeout
@@ -224,6 +231,7 @@ func _fight() -> void:
 func _night() -> void:
 	CampJobs.clear_sites(level)
 	var h := CampJobs.assign(level, companions, "act4_night", true)
+	_step_aside()
 	var at_fire := h.jobs.values().filter(func(j: Dictionary) -> bool: return j.kind == "fire").size()
 	_check(at_fire >= 5 and h.jobs.hargreaves.kind == "watch" and h.jobs.hassan.kind == "stars", "night: %d round the fire, Hargreaves on watch, Hassan under the stars" % at_fire)
 	var near := h.jobs.values().filter(func(j: Dictionary) -> bool: return j.kind == "fire" and (j.spot as Vector3).distance_to(h.anchor) < 4.0).size()

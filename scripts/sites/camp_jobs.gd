@@ -98,7 +98,8 @@ func _assign(companions: Dictionary, where: String, at_night: bool, opts: Dictio
 	# it yet. Wait for it (up to 10 s), then place everyone.
 	var map := get_world_3d().navigation_map
 	var a: Vector3 = opts.get("anchor", _default_anchor())
-	if NavigationServer3D.map_get_closest_point(map, a) == Vector3.ZERO and _wait < 10.0:
+	var unsynced := NavigationServer3D.map_get_iteration_id(map) == 0
+	if (unsynced or NavigationServer3D.map_get_closest_point(map, a) == Vector3.ZERO) and _wait < 10.0:
 		_pending = [companions, where, at_night, opts]
 		return
 	_pending = []
