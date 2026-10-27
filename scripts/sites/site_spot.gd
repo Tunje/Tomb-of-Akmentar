@@ -30,6 +30,9 @@ const DIR := "res://sites"
 var data := {}      # the whole area file
 var site := {}      # this site's entry
 var interactable: Interactable
+## Act 4: nobody walks up and inspects; the expeditions study their claims all day (act4.gd) and
+## report at sunset (report()). The marker only says whose claim it is (set_marker_only).
+var marker_only := false
 
 
 static func load_area(area_id: String) -> Dictionary:
@@ -130,6 +133,9 @@ var _ring_mat: StandardMaterial3D
 func _show_state() -> void:
 	if _ring == null:
 		_build_marker()
+	if marker_only:
+		_show_claim()
+		return
 	var why := refusal()
 	var col := GOLD
 	var line := "E  study it"
@@ -177,6 +183,48 @@ func _build_marker() -> void:
 	_label.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 	add_child(_label)
 	_label.position = Vector3.UP * 2.4
+
+
+## A marker, not a place to click: whose claim it is, or that nobody's working it.
+func set_marker_only() -> void:
+	marker_only = true
+	if interactable:
+		interactable.queue_free()
+		interactable = null
+
+
+func _show_claim() -> void:
+	var who := claimed_by()
+	var col := DONE
+	var line := "Unclaimed: nobody is working here"
+	if Journal.has(clue_id()):
+		line = "studied"
+	elif who == "player":
+		col = GOLD
+		line = "Your expedition is working here"
+	elif who != "":
+		col = BARRED
+		var parties: Dictionary = data.get("draft", {}).get("parties", {})
+		line = "%s are working here" % parties.get(who, {}).get("name", who.capitalize())
+	_ring_mat.albedo_color = Color(col, 0.55 if col != DONE else 0.3)
+	_ring_mat.emission = col
+	_label.modulate = col
+	_label.text = "%s\n%s" % [site.get("name", site_id), line]
+
+
+## What a day's work here found (Act 4's sunset report): the clue into the journal and its card,
+## no actions spent. The card, or null if it was studied already.
+func report(by: Node) -> ClueCard:
+	if Journal.has(clue_id()):
+		return null
+	var c: Dictionary = site.get("clue", {})
+	Journal.add({"id": clue_id(), "place": str(data.get("place", "")), "site": str(site.get("name", site_id)),
+		"title": str(c.get("title", "")), "text": str(c.get("text", ""))})
+	Game.set_flag(clue_id())
+	Game.apply(site.get("do", []))
+	DayLog.add("Studied the %s" % site.get("name", site_id))
+	inspected.emit(site_id)
+	return ClueCard.open(get_parent(), str(site.get("name", site_id)), c, by)
 
 
 func inspect(by: Node) -> bool:

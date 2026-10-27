@@ -1,12 +1,25 @@
 extends Node3D
 ## Act 4: the surface of Akmentar and the first night (gameplan/act4_build.md).
-## ARRIVE -> DRAFT -> DAY -> NIGHT (choice) -> RAID -> DAWN -> END.
+## ARRIVE -> DRAFT -> DAY -> SUNSET -> NIGHT (choice) -> RAID -> DAWN -> END.
+## The day (Simon): studying is what the expedition spends the whole day doing. After the claim
+## board your people work your claimed sites and the rivals work theirs (-f9's CampJobs when it's
+## in; till then two workers and a pennant at each claim), while the sun crosses the sky in
+## DAY_LENGTH s. You walk the ruins and talk to people at their work; nobody clicks a site (the
+## SiteSpots are markers only: whose claim, or "Unclaimed: nobody is working here"). Back at camp
+## the bed calls it a day early. At sunset each claimed site's report comes in, a clue card each,
+## into the journal; then the evening at camp and the night.
 ## The talk (-f9's dialogue/act4_*.json) and the fight (-bf's NightRaid) plug in when present;
 ## without them the act still runs (a default choice, a skipped raid) so it can be tested.
 ## Test args after "--": --race-step=3|4|5  --choice=barricade|americans|germans  --auto (a bot
-## plays it through)  --shots=t1,t2  --shot-dir=path  --seconds=N.
+## plays it through; it calls it a day at the bed)  --day-speed=N (the sun N times faster; the bot
+## then waits for sunset)  --shots=t1,t2  --shot-dir=path  --seconds=N.
 
-enum Step { ARRIVE, DRAFT, DAY, NIGHT, RAID, DAWN, END }
+enum Step { ARRIVE, DRAFT, DAY, SUNSET, NIGHT, RAID, DAWN, END }
+
+## How long the working day lasts, morning to sunset (s). Simon may want it shorter or longer.
+const DAY_LENGTH := 360.0
+const DUSK := 0.4   # how far set_night goes by sunset (the night itself takes it to 1)
+const CAMP_JOBS := "res://scripts/sites/camp_jobs.gd"  # -f9's crews and companions at their jobs
 
 const NIGHT_RAID := "res://scripts/night_raid.gd"
 
@@ -22,6 +35,8 @@ var raid: Node
 var crowd: Crowd  # the camps' diggers (-f9's Crowd; it follows the night itself)
 var _t := 0.0
 var _night_f := 0.0
+var _day_t := 0.0   # s into the working day
+var _day_said := 0  # the day's time-of-day toasts said so far
 var _shots: Array[float] = []
 
 
@@ -118,7 +133,38 @@ func _draft() -> void:
 		_auto_draft(d)
 	await d.closed
 	_mark_claims()
+	for id in level.site_spots:
+		(level.site_spots[id] as SiteSpot).set_marker_only()
+	_camp_jobs("staff_sites", [level, _claimed_sites(), {}])
+	_camp_jobs("assign", [level, companions, "act4_day", false, {"anchor": level.camps.party, "sites": _claimed_sites()}])
 	_day()
+
+
+## The claimed sites for CampJobs: {id: {"at", "team"}} ("party" for ours).
+func _claimed_sites() -> Dictionary:
+	var out := {}
+	for id in AkmentarSurface.SITES:
+		var team := str(Game.flag("claimed_" + id, ""))
+		if team != "":
+			out[id] = {"at": AkmentarSurface.SITES[id], "team": "party" if team == "player" else team}
+	return out
+
+
+## -f9's CampJobs, once its file is in (called by name so the act runs without it).
+func _camp_jobs(fn: String, call_args: Array) -> void:
+	if ResourceLoader.exists(CAMP_JOBS):
+		var cj: Script = load(CAMP_JOBS)
+		if cj.has_method(fn):
+			cj.callv(fn, call_args)
+
+
+## Who of ours works a site: the crew leaders' crews first, else the expedition.
+func _ours() -> Array:
+	var out: Array = []
+	for id in AkmentarSurface.SITES:
+		if Game.flag("claimed_" + id, "") == "player":
+			out.append(id)
+	return out
 
 
 ## Simon: claimed sites should show who claimed them. Two of the team's people work at each
@@ -178,8 +224,12 @@ func _pennant(at: Vector3, colour: Color) -> void:
 
 func _day() -> void:
 	step = Step.DAY
-	hud.toast("Day 1: inspect the sites you claimed · sleep at camp to end the day", 4.0)
-	Objective.set_goal("Inspect the sites you claimed, then sleep at camp")
+	_day_t = 0.0
+	var names: Array = _ours().map(func(id: String) -> String: return str(level.site_spots[id].site.get("name", id)))
+	hud.toast("Your people go to work at %s. They dig until sunset." % (", ".join(names) if not names.is_empty() else "nothing: you claimed no site"), 5.0)
+	Objective.set_goal("Your people study your sites until sunset · walk the ruins · the camp bed calls it a day")
+	var bed: Interactable = level.interactables["camp_bed"]
+	bed.prompt = "Call it a day (your people report at sunset)"
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if args.size() > 0 else Input.MOUSE_MODE_CAPTURED
 	if args.has("view"):
 		# Test: stand 9 m in front of a site, looking at it.
@@ -188,13 +238,71 @@ func _day() -> void:
 		player.global_position = site + toward * 9.0
 		player.yaw = atan2(toward.x, toward.z)
 		player.pitch = 0.05
+		if args.has("auto") and not args.has("day-speed"):
+			_auto_day()
 	elif args.has("auto"):
 		_auto_day()
 
 
+## The bed (Call it a day) or the sun going down: the day's work ends.
 func _end_day() -> void:
 	if step != Step.DAY:
 		return
+	_sunset()
+
+
+## The light: the sun from morning high to low in the west, warming toward dusk; a word at midday
+## and in the afternoon.
+func _day_step(delta: float) -> void:
+	_day_t += delta
+	var k := clampf(_day_t / DAY_LENGTH, 0.0, 1.0)
+	_night_f = k * DUSK
+	level.set_night(_night_f)
+	var sun: DirectionalLight3D = level.get("_sun")
+	if sun:
+		sun.rotation.x = deg_to_rad(lerpf(-62.0, -14.0, k))
+	if _day_said < 2 and k >= (_day_said + 1) / 3.0:
+		_day_said += 1
+		hud.toast(["Midday. The diggers rest in what shade there is.", "The afternoon wears on; the shadows lengthen."][_day_said - 1], 3.5)
+	if k >= 1.0:
+		_end_day()
+
+
+## Sunset: each claimed site's report comes in, a clue card each, into the journal. Then the camp.
+func _sunset() -> void:
+	step = Step.SUNSET
+	Objective.set_goal("Sunset: your people come back with what they found")
+	hud.toast("The sun goes down. Your people come in from the sites.", 3.0)
+	var tw := create_tween()
+	tw.tween_method(func(f: float): _night_f = f; level.set_night(f), _night_f, DUSK + 0.1, 2.0)
+	await tw.finished
+	for id in _ours():
+		var card: ClueCard = (level.site_spots[id] as SiteSpot).report(player)
+		if card == null:
+			continue
+		print("RESULT act4 report %s t=%.1f" % [id, _t])
+		if args.has("auto"):
+			await get_tree().create_timer(0.6).timeout
+			card.close()
+		else:
+			await card.closed
+	_camp_jobs("clear_sites", [level])
+	_evening()
+
+
+## The evening: everyone back at our fire (the companions take up their evening jobs), saved, then
+## the night comes on.
+func _evening() -> void:
+	var fire: Vector3 = level.interactables["camp_fire"].global_position
+	player.global_position = fire + Vector3(0, 0, 3.0)
+	var i := 0
+	for c in companions.values():
+		if is_instance_valid(c):
+			c.global_position = fire + Vector3(cos(i * 1.1) * 3.2, 0, sin(i * 1.1) * 3.2)
+			i += 1
+	_camp_jobs("assign", [level, companions, "act4_night", true, {"anchor": level.camps.party}])
+	var bed: Interactable = level.interactables["camp_bed"]
+	bed.prompt = "Sleep (end the day)"
 	_save()
 	_nightfall()
 
@@ -205,7 +313,7 @@ func _nightfall() -> void:
 	hud.toast("Night falls over Akmentar", 3.0)
 	Objective.set_goal("Night: decide who to stand with")
 	var tw := create_tween()
-	tw.tween_method(func(f: float): _night_f = f; level.set_night(f), 0.0, 1.0, 4.0)
+	tw.tween_method(func(f: float): _night_f = f; level.set_night(f), _night_f, 1.0, 4.0)
 	await tw.finished
 	# Gunfire in the dark: the guardians attack all three camps.
 	for i in 6:
@@ -344,6 +452,8 @@ func _process(delta: float) -> void:
 	if _shots.size() > 0 and _t >= _shots[0]:
 		_shots.pop_front()
 		_shot("act4_%05.1f.png" % _t)
+	if step == Step.DAY and not (args.has("view") and not args.has("auto")):
+		_day_step(delta * (float(args.get("day-speed", "1")) if args.has("day-speed") else 1.0))
 	if args.has("auto") and step == Step.RAID:
 		_auto_fight(delta)
 	if args.has("seconds") and _t > float(args.seconds):
@@ -374,23 +484,19 @@ func _auto_draft(d: SiteDraft) -> void:
 		await get_tree().create_timer(0.3).timeout
 
 
-## Day: walk to each claimed site, inspect it, then go to bed.
+## Day: look in on each claimed site (nothing to click), then call it a day at the camp bed; or,
+## with --day-speed=N, let the sun go down by itself N times faster.
 func _auto_day() -> void:
-	for id in AkmentarSurface.SITES:
-		if Game.flag("claimed_" + id, "") != "player":
-			continue
+	for id in _ours():
 		var spot: Node3D = level.site_spots[id]
-		player.global_position = spot.global_position + Vector3(0, 0, 2.6)
+		player.global_position = spot.global_position + Vector3(0, 0, 4.0)
 		player.yaw = 0.0
 		await get_tree().create_timer(0.4).timeout
-		(spot as SiteSpot).interactable.use(player)
-		await get_tree().create_timer(0.4).timeout
-		while ActionMenu.ui_open():
-			_close_modals()
-			await get_tree().create_timer(0.3).timeout
+	if args.has("day-speed"):
+		return
 	player.global_position = level.interactables.camp_bed.global_position + Vector3(0, 0, 1.0)
 	await get_tree().create_timer(0.5).timeout
-	_end_day()
+	level.interactables.camp_bed.use(player)
 
 
 ## Raid: god mode, aim at the nearest visible bandit and fire when lined up.

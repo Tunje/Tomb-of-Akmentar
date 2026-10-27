@@ -9,7 +9,7 @@ extends Node3D
 ## - Hassan, if he came, talks first (act7_hassan).
 ## - Once you know where to catch them, the thieves are there, loading their getaway (a truck at the
 ##   road gate under the lockdown, else where their plan takes them: a lighter at the docks, a cart
-##   at the station, a truck in the police yard; else their luggage at the hotel): the leader to
+##   at the station or the police yard; else their luggage at the hotel): the leader to
 ##   talk to (act7_confront, a marker over them) and their guards posted round. They move if you
 ##   learn something better, and they're gone when the thieves countdown runs out.
 ## - act7_confront either recovers the artifacts or fires fight_thieves (their guards come at you;
@@ -360,7 +360,7 @@ func _place_intercept() -> void:
 ## Each crew's leader (the one you talk to) and what they're loading for the getaway.
 const LEADERS := {"americans": "whitfield", "germans": "adler", "italians": "bellini"}
 ## The getaway at each place: "cart", "lighter", "truck" or "luggage" (the hotel).
-const GETAWAY := {"station": "cart", "docks": "lighter", "road_gate": "truck", "police": "truck", "hotel": "luggage"}
+const GETAWAY := {"station": "cart", "docks": "lighter", "road_gate": "truck", "police": "cart", "hotel": "luggage"}  # (the police yard has no room for a truck: -7f)
 
 
 func _leader_id() -> String:
