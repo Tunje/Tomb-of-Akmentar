@@ -137,21 +137,25 @@ func _on_event(name: String) -> void:
 func _arrival() -> void:
 	step = Step.ARRIVAL
 	hud.show_message("THE LAST GUARDIAN", "Akmentar is overrun. Two of the Keepers are still alive.")
+	Objective.set_goal("Clear the surface")
 	await get_tree().create_timer(2.5).timeout
 	hud.show_message("")
 	await _talk("act9_arrival", _speaker())
 	Barks.say_any(get_tree(), "entering_tomb")
 	await _level("surface", "act9_surface", "The stair down. Something waits at the bottom.")
 	hud.toast("Down into the halls.", 3.0)
+	Objective.set_goal("Down into the halls")
 	await _reach(points.halls)
 	await _level("halls", "act9_halls", "The halls. The way down is sealed again.")
 	hud.toast("On to the king's door.", 3.0)
+	Objective.set_goal("On to the king's door")
 	await _reach(points.royal)
 	await _level("royal", "act9_royal", "The king's door.")
 	level.open_royal_door()
 	await get_tree().create_timer(3.2).timeout
 	level._nav.bake_navigation_mesh(false)
 	hud.toast("Into the burial chamber. To the altar.", 3.0)
+	Objective.set_goal("To the altar in the burial chamber")
 	await _reach(points.altar)
 	_to_altar()
 	match str(args.get("voices", "")):  # tests: who has fallen by the time you reach the altar
@@ -202,6 +206,7 @@ func _ritual() -> void:
 	_ritual_len = float(args.get("ritual", RITUAL_TIME.get(voices, 60.0)))
 	_ritual_t = 0.0
 	hud.toast("The chant begins. Keep them alive!", 3.0)
+	Objective.set_goal("Keep the Keepers alive through the chant")
 	var wave := 0
 	var next_wave := 1.0
 	var guardian_woken := false
@@ -264,6 +269,7 @@ func _wake_guardian() -> void:
 	if "slams_left" in guardian:
 		guardian.set("slams_left", RITUAL_SLAMS)  # you can't run from the altar: more grace than the escape
 	hud.toast("The sarcophagus opens. He's coming for you. Lead him away from the altar!", 3.5)
+	Objective.set_goal("Lead him away from the altar")
 	Barks.say_any(get_tree(), "guardian_seen", level.guardian_spawn)
 	Hints.once("guardian", self)
 

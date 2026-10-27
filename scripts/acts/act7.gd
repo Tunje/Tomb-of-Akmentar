@@ -109,6 +109,7 @@ func _ready() -> void:
 	Game.event.connect(_on_event)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if args.size() > 0 else Input.MOUSE_MODE_CAPTURED
 	hud.show_message("CAIRO, UNDER THE CURSE", Cairo.countdown_line())
+	Objective.set_goal("Find the thieves before they leave Cairo")
 	await get_tree().create_timer(3.0).timeout
 	hud.show_message("")
 	var worst := ""  # the stage the city is at already, now the title has gone
@@ -351,6 +352,7 @@ func _place_intercept() -> void:
 		intercept.global_position = pos
 	print("RESULT act7 intercept at %s" % where)
 	hud.toast("You know where to catch the thieves: %s." % str(Cairo.SPOTS[where][2]).to_lower(), 4.0)
+	Objective.set_goal("Catch the thieves before they get away")
 
 
 ## A guard's spot must be a short walk from the meeting place, or nobody can get at anybody.
@@ -463,6 +465,7 @@ func _recovered() -> void:
 	_save("recovered")
 	print("RESULT act7 recovered peaceful=%s" % Game.flag("recovered_peacefully", false))
 	hud.toast("The artifacts are yours. Sir Reginald waits at the bank; the hotel bed takes you on.", 6.0)
+	Objective.set_goal("Take the artifacts to Sir Reginald at the bank, or rest at the hotel")
 
 
 ## A talk, played by the player or (--auto) by BotTalk, which steers clear of `avoid`. False if
@@ -494,6 +497,7 @@ func _finish() -> void:
 	hud.show_message("LEAVING CAIRO", ("You have the jars and the amulet. %d days before he reaches the city." if got
 		else "The thieves are gone with the artifacts. He is %d days from the city.") % int(Game.countdowns.get("mummy", 0))
 		+ "\n\nEnter  on to Act 8")
+	Objective.set_goal("")
 	if args.has("auto"):
 		await get_tree().create_timer(1.0).timeout
 		if args.has("chain") and ResourceLoader.exists(NEXT_ACT[0]):
@@ -534,12 +538,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		JournalScreen.toggle(self, player)
 	elif event.is_action_pressed("party_order"):
 		hud.toast("Companions: " + str(Gunman.toggle_party_order(get_tree())))
-	elif event.is_action_pressed("ui_cancel") and not ActionMenu.ui_open():
-		get_tree().paused = not get_tree().paused
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if get_tree().paused else Input.MOUSE_MODE_CAPTURED
-		hud.show_message("PAUSED" if get_tree().paused else "", "Click to resume · Q to quit" if get_tree().paused else "")
-	elif event is InputEventKey and event.pressed and event.keycode == KEY_Q and get_tree().paused:
-		get_tree().quit()
 
 
 func _save(where: String) -> void:

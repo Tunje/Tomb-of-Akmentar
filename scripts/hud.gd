@@ -18,6 +18,7 @@ var _count: Label
 var _prompt: Label
 var _info: Label
 var _toast: Label
+var _objective: Label   # the current objective, top left (Objective)
 var _toast_t := 0.0
 ## O opens the options while the game is paused, or when this is on (main's start screen).
 var allow_options := false
@@ -42,6 +43,8 @@ func _ready() -> void:
 	_prompt = _label(20, HORIZONTAL_ALIGNMENT_CENTER, Vector2(800, 30))
 	_info = _label(18, HORIZONTAL_ALIGNMENT_LEFT, Vector2(400, 30))
 	_toast = _label(24, HORIZONTAL_ALIGNMENT_CENTER, Vector2(800, 40))
+	_objective = _label(18, HORIZONTAL_ALIGNMENT_LEFT, Vector2(700, 30))
+	_objective.add_theme_color_override("font_color", Color(0.98, 0.84, 0.5))
 
 
 func _layout() -> void:
@@ -55,6 +58,7 @@ func _layout() -> void:
 	_info.position = Vector2(30, 20)
 	# Above a title card when one is up ("Game saved" over LEAVING CAIRO), else upper middle.
 	_toast.position = Vector2(s.x * 0.5 - 400, s.y * 0.5 - 250 if _title.text != "" else s.y * 0.28)
+	_objective.position = Vector2(30, 20 + 32.0 * _scale)  # under the day / actions / money line
 
 
 func _label(font_size: int, align: HorizontalAlignment, box: Vector2) -> Label:
@@ -102,6 +106,8 @@ func _process(delta: float) -> void:
 	_info.text = "Day %d   Actions %s   £%d" % [Game.day, "●".repeat(Game.actions_left) + "○".repeat(maxi(Game.ACTIONS_PER_DAY - Game.actions_left, 0)), Game.money]
 	_toast_t = maxf(_toast_t - delta, 0.0)
 	_toast.modulate.a = clampf(_toast_t, 0.0, 1.0)
+	_objective.text = Objective.current()
+	_objective.modulate.a = Objective.alpha(get_tree().paused, Input.is_action_pressed("objective"))
 	_rescale()
 	_layout()
 	_canvas.queue_redraw()
@@ -182,7 +188,7 @@ func _rescale() -> void:
 	if is_equal_approx(k, _scale):
 		return
 	_scale = k
-	for l: Label in [_title, _sub, _ammo, _gun, _count, _prompt, _info, _toast]:
+	for l: Label in [_title, _sub, _ammo, _gun, _count, _prompt, _info, _toast, _objective]:
 		l.add_theme_font_size_override("font_size", roundi(int(l.get_meta("base_size", 20)) * k))
 
 
@@ -198,6 +204,11 @@ class OptionsKey extends Node:
 		Controls.note_device(event)
 
 	func _unhandled_input(event: InputEvent) -> void:
+		# Esc or the pad's Start: the pause menu (every scene; the acts no longer pause themselves).
+		if event.is_action_pressed("ui_cancel") and PauseMenu.allowed(get_tree(), hud):
+			get_viewport().set_input_as_handled()
+			PauseMenu.open(get_tree())
+			return
 		var o: bool = (event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_O) \
 			or (event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_BACK)
 		if o and (get_tree().paused or hud.allow_options) and not OptionsScreen.is_open():

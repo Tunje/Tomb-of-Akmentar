@@ -111,6 +111,7 @@ func _relief() -> void:
 func _battle() -> void:
 	Game.set_flag("act8_temple")
 	hud.show_message("THE TEMPLE OF THE THREE", "Night. The fire pillars are lit, and nobody lit them.")
+	Objective.set_goal("Hold the temple court until dawn")
 	await get_tree().create_timer(2.5).timeout
 	hud.show_message("")
 	if not args.has("auto"):
@@ -237,12 +238,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		Checkpoint.retry(self)  # Game as it was on entry, then the scene from its start
 	elif event.is_action_pressed("party_order"):
 		hud.toast("Companions: " + str(Gunman.toggle_party_order(get_tree())))
-	elif event.is_action_pressed("ui_cancel") and not ActionMenu.ui_open():
-		get_tree().paused = not get_tree().paused
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if get_tree().paused else Input.MOUSE_MODE_CAPTURED
-		hud.show_message("PAUSED" if get_tree().paused else "", "Click to resume · Q to quit" if get_tree().paused else "")
-	elif event is InputEventKey and event.pressed and event.keycode == KEY_Q and get_tree().paused:
-		get_tree().quit()
 
 
 func _shot(file: String) -> void:

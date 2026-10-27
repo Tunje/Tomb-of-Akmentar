@@ -151,6 +151,7 @@ func _takeoff() -> void:
 	step = Step.FLIGHT
 	_phase_t = 0.0
 	hud.toast("South over the desert. Akmentar by nightfall.", 3.5)
+	Objective.set_goal("Fly south to Akmentar")
 
 
 ## The player rides in seat `k` (seated pose, no walking).
@@ -290,6 +291,7 @@ func _storm_begin() -> void:
 	add_child(_storm)
 	_storm.position = Vector3(0, 105, plane.global_position.z + 650.0)
 	hud.toast("Behind you, the horizon is rising: a wall of sand, and it's gaining. {move_left} / {move_right} to hold her level.", 5.0)
+	Objective.set_goal("Hold her level through the storm")
 	_look_back_t = 4.5
 	print("RESULT flight storm")
 
@@ -359,6 +361,7 @@ func _finish() -> void:
 		result.drops, plane.damage, result.hurt, Game.flag(companion + "_injured", false) if companion != "none" else false])
 	finished.emit(result)
 	hud.show_message("AKMENTAR", "The plane is finished; the ruins are a short walk away.\n\nEnter  go on")
+	Objective.set_goal("")
 	if args.has("auto"):
 		await get_tree().create_timer(1.0).timeout
 		get_tree().quit(0)
@@ -370,12 +373,6 @@ func _unhandled_input(event: InputEvent) -> void:
 	var enter: bool = event is InputEventKey and event.pressed and event.keycode in [KEY_ENTER, KEY_KP_ENTER]
 	if _done and enter:
 		get_tree().change_scene_to_file(next_scene)  # Game (the flags, the companion) carries over
-	elif event.is_action_pressed("ui_cancel"):
-		get_tree().paused = not get_tree().paused
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if get_tree().paused else Input.MOUSE_MODE_CAPTURED
-		hud.show_message("PAUSED" if get_tree().paused else "", "Click to resume · Q to quit" if get_tree().paused else "")
-	elif event is InputEventKey and event.pressed and event.keycode == KEY_Q and get_tree().paused:
-		get_tree().quit()
 
 
 func _shot(file: String) -> void:

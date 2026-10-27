@@ -207,6 +207,7 @@ func _set_carrier(id: String) -> void:
 
 func _intro() -> void:
 	hud.show_message("THE NILE, BY NIGHT", "Third night on the river. The water's gone still as glass.")
+	Objective.set_goal("Guard the amulet on the river")
 	await get_tree().create_timer(3.0).timeout
 	hud.show_message("")
 	await get_tree().create_timer(1.0).timeout
@@ -222,6 +223,7 @@ func _fight() -> void:
 	_fighting = true
 	player.set_armed(true)
 	hud.toast("They're coming up out of the water! Protect the amulet!", 4.0)
+	Objective.set_goal("Protect the amulet: hold the deck")
 	print("RESULT act8_boat fight t=%.1f carrier=%s" % [_t, _carrier_id])
 	# He stands on the river astern, and his servants' weight on the wheel stops it dead.
 	guardian = Guardian.new()
@@ -333,6 +335,7 @@ func _held() -> void:
 		"Companions lost: %s." % (", ".join(lost.map(func(id): return str(id).capitalize())) if not lost.is_empty() else "none"),
 		"The amulet is with %s." % ("you" if _carrier_id == "player" else _carrier_id.capitalize()),
 		"", "Enter  go on"]))
+	Objective.set_goal("")
 	print("RESULT act8_boat end held=true killed=%d party_losses=%s carrier=%s player_health=%.0f t=%.1f" % [_killed, lost,
 		_carrier_id, player.health, _t])
 	finished.emit(result)

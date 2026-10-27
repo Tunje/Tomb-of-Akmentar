@@ -21,6 +21,11 @@ static func take(scene: Node) -> void:
 	_snap = Game.to_dict().duplicate(true)
 
 
+## Is there a checkpoint for `scene` to restart from (the pause menu offers it then)?
+static func available(scene: Node) -> bool:
+	return scene != null and not _snap.is_empty() and _scene == scene.scene_file_path
+
+
 ## Back to the state taken on entry and the scene from its start.
 static func retry(scene: Node) -> void:
 	var tree := scene.get_tree()

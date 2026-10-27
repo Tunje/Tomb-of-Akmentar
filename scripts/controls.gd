@@ -8,6 +8,7 @@ const KEYS := {
 	"reload": [KEY_R], "cover": [KEY_E], "holster": [KEY_X], "journal": [KEY_J], "party_order": [KEY_G],
 	"shove": [KEY_F], "weapon_1": [KEY_1], "weapon_2": [KEY_2], "weapon_3": [KEY_3],
 	"swap_seat": [KEY_V],  # in a truck: a companion takes the wheel, you take the gun (GunnerSeat)
+	"objective": [KEY_TAB],  # held: the objective line in full (Objective)
 }
 const MOUSE := {
 	"fire": [MOUSE_BUTTON_LEFT], "aim": [MOUSE_BUTTON_RIGHT],
@@ -53,7 +54,7 @@ const PAD := {
 	"dodge": [JOY_BUTTON_A], "crouch": [JOY_BUTTON_B], "cover": [JOY_BUTTON_X], "reload": [JOY_BUTTON_Y],
 	"shove": [JOY_BUTTON_Y], "weapon_next": [JOY_BUTTON_RIGHT_SHOULDER], "weapon_prev": [JOY_BUTTON_LEFT_SHOULDER],
 	"holster": [JOY_BUTTON_DPAD_DOWN], "party_order": [JOY_BUTTON_DPAD_LEFT], "journal": [JOY_BUTTON_DPAD_UP],
-	"swap_seat": [JOY_BUTTON_DPAD_RIGHT], "sprint": [JOY_BUTTON_LEFT_STICK],
+	"swap_seat": [JOY_BUTTON_DPAD_RIGHT], "sprint": [JOY_BUTTON_LEFT_STICK], "objective": [JOY_BUTTON_BACK],
 }
 const STICK_DEADZONE := 0.2
 const TRIGGER_DEADZONE := 0.3
@@ -156,6 +157,7 @@ const LIST := [
 	["Companions: follow / hold", "party_order", "key"], ["Truck: hand a companion the wheel", "swap_seat", "key"],
 	["Vehicle: look back (hold)", "crouch", "same"], ["Brawl: punch", "fire", "same"],
 	["Brawl: block", "aim", "same"], ["Brawl: shove", "shove", "key"],
+	["Show the objective (hold)", "objective", "key"],
 ]
 
 

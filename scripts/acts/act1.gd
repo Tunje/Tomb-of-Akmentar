@@ -81,6 +81,7 @@ func _to_office() -> void:
 	_office = Interactable.make(level, at, "Freddie's office", "act1_office", 1.4)
 	_office.used.connect(func(_by): _talk("act1_office", umm, _after_office))
 	hud.toast("Find Freddie's office, by the club.", 4.0)
+	Objective.set_goal("Find Freddie's office, by the club")
 	if args.has("auto"):
 		_auto_walk(at, func(): _office.use(player))
 
@@ -99,6 +100,7 @@ func _after_office(_end: String) -> void:
 	await get_tree().create_timer(1.0).timeout
 	hud.toast("\"Mister O'Connell. A word about Freddie's debts.\"", 3.0)
 	await get_tree().create_timer(1.5).timeout
+	Objective.set_goal("Deal with Finch's debt collectors")  # before the talk: it can start the fight
 	_talk("act1_debt_collectors", finch, _after_collectors)
 
 
@@ -114,6 +116,7 @@ func _armed_men() -> void:
 	var boss := Npc.make(level, "armed_boss", level.open_point(level.near_spot(OFFICE, -1.5, 5.0)), "", GunmanBody.BANDITS[0])
 	boss.face_towards(player.global_position)
 	hud.toast("Back at Freddie's, three men with guns are waiting, and they think you know where he is.", 4.0)
+	Objective.set_goal("Deal with the armed men at Freddie's")
 	await get_tree().create_timer(1.5).timeout
 	if not FileAccess.file_exists("res://dialogue/act1_armed_men.json") and not args.has("auto"):
 		boss.queue_free()
@@ -135,6 +138,7 @@ func _to_cafe() -> void:
 	_cafe = Interactable.make(level, at, "Meet Karim Fahmy", "act1_cafe", 1.4)
 	_cafe.used.connect(func(_by): _talk("act1_offer", _karim, _after_offer))
 	hud.toast("A man called Karim Fahmy left word: he's waiting at the café by the tavern.", 4.0)
+	Objective.set_goal("Meet Karim Fahmy at the café by the tavern")
 	if args.has("auto"):
 		_auto_walk(at, func(): _cafe.use(player))
 
@@ -152,6 +156,7 @@ func _end() -> void:
 	Game.place = "act1_end"
 	Game.save_game()
 	hud.show_message("THE OFFER", "Five thousand to find a lost expedition and a tomb no map shows.\nMoney: £%d.\n\nEnter  raise an expedition (Act 2)" % Game.money)
+	Objective.set_goal("")
 	print("RESULT act1 end money=%d gunfight=%s brawl_lost=%s musa=%s" % [Game.money, Game.flag("act1_gunfight_won", false),
 		Game.flag("brawl_lost", false), "respect" if Game.flag("musa_respect", false) else ("enemy" if Game.flag("musa_enemy", false) else "-")])
 	if args.has("auto"):
@@ -185,6 +190,7 @@ func _brawl() -> void:
 		b.global_position = level.open_point(player.global_position + Vector3(cos(i * TAU / 3.0), 0.0, sin(i * TAU / 3.0)) * 3.0)
 		brawlers.append(b)
 	hud.toast("Fists! Left mouse punch · right mouse block · {shove} shove", 4.0)
+	Objective.set_goal("Win the fistfight")
 	if args.has("auto") and not args.has("skill-bot"):  # --skill-bot: tests/difficulty_test boxes them
 		for b in brawlers:  # the bot doesn't box: the brawl's end is the test
 			(b as Brawler).queue_free()
@@ -219,6 +225,7 @@ func _brawl_over(lost: bool) -> void:
 func _gunfight() -> void:
 	player.set_armed(true)
 	hud.toast("They go for their guns!", 2.5)
+	Objective.set_goal("Win the gunfight")
 	var men: Array[Gunman] = []
 	for i in 3:
 		var g := Gunman.new()
@@ -288,12 +295,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		SaveRoute.resume(get_tree())  # the last save: the act's start or a later milestone
 	elif event.is_action_pressed("journal"):
 		JournalScreen.toggle(self, player)
-	elif event.is_action_pressed("ui_cancel"):
-		get_tree().paused = not get_tree().paused
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if get_tree().paused else Input.MOUSE_MODE_CAPTURED
-		hud.show_message("PAUSED" if get_tree().paused else "", "Click to resume · Q to quit" if get_tree().paused else "")
-	elif event is InputEventKey and event.pressed and event.keycode == KEY_Q and get_tree().paused:
-		get_tree().quit()
 
 
 func _process(delta: float) -> void:

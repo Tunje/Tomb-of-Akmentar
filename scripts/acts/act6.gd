@@ -143,6 +143,7 @@ func _keepers() -> void:
 	for n in [rashad, bashir]:
 		n.face_towards(player.global_position)
 	hud.show_message("ACT 6", "Dawn at Akmentar. The guardian is awake; the thieves are on the road.")
+	Objective.set_goal("Race the thieves back to Cairo")
 	await get_tree().create_timer(2.5).timeout
 	hud.show_message("")
 	if not Game.flag("act6_started", false):
@@ -279,6 +280,7 @@ func _camp(at: Vector3) -> void:
 func _servants(camp: Vector3) -> void:
 	player.set_armed(true)
 	hud.toast("Shapes in the dark, wrapped and silent. Hold the fire!", 3.0)
+	Objective.set_goal("Hold the fire until dawn")
 	# Nobody dies outright (Gunman.downed, the whole game): help them up (E) before a servant reaches
 	# them, or the dark takes them when it's over.
 	for c in companions.values():
@@ -375,6 +377,7 @@ func _arrival() -> void:
 	cairo.set_curse(1.0, 0.0)  # the dust that won't settle
 	Ambience.play(self, "cairo")
 	hud.show_message("CAIRO", Cairo.countdown_line())
+	Objective.set_goal("Into Cairo")
 	await get_tree().create_timer(2.5).timeout
 	hud.show_message("")
 	await _talk("act6_arrival", player)
@@ -388,6 +391,7 @@ func _finish() -> void:
 	print("RESULT act6 end day=%d thieves=%d mummy=%d route=%s" % [Game.day, int(Game.countdowns.get("thieves", 0)),
 		int(Game.countdowns.get("mummy", 0)), Game.flag("return_route", "")])
 	hud.show_message("BACK IN CAIRO", "Enter  into the city (Act 7)")
+	Objective.set_goal("")
 	if args.has("auto"):
 		await get_tree().create_timer(1.0).timeout
 		if args.has("chain"):
@@ -428,12 +432,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		SaveRoute.resume(get_tree())  # the last save, wherever it resumes
 	elif event.is_action_pressed("party_order"):
 		hud.toast("Companions: " + str(Gunman.toggle_party_order(get_tree())))
-	elif event.is_action_pressed("ui_cancel") and not ActionMenu.ui_open():
-		get_tree().paused = not get_tree().paused
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if get_tree().paused else Input.MOUSE_MODE_CAPTURED
-		hud.show_message("PAUSED" if get_tree().paused else "", "Click to resume · Q to quit" if get_tree().paused else "")
-	elif event is InputEventKey and event.pressed and event.keycode == KEY_Q and get_tree().paused:
-		get_tree().quit()
 
 
 # ---------------------------------------------------------------- frame, test runs

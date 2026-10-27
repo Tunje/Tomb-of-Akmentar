@@ -200,9 +200,9 @@ func _page() -> void:
 	_check(is_instance_valid(OptionsScreen.accessibility), "it opens the accessibility page")
 	var rows := 0
 	for l in OptionsScreen.accessibility.find_children("*", "Label", true, false):
-		if (l as Label).text in ["Subtitles", "Text size", "Subtitle background", "Aim", "Sprint", "Crouch", "Camera shake", "Crosshair", "Crosshair colour"]:
+		if (l as Label).text in ["Subtitles", "Text size", "Subtitle background", "Aim", "Sprint", "Crouch", "Camera shake", "Crosshair", "Crosshair colour", "Show objective"]:
 			rows += 1
-	_check(rows == 9, "with its 9 settings (%d)" % rows)
+	_check(rows == 10, "with its 10 settings (%d)" % rows)
 	OptionsScreen.accessibility.close()
 	o.close()
 

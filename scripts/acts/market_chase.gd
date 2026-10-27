@@ -81,6 +81,7 @@ func _begin(from: Vector3) -> void:
 	if hud:
 		hud.toast(("He's got Freddie's note!" if item == "note" else "He's got your suitcase!") + " After him! ({sprint} to sprint, {cover} to grab)", 4.0)
 	print("RESULT market_chase start item=%s" % item)
+	Objective.set_goal("Catch the thief ({cover} to grab him)")
 
 
 ## Two or three people standing about, close enough that you can't run straight through.

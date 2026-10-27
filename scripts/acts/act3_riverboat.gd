@@ -115,16 +115,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		Checkpoint.retry(self)  # Game as it was on entry, then the scene from its start
 	elif event.is_action_pressed("party_order"):
 		hud.toast("Companions: " + str(Gunman.toggle_party_order(get_tree())))
-	elif event.is_action_pressed("ui_cancel"):
-		get_tree().paused = not get_tree().paused
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if get_tree().paused else Input.MOUSE_MODE_CAPTURED
-		hud.show_message("PAUSED" if get_tree().paused else "", "Click to resume · Q to quit" if get_tree().paused else "")
-	elif event is InputEventKey and event.pressed and event.keycode == KEY_Q and get_tree().paused:
-		get_tree().quit()
-	elif event is InputEventMouseButton and event.pressed and get_tree().paused:
-		get_tree().paused = false
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-		hud.show_message("")
 
 
 # ---------------------------------------------------------------- aboard
@@ -182,6 +172,7 @@ func _settle_aboard() -> void:
 func _aboard() -> void:
 	step = Step.ABOARD
 	hud.show_message("THE RIVERBOAT", "Upriver toward Akmentar. The Americans booked the same passage.")
+	Objective.set_goal("Upriver to Akmentar on the steamer")
 	await get_tree().create_timer(2.5).timeout
 	hud.show_message("")
 	await get_tree().create_timer(1.5).timeout
@@ -196,6 +187,7 @@ func _attack() -> void:
 	step = Step.ATTACK
 	print("RESULT act3_riverboat attack t=%.1f progress=%.0f" % [_t, boat.progress])
 	hud.toast("Riflemen on the west bank! Boats putting out!", 4.0)
+	Objective.set_goal("Defend the steamer")
 	player.set_armed(true)
 	# The riflemen: ahead on the port (west) bank, in the palms; they shoot as the boat passes.
 	for i in BANK_RIFLES:
@@ -337,6 +329,7 @@ func _burning() -> void:
 	step = Step.BURNING
 	print("RESULT act3_riverboat cleared t=%.1f killed=%d" % [_t, _killed])
 	hud.toast("The fire's in the engine room. She's lost. Over the side and make for the west bank!", 5.0)
+	Objective.set_goal("Over the side: make for the west bank")
 	boat.cruise = 0.0  # the engine dies; she drifts to a stop
 	for k in 3:
 		var f := _flames()
@@ -404,6 +397,7 @@ func _end() -> void:
 		"The wager: %s." % ("accepted" if Game.flag("wager_accepted", false) else ("declined" if Game.flag("wager_offered", false) else "not made")),
 	]
 	hud.show_message("STRANDED ON THE NILE", "\n".join(lines) + "\n\nThe race to Akmentar: you start last.\nEnter  on to Akmentar (Act 4)")
+	Objective.set_goal("")
 	print("RESULT act3_riverboat end result=%s killed=%d withdrew=%d party_losses=%s americans_standing=%d player_health=%.0f t=%.1f" % [
 		result.get("result", ""), result.get("keepers_killed", 0), result.get("withdrew", 0), lost,
 		result.get("americans_standing", 0), player.health, _t])

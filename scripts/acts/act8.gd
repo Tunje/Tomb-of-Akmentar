@@ -90,6 +90,7 @@ func _ready() -> void:
 		_to_the_road(true)
 		return
 	hud.show_message("THE WAY BACK", "The jars and the amulet must go home to Akmentar, and the guardian is coming for them.\nGet ready in Cairo, then set out from the hotel.")
+	Objective.set_goal("Get ready in Cairo, then set out from the hotel")
 	await get_tree().create_timer(3.5).timeout
 	hud.show_message("")
 	if args.has("auto"):
@@ -195,6 +196,7 @@ func _to_the_road(returned := false) -> void:
 func _fight() -> void:
 	player.set_armed(true)
 	hud.toast("They're coming for the amulet!", 3.0)
+	Objective.set_goal("Protect the amulet")
 	var ms: Array[Mummy] = []
 	for k in MINIONS:
 		var m := Mummy.new()
@@ -238,6 +240,7 @@ func _final() -> void:
 		EpilogueShow.open(self, "akmentar", player)
 	else:
 		hud.show_message("THE LAST DOOR", "The guardian waits below. Two of its keepers still live.\n\nEnter  go down into Akmentar (Act 9)")
+		Objective.set_goal("Go down into Akmentar")
 	if args.has("auto"):
 		await get_tree().create_timer(1.0).timeout
 		get_tree().quit(0)

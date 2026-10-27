@@ -143,6 +143,7 @@ func _start() -> void:
 		c.start("act8_chase", player, who)
 		await c.finished
 	hud.toast("Drive! They're coming up behind. ({crouch}: look back · {swap_seat}: hand a companion the wheel and take the gun.)", 4.0)
+	Objective.set_goal("Drive: keep the chariots off the trucks")
 	_running = true
 	_road_ahead()
 	Barks.say_any(get_tree(), "truck_ride")
@@ -362,6 +363,7 @@ func _finish() -> void:
 	finished.emit(result)
 	hud.show_message("THE FORT GATE", "%d chariots down. %s\n\nEnter  go on" % [result.destroyed,
 		"Everyone made it." if (result.dead as Array).is_empty() else "Lost: %s." % ", ".join((result.dead as Array).map(func(i): return str(i).capitalize()))])
+	Objective.set_goal("")
 	if args.has("auto"):
 		await get_tree().create_timer(1.0).timeout
 		get_tree().quit(0)
@@ -375,12 +377,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_tree().change_scene_to_file(next_scene)  # Game (the flags, the dead) carries over
 	elif enter and not player.alive:
 		Checkpoint.retry(self)  # Game as it was on entry, then the scene from its start
-	elif event.is_action_pressed("ui_cancel") and not ActionMenu.ui_open():
-		get_tree().paused = not get_tree().paused
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if get_tree().paused else Input.MOUSE_MODE_CAPTURED
-		hud.show_message("PAUSED" if get_tree().paused else "", "Click to resume · Q to quit" if get_tree().paused else "")
-	elif event is InputEventKey and event.pressed and event.keycode == KEY_Q and get_tree().paused:
-		get_tree().quit()
 
 
 var _looking_back := false

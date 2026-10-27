@@ -103,16 +103,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		Checkpoint.retry(self)  # Game as it was on entry, then the scene from its start
 	elif event.is_action_pressed("party_order"):
 		hud.toast("Companions: " + str(Gunman.toggle_party_order(get_tree())))
-	elif event.is_action_pressed("ui_cancel"):
-		get_tree().paused = not get_tree().paused
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if get_tree().paused else Input.MOUSE_MODE_CAPTURED
-		hud.show_message("PAUSED" if get_tree().paused else "", "Click to resume · Q to quit" if get_tree().paused else "")
-	elif event is InputEventKey and event.pressed and event.keycode == KEY_Q and get_tree().paused:
-		get_tree().quit()
-	elif event is InputEventMouseButton and event.pressed and get_tree().paused:
-		get_tree().paused = false
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-		hud.show_message("")
 
 
 # ---------------------------------------------------------------- the convoy
@@ -213,8 +203,10 @@ func _road() -> void:
 	step = Step.ROAD
 	if coast:
 		hud.show_message("THE COAST ROAD", "Along the sea, then inland to the town. Akmentar lies beyond.")
+		Objective.set_goal("Take the convoy along the coast to the town")
 	else:
 		hud.show_message("THE DESERT ROAD", "Three days across the sand to the town. Akmentar lies beyond.")
+		Objective.set_goal("Take the convoy across the desert to the town")
 	await get_tree().create_timer(2.5).timeout
 	hud.show_message("")
 	await get_tree().create_timer(4.5).timeout
@@ -236,6 +228,7 @@ func _ambush() -> void:
 		int(args.get("seed", "-1")))
 	ambush.riders_coming.connect(func(): hud.toast("Riders! Coming down the wadi from the east!", 3.0))
 	hud.toast("Ambush! Get out into cover ({cover}) or drive on through!" if coast else "Ambush! Get down into cover ({cover}) or ride on through!", 4.0)
+	Objective.set_goal("Survive the ambush: fight from cover, or break through")
 	get_tree().create_timer(1.2).timeout.connect(func(): _bark("combat_start", player.global_position))
 	result = await ambush.finished
 	_after()
@@ -277,6 +270,7 @@ func _on_to_town() -> void:
 	var at := DesertRoute.road_point(DesertRoute.TOWN_Z + 6.0)
 	elder = Npc.make(level, "rashid", at + DesertRoute.road_dir(at.z).cross(Vector3.UP) * 3.0, "act3_town", Characters.glb("rashid"))
 	hud.toast("On to the town: north up the road.", 4.0)
+	Objective.set_goal("On to the town, north up the road")
 	if args.has("auto"):
 		# The bot skips the ride: the party is at the edge of town.
 		if player.vehicle:
@@ -317,6 +311,7 @@ func _end() -> void:
 		"Horses lost: %d." % (result.get("horses_lost", []) as Array).size(),
 	]
 	hud.show_message("THE ROAD TO THE TOWN", "\n".join(lines) + "\n\nThe race to Akmentar: you start fourth.\nEnter  on to Akmentar (Act 4)")
+	Objective.set_goal("")
 	print("RESULT act3_desert end result=%s killed=%d surrendered=%d withdrew=%d party_losses=%s horses_lost=%s truck=%.0f player_health=%.0f t=%.1f" % [
 		result.get("result", ""), result.get("bandits_killed", 0), result.get("surrendered", 0), result.get("withdrew", 0),
 		lost, result.get("horses_lost", []), float(result.get("truck_health", 0.0)), player.health, _t])

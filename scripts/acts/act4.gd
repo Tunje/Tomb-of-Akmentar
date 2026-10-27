@@ -91,16 +91,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		JournalScreen.toggle(self, player)
 	elif event.is_action_pressed("party_order"):
 		hud.toast("Companions: " + str(Gunman.toggle_party_order(get_tree())))
-	elif event.is_action_pressed("ui_cancel") and not ActionMenu.ui_open():
-		get_tree().paused = not get_tree().paused
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if get_tree().paused else Input.MOUSE_MODE_CAPTURED
-		hud.show_message("PAUSED" if get_tree().paused else "", "Click to resume · Q to quit" if get_tree().paused else "")
-	elif event is InputEventKey and event.pressed and event.keycode == KEY_Q and get_tree().paused:
-		get_tree().quit()
-	elif event is InputEventMouseButton and event.pressed and get_tree().paused:
-		get_tree().paused = false
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-		hud.show_message("")
 
 
 # ---------------------------------------------------------------- the act
@@ -109,6 +99,7 @@ func _arrive() -> void:
 	step = Step.ARRIVE
 	var order: String = {3: "first", 4: "second", 5: "last"}.get(int(Game.flag("race_step", 3)), "")
 	hud.show_message("AKMENTAR", "The ruins rise out of the sand. You arrived %s." % order)
+	Objective.set_goal("Claim the best sites before the others")
 	await get_tree().create_timer(2.5).timeout
 	hud.show_message("")
 	_draft()
@@ -182,6 +173,7 @@ func _pennant(at: Vector3, colour: Color) -> void:
 func _day() -> void:
 	step = Step.DAY
 	hud.toast("Day 1: inspect the sites you claimed · sleep at camp to end the day", 4.0)
+	Objective.set_goal("Inspect the sites you claimed, then sleep at camp")
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if args.size() > 0 else Input.MOUSE_MODE_CAPTURED
 	if args.has("view"):
 		# Test: stand 9 m in front of a site, looking at it.
@@ -205,6 +197,7 @@ func _nightfall() -> void:
 	step = Step.NIGHT
 	Ambience.play(self, "night", 4.0)
 	hud.toast("Night falls over Akmentar", 3.0)
+	Objective.set_goal("Night: decide who to stand with")
 	var tw := create_tween()
 	tw.tween_method(func(f: float): _night_f = f; level.set_night(f), 0.0, 1.0, 4.0)
 	await tw.finished
@@ -250,6 +243,7 @@ func _raid() -> void:
 			if is_instance_valid(c):
 				c.global_position = at + Vector3(randf_range(-2, 2), 0, 4.0)
 	hud.toast({"barricade": "Hold the camp!", "americans": "To the American camp!", "germans": "To the German camp!"}[choice], 3.0)
+	Objective.set_goal("Survive the night raid")
 	if ResourceLoader.exists(NIGHT_RAID):
 		raid = load(NIGHT_RAID).start(self, choice, level.camps, player)
 		var result: Dictionary = await raid.finished
@@ -300,6 +294,7 @@ func _end() -> void:
 		"Ally: %s." % (str(Game.flag("ally", "")).capitalize() if Game.flag("ally", "") != "" else "none"),
 		"Clues found: %d." % _clue_count()]
 	hud.show_message("THE FIRST NIGHT", "\n".join(lines) + "\n\nThe way below waits.\nEnter  go down into Akmentar (Act 5)")
+	Objective.set_goal("")
 	print("RESULT act4 end choice=%s americans=%s germans=%s ally=%s clues=%d" % [Game.flag("night_choice", ""),
 		Game.flag("americans_alive", false), Game.flag("germans_alive", false), Game.flag("ally", ""), _clue_count()])
 	if args.has("auto"):

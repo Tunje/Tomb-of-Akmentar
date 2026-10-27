@@ -24,6 +24,7 @@ const DEFAULTS := {
 	"shake": 1.0,                   # camera shake, 0..1
 	"crosshair": "normal",          # normal / bold / large
 	"crosshair_color": "white",     # white / yellow / cyan
+	"show_objective": true,         # the objective line top left (Objective)
 }
 ## Quality presets: shadowed lights near you (RenderBudget), the sun's shadows, 3D render scale,
 ## anti-aliasing.

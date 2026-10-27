@@ -228,12 +228,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		hud.toast("Companions: " + order)
 	elif event.is_action_pressed("journal") and started and not over:
 		JournalScreen.toggle(self, player)
-	elif event.is_action_pressed("ui_cancel") and started and not over and not ActionMenu.ui_open():
-		get_tree().paused = not get_tree().paused  # Esc or the pad's Start, again to resume
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if get_tree().paused else Input.MOUSE_MODE_CAPTURED
-		hud.show_message("PAUSED" if get_tree().paused else "", "Click to resume · Q to quit" if get_tree().paused else "")
 	elif event is InputEventKey and event.pressed:
-		if event.keycode == KEY_Q and (get_tree().paused or not started or over):
+		# (Esc or Start: the pause menu, which Hud opens in every scene.)
+		if event.keycode == KEY_Q and (not started or over):
 			get_tree().quit()
 		# Proving Ground: try the board screens (route map, site draft, epilogue).
 		elif event.keycode == KEY_F2 and started and not over:

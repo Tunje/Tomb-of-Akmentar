@@ -163,6 +163,7 @@ func _bring_party() -> void:
 func _descend() -> void:
 	step = Step.DESCEND
 	hud.show_message("BELOW AKMENTAR", "The air is cold and old. Somewhere ahead, the royal tomb.")
+	Objective.set_goal("Find the way to the royal tomb")
 	await get_tree().create_timer(2.5).timeout
 	hud.show_message("")
 	# The ally's leader comes down with you: the morning talk (what they found, what they hide).
@@ -188,6 +189,7 @@ func _level2() -> void:
 			SiteSpot.make(level, "akmentar_below", AkmentarBelow.SITE_IDS[id], level.pois[id])
 	hud.toast("Level 2: you can study %d places before the royal door (%s)" % [budget,
 		"your allies insist on two of them" if ally != "" else "choose well"], 4.0)
+	Objective.set_goal("Study what you can, then open the royal door")
 	# Sleepers in the maze's dead ends: they wake when you come close or shoot near them.
 	for p in level.mummy_spawns:
 		var m := Mummy.new()
@@ -258,6 +260,7 @@ func _tomb() -> void:
 	var allowed := 1 if Game.flag("german_delay", false) else 2
 	Game.set_flag("tomb_allowed", allowed)
 	hud.toast("The royal tomb of Akmentar", 3.0)
+	Objective.set_goal("Study the royal tomb")
 	if FileAccess.file_exists(TOMB_SITES):
 		# Rebuilt now: the door (german_delay) changes the tomb's slots and its cut.
 		SiteBudget.begin("royal_tomb", SiteSpot.load_area("royal_tomb"), true)
@@ -315,6 +318,7 @@ func _escape() -> void:
 	step = Step.ESCAPE
 	Barks.say_any(get_tree(), "act5_escape")
 	hud.toast("RUN. Back to the stairs!", 3.0)
+	Objective.set_goal("Get out of the tomb: back to the stairs")
 	# Companions run with you (-bf's escape mode); one of them goes down partway (help or leave).
 	var i := 0
 	for c in companions.values():
@@ -563,6 +567,7 @@ func _revelation() -> void:
 func _end() -> void:
 	step = Step.END
 	Game.place = "act5_end"
+	Objective.set_goal("")
 	Game.save_game()
 	var lines := ["The guardian is awake.", "The amulet is gone: the %s took it." % str(Game.flag("thieves", "")).capitalize(),
 		"The Keepers want it back, and so must you."]

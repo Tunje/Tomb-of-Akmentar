@@ -71,6 +71,7 @@ func _ready() -> void:
 	Game.event.connect(_on_event)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if args.size() > 0 else Input.MOUSE_MODE_CAPTURED
 	hud.show_message("CAIRO, 1926", "%d days to raise an expedition. Money: £%d" % [int(plan.get("days", 2)), Game.money])
+	Objective.set_goal("Raise an expedition: hire a crew, gather supplies, then leave Cairo")
 	await get_tree().create_timer(3.0).timeout
 	hud.show_message("")
 	if args.has("auto"):
@@ -142,6 +143,7 @@ func _on_event(name: String) -> void:
 ## Win and you're past them (museum_guards_beaten); lose and they throw you out.
 func _museum_guards() -> void:
 	hud.toast("The museum guards come for you. Left mouse punch · right mouse block · {shove} shove", 4.0)
+	Objective.set_goal("Fight off the museum guards")
 	var won: bool = await GuardBrawl.start(level, player).finished
 	hud.toast("The guards are down. The archivist is all yours." if won else "The museum guards throw you out into the street.", 3.0)
 
@@ -151,6 +153,7 @@ func _museum_guards() -> void:
 func _bounty_hunters() -> void:
 	player.set_armed(true)
 	hud.toast("Three men are coming up the street for Isabelle, guns out. Take cover!", 3.5)
+	Objective.set_goal("Drive off the bounty hunters")
 	var result: Dictionary = await StreetFight.start(level, player).finished
 	if not result.player_alive:
 		return
@@ -186,6 +189,7 @@ func _leave() -> void:
 	var names: Array = Game.party().map(func(id): return str(id).capitalize())
 	hud.show_message("LEAVING CAIRO", "With you: %s.\nMoney left: £%d.\n\nEnter  set out for Akmentar (Act 3)" % [
 		", ".join(names) if not names.is_empty() else "nobody", Game.money])
+	Objective.set_goal("")
 	print("RESULT act2 end day=%d party=%s money=%d" % [Game.day, Game.party(), Game.money])
 	if args.has("auto"):
 		await get_tree().create_timer(1.0).timeout
@@ -206,12 +210,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		JournalScreen.toggle(self, player)
 	elif event.is_action_pressed("party_order"):
 		hud.toast("Companions: " + str(Gunman.toggle_party_order(get_tree())))
-	elif event.is_action_pressed("ui_cancel") and not ActionMenu.ui_open():
-		get_tree().paused = not get_tree().paused
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if get_tree().paused else Input.MOUSE_MODE_CAPTURED
-		hud.show_message("PAUSED" if get_tree().paused else "", "Click to resume · Q to quit" if get_tree().paused else "")
-	elif event is InputEventKey and event.pressed and event.keycode == KEY_Q and get_tree().paused:
-		get_tree().quit()
 
 
 func _save(where: String) -> void:

@@ -82,6 +82,8 @@ func _ready() -> void:
 	_label.add_theme_constant_override("outline_size", 6)
 	add_child(_label)
 	_label.visible = false
+	# It lives on the root: a new scene (a retry, the next act) mustn't keep the last one's line.
+	get_tree().scene_changed.connect(func() -> void: _label.visible = false)
 
 
 func _show(who: String, name: String, text: String, secs: float) -> void:

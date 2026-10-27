@@ -63,6 +63,7 @@ func _ready() -> void:
 		_after_road()
 		return
 	hud.show_message("THE ROAD TO AKMENTAR", "Choose your way. The Americans and the Germans are already moving.")
+	Objective.set_goal("Choose your way to Akmentar")
 	await get_tree().create_timer(2.5).timeout
 	hud.show_message("")
 	_board("act3_route")
@@ -171,6 +172,7 @@ func _end() -> void:
 	Game.place = "act3_end"
 	Game.save_game()
 	hud.show_message("AKMENTAR IN SIGHT", "Race position: step %d.\n\nEnter  ride into the ruins (Act 4)" % int(Game.flag("race_step", 3)))
+	Objective.set_goal("Ride into the ruins")
 	print("RESULT act3 end route=%s branch=%s race_step=%s party=%s day=%d" % [Game.flag("route_act3_route", ""),
 		Game.flag("route_act3_desert_branch", Game.flag("route_act3_coast_branch", "")), Game.flag("race_step", 3), Game.party(), Game.day])
 	if args.has("auto"):
