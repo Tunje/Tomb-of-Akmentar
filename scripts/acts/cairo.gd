@@ -621,6 +621,7 @@ func _mosque() -> void:
 	dome.position = Vector3(13, 9.0, 21)
 	_mesh(Vector3(13, 9.3, 21), Vector3(10.4, 0.6, 10.4), _trim)
 	_minaret(Vector3(20, 9.0, 12), 18.0)
+	SoundLife.call_to_prayer(self, Vector3(20, 27.0, 12))  # -f9's: from the minaret's top (no-op until prayer.ogg)
 	_mesh(Vector3(22.05, 2.0, 24), Vector3(0.12, 4.0, 2.4), _dark)
 	_mesh(Vector3(22.1, 4.2, 24), Vector3(0.22, 0.4, 3.0), _trim)
 
