@@ -54,8 +54,9 @@ var priest := false
 var party_margin := 1.0
 ## A companion on the ground (Gunman.stumbled) isn't sought out, only finished if he's right
 ## there (within 2.5 m), and not while he carries meta "downed_grace" (the act's few seconds for
-## the player to reach him). Act 6's camp: the fight washes over the fallen, it doesn't hunt them.
-var ignore_downed := false
+## the player to reach him). The whole game (Gunman.downed): the fight washes over the fallen, it
+## doesn't hunt them.
+var ignore_downed := true
 var _arm_pivots := {}
 
 

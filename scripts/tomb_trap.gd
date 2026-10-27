@@ -144,7 +144,10 @@ func _drop_block(at: Vector3, delay: float) -> void:
 	for p in _people_near():
 		var q := (p as Node3D).global_position
 		if Vector2(q.x - at.x, q.z - at.z).length() < BLOCK.x * 0.6 + 0.3 and absf(q.y - floor_y) < 1.0:
-			p.call("take_damage", BLOCK_DAMAGE, body.global_position + Vector3.UP)
+			if p.has_method("crush"):
+				p.call("crush", body.global_position)  # a companion isn't downed under a block
+			else:
+				p.call("take_damage", BLOCK_DAMAGE, body.global_position + Vector3.UP)
 	# In the lane: it breaks up into rubble underfoot (no collision): the way out stays open.
 	var local := door_xf.affine_inverse() * body.global_position
 	if absf(local.x) < LANE * 0.5 + BLOCK.x * 0.5:

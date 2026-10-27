@@ -76,6 +76,8 @@ const ESCAPE_NEAR := 2.5         # escape mode (Act 5): run close behind, never 
 const ESCAPE_FAR := 4.0
 const ESCAPE_SPEED := 7.2        # (the player sprints 6.6)
 const HELP_REACH := 3.2          # E this close helps a stumbled companion up (across low rubble too)
+const DOWNED_GRACE := 6.0        # s enemies leave a downed companion alone: time to get to them
+const OVER_GRACE := 5.0          # s after the fight's over to help the downed up, or they die
 const HOP_MAX := 1.3             # rubble this high (or lower) gets climbed while following
 # Surrender (enemies only)
 const SURRENDER_AT := 0.25       # share of max health
@@ -126,9 +128,14 @@ var stuck_count := 0
 var escape := false
 ## Down on the floor (stumble()): stays put until the player helps (E) or something gets him.
 var stumbled := false
-## A blow that would kill him downs him instead (stumble(): help him up, or it's the next one that
-## kills). Set by a fight that shouldn't cost a companion outright (Act 6's camp).
-var down_not_dead := false
+## Companions (a companion_id), the whole game: a blow that would kill one downs them instead
+## (stumble(), `downed`): "E help up", no time limit. Enemies leave them alone DOWNED_GRACE s, then
+## any hit finishes them; still down OVER_GRACE s after the fight's over (fight_on()), they die.
+## crush() (a falling block) kills outright; so do a wrecked truck and the story (Game "kill").
+var down_not_dead := true
+var downed := false
+var _over_t := 0.0
+var _over_check := 0.0
 ## Hands up: out of the fight, hostile to no one (shooting him anyway is the story's mean choice).
 var surrendered := false
 ## Enemies only: whether this one may give up at all (a fanatic of the order might not), and how
@@ -368,7 +375,8 @@ static func _target_alive(n) -> bool:  # untyped: it may have been freed
 	if n is Player:
 		return (n as Player).alive
 	if n is Gunman:
-		return (n as Gunman).is_active() and not (n as Gunman).surrendered
+		# Just downed: left alone for DOWNED_GRACE (then a shot at him finishes him).
+		return (n as Gunman).is_active() and not (n as Gunman).surrendered and not (n as Node).has_meta("downed_grace")
 	if n.has_method("is_active"):
 		return n.call("is_active")
 	return true
@@ -425,7 +433,7 @@ func _candidates() -> Array[Node3D]:
 		if foe_player and is_hostile(foe_player) and not out.has(foe_player):
 			out.append(foe_player)
 		for g in get_tree().get_nodes_in_group("gunmen"):
-			if is_hostile(g) and (g as Gunman).is_active():
+			if is_hostile(g) and _target_alive(g):
 				out.append(g)
 		for g in get_tree().get_nodes_in_group("party"):
 			var leader_node = (g as Gunman).leader  # untyped: it may have been freed
@@ -516,6 +524,8 @@ func _physics_process(delta: float) -> void:
 		_animate(delta, false)
 		return
 	if stumbled:
+		if downed:
+			_downed_step(delta)
 		_push = _push.move_toward(Vector3.ZERO, delta * 8.0)
 		velocity.x = _push.x
 		velocity.z = _push.z
@@ -843,10 +853,66 @@ func _help_check() -> void:
 		help_up()
 
 
+## Down instead of dead: anything that reaches them there after the grace finishes them.
+func _go_down() -> void:
+	health = 1.0
+	downed = true
+	_over_t = 0.0
+	set_meta("downed_grace", true)  # mummies (ignore_downed) and gunmen leave them alone this long
+	get_tree().create_timer(DOWNED_GRACE).timeout.connect(func():
+		if is_instance_valid(self):
+			remove_meta("downed_grace"))
+	stumble()
+
+
+## Killed outright, never downed: a falling block.
+func crush(from: Vector3) -> void:
+	if state == State.DEAD:
+		return
+	health = 0.0
+	_push += _flat(global_position - from).normalized() * 0.6
+	_die()
+
+
+## Whether there's still a fight on: anything hostile to the party up and about.
+static func fight_on(tree: SceneTree) -> bool:
+	for n in tree.get_nodes_in_group("gunmen"):
+		var g := n as Gunman
+		if g and g.is_active() and not g.surrendered and g.target != null and not allied(g.team, PARTY):
+			return true
+	for n in tree.get_nodes_in_group("mummies"):
+		var m := n as Mummy
+		if m and not (m.state in [Mummy.State.DORMANT, Mummy.State.RISING, Mummy.State.DEAD]):
+			return true
+	for n in tree.get_nodes_in_group("guardians"):
+		if n.get("state") != Guardian.State.DORMANT and n.get("state") != Guardian.State.PAUSED:
+			return true
+	for n in tree.get_nodes_in_group("chariots"):
+		if n.get("alive"):
+			return true
+	return false
+
+
+## Downed and the fight's over: OVER_GRACE s to be helped up, then they're gone.
+func _downed_step(delta: float) -> void:
+	_over_check -= delta
+	if _over_check > 0.0:
+		return
+	_over_check = 0.5
+	_over_t = 0.0 if fight_on(get_tree()) else _over_t + 0.5
+	if _over_t >= OVER_GRACE:
+		print("COMPANION %s left down after the fight: dies" % companion_id)
+		_die()
+
+
 func help_up() -> void:
 	if not stumbled:
 		return
 	stumbled = false
+	if downed:
+		downed = false
+		health = maxf(health, max_health * 0.4)  # enough not to go down again at the first touch
+		remove_meta("downed_grace")
 	if rig:
 		rig.kneel(false)
 	if is_instance_valid(_help):
@@ -1408,9 +1474,8 @@ func _hurt(part: String, dmg: float, dir: Vector3, stagger: float, knock: float)
 	_seen_t = 0.0
 	_push += _flat(dir).normalized() * knock * 0.6
 	if health <= 0.0:
-		if down_not_dead and not stumbled:
-			health = 1.0  # down instead: anything that reaches him there finishes him
-			stumble()
+		if down_not_dead and team == PARTY and companion_id != "" and not stumbled:
+			_go_down()
 			return {"killed": false}
 		_die()
 		return {"killed": true}

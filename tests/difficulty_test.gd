@@ -83,6 +83,7 @@ func _runner() -> void:
 	var wall := float(args.get("wall", "900"))
 	var label: String = args.get("label", "run")
 	var only: Array = str(args.get("only", "")).split(",", false)
+	var extra: Array = str(args.get("extra", "")).split(",", false)  # e.g. --extra=--bot-help: more args for every child
 	var dir: String = args.get("dir", ProjectSettings.globalize_path("user://difficulty"))  # no spaces, for --commands
 	DirAccess.make_dir_recursive_absolute(dir)
 	var queue: Array = []
@@ -95,7 +96,7 @@ func _runner() -> void:
 		# Godot processes in all: a runner plus its children counts as several).
 		for job in queue:
 			print("RUN %s" % " ".join(PackedStringArray(["res://tests/difficulty_test.tscn", "--", "--fight=" + job.fight,
-				"--seed=%d" % job.seed, "--out=" + job.out, "--skill-bot"] + FIGHTS[job.fight].args)))
+				"--seed=%d" % job.seed, "--out=" + job.out, "--skill-bot"] + FIGHTS[job.fight].args + extra)))
 		get_tree().quit(0)
 		return
 	if args.has("table"):
@@ -110,7 +111,7 @@ func _runner() -> void:
 				DirAccess.remove_absolute(job.out)
 			var a: Array = ["--headless", "--path", ProjectSettings.globalize_path("res://"), "--fixed-fps", "60",
 				"res://tests/difficulty_test.tscn", "--", "--fight=" + job.fight, "--seed=%d" % job.seed, "--out=" + job.out,
-				"--skill-bot"] + FIGHTS[job.fight].args
+				"--skill-bot"] + FIGHTS[job.fight].args + extra
 			job.pid = OS.create_process(OS.get_executable_path(), a)
 			job.t0 = Time.get_ticks_msec()
 			running.append(job)
@@ -157,7 +158,7 @@ static func _row_text(r: Dictionary) -> String:
 static func _table(rows: Array, label: String, seeds: int) -> String:
 	var lines := PackedStringArray()
 	lines.append("Difficulty (%s): %d seeds, mid-skill bot" % [label, seeds])
-	lines.append("| fight | runs | won | deaths | dmg taken avg (max) | length avg | companions lost | bot hits |")
+	lines.append("| fight | runs | won | deaths | dmg taken avg (max) | length avg | companions lost (went down) | bot hits |")
 	lines.append("|---|---|---|---|---|---|---|---|")
 	for n in ORDER:
 		var rs := rows.filter(func(r): return r.name == n)
@@ -166,6 +167,7 @@ static func _table(rows: Array, label: String, seeds: int) -> String:
 			continue
 		var fired := 0
 		var hit := 0
+		var downs := 0
 		var won := 0
 		var deaths := 0
 		var dmg := 0.0
@@ -183,10 +185,11 @@ static func _table(rows: Array, label: String, seeds: int) -> String:
 			t += float(r.t)
 			lost += (r.lost as Array).size()
 			party += (r.party as Array).size()
+			downs += int(r.get("downs", 0))
 			fired += int(r.get("fired", 0))
 			hit += int(r.get("hit", 0))
-		lines.append("| %s | %d | %d | %d%s | %d%% (%d%%) | %.0f s | %d/%d | %s |" % [n, rs.size(), won, deaths,
-			" (+%d timeout)" % timeouts if timeouts > 0 else "", int(dmg / rs.size()), int(dmax), t / rs.size(), lost, party,
+		lines.append("| %s | %d | %d | %d%s | %d%% (%d%%) | %.0f s | %d/%d (%d down) | %s |" % [n, rs.size(), won, deaths,
+			" (+%d timeout)" % timeouts if timeouts > 0 else "", int(dmg / rs.size()), int(dmax), t / rs.size(), lost, party, downs,
 			"%d%% of %d" % [100 * hit / fired, fired] if fired > 0 else "-"])
 	return "\n".join(lines)
 
@@ -203,7 +206,8 @@ var _seg := 0
 var _on := false
 var _t := 0.0
 var _seg_t := 0.0
-var _seg_dmg := 0.0
+var _shots := Vector2i.ZERO  # this fight: (fired, hit)
+var _downs := {}  # companion ids that went down in this fight
 var _shots := Vector2i.ZERO  # this fight: (fired, hit)
 var _seg_party: Array = []
 var _trucks_hp := 0.0  # "dmg": "trucks" fights (the chase): the convoy takes the hits, not him
@@ -305,6 +309,7 @@ func _check(delta: float) -> void:
 			_seg_t = 0.0
 			_seg_dmg = 0.0
 			_shots = Vector2i.ZERO
+			_downs.clear()
 			_quiet = 0.0
 			_fought = false
 			_seg_party = Game.party()
@@ -315,6 +320,9 @@ func _check(delta: float) -> void:
 				player.global_position = (act.get("intercept") as Node3D).global_position
 		return
 	_seg_t += delta
+	for n in get_tree().get_nodes_in_group("gunmen"):
+		if n is Gunman and (n as Gunman).downed:
+			_downs[(n as Gunman).companion_id] = true
 	var died := not player.alive or _hp_used >= PLAYER_HP
 	if died:
 		_finish_seg("died")
@@ -368,9 +376,14 @@ func _finish_seg(outcome: String) -> void:
 	if s.get("dmg", "") == "trucks":
 		full = 100.0 * (act.get("trucks") as Array).size()
 		_seg_dmg = _trucks_hp - _trucks_health()
-	var lost := _seg_party.filter(func(id): return not Game.in_party(id))
+	# Still down at the end counts as lost: Gunman lets them go OVER_GRACE s after the fight.
+	var left := {}
+	for n in get_tree().get_nodes_in_group("gunmen"):
+		if n is Gunman and (n as Gunman).downed and (n as Gunman).is_active():
+			left[(n as Gunman).companion_id] = true
+	var lost := _seg_party.filter(func(id): return not Game.in_party(id) or left.has(id))
 	var r := {"name": s.name, "seed": _seed, "outcome": outcome, "t": snappedf(_seg_t, 0.1), "dmg": snappedf(_seg_dmg, 0.1),
-		"dmg_pct": snappedf(minf(100.0 * _seg_dmg / full, 100.0), 0.1), "party": _seg_party, "lost": lost, "fired": _shots.x, "hit": _shots.y}
+		"dmg_pct": snappedf(minf(100.0 * _seg_dmg / full, 100.0), 0.1), "party": _seg_party, "lost": lost, "fired": _shots.x, "hit": _shots.y, "downs": _downs.size()}
 	print("DIFF %s" % JSON.stringify(r))
 	var f := FileAccess.open(_out, FileAccess.READ_WRITE if FileAccess.file_exists(_out) else FileAccess.WRITE)
 	f.seek_end()

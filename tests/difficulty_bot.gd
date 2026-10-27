@@ -35,6 +35,9 @@ var _trace := "--bot-trace" in OS.get_cmdline_user_args()
 var player: Player
 ## The scene plays (act5's escape run): the bot only watches.
 var passive := false
+## --bot-help: it goes back for downed companions (the default bot never does).
+var helps := "--bot-help" in OS.get_cmdline_user_args()
+const HELP_SAFE := 5.0  # m: no enemy this near, it's safe to go and help
 
 var _t := 0.0
 var _target: Node3D
@@ -109,6 +112,8 @@ func _physics_process(delta: float) -> void:
 	if brawl:
 		_box(p, delta)
 		return
+	if helps and p.vehicle == null and p.controls_enabled and Conversation.current == null and _help(p, foes, delta):
+		return
 	if foes.is_empty():
 		if _target != null:
 			_target = null
@@ -117,6 +122,36 @@ func _physics_process(delta: float) -> void:
 	if not p.controls_enabled or Conversation.current != null:
 		return
 	_shoot(p, foes, delta)
+
+
+## --bot-help: a companion down (Gunman.downed) and nothing hostile within HELP_SAFE of it: go and
+## help them up (E within reach). True while it's doing that.
+func _help(p: Player, foes: Array[Node3D], delta: float) -> bool:
+	var down: Gunman = null
+	var bd := INF
+	for n in get_tree().get_nodes_in_group("gunmen"):
+		var g := n as Gunman
+		if g and g.downed and g.stumbled and g.is_active():
+			var d := p.global_position.distance_to(g.global_position)
+			if d < bd:
+				bd = d
+				down = g
+	if down == null:
+		return false
+	for f in foes:
+		if p.global_position.distance_to(f.global_position) < HELP_SAFE:
+			return false  # deal with that one first
+	_press("fire", false)
+	_press("aim", false)
+	_press("crouch", false)
+	if bd > 2.2:
+		_press("cover", false)
+		_release_moves()
+		_walker.walk(down.global_position, delta)
+		return true
+	_release_moves()
+	_press("cover", not Input.is_action_pressed("cover"))  # E, a fresh press every other frame
+	return true
 
 
 # ---------------------------------------------------------------- guns
@@ -422,7 +457,7 @@ func _release_moves() -> void:
 
 func _release_all() -> void:
 	_release_moves()
-	for a in ["fire", "aim", "crouch"]:
+	for a in ["fire", "aim", "crouch", "cover"]:
 		_press(a, false)
 
 

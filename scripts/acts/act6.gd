@@ -20,7 +20,6 @@ const NEXT_ACT := "res://act7.tscn"
 const RIVALS := ["americans", "germans"]   # the expeditions that can lend horses (if alive)
 const SERVANT_HP := 130.0                  # (mummy.gd: 100) at 100 the party shot them down unhurt (tests/difficulty_test)
 const SERVANT_PACE := 1.5                  # x their walk
-const DOWNED_GRACE := 6.0                  # s a downed companion is left alone (time to reach them)
 const CAMP_TOUGHNESS := 3.5                # companions' health x this for the camp fight (they take the first of it)
 const SERVANTS := 12                       # mummies at the night camp
 const SERVANTS_THEN := 2                   # after the first three, this many together every 2.5-4 s (one at a time: shot down unhurt)
@@ -280,11 +279,10 @@ func _camp(at: Vector3) -> void:
 func _servants(camp: Vector3) -> void:
 	player.set_armed(true)
 	hud.toast("Shapes in the dark, wrapped and silent. Hold the fire!", 3.0)
-	# Nobody dies outright at the camp: a blow that would kill a companion downs them instead. Help
-	# them up (E) before a servant reaches them, or the dark takes them when it's over.
+	# Nobody dies outright (Gunman.downed, the whole game): help them up (E) before a servant reaches
+	# them, or the dark takes them when it's over.
 	for c in companions.values():
 		if is_instance_valid(c):
-			c.down_not_dead = true
 			# They stand between you and the dark, so they take the first of it: dug in by the fire,
 			# they hold longer than in the open (restored after the fight).
 			c.set_meta("camp_max_hp", c.max_health)
@@ -319,7 +317,6 @@ func _servants(camp: Vector3) -> void:
 	var lost: Array[String] = []
 	for c in companions.values():
 		if is_instance_valid(c):
-			c.down_not_dead = false
 			if c.has_meta("camp_max_hp"):
 				c.max_health = float(c.get_meta("camp_max_hp"))
 				c.health = minf(c.health, c.max_health)
@@ -336,19 +333,14 @@ func _servants(camp: Vector3) -> void:
 	await get_tree().create_timer(2.0).timeout
 
 
-## Down: the servant that felled them turns away for a few seconds, time for you to get there.
+## Down (Gunman leaves them a few seconds' grace): say so.
 func _on_downed(g: Gunman) -> void:
 	print("RESULT act6 down %s" % g.companion_id)
 	hud.toast("%s is down! Get to them (E)." % DayLog.person(g.companion_id), 3.0)
-	g.set_meta("downed_grace", true)
-	get_tree().create_timer(DOWNED_GRACE).timeout.connect(func():
-		if is_instance_valid(g):
-			g.remove_meta("downed_grace"))
 
 
-## Back on their feet: enough left in them not to go down again at the first touch.
+## Back on their feet (Gunman.help_up gives them back 40%).
 func _on_helped_up(g: Gunman) -> void:
-	g.health = maxf(g.health, g.max_health * 0.4)
 	print("RESULT act6 helped up %s" % g.companion_id)
 
 
@@ -360,7 +352,6 @@ func _servant(camp: Vector3, a: float, priest: bool, down: Array) -> void:
 	m.health = SERVANT_HP
 	m.speed *= SERVANT_PACE
 	m.party_margin = 5.0  # they come for you (and the amulet) unless a companion is clearly nearer
-	m.ignore_downed = true  # a companion on the ground is finished only if one stumbles onto him
 	var p := camp + Vector3(cos(a), 0, sin(a)) * randf_range(11.0, 15.0)  # out of the dark close by (16-22 m: shot down before they arrived)
 	p.y = DesertRoute.ground_y(p.z)
 	m.global_position = p

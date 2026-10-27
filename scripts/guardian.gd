@@ -85,6 +85,7 @@ var _trace_t := 0.0
 
 
 func _ready() -> void:
+	add_to_group("guardians")  # Gunman.fight_on: the fight's on while he's awake
 	collision_layer = 4
 	collision_mask = 1 | 2 | 4
 	var shape := CollisionShape3D.new()
