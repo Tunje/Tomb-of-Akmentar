@@ -71,6 +71,8 @@ func _ready() -> void:
 			level.call("set_day_time", 0.55)
 			if not off:
 				level.call("set_curse", 1.0, 1.0)
+	if off and what == "river" and level.get_node_or_null("ReedBeds"):
+		level.get_node("ReedBeds").queue_free()  # (the shader can't be had the old way: reeds only)
 	if off and level.get("crowd"):
 		var c: Crowd = level.get("crowd")
 		if what == "night" and c.lights:

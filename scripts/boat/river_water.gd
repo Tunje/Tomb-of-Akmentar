@@ -88,7 +88,7 @@ void fragment() {
 	ROUGHNESS = 0.85;
 }
 """
-const REED_EVERY := 1.6       # m along each bank between clumps (some skipped: the beds come and go)
+const REED_EVERY := 1.0       # m along each bank between clumps (some skipped: the beds come and go)
 
 var _sun: DirectionalLight3D
 var _sun_t := 0.0
@@ -149,11 +149,11 @@ static func reed_beds(parent: Node3D, path: Path3D, half_w: float, water_y := 0.
 		var right := f.cross(Vector3.UP).normalized()
 		var bed := 0.5 + 0.5 * sin(s * 0.045) * sin(s * 0.11 + 1.3)   # thick here, thin there
 		for side in [-1.0, 1.0]:
-			if rng.randf() > 0.35 + 0.6 * bed:
+			if rng.randf() > 0.45 + 0.55 * bed:
 				continue
-			for k in rng.randi_range(4, 9):
+			for k in rng.randi_range(6, 12):
 				var at: Vector3 = p + right * side * (half_w + rng.randf_range(-1.6, 1.2)) + f * rng.randf_range(-0.8, 0.8)
-				var h := rng.randf_range(0.9, 2.1) * (0.7 + 0.5 * bed)
+				var h := rng.randf_range(1.1, 2.4) * (0.7 + 0.5 * bed)
 				var b := Basis(Vector3.UP, rng.randf() * TAU) * Basis(Vector3.RIGHT, rng.randf_range(-0.15, 0.15))
 				xforms.append(Transform3D(b.scaled(Vector3(1.0, h, 1.0)), path.global_transform * at + Vector3.UP * (water_y - 0.25)))
 		s += REED_EVERY
@@ -176,14 +176,14 @@ static func reed_beds(parent: Node3D, path: Path3D, half_w: float, water_y := 0.
 	return mi
 
 
-## One clump: five thin blades leaning out from a point, 1 m tall (scaled per clump).
+## One clump: eight blades leaning out from a point, 1 m tall (scaled per clump).
 static func _blades() -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for k in 5:
-		var a := TAU * k / 5.0
-		var lean := Vector3(cos(a), 0, sin(a)) * 0.18
-		var side := Vector3(-sin(a), 0, cos(a)) * 0.025
+	for k in 8:
+		var a := TAU * k / 8.0 + fmod(k * 0.9, 0.5)
+		var lean := Vector3(cos(a), 0, sin(a)) * (0.12 + 0.1 * fmod(k * 0.37, 1.0))
+		var side := Vector3(-sin(a), 0, cos(a)) * 0.05
 		var top := lean + Vector3.UP
 		for v: Array in [[-side, 0.0], [side, 0.0], [top, 1.0]]:
 			st.set_uv(Vector2(0.5, v[1]))
