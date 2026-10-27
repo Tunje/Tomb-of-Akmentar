@@ -12,6 +12,7 @@ const DEFAULTS := {
 	"mouse_sens": 1.0, "invert_y": false, "fov": 72.0,
 	"quality": "high",                                  # low / medium / high
 	"fullscreen": false, "barks": true, "hints": true,
+	"vibration": true, "aim_assist": true,              # the pad: rumble, the aim slowdown
 	"keys": {},                                         # rebound keys (Controls.bindings); {} = defaults
 }
 ## Quality presets: shadowed lights near you (RenderBudget), the sun's shadows, 3D render scale,

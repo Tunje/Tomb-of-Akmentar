@@ -70,6 +70,8 @@ func _ready() -> void:
 	_check(grid, "Fullscreen", "fullscreen")
 	_check(grid, "Companions' remarks", "barks")
 	_check(grid, "First-time hints", "hints")
+	_check(grid, "Controller vibration", "vibration")
+	_check(grid, "Aim assist (controller)", "aim_assist")
 	var buttons := HBoxContainer.new()
 	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
 	buttons.add_theme_constant_override("separation", 20)

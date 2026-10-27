@@ -90,6 +90,7 @@ func _land() -> void:
 	is_shut = true
 	Sfx.play_at(get_parent(), Sfx.impact(), _floor + Vector3.UP * 0.5, 8.0, 0.0)
 	Fx.impact(get_parent(), _floor + Vector3.UP * 0.1, Vector3.UP, Fx.Kind.STONE)
+	Controls.rumble_at(get_tree(), _floor, 0.8, 1.0, 0.35, 20.0)  # the thud through the pad, by distance
 	shut.emit()
 
 

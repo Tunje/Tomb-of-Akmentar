@@ -264,3 +264,31 @@ static func fill(text: String) -> String:
 		if InputMap.has_action(action):
 			out = out.replace(m.get_string(), key_name(action))
 	return out
+
+
+# ---------------------------------------------------------------- rumble
+
+## Rumble pulses so far (tests read these: no pad has to be plugged in to check the calls).
+static var rumble_count := 0
+static var last_rumble: Array = []
+
+
+## A short pulse on every connected pad, only while the pad is the device in use and the options
+## allow it ("Controller vibration"). weak / strong: the two motors, 0..1. True if it rumbled.
+static func rumble(weak: float, strong: float, secs: float) -> bool:
+	if not last_pad or not Settings.value("vibration"):
+		return false
+	rumble_count += 1
+	last_rumble = [weak, strong, secs]
+	for d in Input.get_connected_joypads():
+		Input.start_joy_vibration(d, clampf(weak, 0.0, 1.0), clampf(strong, 0.0, 1.0), secs)
+	return true
+
+
+## rumble() for something at `pos` in the world: full at the camera, nothing past `reach` m.
+static func rumble_at(tree: SceneTree, pos: Vector3, weak: float, strong: float, secs: float, reach := 25.0) -> bool:
+	var cam := tree.root.get_camera_3d() if tree else null
+	if cam == null:
+		return false
+	var k := 1.0 - cam.global_position.distance_to(pos) / reach
+	return k > 0.05 and rumble(weak * k, strong * k, secs)

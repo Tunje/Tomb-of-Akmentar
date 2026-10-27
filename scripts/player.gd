@@ -23,6 +23,8 @@ const GRAVITY := 20.0
 const MOUSE_SENS := 0.0024
 const PAD_YAW := 2.8           # rad/s at full right stick (times the options' sensitivity)
 const PAD_PITCH := 1.9
+const BUMP := 18.0            # m/s² of a vehicle's sudden velocity change that rumbles the pad
+const ASSIST_SLOW := 0.4      # the right stick's speed over an enemy while aiming (no pull, no snap)
 const BASE_FOV := 72.0
 const ARM_LEN := 3.0
 const AIM_ARM_LEN := 1.5
@@ -100,6 +102,9 @@ var _base_fov := BASE_FOV
 var _sens := 1.0
 var _invert_y := false
 var _pad_sprint := false   # L3 latches sprint until the left stick comes back to rest
+var _drive_vel := Vector3.ZERO  # the vehicle's velocity last tick (bumps rumble)
+var _jolt_cd := 0.0
+var _assist := 1.0         # the aim slowdown now (1 = none, ASSIST_SLOW over a target)
 
 
 func _ready() -> void:
@@ -179,6 +184,8 @@ func _build_body() -> void:
 	melee.power = 1.3
 	melee.toughness = 1.5
 	melee.enabled = false  # fists up only in a brawl; main / the story turns it on
+	melee.landed.connect(func(_target, _kind, blocked: bool) -> void: Controls.rumble(0.35, 0.2 if blocked else 0.45, 0.1))
+	melee.knocked_down.connect(func() -> void: Controls.rumble(0.7, 0.9, 0.3))
 	add_child(melee)
 	if explorer:
 		melee.install(explorer)
@@ -552,6 +559,7 @@ func enter_vehicle(t: Node3D) -> void:
 	if vehicle or not t.board(self, 0):
 		return
 	vehicle = t
+	_drive_vel = (t as RigidBody3D).linear_velocity if t is RigidBody3D else Vector3.ZERO  # no "bump" on boarding
 	focus = null
 	cover.leave()
 	set_armed(false)
@@ -646,6 +654,18 @@ func _drive_step(delta: float) -> void:
 	if controls_enabled:  # a pad: RT speeds up, LT slows (the triggers alone, not the mouse)
 		throttle = clampf(throttle + Input.get_action_strength("pad_throttle") - Input.get_action_strength("pad_brake"), -1.0, 1.0)
 	vehicle.drive(throttle, -input.x, controls_enabled and Input.is_action_pressed("dodge"), delta)
+	# Bumps and knocks: a sudden change in a truck's velocity rumbles the pad (a horse's gaits
+	# change speed in steps, so not on horseback).
+	if not vehicle is RigidBody3D:
+		return
+	var v := (vehicle as RigidBody3D).linear_velocity
+	var jolt := (v - _drive_vel).length() / maxf(delta, 0.001)
+	_drive_vel = v
+	_jolt_cd = maxf(_jolt_cd - delta, 0.0)
+	if jolt > BUMP and _jolt_cd <= 0.0:
+		var k := clampf((jolt - BUMP) / (BUMP * 3.0), 0.15, 1.0)
+		if Controls.rumble(0.3 + k * 0.5, 0.2 + k * 0.8, 0.08 + k * 0.2):
+			_jolt_cd = 0.15
 
 
 ## The right stick looks (and aims): the options' sensitivity and invert Y apply, and it's as
@@ -653,11 +673,53 @@ func _drive_step(delta: float) -> void:
 func _pad_look(delta: float) -> void:
 	if not controls_enabled or not alive or camera == null:
 		return
+	var slow := _aim_slow(delta)  # every frame: it has eased in before the stick moves
 	var stick := Input.get_vector("look_left", "look_right", "look_up", "look_down")
 	if stick == Vector2.ZERO:
 		return
-	var k := _sens * camera.fov / _base_fov * stick.length() * delta  # gentle near the middle
+	var k := _sens * camera.fov / _base_fov * stick.length() * delta * slow  # gentle near the middle
 	look(-stick.x * PAD_YAW * k, (stick.y if _invert_y else -stick.y) * PAD_PITCH * k)
+
+
+## Aim slowdown (pad only, aiming, the options' "Aim assist"): the stick eases to ASSIST_SLOW
+## while the crosshair is on or near an enemy in sight. It never moves the aim: the stick just
+## turns slower there, so it's easier to stop on someone. Bullets stay real rounds.
+func _aim_slow(delta: float) -> float:
+	var want := 1.0
+	if Controls.last_pad and aiming and Settings.value("aim_assist") and _enemy_near_crosshair():
+		want = ASSIST_SLOW
+	_assist = move_toward(_assist, want, delta * 6.0)
+	return _assist
+
+
+## An enemy (a hostile gunman, a mummy, the guardian) whose body is within a little of the aim
+## ray, in front within range and not behind a wall.
+func _enemy_near_crosshair() -> bool:
+	var from := camera.global_position
+	var fwd := -camera.global_basis.z
+	var foes: Array = []
+	for n in get_tree().get_nodes_in_group("gunmen"):
+		var g := n as Gunman
+		if g and g.alive and not g.surrendered and not Gunman.allied(g.team, Gunman.PARTY):
+			foes.append(g)
+	foes.append_array(get_tree().get_nodes_in_group("mummies"))
+	foes.append_array(get_tree().get_nodes_in_group("guardians"))
+	for f in foes:
+		var n3 := f as Node3D
+		if n3 == null or ("alive" in n3 and not n3.alive):
+			continue
+		var at := n3.global_position + Vector3.UP * 1.1  # the middle of the capsule
+		var to := at - from
+		var along := to.dot(fwd)
+		if along < 1.0 or along > weapons[current].range_m:
+			continue
+		# Within the body's half width and a margin that grows a little with distance.
+		if (to - fwd * along).length() > 0.45 + along * 0.012:
+			continue
+		var hit := _ray(from, at, MASK_WORLD)
+		if hit.is_empty() or hit.collider == n3:
+			return true
+	return false
 
 
 ## Explore (false) or combat (true). Drawing plays the weapon-raise; holstering hides the gun.
@@ -761,6 +823,8 @@ func try_fire() -> void:
 	Sfx.play_at(self, Sfx.gunshot(w.sound_pitch), muzzle.global_position, 2.0)
 	Fx.muzzle_flash(get_parent(), muzzle.global_position, -camera.global_basis.z)
 	_cycle_gun_parts(w)
+	var r: Array = {"shotgun": [0.7, 0.9, 0.2], "rifle": [0.45, 0.6, 0.13]}.get(w.id, [0.25, 0.35, 0.09])
+	Controls.rumble(r[0], r[1], r[2])  # the pad's kick, by gun (only while the pad is in use)
 	fired.emit()
 	if ammo[current] == 0:
 		_fire_cd = maxf(_fire_cd, 0.3)
@@ -855,6 +919,8 @@ func take_damage(amount: float, from: Vector3) -> bool:
 		return false
 	var was := health
 	health = maxf(health - amount, 0.0)
+	var hurt := minf(amount / max_health, 0.5)
+	Controls.rumble(0.5 + hurt, 0.6 + hurt * 0.8, 0.18)  # a hit: harder the more it took
 	Hints.once("dodge")
 	Hints.once("crouch")
 	if was > max_health * 0.3 and health <= max_health * 0.3 and health > 0.0:

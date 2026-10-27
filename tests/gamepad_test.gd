@@ -29,6 +29,8 @@ func _ready() -> void:
 	await _walk_and_sprint()
 	await _look()
 	await _fire_and_use()
+	await _rumble()
+	await _assist()
 	_names()
 	await _truck()
 	await _wheel()
@@ -115,6 +117,101 @@ func _fire_and_use() -> void:
 	await _wait(0.1)
 	_check(used[0], "X uses what's in front (the market chase's grab)")
 	it.queue_free()
+
+
+## Rumble: firing and a hit rumble on the pad, not after a key; the option turns it off; a slab
+## door's thud rumbles near it, not far off.
+func _rumble() -> void:
+	player.max_health = 100000.0
+	player.health = 100000.0
+	Controls.note_device(_button_event(JOY_BUTTON_A, true))
+	var n := Controls.rumble_count
+	player.ammo[player.current] = 6
+	player._fire_cd = 0.0
+	player.try_fire()
+	_check(Controls.rumble_count == n + 1 and not Controls.last_rumble.is_empty(), "firing rumbles on the pad (%s)" % [Controls.last_rumble])
+	n = Controls.rumble_count
+	player.take_damage(10.0, player.global_position + Vector3.FORWARD)
+	_check(Controls.rumble_count == n + 1, "a hit rumbles")
+	var key := InputEventKey.new()
+	key.physical_keycode = KEY_W
+	key.pressed = true
+	Controls.note_device(key)
+	n = Controls.rumble_count
+	await _wait(0.5)
+	player._fire_cd = 0.0
+	player.try_fire()
+	player.take_damage(10.0, player.global_position + Vector3.FORWARD)
+	_check(Controls.rumble_count == n, "nothing rumbles with mouse and keyboard in use")
+	Controls.note_device(_button_event(JOY_BUTTON_A, true))
+	Settings.set_value("vibration", false, get_tree())
+	await _wait(0.5)
+	player._fire_cd = 0.0
+	player.try_fire()
+	_check(Controls.rumble_count == n, "the option off: no rumble")
+	Settings.set_value("vibration", true, get_tree())
+	var cam := get_viewport().get_camera_3d()
+	n = Controls.rumble_count
+	Controls.rumble_at(get_tree(), cam.global_position + Vector3(0, 0, -30), 0.8, 1.0, 0.3, 20.0)
+	_check(Controls.rumble_count == n, "a slab's thud 30 m off: nothing")
+	Controls.rumble_at(get_tree(), cam.global_position + Vector3(0, 0, -5), 0.8, 1.0, 0.3, 20.0)
+	_check(Controls.rumble_count == n + 1 and float(Controls.last_rumble[0]) < 0.8, "5 m off: a lighter thud (%s)" % [Controls.last_rumble])
+
+
+## Aim slowdown: aiming (LT) over a bandit the right stick turns slower; off him, or without LT,
+## or with the option off, it doesn't. It never moves the aim by itself.
+func _assist() -> void:
+	player.set_armed(true)
+	await _wait(0.5)
+	var g := Gunman.new()
+	g.team = Gunman.BANDITS
+	add_child(g)
+	var cam := player.camera
+	var fwd := -Basis(Vector3.UP, player.yaw).z
+	g.global_position = Vector3(cam.global_position.x, player.global_position.y, cam.global_position.z) + fwd * 10.0
+	await _wait(0.3)
+	g.set_physics_process(false)  # stands still, doesn't shoot
+	g.set_process(false)
+	var centre := g.global_position + Vector3.UP * 1.1
+	var d := (centre - cam.global_position).normalized()
+	player.pitch = asin(d.y)
+	Controls.note_device(_button_event(JOY_BUTTON_A, true))
+	_stick(JOY_AXIS_TRIGGER_LEFT, 1.0)  # aim
+	await _wait(0.4)
+	_check(player.aiming and player._enemy_near_crosshair(), "aiming at the bandit: he's under the crosshair")
+	_check(player._assist < 0.45, "over him the stick eases (%.2f)" % player._assist)
+	var y0 := player.yaw
+	await _wait(0.3)
+	_check(is_equal_approx(player.yaw, y0), "and nothing pulls the aim (yaw unchanged with the stick at rest)")
+	var slow := await _turn(0.3)
+	player.yaw = y0
+	player.yaw = y0 + 1.2  # well off him
+	await _wait(0.4)
+	var fast := await _turn(0.3)
+	_check(slow < fast * 0.7, "off him it turns at full speed (%.3f vs %.3f rad)" % [slow, fast])
+	player.yaw = y0
+	_stick(JOY_AXIS_TRIGGER_LEFT, 0.0)  # not aiming
+	await _wait(0.4)
+	await _turn(0.2)
+	_check(player._assist > 0.95, "without LT, no slowdown (%.2f)" % player._assist)
+	player.yaw = y0
+	Settings.set_value("aim_assist", false, get_tree())
+	_stick(JOY_AXIS_TRIGGER_LEFT, 1.0)
+	await _wait(0.4)
+	await _turn(0.2)
+	_check(player._assist > 0.95, "the option off: no slowdown (%.2f)" % player._assist)
+	Settings.set_value("aim_assist", true, get_tree())
+	_stick(JOY_AXIS_TRIGGER_LEFT, 0.0)
+	FightBot.remove_gunman(g)
+
+
+## The right stick a little right for `secs`: how far it turned.
+func _turn(secs: float) -> float:
+	var y := player.yaw
+	_stick(JOY_AXIS_RIGHT_X, 0.4)
+	await _wait(secs)
+	_stick(JOY_AXIS_RIGHT_X, 0.0)
+	return absf(y - player.yaw)
 
 
 func _names() -> void:

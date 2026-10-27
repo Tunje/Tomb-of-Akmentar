@@ -410,6 +410,7 @@ func _slam(p: Player, to: Vector3) -> void:
 	slams += 1
 	_recover_time = SLAM_RECOVER
 	p.trauma = minf(p.trauma + 0.8, 1.0)
+	Controls.rumble(1.0, 1.0, 0.45)  # the slam: the pad's hardest jolt (after take_damage's)
 	if p.melee:
 		p.melee.knock_down(SLAM_DOWN, SLAM_GETUP, dir * SLAM_PUSH)
 	Sfx.play_at(get_parent(), Sfx.gunshot(0.3), p.global_position + Vector3.UP * 0.3, 4.0, 0.05)
