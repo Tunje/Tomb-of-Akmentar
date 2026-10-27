@@ -5,6 +5,8 @@ extends CharacterBody3D
 
 signal hit_confirmed(killed: bool, headshot: bool)
 signal damaged(amount: float)
+## Where the last hit came from (the Hud's damage arc points at it).
+var last_hit_from := Vector3.INF
 signal died
 signal fired
 ## The gunner seat swap happened (V in a truck): a line for the act's HUD.
@@ -949,6 +951,7 @@ func take_damage(amount: float, from: Vector3) -> bool:
 	push.y = 0
 	if not cover.in_cover():  # in cover the snap would fight the shove
 		velocity += push.normalized() * 3.0
+	last_hit_from = from
 	damaged.emit(amount)
 	if health <= 0.0:
 		alive = false
