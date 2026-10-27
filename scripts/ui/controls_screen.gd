@@ -1,8 +1,9 @@
 class_name ControlsScreen
 extends CanvasLayer
-## The controls page (from the options): every action and its key. Click a key (or Enter on it),
-## then press the new one: Esc cancels, a key another action had swaps the two. Mouse buttons and
-## shared keys are shown, not rebound. Saved with the options (settings.cfg "keys").
+## The controls page (from the options): every action, its key and its pad button. Click a key
+## (or Enter on it), then press the new one: Esc cancels, a key another action had swaps the two.
+## Mouse buttons, shared keys and the pad column are shown, not rebound. B or Esc goes back.
+## Saved with the options (settings.cfg "keys").
 ##   ControlsScreen.open(get_tree())
 
 const INK := Color(0.95, 0.88, 0.7)
@@ -42,20 +43,22 @@ func _ready() -> void:
 	centre.set_anchors_preset(Control.PRESET_FULL_RECT)
 	shade.add_child(centre)
 	var box := VBoxContainer.new()
-	box.custom_minimum_size = Vector2(640, 0)
+	box.custom_minimum_size = Vector2(820, 0)
 	box.add_theme_constant_override("separation", 12)
 	centre.add_child(box)
 	box.add_child(_label("CONTROLS", 40, INK, HORIZONTAL_ALIGNMENT_CENTER))
 	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(640, 560)
+	scroll.custom_minimum_size = Vector2(820, 560)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	box.add_child(scroll)
 	var grid := GridContainer.new()
-	grid.columns = 2
+	grid.columns = 3
 	grid.add_theme_constant_override("h_separation", 24)
 	grid.add_theme_constant_override("v_separation", 6)
 	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(grid)
+	for head in ["", "Keyboard and mouse", "Pad"]:
+		grid.add_child(_label(head, 16, DIM))
 	var first: Control = null
 	for i in Controls.LIST.size():
 		var row: Array = Controls.LIST[i]
@@ -76,6 +79,14 @@ func _ready() -> void:
 			v.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 			grid.add_child(v)
 			_shared[i] = v
+		# The pad's button (read only for now).
+		var pad := Controls.pad_name(row[1])
+		if row[2] == "vault":
+			pad = "Left stick up + " + pad
+		var p := _label(pad if pad != "" else "-", 19, DIM)
+		p.custom_minimum_size = Vector2(170, 34)
+		p.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		grid.add_child(p)
 	_note = _label("", 16, DIM, HORIZONTAL_ALIGNMENT_CENTER)
 	box.add_child(_note)
 	var row2 := HBoxContainer.new()
@@ -95,7 +106,7 @@ func _ready() -> void:
 	row2.add_child(reset)
 	row2.add_child(back)
 	box.add_child(row2)
-	box.add_child(_label("Click a key (or Enter on it), then press the new one · Esc cancels · Esc again goes back", 15, DIM, HORIZONTAL_ALIGNMENT_CENTER))
+	box.add_child(_label("Click a key (or Enter on it), then press the new one · Esc cancels · Esc or B goes back", 15, DIM, HORIZONTAL_ALIGNMENT_CENTER))
 	_refresh("")
 	if first:
 		first.grab_focus.call_deferred()
@@ -106,13 +117,14 @@ func close() -> void:
 	queue_free()
 
 
+## The keyboard column always names keys (key_name follows the pad elsewhere).
 func _refresh(note: String) -> void:
 	for i in _buttons:
-		(_buttons[i] as Button).text = Controls.key_name(Controls.LIST[i][1])
+		(_buttons[i] as Button).text = Controls.key_name(Controls.LIST[i][1], false)
 	for i in _shared:
 		var row: Array = Controls.LIST[i]
-		var name := Controls.key_name(row[1])
-		(_shared[i] as Label).text = {"mouse": name, "vault": Controls.key_name("move_forward") + " + " + name,
+		var name := Controls.key_name(row[1], false)
+		(_shared[i] as Label).text = {"mouse": name, "vault": Controls.key_name("move_forward", false) + " + " + name,
 			"same": name + "  (as " + _label_of(row[1]) + ")"}.get(row[2], name)
 	_note.text = note
 
@@ -130,9 +142,17 @@ func _listen(i: int) -> void:
 	_note.text = "Press the new key for %s (Esc cancels)." % Controls.LIST[i][0]
 
 
-## While listening, the next key is the binding; otherwise Esc goes back. Every key stops here
-## (a paused act quits on Q).
+## While listening, the next key is the binding; otherwise Esc (or the pad's B) goes back. Every
+## key stops here (a paused act quits on Q); the pad's other buttons move about the page.
 func _input(event: InputEvent) -> void:
+	if event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_B:
+		get_viewport().set_input_as_handled()
+		if _waiting >= 0:
+			_waiting = -1
+			_refresh("Unchanged.")
+		else:
+			close()
+		return
 	if not event is InputEventKey or not event.pressed or event.echo:
 		if event is InputEventKey:
 			get_viewport().set_input_as_handled()
@@ -152,8 +172,8 @@ func _input(event: InputEvent) -> void:
 		var swapped := ""
 		for other in before:
 			if other != action and before[other] != Controls.bindings()[other]:
-				swapped = " It was %s's: that now has %s." % [_label_of(other), Controls.key_name(other)]
-		_refresh("%s is now %s.%s" % [Controls.LIST[i][0], Controls.key_name(action), swapped])
+				swapped = " It was %s's: that now has %s." % [_label_of(other), Controls.key_name(other, false)]
+		_refresh("%s is now %s.%s" % [Controls.LIST[i][0], Controls.key_name(action, false), swapped])
 		(_buttons[i] as Button).grab_focus()
 		return
 	if k.keycode == KEY_ESCAPE:

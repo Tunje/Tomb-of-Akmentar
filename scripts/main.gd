@@ -225,9 +225,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("journal") and started and not over:
 		JournalScreen.toggle(self, player)
 	elif event.is_action_pressed("ui_cancel") and started and not over and not ActionMenu.ui_open():
-		get_tree().paused = true
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-		hud.show_message("PAUSED", "Click to resume · Q to quit")
+		get_tree().paused = not get_tree().paused  # Esc or the pad's Start, again to resume
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if get_tree().paused else Input.MOUSE_MODE_CAPTURED
+		hud.show_message("PAUSED" if get_tree().paused else "", "Click to resume · Q to quit" if get_tree().paused else "")
 	elif event is InputEventKey and event.pressed:
 		if event.keycode == KEY_Q and (get_tree().paused or not started or over):
 			get_tree().quit()

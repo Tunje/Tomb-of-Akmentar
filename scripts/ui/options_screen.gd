@@ -99,7 +99,8 @@ func close() -> void:
 
 ## Esc closes it here, before a paused act sees it (where Esc would un-pause).
 func _input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_cancel"):
+	var pad_back: bool = event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_B
+	if event.is_action_pressed("ui_cancel") or pad_back:
 		get_viewport().set_input_as_handled()
 		close()
 		return

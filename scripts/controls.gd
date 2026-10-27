@@ -32,6 +32,102 @@ static func setup() -> void:
 			var e := InputEventMouseButton.new()
 			e.button_index = b
 			InputMap.action_add_event(action, e)
+	_setup_pad()
+
+
+# ---------------------------------------------------------------- the gamepad (Xbox layout)
+
+## Pad bindings, added once beside the keys and mouse: a button (int) or an axis [axis, sign].
+## Left stick moves, right stick looks (look_*), RT fires, LT aims; A dodge, B crouch, X use /
+## cover, Y reload (and the brawl's shove: unarmed, nothing to reload), LB / RB guns, the d-pad
+## holster / orders / journal / the truck's wheel swap, L3 sprint (Player latches it), Start
+## pauses (ui_cancel), Back opens the options when paused. pad_throttle / pad_brake are the
+## triggers alone: a truck or horse speeds up on RT and slows on LT, not on a mouse click.
+const PAD := {
+	"move_forward": [[JOY_AXIS_LEFT_Y, -1]], "move_back": [[JOY_AXIS_LEFT_Y, 1]],
+	"move_left": [[JOY_AXIS_LEFT_X, -1]], "move_right": [[JOY_AXIS_LEFT_X, 1]],
+	"look_left": [[JOY_AXIS_RIGHT_X, -1]], "look_right": [[JOY_AXIS_RIGHT_X, 1]],
+	"look_up": [[JOY_AXIS_RIGHT_Y, -1]], "look_down": [[JOY_AXIS_RIGHT_Y, 1]],
+	"fire": [[JOY_AXIS_TRIGGER_RIGHT, 1]], "aim": [[JOY_AXIS_TRIGGER_LEFT, 1]],
+	"pad_throttle": [[JOY_AXIS_TRIGGER_RIGHT, 1]], "pad_brake": [[JOY_AXIS_TRIGGER_LEFT, 1]],
+	"dodge": [JOY_BUTTON_A], "crouch": [JOY_BUTTON_B], "cover": [JOY_BUTTON_X], "reload": [JOY_BUTTON_Y],
+	"shove": [JOY_BUTTON_Y], "weapon_next": [JOY_BUTTON_RIGHT_SHOULDER], "weapon_prev": [JOY_BUTTON_LEFT_SHOULDER],
+	"holster": [JOY_BUTTON_DPAD_DOWN], "party_order": [JOY_BUTTON_DPAD_LEFT], "journal": [JOY_BUTTON_DPAD_UP],
+	"swap_seat": [JOY_BUTTON_DPAD_RIGHT], "sprint": [JOY_BUTTON_LEFT_STICK],
+}
+const STICK_DEADZONE := 0.2
+const TRIGGER_DEADZONE := 0.3
+const BUTTON_NAMES := {
+	JOY_BUTTON_A: "A", JOY_BUTTON_B: "B", JOY_BUTTON_X: "X", JOY_BUTTON_Y: "Y",
+	JOY_BUTTON_LEFT_SHOULDER: "LB", JOY_BUTTON_RIGHT_SHOULDER: "RB", JOY_BUTTON_LEFT_STICK: "L3",
+	JOY_BUTTON_RIGHT_STICK: "R3", JOY_BUTTON_START: "Start", JOY_BUTTON_BACK: "Back",
+	JOY_BUTTON_DPAD_UP: "D-pad up", JOY_BUTTON_DPAD_DOWN: "D-pad down", JOY_BUTTON_DPAD_LEFT: "D-pad left",
+	JOY_BUTTON_DPAD_RIGHT: "D-pad right",
+}
+
+## True while the last input came from a pad (Hud watches): key names then show pad buttons.
+static var last_pad := false
+static var _pad_done := false
+
+
+static func _setup_pad() -> void:
+	if _pad_done:
+		return
+	_pad_done = true
+	for action in PAD:
+		if not InputMap.has_action(action):
+			InputMap.add_action(action)
+		var stick := false
+		for b in PAD[action]:
+			if b is Array:
+				var m := InputEventJoypadMotion.new()
+				m.device = -1  # any pad
+				m.axis = b[0]
+				m.axis_value = float(b[1])
+				InputMap.action_add_event(action, m)
+				stick = b[0] in [JOY_AXIS_LEFT_X, JOY_AXIS_LEFT_Y, JOY_AXIS_RIGHT_X, JOY_AXIS_RIGHT_Y]
+				InputMap.action_set_deadzone(action, STICK_DEADZONE if stick else TRIGGER_DEADZONE)
+			else:
+				var e := InputEventJoypadButton.new()
+				e.device = -1
+				e.button_index = b
+				InputMap.action_add_event(action, e)
+	# Start pauses; B is crouch in play, so it comes off ui_cancel (menus take B back themselves).
+	for e in InputMap.action_get_events("ui_cancel"):
+		if e is InputEventJoypadButton:
+			InputMap.action_erase_event("ui_cancel", e)
+	var start := InputEventJoypadButton.new()
+	start.device = -1
+	start.button_index = JOY_BUTTON_START
+	InputMap.action_add_event("ui_cancel", start)
+
+
+## The pad's name for an action's first pad binding ("A", "RT", "Left stick"), or "" if none.
+static func pad_name(action: String) -> String:
+	if not InputMap.has_action(action):
+		return ""
+	for e in InputMap.action_get_events(action):
+		if e is InputEventJoypadButton:
+			return BUTTON_NAMES.get(e.button_index, "Button %d" % e.button_index)
+		if e is InputEventJoypadMotion:
+			return {JOY_AXIS_TRIGGER_LEFT: "LT", JOY_AXIS_TRIGGER_RIGHT: "RT", JOY_AXIS_LEFT_X: "Left stick",
+				JOY_AXIS_LEFT_Y: "Left stick", JOY_AXIS_RIGHT_X: "Right stick", JOY_AXIS_RIGHT_Y: "Right stick"}.get(e.axis, "Stick")
+	return ""
+
+
+## Notes the device of `event` for key_name (keyboard and mouse vs pad). A stick or trigger counts
+## past half way, the mouse only when it really moves.
+static func note_device(event: InputEvent) -> void:
+	if event is InputEventJoypadButton and event.pressed:
+		last_pad = true
+	elif event is InputEventJoypadMotion and absf(event.axis_value) > 0.5:
+		last_pad = true
+	elif event is InputEventKey and event.pressed:
+		last_pad = false
+	elif event is InputEventMouseButton and event.pressed:
+		last_pad = false
+	elif event is InputEventMouseMotion and event.relative.length() > 4.0:
+		last_pad = false
 
 
 # ---------------------------------------------------------------- the controls page, rebinding
@@ -53,9 +149,13 @@ const LIST := [
 
 
 ## A readable name for an action's first key or button ("E", "Shift", "Right mouse").
-static func key_name(action: String) -> String:
+static func key_name(action: String, allow_pad := true) -> String:
 	if not InputMap.has_action(action):
 		return "?"
+	if last_pad and allow_pad:
+		var p := pad_name(action)
+		if p != "":
+			return p
 	for e in InputMap.action_get_events(action):
 		if e is InputEventKey:
 			return OS.get_keycode_string(e.physical_keycode if e.physical_keycode != 0 else e.keycode)
@@ -137,6 +237,11 @@ static func reset() -> void:
 ## The start screen's key help, from the bindings now (two lines).
 static func help_text() -> String:
 	setup()
+	if last_pad:
+		var p := func(a: String) -> String: return pad_name(a)
+		return "Left stick move · Right stick look · %s sprint · %s crouch · %s dodge · %s use / cover" % [p.call("sprint"),
+			p.call("crouch"), p.call("dodge"), p.call("cover")] + "\n" + "%s aim · %s fire · %s reload · %s %s guns · %s holster" % [
+			p.call("aim"), p.call("fire"), p.call("reload"), p.call("weapon_prev"), p.call("weapon_next"), p.call("holster")]
 	var k := func(a: String) -> String: return key_name(a)
 	return "%s%s%s%s move · %s sprint · %s crouch · %s dodge · %s use / cover (%s+%s vault)" % [k.call("move_forward"),
 		k.call("move_left"), k.call("move_back"), k.call("move_right"), k.call("sprint"), k.call("crouch"),

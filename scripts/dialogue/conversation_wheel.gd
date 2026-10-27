@@ -142,6 +142,14 @@ func _on_gui_input(event: InputEvent) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	# A pad: the left stick points at a choice (_process), A takes it or moves a line on.
+	if event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_A:
+		get_viewport().set_input_as_handled()
+		if not _open:
+			advance.emit()
+		elif hovered >= 0:
+			chosen.emit(hovered)
+		return
 	if not (event is InputEventKey and event.pressed and not event.echo):
 		return
 	var k: int = event.keycode
@@ -172,6 +180,10 @@ func _hover_at(p: Vector2) -> void:
 # ---------------------------------------------------------------- drawing
 
 func _process(_delta: float) -> void:
+	if _open and Controls.last_pad:
+		var v := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
+		if v.length() > 0.5:  # the last direction held stays picked when the stick comes back
+			_hover_at(_center() + v.normalized() * (INNER_R + OUTER_R) * 0.5)
 	_layout()
 
 

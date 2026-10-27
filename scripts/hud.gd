@@ -163,8 +163,13 @@ class OptionsKey extends Node:
 	func _ready() -> void:
 		process_mode = Node.PROCESS_MODE_ALWAYS
 
+	## Which device the player is on (keyboard and mouse or pad): key names follow it.
+	func _input(event: InputEvent) -> void:
+		Controls.note_device(event)
+
 	func _unhandled_input(event: InputEvent) -> void:
-		var o: bool = event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_O
+		var o: bool = (event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_O) \
+			or (event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_BACK)
 		if o and (get_tree().paused or hud.allow_options) and not OptionsScreen.is_open():
 			get_viewport().set_input_as_handled()
 			OptionsScreen.open(get_tree())

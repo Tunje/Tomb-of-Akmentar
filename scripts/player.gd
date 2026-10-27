@@ -21,6 +21,8 @@ const DODGE_IFRAMES := 0.32
 const DODGE_COOLDOWN := 0.35
 const GRAVITY := 20.0
 const MOUSE_SENS := 0.0024
+const PAD_YAW := 2.8           # rad/s at full right stick (times the options' sensitivity)
+const PAD_PITCH := 1.9
 const BASE_FOV := 72.0
 const ARM_LEN := 3.0
 const AIM_ARM_LEN := 1.5
@@ -97,6 +99,7 @@ var _audio: AudioStreamPlayer
 var _base_fov := BASE_FOV
 var _sens := 1.0
 var _invert_y := false
+var _pad_sprint := false   # L3 latches sprint until the left stick comes back to rest
 
 
 func _ready() -> void:
@@ -258,6 +261,7 @@ func _physics_process(delta: float) -> void:
 	_dodge_cd = maxf(_dodge_cd - delta, 0.0)
 	_face_aim_t = maxf(_face_aim_t - delta, 0.0)
 	_hurt_cd = maxf(_hurt_cd - delta, 0.0)
+	_pad_look(delta)
 	var w := weapons[current]
 
 	if _switch_t > 0.0:
@@ -282,7 +286,11 @@ func _physics_process(delta: float) -> void:
 		want_aim = Input.is_action_pressed("aim")
 		want_fire = Input.is_action_pressed("fire")
 		crouching = Input.is_action_pressed("crouch") and _dodge_t <= 0.0
-		sprinting = Input.is_action_pressed("sprint") and input.y < -0.3 and not want_aim \
+		if Controls.last_pad and Input.is_action_just_pressed("sprint"):
+			_pad_sprint = true
+		if input.length() < 0.3:
+			_pad_sprint = false
+		sprinting = (Input.is_action_pressed("sprint") or _pad_sprint) and input.y < -0.3 and not want_aim \
 			and not want_fire and not crouching and _reload_t <= 0.0
 	else:
 		sprinting = false
@@ -634,7 +642,22 @@ func _drive_step(delta: float) -> void:
 		exit_vehicle()
 		return
 	var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back") if controls_enabled else Vector2.ZERO
-	vehicle.drive(-input.y, -input.x, controls_enabled and Input.is_action_pressed("dodge"), delta)
+	var throttle := -input.y
+	if controls_enabled:  # a pad: RT speeds up, LT slows (the triggers alone, not the mouse)
+		throttle = clampf(throttle + Input.get_action_strength("pad_throttle") - Input.get_action_strength("pad_brake"), -1.0, 1.0)
+	vehicle.drive(throttle, -input.x, controls_enabled and Input.is_action_pressed("dodge"), delta)
+
+
+## The right stick looks (and aims): the options' sensitivity and invert Y apply, and it's as
+## much slower zoomed in as the mouse is. Its dead zone is the look actions' (Controls).
+func _pad_look(delta: float) -> void:
+	if not controls_enabled or not alive or camera == null:
+		return
+	var stick := Input.get_vector("look_left", "look_right", "look_up", "look_down")
+	if stick == Vector2.ZERO:
+		return
+	var k := _sens * camera.fov / _base_fov * stick.length() * delta  # gentle near the middle
+	look(-stick.x * PAD_YAW * k, (stick.y if _invert_y else -stick.y) * PAD_PITCH * k)
 
 
 ## Explore (false) or combat (true). Drawing plays the weapon-raise; holstering hides the gun.
