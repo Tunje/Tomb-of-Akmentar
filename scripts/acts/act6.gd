@@ -24,6 +24,7 @@ const CAMP_TOUGHNESS := 1.0                # companions' health x this for the c
 const SERVANTS := 12                       # mummies at the night camp
 const SERVANTS_THEN := 2                   # after the first three, this many together every 2.5-4 s (one at a time: shot down unhurt)
 
+var _veil: ColorRect  # black over a map change (_change_level)
 var level: Level
 var player: Player
 var hud: Hud
@@ -76,7 +77,8 @@ func _use_level(l: Level, at: Vector3, yaw: float) -> void:
 		level.queue_free()
 	level = l
 	add_child(level)
-	Warmup.start(self, Warmup.MUMMIES)  # what spawns mid-fight, loaded now (tests/perf_test)
+	if not has_node("Warmup"):
+		Warmup.start(self, Warmup.MUMMIES)  # what spawns mid-fight, loaded now (tests/perf_test)
 	player.global_position = at
 	player.velocity = Vector3.ZERO
 	player.yaw = yaw
@@ -87,6 +89,28 @@ func _use_level(l: Level, at: Vector3, yaw: float) -> void:
 		if is_instance_valid(c):
 			c.global_position = _party_spot(i, at, yaw)
 		i += 1
+
+
+## A map change mid-act, under a black veil: to black, the new map built, a few frames for its
+## first draw (its shaders compile, its navmesh bakes: a 1.1 s stall on the road), back in.
+func _change_level(l: Level, at: Vector3, yaw: float) -> void:
+	if _veil == null:
+		var layer := CanvasLayer.new()
+		layer.layer = 60
+		add_child(layer)
+		_veil = ColorRect.new()
+		_veil.color = Color(0, 0, 0, 0)
+		_veil.set_anchors_preset(Control.PRESET_FULL_RECT)
+		_veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		layer.add_child(_veil)
+	var tw := create_tween()
+	tw.tween_property(_veil, "color:a", 1.0, 0.3)
+	await tw.finished
+	_use_level(l, at, yaw)
+	for i in 3:
+		await get_tree().process_frame
+	tw = create_tween()
+	tw.tween_property(_veil, "color:a", 0.0, 0.6)
 
 
 ## Where the i-th companion stands: out to the sides, a step ahead (as act3 / act5 do), so
@@ -238,7 +262,7 @@ func _road(route: String) -> void:
 	road.coast = route == "coast"
 	var z := DesertRoute.START_Z - 30.0
 	var camp := DesertRoute.road_point(z) + Vector3(9.0, 0, 0)
-	_use_level(road, camp + Vector3(-2.5, 0, 2.0), 0.0)
+	await _change_level(road, camp + Vector3(-2.5, 0, 2.0), 0.0)
 	_darken(0.85)
 	Ambience.play(self, "night")
 	_camp(camp)
@@ -374,7 +398,7 @@ func _servant(camp: Vector3, a: float, priest: bool, down: Array) -> void:
 func _arrival() -> void:
 	step = Step.ARRIVAL
 	var cairo := Cairo.new()
-	_use_level(cairo, Vector3(29, 0, 93), 0.0)  # inside the south gate, looking up the street
+	await _change_level(cairo, Vector3(29, 0, 93), 0.0)  # inside the south gate, looking up the street
 	cairo.set_day_time(0.85)
 	cairo.set_curse(1.0, 0.0)  # the dust that won't settle
 	Ambience.play(self, "cairo")
