@@ -27,6 +27,8 @@ const SPOTS := {
 	"outfitter": [Vector3(45, 0, 52.7), Vector2(0, -1), "The outfitters"],
 	"gunsmith": [Vector3(30.7, 0, 61), Vector2(-1, 0), "The gunsmith"],
 	"tavern": [Vector3(27.3, 0, 66), Vector2(1, 0), "The tavern"],
+	"cafe": [Vector3(21.0, 0, 67.6), Vector2(1, 0), "The café"],  # (inside the tavern: -f9's interiors)
+	"freddie": [Vector3(58.15, 0, 56.0), Vector2(0, -1), "Freddie's office"],
 	"bazaar": [Vector3(54, 0, 77.4), Vector2(0, 0), "The bazaar"],
 	"dealer": [Vector3(40, 0, 78.7), Vector2(0, -1), "The antiquities dealer"],
 	"caravanserai": [Vector3(78.6, 0, 77), Vector2(-1, 0), "The caravanserai"],
@@ -112,6 +114,7 @@ var mooring := Transform3D(Basis.IDENTITY, MOORING)
 var day_time := 0.5         # 0 morning .. 0.5 noon .. 1 dusk (set_day_time)
 var dust := 0.0             # the curse (set_curse): ochre dust in the air
 var gloom := 0.0            # the curse: the sky darkening by day
+var interiors: CairoInteriors  # -f9's rooms behind the doors (where the talks happen)
 var townsfolk: Array[Node3D] = []  # the chatting pairs (the Crowd has the walkers)
 var crowd: Crowd                     # -f9's: walkers, carriers, stall customers, sitters, donkeys
 var _day_tween: Tween
@@ -170,6 +173,7 @@ func _ready() -> void:
 	_road_gate()
 	_caravanserai()
 	_quay()
+	interiors = CairoInteriors.build(self)  # before the bake (its walls and floors) and the crowd (its patrons)
 	_street_life()
 	_animals()
 	_skyline()
@@ -177,7 +181,7 @@ func _ready() -> void:
 	# hotel bed is a plain Interactable here (the act wires it to save and end the day).
 	for id in SPOTS:
 		var s: Array = SPOTS[id]
-		spots[id] = s[0]
+		spots[id] = CairoInteriors.ROOM_SPOTS.get(id, s[0])  # indoors where -f9 has a room
 	interactables["hotel_bed"] = Interactable.make(self, spots.hotel_bed + Vector3.UP * 0.9, SPOTS.hotel_bed[2], "hotel_bed", 1.0)
 	player_spawn = Vector3(47.5, 0, 50)
 	_environment()
@@ -194,7 +198,7 @@ func place_people(conversations := {}, only: Array = []) -> Dictionary:
 	for id in NPC_POINTS:
 		if (only.is_empty() and id in LATER_PEOPLE) or (not only.is_empty() and not id in only):
 			continue
-		var p: Array = NPC_POINTS[id]
+		var p: Array = CairoInteriors.ROOM_PEOPLE.get(id, NPC_POINTS[id])  # indoors where -f9 has a room
 		var n := Npc.make(self, id, p[0], conversations.get(id, ""), Characters.glb(id))
 		n.face_towards(p[1])
 		n.rotation.y = atan2(-(p[1] - p[0]).x, -(p[1] - p[0]).z)
@@ -585,7 +589,6 @@ func _outfitter() -> void:
 	for p in [Vector3(41.6, 0, 52.9), Vector3(48.4, 0, 52.9)]:
 		var crate := _box(_nav, p + Vector3.UP * 0.4, Vector3(1.2, 0.8, 0.8), _wood)
 		_dress(crate, "prop_crate_small.glb", Vector3(0.6, 0.4, 0.4))
-	_prop(self, "prop_bedroll.glb", Vector3(48.4, 0.8, 52.9), 0.2)
 
 
 func _gunsmith() -> void:
@@ -1230,7 +1233,7 @@ func near_spot(id: String, along: float, out := 0.0) -> Vector3:
 	var f: Vector2 = s[1]
 	var n := Vector3(f.x, 0, f.y) if f != Vector2.ZERO else Vector3(0, 0, 1)
 	var right := Vector3(n.z, 0, -n.x)  # facing the door (-n), +X of that view
-	return (s[0] as Vector3) + right * along + n * out
+	return (spots.get(id, s[0]) as Vector3) + right * along + n * out
 
 
 ## The nearest open ground to `want` where a person fits: for acts that put people round the

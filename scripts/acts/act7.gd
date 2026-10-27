@@ -142,6 +142,8 @@ func _place_spots() -> void:
 			push_warning("act7: no place for spot %s on the map" % id)
 			continue
 		ActionSpot.make(level, str(spots[id]), level.spots[id])
+	# Sit with the expedition in the lobby: each companion's next rapport rung, once a day, free (tools/dialogue/rapport.py).
+	ActionSpot.make(level, "hotel_lobby", Vector3(44.0, 0.0, 41.5))
 	var bed: Interactable = level.interactables.get("hotel_bed")
 	if bed:
 		bed.used.connect(func(_by): _sleep())
@@ -345,9 +347,21 @@ func _place_intercept() -> void:
 		# That place has its own ActionSpot: stand this one a little along the facade.
 		var n: Vector2 = Cairo.SPOTS[where][1]
 		pos += Vector3(-n.y, 0, n.x) * 2.5 if n != Vector2.ZERO else Vector3(0, 0, 2.0)
+	pos = level.open_point(pos)  # never inside a wall or a pillar: you must be able to get to it
 	if intercept == null:
 		var file := str((plan.get("intercept", {}) as Dictionary).get("file", "act7_intercept"))
 		intercept = ActionSpot.make(level, file, pos)
+		# You have to be able to see where it is (Simon couldn't find it by the station's door).
+		var sign := Label3D.new()
+		sign.text = "The Thieves"
+		sign.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		sign.font_size = 48
+		sign.pixel_size = 0.005
+		sign.outline_size = 12
+		sign.modulate = Color(1.0, 0.8, 0.4)
+		sign.no_depth_test = true
+		intercept.add_child(sign)
+		sign.position = Vector3.UP * 2.6
 	else:
 		intercept.global_position = pos
 	print("RESULT act7 intercept at %s" % where)
