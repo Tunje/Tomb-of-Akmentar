@@ -270,7 +270,7 @@ func _drop() -> void:
 		Game.apply([{"stat": [companion, "fear", 1]}])
 		if result.hurt == 2:
 			Game.set_flag(companion + "_injured")
-	hud.toast("The plane drops like a stone, then catches. %s" % ("Hold it level! (A / D)" if result.drops == 1 else
+	hud.toast("The plane drops like a stone, then catches. %s" % ("Hold it level! ({move_left} / {move_right})" if result.drops == 1 else
 		("%s is thrown against the cockpit rim." % DayLog.person(companion) if companion != "none" else "Something in the rigging snaps.")), 3.0)
 	print("RESULT flight drop %d damage=%.0f" % [result.drops, plane.damage])
 
@@ -289,7 +289,7 @@ func _storm_begin() -> void:
 	_storm.mesh.surface_set_material(0, _storm_mat)
 	add_child(_storm)
 	_storm.position = Vector3(0, 105, plane.global_position.z + 650.0)
-	hud.toast("Behind you, the horizon is rising: a wall of sand, and it's gaining. A / D to hold her level.", 5.0)
+	hud.toast("Behind you, the horizon is rising: a wall of sand, and it's gaining. {move_left} / {move_right} to hold her level.", 5.0)
 	_look_back_t = 4.5
 	print("RESULT flight storm")
 

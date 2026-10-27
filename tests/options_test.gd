@@ -6,10 +6,13 @@ extends Node3D
 ## Prints RESULT lines; exits 0 when every check passed. --shot-dir=C:/path (windowed).
 
 var _fails := 0
+var _cfg_time := 0
 var _dir := "user://options_shots"
 
 
 func _ready() -> void:
+	Settings.test_mode = true  # never the real user://settings.cfg, however this is launched
+	_cfg_time = FileAccess.get_modified_time(Settings.FILE)  # 0 when there's none
 	get_window().set_flag(Window.FLAG_NO_FOCUS, true)
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	var args := TestDriver.parse_args()
@@ -63,7 +66,8 @@ func _ready() -> void:
 	_key(KEY_ESCAPE)
 	await get_tree().process_frame
 	_check(not OptionsScreen.is_open() and get_tree().paused, "Esc closes the options and the game stays paused")
-	_check(not FileAccess.file_exists(Settings.FILE) or not OS.get_cmdline_user_args().is_empty(), "a test run never writes the settings file")
+	_check(FileAccess.get_modified_time(Settings.FILE) == _cfg_time, "a test run never writes the settings file")
+	await _key_names(player, hud)
 	print("RESULT %s (%d failed)" % ["PASS" if _fails == 0 else "FAIL", _fails])
 	get_tree().quit(0 if _fails == 0 else 1)
 
@@ -112,6 +116,28 @@ func _controls() -> void:
 	_key(KEY_ESCAPE)
 	await get_tree().process_frame
 	_check(not ControlsScreen.is_open() and OptionsScreen.is_open(), "Esc on the page goes back to the options")
+
+
+## Texts name the keys bound now ("{action}" tokens, Controls.fill): dodge on K reads K in its
+## hint; use on R (reload swaps to E) reads R in a truck's prompt and in an act's toast.
+func _key_names(player: Player, hud: Hud) -> void:
+	get_tree().paused = false
+	hud.show_message("")  # no prompt under a title card
+	Controls.rebind("dodge", KEY_K)
+	var hint := Controls.fill(str(Hints.hints()["dodge"].text))
+	_check(hint.begins_with("K: a dodge roll"), "dodge on K: its hint reads \"%s\"" % hint)
+	Controls.rebind("cover", KEY_R)
+	var truck := Truck.new()
+	add_child(truck)
+	truck.global_position = player.global_position + Vector3(4, 0.6, 0)
+	await get_tree().physics_frame
+	player.enter_vehicle(truck)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_check(hud._prompt.text.begins_with("R  get out") and "K brake" in hud._prompt.text, "use on R: the truck's prompt reads \"%s\"" % hud._prompt.text)
+	hud.toast("Ambush! Get out into cover ({cover}) or drive on through!")
+	_check("(R)" in hud._toast.text, "use on R: the act's toast reads \"%s\"" % hud._toast.text)
+	Controls.reset()
 
 
 func _key(code: Key) -> void:

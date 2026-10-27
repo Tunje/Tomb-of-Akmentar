@@ -35,4 +35,4 @@ func _draw_screen() -> void:
 	text(site_name, Vector2(r.position.x + 34, r.position.y + 84), 30, INK, HORIZONTAL_ALIGNMENT_LEFT, false)
 	text(str(clue.get("title", "")), Vector2(r.position.x + 34, r.position.y + 124), 21, Color(0.45, 0.2, 0.08), HORIZONTAL_ALIGNMENT_LEFT, false)
 	para(str(clue.get("text", "")), Vector2(r.position.x + 34, r.position.y + 164), r.size.x - 68, 19, INK)
-	text("Written into your journal (J)", Vector2(r.end.x - 30, r.end.y - 24), 15, Color(INK, 0.6), HORIZONTAL_ALIGNMENT_RIGHT, false)
+	text(Controls.fill("Written into your journal ({journal})"), Vector2(r.end.x - 30, r.end.y - 24), 15, Color(INK, 0.6), HORIZONTAL_ALIGNMENT_RIGHT, false)

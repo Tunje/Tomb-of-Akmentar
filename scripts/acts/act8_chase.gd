@@ -142,7 +142,7 @@ func _start() -> void:
 				break
 		c.start("act8_chase", player, who)
 		await c.finished
-	hud.toast("Drive! They're coming up behind. (C: look back · V: hand a companion the wheel and take the gun.)", 4.0)
+	hud.toast("Drive! They're coming up behind. ({crouch}: look back · {swap_seat}: hand a companion the wheel and take the gun.)", 4.0)
 	_running = true
 	_road_ahead()
 	Barks.say_any(get_tree(), "truck_ride")
@@ -413,7 +413,7 @@ func _look_back(delta: float) -> void:
 		rel.y = 0.0
 		if rel.length() < 35.0 and rel.length() > 7.0 and ahead.dot(rel.normalized()) < -0.5:
 			var right := ahead.cross(Vector3.UP)
-			hud.toast("A chariot behind you, %s! (hold C to look back)" % ("right" if rel.dot(right) > 0.0 else "left"), 2.5)
+			hud.toast("A chariot behind you, %s! (hold {crouch} to look back)" % ("right" if rel.dot(right) > 0.0 else "left"), 2.5)
 			_warn_t = 7.0
 			break
 

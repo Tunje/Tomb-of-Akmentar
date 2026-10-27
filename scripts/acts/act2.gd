@@ -141,7 +141,7 @@ func _on_event(name: String) -> void:
 ## Threatening the archivist: the guards come out (-bf's GuardBrawl, fists only, nobody dies).
 ## Win and you're past them (museum_guards_beaten); lose and they throw you out.
 func _museum_guards() -> void:
-	hud.toast("The museum guards come for you. Left mouse punch · right mouse block · F shove", 4.0)
+	hud.toast("The museum guards come for you. Left mouse punch · right mouse block · {shove} shove", 4.0)
 	var won: bool = await GuardBrawl.start(level, player).finished
 	hud.toast("The guards are down. The archivist is all yours." if won else "The museum guards throw you out into the street.", 3.0)
 

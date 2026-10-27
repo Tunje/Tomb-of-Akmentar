@@ -235,7 +235,7 @@ func _ambush() -> void:
 		"passengers": passengers, "player_truck": own_truck},
 		int(args.get("seed", "-1")))
 	ambush.riders_coming.connect(func(): hud.toast("Riders! Coming down the wadi from the east!", 3.0))
-	hud.toast("Ambush! Get out into cover (E) or drive on through!" if coast else "Ambush! Get down into cover (E) or ride on through!", 4.0)
+	hud.toast("Ambush! Get out into cover ({cover}) or drive on through!" if coast else "Ambush! Get down into cover ({cover}) or ride on through!", 4.0)
 	get_tree().create_timer(1.2).timeout.connect(func(): _bark("combat_start", player.global_position))
 	result = await ambush.finished
 	_after()

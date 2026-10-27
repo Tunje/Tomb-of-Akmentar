@@ -143,3 +143,19 @@ static func help_text() -> String:
 		k.call("dodge"), k.call("cover"), k.call("move_forward"), k.call("cover")] + "\n" \
 		+ "%s aim · %s fire · %s reload · %s %s %s guns · %s holster" % [k.call("aim"), k.call("fire"),
 		k.call("reload"), k.call("weapon_1"), k.call("weapon_2"), k.call("weapon_3"), k.call("holster")]
+
+
+## `text` with each "{action}" token as that action's key now ("{dodge}: roll" -> "Space: roll",
+## or "K: roll" once rebound), so hints, toasts and prompts follow the controls page. Tokens that
+## aren't actions stay as they are.
+static func fill(text: String) -> String:
+	if not "{" in text:
+		return text
+	setup()
+	var re := RegEx.create_from_string("\\{([a-z_0-9]+)\\}")
+	var out := text
+	for m in re.search_all(text):
+		var action := m.get_string(1)
+		if InputMap.has_action(action):
+			out = out.replace(m.get_string(), key_name(action))
+	return out

@@ -48,8 +48,17 @@ static func ensure(tree: SceneTree) -> void:
 	apply(tree)
 
 
+## Set by a test before anything reads the settings (options_test): never touch the real file.
+static var test_mode := false
+
+
+## A test run: args after "--", a scene under res://tests/, or test_mode. (A headless options_test
+## with no args once wrote its values into Simon's settings.cfg.)
 static func _testing() -> bool:
-	return not OS.get_cmdline_user_args().is_empty()
+	if test_mode or not OS.get_cmdline_user_args().is_empty():
+		return true
+	var tree := Engine.get_main_loop() as SceneTree
+	return tree != null and tree.current_scene != null and tree.current_scene.scene_file_path.begins_with("res://tests/")
 
 
 static func _load() -> void:

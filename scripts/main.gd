@@ -429,7 +429,7 @@ func _start_brawl(at: Vector3) -> void:
 		add_child(b)
 		b.global_position = at + Vector3(cos(i * TAU / 3.0), 0.0, sin(i * TAU / 3.0)) * 3.0
 		brawlers.append(b)
-	hud.toast("Brawl! Left mouse punch · right mouse block · F shove")
+	hud.toast("Brawl! Left mouse punch · right mouse block · {shove} shove")
 
 
 ## Game events: the end of a brawl hands the fists back.

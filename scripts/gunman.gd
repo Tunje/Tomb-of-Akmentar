@@ -959,7 +959,7 @@ func _update_tag() -> void:
 	var who := companion_id.capitalize() if companion_id != "" else String(name)
 	_tag.text = who + ("  (holding)" if order == "hold" else "") + char(10) + bar
 	if stumbled:
-		_tag.text += char(10) + "E  help up"  # the HUD shows cover's prompt while you're in cover
+		_tag.text += char(10) + Controls.fill("{cover}  help up")  # the HUD shows cover's prompt while you're in cover
 	_tag.modulate = Color(1.0, 0.35, 0.25).lerp(Color(0.55, 1.0, 0.45), k)
 	_stack_tag()
 

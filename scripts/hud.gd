@@ -96,7 +96,7 @@ func _process(delta: float) -> void:
 		_gun.text = w.display_name + ("   reloading" if player.is_reloading() else "")
 	_count.text = "Mummies: %d" % remaining if remaining > 0 else ""
 	# Only through the player's own eyes (not a test's overview or chase camera).
-	_prompt.text = player.cover_prompt() if player and player.camera and player.camera.current and _title.text == "" else ""
+	_prompt.text = Controls.fill(player.cover_prompt()) if player and player.camera and player.camera.current and _title.text == "" else ""
 	_info.text = "Day %d   Actions %s   £%d" % [Game.day, "●".repeat(Game.actions_left) + "○".repeat(maxi(Game.ACTIONS_PER_DAY - Game.actions_left, 0)), Game.money]
 	_toast_t = maxf(_toast_t - delta, 0.0)
 	_toast.modulate.a = clampf(_toast_t, 0.0, 1.0)
@@ -152,7 +152,7 @@ func _draw_overlay() -> void:
 
 ## A short notice in the upper middle ("Game saved", "Day 2").
 func toast(text: String, secs := 2.5) -> void:
-	_toast.text = text
+	_toast.text = Controls.fill(text)  # "{dodge}" -> the key bound now
 	_toast_t = secs
 
 

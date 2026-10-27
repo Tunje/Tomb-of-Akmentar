@@ -62,7 +62,7 @@ static func _flush(tree: SceneTree) -> void:
 	var h: Dictionary = hints().get(id, {})
 	Game.set_flag("hint_" + id)
 	last = id
-	var text := str(h.get("text", ""))
+	var text := Controls.fill(str(h.get("text", "")))  # "{dodge}" -> the key bound now
 	var secs := float(h.get("secs", DEFAULT_SECS))
 	print("HINT %s: %s" % [id, text])
 	if tree.current_scene:

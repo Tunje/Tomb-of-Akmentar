@@ -690,18 +690,18 @@ func cover_prompt() -> String:
 	if not alive or not controls_enabled:
 		return ""
 	if vehicle and gunner_seat >= 0:
-		return "V  take the wheel · E  hop off · right mouse  aim"
+		return "{swap_seat}  take the wheel · {cover}  hop off · right mouse  aim"
 	if vehicle:
-		return "E  get out · W/S drive · A/D steer · Space brake" + (" · V  hand a companion the wheel" if vehicle is Truck else "")
+		return "{cover}  get out · {move_forward}/{move_back} drive · {move_left}/{move_right} steer · {dodge} brake" + (" · {swap_seat}  hand a companion the wheel" if vehicle is Truck else "")
 	if focus:
-		return "E  " + focus.prompt
+		return "{cover}  " + focus.prompt
 	if cover.in_cover():
-		var hint := "E  leave cover · right mouse  pop up and shoot"
-		return hint + " · W+E  vault" if Cover.vaultable(cover.piece) else hint
+		var hint := "{cover}  leave cover · right mouse  pop up and shoot"
+		return hint + " · {move_forward}+{cover}  vault" if Cover.vaultable(cover.piece) else hint
 	if cover.state == Cover.State.FREE:
 		var hit := Cover.find_edge(get_tree().get_nodes_in_group("cover"), global_position, -Basis(Vector3.UP, yaw).z)
 		if not hit.is_empty():
-			return "E  take cover"
+			return "{cover}  take cover"
 	return ""
 
 

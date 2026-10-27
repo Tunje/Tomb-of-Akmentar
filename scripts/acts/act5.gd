@@ -435,7 +435,7 @@ func _rubble_hint(rubble: Node3D) -> void:
 		if player.global_position.distance_to(rubble.global_position) < 4.0:
 			if not _told_vault:
 				_told_vault = true
-				hud.toast("Fallen stone: run round the gap, or E to take cover against it, then W+E to vault.", 4.0)
+				hud.toast("Fallen stone: run round the gap, or {cover} to take cover against it, then {move_forward}+{cover} to vault.", 4.0)
 			return
 		await get_tree().create_timer(0.3).timeout
 

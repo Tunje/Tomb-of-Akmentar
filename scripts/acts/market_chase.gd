@@ -79,7 +79,7 @@ func _begin(from: Vector3) -> void:
 		_knot(k[0], k[1])
 	var hud := _hud()
 	if hud:
-		hud.toast(("He's got Freddie's note!" if item == "note" else "He's got your suitcase!") + " After him! (Shift to sprint, E to grab)", 4.0)
+		hud.toast(("He's got Freddie's note!" if item == "note" else "He's got your suitcase!") + " After him! ({sprint} to sprint, {cover} to grab)", 4.0)
 	print("RESULT market_chase start item=%s" % item)
 
 

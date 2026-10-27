@@ -184,7 +184,7 @@ func _brawl() -> void:
 		add_child(b)
 		b.global_position = level.open_point(player.global_position + Vector3(cos(i * TAU / 3.0), 0.0, sin(i * TAU / 3.0)) * 3.0)
 		brawlers.append(b)
-	hud.toast("Fists! Left mouse punch · right mouse block · F shove", 4.0)
+	hud.toast("Fists! Left mouse punch · right mouse block · {shove} shove", 4.0)
 	if args.has("auto") and not args.has("skill-bot"):  # --skill-bot: tests/difficulty_test boxes them
 		for b in brawlers:  # the bot doesn't box: the brawl's end is the test
 			(b as Brawler).queue_free()

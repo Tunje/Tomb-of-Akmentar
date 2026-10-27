@@ -336,7 +336,7 @@ func _servants(camp: Vector3) -> void:
 ## Down (Gunman leaves them a few seconds' grace): say so.
 func _on_downed(g: Gunman) -> void:
 	print("RESULT act6 down %s" % g.companion_id)
-	hud.toast("%s is down! Get to them (E)." % DayLog.person(g.companion_id), 3.0)
+	hud.toast("%s is down! Get to them ({cover})." % DayLog.person(g.companion_id), 3.0)
 
 
 ## Back on their feet (Gunman.help_up gives them back 40%).
