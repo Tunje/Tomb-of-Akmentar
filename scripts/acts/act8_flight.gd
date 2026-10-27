@@ -251,8 +251,9 @@ func _fly(delta: float) -> void:
 	_storm_z = lerpf(plane.global_position.z + 650.0, plane.global_position.z + 4.0, p)
 	_storm.scale.y = lerpf(0.35, 1.0, minf(p * 2.0, 1.0))
 	_storm.global_position = Vector3(plane.global_position.x, 300.0 * _storm.scale.y, _storm_z)  # rising from the ground
-	level._env.fog_density = lerpf(0.0015, 0.02, p * p)
+	level._env.fog_density = lerpf(0.0015, 0.035, p * p)
 	level._env.fog_light_color = level._env.fog_light_color.lerp(Color(0.55, 0.38, 0.22), delta)
+	Weather.storm(self, p, true)  # -f9's: the sand in the air, the wind (the fog stays ours)
 	_gust_t -= delta
 	if _gust_t <= 0.0:
 		_gust_t = randf_range(2.2, 3.8) * lerpf(1.2, 0.75, p)
@@ -332,6 +333,7 @@ func _storm_begin() -> void:
 
 func _landing() -> void:
 	step = Step.LANDING
+	Weather.storm(self, 0.0, true)
 	hud.toast("The storm swallows the sun. Fletcher puts her down wherever there's ground.", 3.5)
 	var tw := create_tween()
 	var down := plane.global_position + Vector3(0, 0, -CRUISE * 5.0)

@@ -260,6 +260,7 @@ func _road(route: String) -> void:
 	elif Game.flag("act6_night_ride", false):
 		hud.toast("You break camp and ride through the dark, the servants' shapes keeping pace on the dunes.", 4.0)
 		await get_tree().create_timer(2.0).timeout
+	Weather.sandstorm(self, 40.0)  # -f9's: the last miles to Cairo in blowing sand
 	_arrival()
 
 

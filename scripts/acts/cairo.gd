@@ -1120,6 +1120,10 @@ func set_day_time(t: float) -> void:
 		sky.sky_top_color = sky.sky_top_color.lerp(Color(0.62, 0.5, 0.36), dust * 0.5).lerp(Color(0.1, 0.07, 0.08), gloom)
 		sky.sky_horizon_color = sky.sky_horizon_color.lerp(Color(0.85, 0.65, 0.4), dust * 0.6).lerp(Color(0.35, 0.18, 0.12), gloom)
 		sky.ground_horizon_color = sky.ground_horizon_color.lerp(Color(0.25, 0.15, 0.12), gloom)
+		# -f9's: the dust's sickly yellow-green cast.
+		sky.sky_horizon_color = sky.sky_horizon_color.lerp(Color(0.66, 0.68, 0.3), dust * 0.45)
+		sky.sky_top_color = sky.sky_top_color.lerp(Color(0.42, 0.46, 0.22), dust * 0.35 * (1.0 - gloom))
+		_env.fog_light_color = _env.fog_light_color.lerp(Color(0.6, 0.62, 0.32), dust * 0.35)
 	var lamps_on := maxf(smoothstep(0.82, 0.97, day_time), gloom)
 	for l in _lamps:
 		l.light_energy = 1.6 * lamps_on
