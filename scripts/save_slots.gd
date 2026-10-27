@@ -11,7 +11,7 @@ const SLOTS := ["main", "slot1", "slot2", "slot3"]
 const THUMB := Vector2i(320, 180)
 ## Game.place -> what the Load screen calls it.
 const PLACE_NAMES := {
-	"act1_start": "Cairo, the docks", "act1_end": "Cairo, after Karim's offer",
+	"act1_start": "Cairo, the docks", "act1_armed": "Cairo, Freddie's office", "act1_end": "Cairo, after Karim's offer",
 	"act2_start": "Cairo, raising an expedition", "act2_hotel_bed": "Cairo, the hotel", "act2_end": "Leaving Cairo",
 	"act3_end": "The road to Akmentar", "act4_camp": "Akmentar, the camp", "act4_end": "Akmentar, after the first night",
 	"act5_start": "Below Akmentar", "act5_royal_door": "Below Akmentar, the royal door",

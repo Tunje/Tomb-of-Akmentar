@@ -66,6 +66,10 @@ func _ready() -> void:
 	player.died.connect(func(): hud.show_message("YOU DIED", "Enter  load the last save"))
 	Game.event.connect(_on_event)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if args.size() > 0 else Input.MOUSE_MODE_CAPTURED
+	if Game.place == "act1_armed":  # a death in the gunfight: back to Freddie's, not the docks (-7f's retry sweep)
+		player.global_position = level.open_point(level.near_spot(OFFICE, 0.0, 4.0))
+		_armed_men()
+		return
 	hud.show_message("CAIRO, 1926", "A suitcase, a revolver and £%d. Freddie owes you, and his office is near the club." % Game.money)
 	await get_tree().create_timer(3.5).timeout
 	hud.show_message("")
@@ -113,6 +117,9 @@ func _after_collectors(end: String) -> void:
 ## Back at Freddie's: armed men after him (or after what he left). Talk, pay, or draw.
 func _armed_men() -> void:
 	step = Step.ARMED
+	if Game.place != "act1_armed":
+		Game.place = "act1_armed"
+		Game.save_game()
 	var boss := Npc.make(level, "armed_boss", level.open_point(level.near_spot(OFFICE, -1.5, 5.0)), "", GunmanBody.BANDITS[0])
 	boss.face_towards(player.global_position)
 	hud.toast("Back at Freddie's, three men with guns are waiting, and they think you know where he is.", 4.0)
