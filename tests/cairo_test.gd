@@ -82,6 +82,11 @@ func _run() -> void:
 		var p: Vector3 = (_level.npcs[id] as Node3D).global_position
 		_check(not _inside(space, p + Vector3.UP * 1.0), "%s stands clear" % id)
 	_check(_level.interactables.has("hotel_bed"), "the hotel bed is usable")
+	# The south gate is closed: no path out through it onto the road beyond.
+	var outside := Vector3(29, 0, Cairo.SOUTH + 8.0)
+	var through := NavigationServer3D.map_get_path(map, NavigationServer3D.map_get_closest_point(map, _level.spots.road_gate), outside, true)
+	var reached := through.size() > 0 and Vector2(through[through.size() - 1].x - outside.x, through[through.size() - 1].z - outside.z).length() < 1.0
+	_check(not reached, "no path through the closed south gate")
 	_audit_act("act2", "res://actions/act2_plan.json", space)
 	_audit_act("act7", "res://actions/act7_plan.json", space)
 	# Act 1 stands people by its doors (Cairo.near_spot): those points must be open ground.

@@ -759,7 +759,7 @@ func _road_gate() -> void:
 	bs.size = Vector3(6.0, 6.0, 0.5)
 	cs.shape = bs
 	b.add_child(cs)
-	add_child(b)
+	_nav.add_child(b)  # in the navmesh source, so no path runs through the closed gate
 	b.position = Vector3(29, 3.0, SOUTH + 3.3)
 	# The sentry box just inside, and the road on south.
 	var hut := _box(_nav, Vector3(31.0, 1.25, 98.6), Vector3(1.2, 2.5, 1.2), _wood)
