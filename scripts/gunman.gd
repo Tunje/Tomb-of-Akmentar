@@ -1394,6 +1394,7 @@ func _target_point() -> Vector3:
 func _fire() -> void:
 	ammo -= 1
 	shots_fired += 1
+	Crowd.alarm(get_tree(), global_position)  # gunfire scatters a crowd (none: nothing)
 	var eye := _eye()
 	# Rounds leave the muzzle (no hitscan: Bullets flies them), unless the muzzle is inside
 	# something (leaning round a wall), then from the eye.

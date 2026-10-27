@@ -275,12 +275,12 @@ func _up(list: Array[Mummy]) -> int:
 func _steer_servants() -> void:
 	var people: Array[Node3D] = [player]
 	for c in companions.values():
-		if is_instance_valid(c) and (c as Gunman).is_active():
-			people.append(c)
+		if is_instance_valid(c) and (c as Gunman).is_active() and not (c as Gunman).stumbled:
+			people.append(c)  # not the downed: steering at them would finish them
 	for m in servants:
 		if not is_instance_valid(m) or not m.is_active():
 			continue
-		var pick: Node3D = carrier if is_instance_valid(carrier) and carrier.alive else null
+		var pick: Node3D = carrier if is_instance_valid(carrier) and carrier.alive and not carrier.get("stumbled") else null
 		var bd := IN_THE_WAY
 		for p in people:
 			var d := p.global_position.distance_to(m.global_position)
@@ -295,8 +295,8 @@ func _steer_servants() -> void:
 func _fight_step(delta: float) -> void:
 	_wave_t += delta
 	_steer_servants()
-	# The carrier is down: the amulet passes to you.
-	if _carrier_id != "player" and (not is_instance_valid(carrier) or not carrier.alive):
+	# The carrier is down (downed or dead): the amulet passes to you.
+	if _carrier_id != "player" and (not is_instance_valid(carrier) or not carrier.alive or carrier.get("stumbled")):
 		var who := _carrier_id.capitalize()
 		_set_carrier("player")
 		Game.set_flag("carrier", "player")

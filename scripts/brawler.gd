@@ -36,6 +36,7 @@ var _think := 0.0
 var _side := 1.0
 var _block_left := 0.0
 var _combo := false
+var _alarmed := false  # Crowd.alarm once, at the first punch
 
 
 static func fighting_count(tree: SceneTree) -> int:
@@ -166,6 +167,9 @@ func _decide() -> void:
 			if not target.can_be_hit():
 				_set_mode("back")  # don't hit a man when he's down
 			elif d <= STRIKE_RANGE:
+				if not _alarmed:
+					_alarmed = true
+					Crowd.alarm(get_tree(), global_position, 18.0)  # a brawl draws back the crowd nearby
 				if target.state == Melee.State.BLOCK and randf() < 0.6:
 					melee.attack("shove", to)
 				else:

@@ -20,7 +20,7 @@ const NEXT_ACT := "res://act7.tscn"
 const RIVALS := ["americans", "germans"]   # the expeditions that can lend horses (if alive)
 const SERVANT_HP := 130.0                  # (mummy.gd: 100) at 100 the party shot them down unhurt (tests/difficulty_test)
 const SERVANT_PACE := 1.5                  # x their walk
-const CAMP_TOUGHNESS := 3.5                # companions' health x this for the camp fight (they take the first of it)
+const CAMP_TOUGHNESS := 1.0                # companions' health x this for the camp fight (they take the first of it)
 const SERVANTS := 12                       # mummies at the night camp
 const SERVANTS_THEN := 2                   # after the first three, this many together every 2.5-4 s (one at a time: shot down unhurt)
 

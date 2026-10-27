@@ -161,7 +161,7 @@ static func _table(rows: Array, label: String, seeds: int) -> String:
 	lines.append("| fight | runs | won | deaths | dmg taken avg (max) | length avg | companions lost (went down) | bot hits |")
 	lines.append("|---|---|---|---|---|---|---|---|")
 	for n in ORDER:
-		var rs := rows.filter(func(r): return r.name == n)
+		var rs := rows.filter(func(r): return r.name == n and r.outcome != "no_fight")
 		if rs.is_empty():
 			lines.append("| %s | 0 | - | - | - | - | - | - |" % n)
 			continue
@@ -288,7 +288,8 @@ func _physics_process(delta: float) -> void:
 		return
 	_check(delta)
 	if _t > 900.0 and not _done:
-		_finish_seg("timeout")
+		# Never started: the act broke (another session's script mid-edit), not a difficulty result.
+		_finish_seg("timeout" if _on else "no_fight")
 		_quit()
 
 
