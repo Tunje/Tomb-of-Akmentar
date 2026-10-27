@@ -157,6 +157,7 @@ func _crewless() -> void:
 			manned += 1
 	_check(manned == ours.size(), "crewless: each of our %d sites has a scholar working it (%d)" % [ours.size(), manned])
 	_check(crews.filter(func(c: Crowd) -> bool: return c.name.ends_with("party")).is_empty(), "crewless: and no crew of ours (none hired)")
+	_check(h.jobs.values().any(func(j: Dictionary) -> bool: return j.kind == "watch" and (j.spot as Vector3).distance_to(h.anchor) < 15.0), "crewless: and a watch kept at camp")
 
 
 func _jobs() -> CampJobs:
@@ -277,9 +278,15 @@ func _fight() -> void:
 	add_child(g)
 	g.global_position = level.camps.party + Vector3(0, 0, 22)
 	g.target = player
-	await get_tree().create_timer(2.0).timeout
-	var dropped := h.jobs.values().filter(func(j: Dictionary) -> bool: return _blend_of(j.g) < 0.1).size()
-	_check(Gunman.fight_on(get_tree()) and dropped == h.jobs.size(), "fight: a bandit, and all %d drop their jobs (%d)" % [h.jobs.size(), dropped])
+	# (Ten of them may have shot him inside two seconds: note the fight and the drop while it's on.)
+	var was_on := false
+	var dropped := 0
+	for k in 20:
+		await get_tree().create_timer(0.1).timeout
+		if Gunman.fight_on(get_tree()):
+			was_on = true
+			dropped = maxi(dropped, h.jobs.values().filter(func(j: Dictionary) -> bool: return _blend_of(j.g) < 0.1).size())
+	_check(was_on and dropped == h.jobs.size(), "fight: a bandit, and all %d drop their jobs (%d)" % [h.jobs.size(), dropped])
 	await get_tree().create_timer(4.0).timeout
 	var shot := 0
 	for id in h.jobs:

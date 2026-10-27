@@ -142,17 +142,32 @@ func _assign(companions: Dictionary, where: String, at_night: bool, opts: Dictio
 	# Our sites with no crew (no foreman hired): a scholar each, working there.
 	var crewless := not night and not ours.is_empty() and not CREWS.keys().any(func(f: String) -> bool: return Game.in_party(f))
 	var at_site := {}
+	var watch_by := ""  # who keeps the camp's watch when the usual watchman isn't here
 	if crewless:
+		# The scholars first, then anyone, so every site of ours has someone working it; but
+		# never the last one in camp: someone keeps the watch.
 		var k := 0
-		for sch: String in SITE_SCHOLARS:
-			if k < ours.size() and companions.has(sch):
-				at_site[sch] = sites[ours[k]].at
-				k += 1
+		var order: Array = SITE_SCHOLARS.filter(func(x: String) -> bool: return companions.has(x))
+		for id: String in ids:
+			if not id in order and id != "hargreaves":
+				order.append(id)
+		for id: String in order:
+			if k >= ours.size() or at_site.size() >= companions.size() - 1:
+				break
+			at_site[id] = sites[ours[k]].at
+			k += 1
+		if not companions.has("hargreaves"):
+			for id: String in ids:
+				if not at_site.has(id):
+					watch_by = id
+					break
 	for id: String in ids:
 		var g := companions[id] as Gunman
 		if g == null or not is_instance_valid(g) or g.state == Gunman.State.DEAD:
 			continue
 		var kind: String = (JOBS.get(id, ["fire", "fire"]) as Array)[1 if night else 0]
+		if id == watch_by:
+			kind = "watch"
 		var job: Dictionary
 		if at_site.has(id):
 			job = _site_job(kind if kind in ["read", "catalogue"] else "catalogue", at_site[id])
