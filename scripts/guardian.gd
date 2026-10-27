@@ -404,7 +404,7 @@ func _grab(dist: float, to: Vector3) -> void:
 ## time recovering; the next grab kills.
 func _slam(p: Player, to: Vector3) -> void:
 	var dir := to.normalized() if to.length() > 0.01 else -global_basis.z
-	if not p.take_damage(SLAM_DAMAGE, global_position):
+	if not p.take_damage(SLAM_DAMAGE * Difficulty.f("monster_damage"), global_position):
 		return  # rolled clear (i-frames)
 	slams_left -= 1
 	slams += 1
@@ -441,7 +441,7 @@ func _shove_companions() -> void:
 		_shoved[g] = now
 		var side := Vector3(-fwd.z, 0, fwd.x)
 		side = side if side.dot(off) >= 0.0 else -side
-		g.take_damage(SHOVE_DAMAGE, global_position)
+		g.take_damage(SHOVE_DAMAGE * Difficulty.f("monster_damage"), global_position)
 		g._push += (side + fwd * 0.3).normalized() * SHOVE_PUSH
 		Sfx.play_at(get_parent(), Sfx.swipe(), g.global_position + Vector3.UP * 1.3, -2.0)
 

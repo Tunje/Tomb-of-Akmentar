@@ -938,6 +938,7 @@ func _ray(from: Vector3, to: Vector3, mask: int) -> Dictionary:
 func take_damage(amount: float, from: Vector3) -> bool:
 	if not alive or is_invulnerable():
 		return false
+	amount *= Difficulty.f("player_damage")  # Story / Hard (Normal: 1)
 	var was := health
 	health = maxf(health - amount, 0.0)
 	var hurt := minf(amount / max_health, 0.5)

@@ -25,7 +25,7 @@ const RITUAL_TIME := {2: 60.0, 1: 95.0}   # seconds of chant, two voices / one
 const WAVE_EVERY := 10.0                   # a wave of minions this often during the rite
 const WAVE_SIZE := 2
 const SCARABS_EVERY := 3                   # a scarab burst every this many waves
-const RITUAL_SLAMS := 2                      # grabs that slam before one kills (Act 5's: 1)
+const RITUAL_SLAMS := 2                      # grabs that slam before one kills (Act 5's: 1); Normal's (Difficulty "ritual_slams")
 const GUARDIAN_AT := 0.45                  # the guardian wakes this far through the rite
 const MINION_HP := 180.0                     # the levels' minions (mummy.gd: 100): at 100 the party shot them down unhurt
 const MINION_PACE := 1.5                     # x their walk (tests/difficulty_test)
@@ -308,7 +308,7 @@ func _wake_guardian() -> void:
 		return
 	guardian = gs.spawn(self, level.guardian_spawn, player)
 	if "slams_left" in guardian:
-		guardian.set("slams_left", RITUAL_SLAMS)  # you can't run from the altar: more grace than the escape
+		guardian.set("slams_left", int(Difficulty.f("ritual_slams")))  # can't run from the altar: more grace than the escape
 	hud.toast("The sarcophagus opens. He's coming for you. Lead him away from the altar!", 3.5)
 	Objective.set_goal("Lead him away from the altar")
 	Barks.say_any(get_tree(), "guardian_seen", level.guardian_spawn)

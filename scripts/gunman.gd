@@ -76,8 +76,8 @@ const ESCAPE_NEAR := 2.5         # escape mode (Act 5): run close behind, never 
 const ESCAPE_FAR := 4.0
 const ESCAPE_SPEED := 7.2        # (the player sprints 6.6)
 const HELP_REACH := 3.2          # E this close helps a stumbled companion up (across low rubble too)
-const DOWNED_GRACE := 6.0        # s enemies leave a downed companion alone: time to get to them
-const BLEED_OUT := 60.0          # s down with an enemy within ENEMY_NEAR before they die of it
+const DOWNED_GRACE := 6.0        # s enemies leave a downed companion alone: time to get to them (Normal; Difficulty "downed_grace")
+const BLEED_OUT := 60.0          # s down with an enemy within ENEMY_NEAR before they die of it (Normal; Difficulty "bleed_out")
 const ENEMY_NEAR := 20.0
 const BLEED_PER_DAMAGE := 0.5    # s of BLEED_OUT a point of damage takes while down
 const UP_AFTER := 3.0            # s after the fight's over that the downed get up by themselves
@@ -494,7 +494,7 @@ func _enter(s: State) -> void:
 			_detour_t = 0.0
 		State.AIM:
 			_aimed = 0.0
-			_aim_need = FIRST_AIM * randf_range(0.85, 1.2)
+			_aim_need = FIRST_AIM * randf_range(0.85, 1.2) * _react()
 			_burst = mini(randi_range(2, 3), ammo)
 			Sfx.play_at(get_parent(), Sfx.click(), global_position + Vector3.UP * 1.4, -8.0)
 		State.RELOAD:
@@ -722,7 +722,7 @@ func _aim_step(delta: float, has_target: bool) -> void:
 		_fire()
 		_burst -= 1
 		_aimed = 0.0
-		_aim_need = NEXT_AIM * randf_range(0.85, 1.2)
+		_aim_need = NEXT_AIM * randf_range(0.85, 1.2) * _react()
 		if _burst <= 0 or ammo <= 0:
 			_after_burst()
 	elif not _sees and _t > _aim_need + HOLD_AIM:
@@ -878,7 +878,7 @@ func _go_down() -> void:
 	_over_t = 0.0
 	_bleed = 0.0
 	set_meta("downed_grace", true)  # mummies (ignore_downed) and gunmen leave them alone this long
-	get_tree().create_timer(DOWNED_GRACE).timeout.connect(func():
+	get_tree().create_timer(Difficulty.f("downed_grace")).timeout.connect(func():
 		if is_instance_valid(self):
 			remove_meta("downed_grace"))
 	stumble()
@@ -938,7 +938,7 @@ func _downed_step(delta: float) -> void:
 		if f.global_position.distance_to(global_position) < ENEMY_NEAR:
 			_bleed += 0.5
 			break
-	if _bleed >= BLEED_OUT:
+	if _bleed >= Difficulty.f("bleed_out"):
 		print("COMPANION %s bled out (down %.0f s with enemies close)" % [companion_id, _bleed])
 		_die()
 
@@ -995,9 +995,10 @@ func _update_tag() -> void:
 	var full := int(ceilf(k * 10.0))
 	var bar := "■".repeat(full) + "□".repeat(10 - full)
 	var who := companion_id.capitalize() if companion_id != "" else String(name)
-	_tag.text = who + ("  (holding)" if order == "hold" else "") + char(10) + bar
-	if stumbled:
-		_tag.text += char(10) + Controls.fill("{cover}  help up")  # the HUD shows cover's prompt while you're in cover
+	if stumbled:  # down: just who and what to do (the HUD draws the bleed ring above the tag)
+		_tag.text = who + char(10) + Controls.fill("{cover}  help up")  # the HUD shows cover's prompt while you're in cover
+	else:
+		_tag.text = who + ("  (holding)" if order == "hold" else "") + char(10) + bar
 	_tag.modulate = Color(1.0, 0.35, 0.25).lerp(Color(0.55, 1.0, 0.45), k)
 	_stack_tag()
 
@@ -1421,6 +1422,8 @@ func _fire() -> void:
 	var spread := SPREAD + SPREAD_PER_M * dist \
 		+ SPREAD_MOVE * clampf(_flat(velocity).length() / RUN, 0.0, 1.5) \
 		+ SPREAD_TARGET_MOVE * clampf(_flat(target_v).length() / Player.WALK, 0.0, 1.5)
+	if team != PARTY:
+		spread *= Difficulty.f("enemy_spread")
 	var fwd := (aim_at - from).normalized()
 	var right := fwd.cross(Vector3.UP).normalized()
 	var up := right.cross(fwd)
@@ -1513,11 +1516,13 @@ func _hurt(part: String, dmg: float, dir: Vector3, stagger: float, knock: float)
 		# (100000) is the end at once.
 		_bleed += dmg * PART_MULT.get(part, 1.0) * BLEED_PER_DAMAGE
 		_flash = 0.12
-		if _bleed >= BLEED_OUT:
+		if _bleed >= Difficulty.f("bleed_out"):
 			print("COMPANION %s finished while down (bled %.0f s)" % [companion_id, _bleed])
 			_die()
 			return {"killed": true}
 		return {"killed": false}
+	if team != PARTY:
+		dmg /= Difficulty.f("enemy_health")  # Story / Hard: tougher or softer than the act made them
 	health -= dmg * PART_MULT.get(part, 1.0)
 	_flash = 0.12
 	_seen_t = 0.0
@@ -1671,3 +1676,14 @@ static func _flat(v: Vector3) -> Vector3:
 
 static func _now() -> float:
 	return Time.get_ticks_msec() / 1000.0
+
+
+## Downed: how much of their bleed-out is left, 1 (just fell) to 0 (gone); 1 when not downed.
+## For the HUD's ring: the time follows the difficulty (Difficulty "bleed_out"), not BLEED_OUT.
+func bleed_left() -> float:
+	return clampf(1.0 - _bleed / Difficulty.f("bleed_out"), 0.0, 1.0) if downed else 1.0
+
+
+## Enemies' time to aim on this difficulty (companions are always as made).
+func _react() -> float:
+	return Difficulty.f("enemy_react") if team != PARTY else 1.0

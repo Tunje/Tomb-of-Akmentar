@@ -294,7 +294,7 @@ func _strike(dist: float, to_player: Vector3) -> void:
 	if facing.dot(to_player.normalized()) < 0.4:
 		return
 	var arms := 2 - int(_lost.has("arm_l")) - int(_lost.has("arm_r"))
-	var dmg := DAMAGE * (0.6 if arms == 0 else (0.8 if arms == 1 else 1.0))
+	var dmg := DAMAGE * (0.6 if arms == 0 else (0.8 if arms == 1 else 1.0)) * Difficulty.f("monster_damage")
 	target.take_damage(dmg, global_position)
 
 
@@ -303,6 +303,7 @@ func _strike(dist: float, to_player: Vector3) -> void:
 func take_hit(part: String, dmg: float, dir: Vector3, point: Vector3, stagger: float, knock: float) -> Dictionary:
 	if state == State.DEAD:
 		return {"killed": false}
+	dmg /= Difficulty.f("enemy_health")  # Story / Hard (Normal: 1)
 	if state == State.DORMANT:
 		wake()
 	var amount: float = dmg * PART_MULT.get(part, 1.0)

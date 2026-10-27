@@ -248,10 +248,10 @@ func _draw_strip(size: Vector2) -> void:
 		var bar := Rect2(Vector2(30 + name_w + 12.0 * _scale, y + fs * 0.35), Vector2(STRIP_W * _scale, 7.0 * _scale))
 		_canvas.draw_rect(bar.grow(1), Color(0.05, 0.04, 0.03, 0.8))
 		if g.downed or g.stumbled:  # down (or tripped in the escape): needs helping up
-			var pulse := 0.75 + 0.25 * sin(_t * 6.0)
+			var pulse := 0.8 + 0.2 * sin(_t * 6.0)  # never below 0.6: readable on bright sand
 			_canvas.draw_rect(bar, Color(DOWN_RED, 0.35 * pulse))
 			var dx := bar.end.x + 10.0 * _scale
-			_canvas.draw_string_outline(font, Vector2(dx, y + fs), "DOWN", HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 4, Color(0, 0, 0, 0.8 * pulse))
+			_canvas.draw_string_outline(font, Vector2(dx, y + fs), "DOWN", HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 7, Color(0, 0, 0, 0.9))
 			_canvas.draw_string(font, Vector2(dx, y + fs), "DOWN", HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(DOWN_RED, pulse))
 			if g.downed and _enemy_near(g, near):
 				_draw_bleed_ring(Vector2(dx + font.get_string_size("DOWN", HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x + 14.0 * _scale, y + fs * 0.6), g)
@@ -345,8 +345,8 @@ func _draw_downed_arrows(_size: Vector2) -> void:
 			_canvas.draw_circle(at + Vector2.UP * 14.0, 6.0 * _scale, Color(DOWN_RED, pulse))
 		var label := "%s %d m" % [DayLog.person(str(m.id)).get_slice(" ", 0), m.dist]
 		var lp := at - Vector2.from_angle(m.angle) * 26.0 * _scale - Vector2(font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x * 0.5, 0)
-		_canvas.draw_string_outline(font, lp, label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 4, Color(0, 0, 0, 0.8))
-		_canvas.draw_string(font, lp, label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col)
+		_canvas.draw_string_outline(font, lp, label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 7, Color(0, 0, 0, 0.9))
+		_canvas.draw_string(font, lp, label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col.lightened(0.25))
 
 
 ## The screen angles of the damage arcs (0 = straight up the screen, toward where you look;
