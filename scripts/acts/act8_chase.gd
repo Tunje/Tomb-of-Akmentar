@@ -42,6 +42,7 @@ var _shots: Array[float] = []
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	Checkpoint.take(self)  # a retry after a death starts from the state on entry
 	child_entered_tree.connect(func(n: Node):
 		if n.process_mode == Node.PROCESS_MODE_INHERIT:
 			n.process_mode = Node.PROCESS_MODE_PAUSABLE)
@@ -373,7 +374,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _done and enter:
 		get_tree().change_scene_to_file(next_scene)  # Game (the flags, the dead) carries over
 	elif enter and not player.alive:
-		get_tree().reload_current_scene()
+		Checkpoint.retry(self)  # Game as it was on entry, then the scene from its start
 	elif event.is_action_pressed("ui_cancel") and not ActionMenu.ui_open():
 		get_tree().paused = not get_tree().paused
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if get_tree().paused else Input.MOUSE_MODE_CAPTURED

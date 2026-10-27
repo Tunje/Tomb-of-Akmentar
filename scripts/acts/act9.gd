@@ -52,6 +52,7 @@ var _album: EpilogueShow
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	Checkpoint.take(self)  # a retry after a death starts from the state on entry
 	child_entered_tree.connect(func(n: Node):
 		if n.process_mode == Node.PROCESS_MODE_INHERIT:
 			n.process_mode = Node.PROCESS_MODE_PAUSABLE)
@@ -473,7 +474,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("party_order"):
 		hud.toast("Companions: " + str(Gunman.toggle_party_order(get_tree())))
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_ENTER and not player.alive:
-		get_tree().reload_current_scene()
+		Checkpoint.retry(self)  # Game as it was on entry, then the scene from its start
 
 
 func _slot() -> String:
