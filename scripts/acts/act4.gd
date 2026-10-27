@@ -320,7 +320,7 @@ func _clue_count() -> int:
 func _save() -> void:
 	Game.place = "act4_camp"
 	if Game.save_game():
-		hud.toast("Game saved")
+		SavePrompt.after_rest(self, hud)  # "Game saved", and a copy in a numbered slot if wanted
 
 
 func _spawn_party() -> void:

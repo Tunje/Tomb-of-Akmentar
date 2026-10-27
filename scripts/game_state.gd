@@ -36,9 +36,25 @@ var transport := {"horses": [], "trucks": []}  # each: {"id", "health"}
 var countdowns := {}  # name -> days left
 var act := 1
 var place := ""  # where a load should put the player (scene or spot id)
+var play_time := 0.0  # seconds played, kept with the save (the Load screen shows it)
+## The slot a death or SaveRoute.resume loads: "main" (the last rest), or a numbered slot just
+## loaded from the Load screen, until the next save writes a new last rest.
+var resume_slot := "main"
+
+
+func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_PAUSABLE  # play time stops while paused
+	if OS.get_cmdline_user_args().is_empty():
+		SaveSlots.migrate()  # once: a copy of the save made before the slots, kept beside it
+
+
+func _process(delta: float) -> void:
+	play_time += delta
 
 
 func reset() -> void:
+	play_time = 0.0
+	resume_slot = "main"
 	day = 1
 	actions_left = ACTIONS_PER_DAY
 	money = 0
@@ -164,7 +180,8 @@ func apply(effects: Array) -> void:
 func to_dict() -> Dictionary:
 	return {"version": 1, "day": day, "actions_left": actions_left, "money": money, "flags": flags,
 		"companions": companions, "inventory": inventory, "transport": transport,
-		"countdowns": countdowns, "act": act, "place": place}
+		"countdowns": countdowns, "act": act, "place": place,
+		"play_time": play_time, "saved_at": Time.get_unix_time_from_system()}
 
 
 func from_dict(d: Dictionary) -> void:
@@ -178,16 +195,22 @@ func from_dict(d: Dictionary) -> void:
 	countdowns = d.get("countdowns", {})
 	act = int(d.get("act", 1))
 	place = str(d.get("place", ""))
+	play_time = float(d.get("play_time", play_time))
 	changed.emit("all")
 
 
 ## A run started with arguments after "--" (the test bots, every session's) keeps its saves in the
 ## "test" slot: they were overwriting Simon's real save in "main" all the time.
+## Every slot is redirected in a test run: "main" -> "test", "slot2" -> "test_slot2" (and their
+## thumbnails), so tests never touch Simon's saves.
 static func _slot(slot: String) -> String:
-	return "test" if slot == "main" and not OS.get_cmdline_user_args().is_empty() else slot
+	if OS.get_cmdline_user_args().is_empty() or slot.begins_with("test"):
+		return slot
+	return "test" if slot == "main" else "test_" + slot
 
 
 func save_game(slot := "main") -> bool:
+	var named := slot
 	slot = _slot(slot)
 	DirAccess.make_dir_recursive_absolute(SAVE_DIR)
 	var f := FileAccess.open(SAVE_DIR.path_join(slot + ".json"), FileAccess.WRITE)
@@ -195,6 +218,10 @@ func save_game(slot := "main") -> bool:
 		push_error("Game.save_game: can't write %s" % slot)
 		return false
 	f.store_string(JSON.stringify(to_dict(), "\t"))
+	f.close()
+	SaveSlots.write_thumbnail(slot)  # the screen now, beside the save (the Load screen shows it)
+	if named in ["main", "test"]:
+		resume_slot = "main"  # a new last rest: deaths come back here
 	return true
 
 

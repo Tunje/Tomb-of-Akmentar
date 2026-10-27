@@ -100,6 +100,17 @@ static func _setup_pad() -> void:
 	start.device = -1
 	start.button_index = JOY_BUTTON_START
 	InputMap.action_add_event("ui_cancel", start)
+	# Menus on a pad: A confirms, the d-pad moves (if the project's defaults lack them).
+	for pair in [["ui_accept", JOY_BUTTON_A], ["ui_up", JOY_BUTTON_DPAD_UP], ["ui_down", JOY_BUTTON_DPAD_DOWN],
+			["ui_left", JOY_BUTTON_DPAD_LEFT], ["ui_right", JOY_BUTTON_DPAD_RIGHT]]:
+		var has := false
+		for e in InputMap.action_get_events(pair[0]):
+			has = has or (e is InputEventJoypadButton and e.button_index == pair[1])
+		if not has:
+			var b := InputEventJoypadButton.new()
+			b.device = -1
+			b.button_index = pair[1]
+			InputMap.action_add_event(pair[0], b)
 
 
 ## The pad's name for an action's first pad binding ("A", "RT", "Left stick"), or "" if none.

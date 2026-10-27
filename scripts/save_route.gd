@@ -26,7 +26,7 @@ static func scene_for(place: String) -> String:
 ## main.tscn resumes itself).
 static func resume(tree: SceneTree) -> void:
 	tree.paused = false
-	if Game.load_game():
+	if Game.load_game(Game.resume_slot):  # the last rest, or the slot just loaded (SaveSlots)
 		var s := scene_for(Game.place)
 		if s != "" and ResourceLoader.exists(s):
 			tree.change_scene_to_file(s)

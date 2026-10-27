@@ -142,7 +142,7 @@ func _ready() -> void:
 ## The start screen; its key help reads the bindings (shown again when the controls change).
 func _show_menu() -> void:
 	_menu_keys = Controls.help_text()
-	var cont := ("\nC  continue from your last save" if Game.has_save() else "") + "\n1  play Act 1: a bad day in Cairo (in progress)" + "\n2  play Act 2: raising the expedition in Cairo (in progress)" + "\n3  play Act 3: the road to Akmentar (in progress)" + "\n4  play Act 4: the tombs of Akmentar (in progress)" + "\n5  play Act 5: the awakening below Akmentar (in progress)" + "\n6  play Act 6: the race back to Cairo (in progress)" + "\n7  play Act 7: Cairo under the curse (in progress)" + "\n8  play Act 8: the way back to Akmentar (in progress)" + "\n9  play Act 9: the last descent (in progress)"
+	var cont := ("\nC  continue from your last rest" if Game.has_save() else "") + "\nL  load game (Y on a pad)" + "\n1  play Act 1: a bad day in Cairo (in progress)" + "\n2  play Act 2: raising the expedition in Cairo (in progress)" + "\n3  play Act 3: the road to Akmentar (in progress)" + "\n4  play Act 4: the tombs of Akmentar (in progress)" + "\n5  play Act 5: the awakening below Akmentar (in progress)" + "\n6  play Act 6: the race back to Cairo (in progress)" + "\n7  play Act 7: Cairo under the curse (in progress)" + "\n8  play Act 8: the way back to Akmentar (in progress)" + "\n9  play Act 9: the last descent (in progress)"
 	hud.show_message("TOMBS OF AKMENTAR", "Click to begin a new game" + cont + "\n\n" + _menu_keys + "\nSave at campfires and beds · Esc pause · O options")
 
 
@@ -152,7 +152,7 @@ func _save_at(spot: String) -> void:
 	Game.set_flag("player_health", player.health)
 	Game.set_flag("ammo", player.ammo)
 	if Game.save_game():
-		hud.toast("Game saved")
+		SavePrompt.after_rest(self, hud)  # "Game saved", and a copy in a numbered slot if wanted
 
 
 ## Sleep: the next day starts, then save.
@@ -207,7 +207,11 @@ func _start(capture_mouse := true) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if OptionsScreen.is_open():
+	if not started and not LoadScreen.is_open() and not OptionsScreen.is_open() and ((event is InputEventKey and event.pressed \
+			and not event.echo and event.keycode == KEY_L) or (event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_Y)):
+		LoadScreen.open(get_tree())
+		return
+	if OptionsScreen.is_open() or LoadScreen.is_open() or SavePrompt.is_open():
 		return  # its own keys (a number would start an act behind it)
 	if event is InputEventMouseButton and event.pressed:
 		if not started:

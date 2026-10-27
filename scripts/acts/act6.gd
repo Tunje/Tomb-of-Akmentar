@@ -415,7 +415,7 @@ func _save(where: String) -> void:
 	Game.place = "act6_" + where
 	Game.set_flag("player_health", player.health)
 	if Game.save_game():
-		hud.toast("Game saved")
+		SavePrompt.after_rest(self, hud)  # "Game saved", and a copy in a numbered slot if wanted
 
 
 func _unhandled_input(event: InputEvent) -> void:
