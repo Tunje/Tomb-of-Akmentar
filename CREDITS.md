@@ -3,9 +3,9 @@
 ## Sound
 
 All the game's sounds are synthesised in code at runtime (scripts/sfx.gd, scripts/ambience.gd,
-scripts/sound_life.gd); there are no third-party audio files yet.
+scripts/sound_life.gd, scripts/combat_sound.gd); there are no third-party audio files yet.
 
-`SoundLife` uses a recording in `res://assets/audio/<kind>.ogg` (or `.wav`) in place of its
+`SoundLife` and `CombatSound` use a recording in `res://assets/audio/<kind>.ogg` (or `.wav`) in place of their
 synthesised sound when one is there. Any file added there must be listed below with its source,
 author and licence (CC0 or public domain preferred; nothing non-commercial or no-derivatives).
 
