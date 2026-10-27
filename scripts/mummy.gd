@@ -49,6 +49,13 @@ var _parts := {}  # name -> {node: Node3D or null, boxes: Array of StaticBody3D}
 var rig: MummyBody
 ## A High Priest instead of a Tomb Guard (looks only; set before adding to the tree).
 var priest := false
+## How much nearer a companion must be than the player before he goes for them instead (m).
+## Act 6's camp raises it: they come for you (and the amulet) first.
+var party_margin := 1.0
+## A companion on the ground (Gunman.stumbled) isn't sought out, only finished if he's right
+## there (within 2.5 m), and not while he carries meta "downed_grace" (the act's few seconds for
+## the player to reach him). Act 6's camp: the fight washes over the fallen, it doesn't hunt them.
+var ignore_downed := false
 var _arm_pivots := {}
 
 
@@ -251,7 +258,9 @@ func _pick_target() -> void:
 	for c in get_tree().get_nodes_in_group("party"):
 		var n := c as Node3D
 		var d := global_position.distance_to(n.global_position)
-		if n.alive and d < bd - 1.0:
+		if ignore_downed and bool(n.get("stumbled")) and (d > 2.5 or n.has_meta("downed_grace")):
+			continue  # on the ground: not sought out, and just after falling, left alone
+		if n.alive and d < bd - party_margin:
 			best = n
 			bd = d
 	if best:

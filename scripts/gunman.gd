@@ -126,6 +126,9 @@ var stuck_count := 0
 var escape := false
 ## Down on the floor (stumble()): stays put until the player helps (E) or something gets him.
 var stumbled := false
+## A blow that would kill him downs him instead (stumble(): help him up, or it's the next one that
+## kills). Set by a fight that shouldn't cost a companion outright (Act 6's camp).
+var down_not_dead := false
 ## Hands up: out of the fight, hostile to no one (shooting him anyway is the story's mean choice).
 var surrendered := false
 ## Enemies only: whether this one may give up at all (a fanatic of the order might not), and how
@@ -1405,6 +1408,10 @@ func _hurt(part: String, dmg: float, dir: Vector3, stagger: float, knock: float)
 	_seen_t = 0.0
 	_push += _flat(dir).normalized() * knock * 0.6
 	if health <= 0.0:
+		if down_not_dead and not stumbled:
+			health = 1.0  # down instead: anything that reaches him there finishes him
+			stumble()
+			return {"killed": false}
 		_die()
 		return {"killed": true}
 	if surrendered:

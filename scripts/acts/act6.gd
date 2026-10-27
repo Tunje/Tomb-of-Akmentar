@@ -20,6 +20,8 @@ const NEXT_ACT := "res://act7.tscn"
 const RIVALS := ["americans", "germans"]   # the expeditions that can lend horses (if alive)
 const SERVANT_HP := 130.0                  # (mummy.gd: 100) at 100 the party shot them down unhurt (tests/difficulty_test)
 const SERVANT_PACE := 1.5                  # x their walk
+const DOWNED_GRACE := 6.0                  # s a downed companion is left alone (time to reach them)
+const CAMP_TOUGHNESS := 3.5                # companions' health x this for the camp fight (they take the first of it)
 const SERVANTS := 12                       # mummies at the night camp
 const SERVANTS_THEN := 2                   # after the first three, this many together every 2.5-4 s (one at a time: shot down unhurt)
 
@@ -278,6 +280,20 @@ func _camp(at: Vector3) -> void:
 func _servants(camp: Vector3) -> void:
 	player.set_armed(true)
 	hud.toast("Shapes in the dark, wrapped and silent. Hold the fire!", 3.0)
+	# Nobody dies outright at the camp: a blow that would kill a companion downs them instead. Help
+	# them up (E) before a servant reaches them, or the dark takes them when it's over.
+	for c in companions.values():
+		if is_instance_valid(c):
+			c.down_not_dead = true
+			# They stand between you and the dark, so they take the first of it: dug in by the fire,
+			# they hold longer than in the open (restored after the fight).
+			c.set_meta("camp_max_hp", c.max_health)
+			c.max_health *= CAMP_TOUGHNESS
+			c.health = c.max_health
+			if not c.helped_up.is_connected(_on_helped_up):
+				c.helped_up.connect(_on_helped_up)
+				c.stumbled_down.connect(_on_downed)
+				c.killed.connect(func(g: Gunman): print("RESULT act6 killed %s (stumbled=%s)" % [g.companion_id, g.stumbled]))
 	var down := [0]
 	var spawned := 0
 	var t := 0.0
@@ -299,10 +315,41 @@ func _servants(camp: Vector3) -> void:
 		return
 	print("RESULT act6 servants=%d over %.0f s" % [servants.size(), (Time.get_ticks_msec() - t0) / 1000.0])
 	player.set_armed(false)
+	# Anyone still down when it's over: the dark takes them.
+	var lost: Array[String] = []
+	for c in companions.values():
+		if is_instance_valid(c):
+			c.down_not_dead = false
+			if c.has_meta("camp_max_hp"):
+				c.max_health = float(c.get_meta("camp_max_hp"))
+				c.health = minf(c.health, c.max_health)
+				c.remove_meta("camp_max_hp")
+			if c.stumbled and c.alive:
+				c.take_damage(1000.0, c.global_position)
+				lost.append(DayLog.person(c.companion_id))
 	Game.set_flag("act6_camp_held")
-	print("RESULT act6 camp_held")
-	hud.toast("The last of them falls into the fire. Nobody sleeps.", 3.0)
+	print("RESULT act6 camp_held lost=%s" % [lost])
+	if lost.is_empty():
+		hud.toast("The last of them falls into the fire. Nobody sleeps.", 3.0)
+	else:
+		hud.toast("The last of them falls. You didn't reach %s in time: the dark has them." % " or ".join(lost), 4.5)
 	await get_tree().create_timer(2.0).timeout
+
+
+## Down: the servant that felled them turns away for a few seconds, time for you to get there.
+func _on_downed(g: Gunman) -> void:
+	print("RESULT act6 down %s" % g.companion_id)
+	hud.toast("%s is down! Get to them (E)." % DayLog.person(g.companion_id), 3.0)
+	g.set_meta("downed_grace", true)
+	get_tree().create_timer(DOWNED_GRACE).timeout.connect(func():
+		if is_instance_valid(g):
+			g.remove_meta("downed_grace"))
+
+
+## Back on their feet: enough left in them not to go down again at the first touch.
+func _on_helped_up(g: Gunman) -> void:
+	g.health = maxf(g.health, g.max_health * 0.4)
+	print("RESULT act6 helped up %s" % g.companion_id)
 
 
 ## One servant out of the dark at bearing `a` from the camp.
@@ -312,6 +359,8 @@ func _servant(camp: Vector3, a: float, priest: bool, down: Array) -> void:
 	add_child(m)
 	m.health = SERVANT_HP
 	m.speed *= SERVANT_PACE
+	m.party_margin = 5.0  # they come for you (and the amulet) unless a companion is clearly nearer
+	m.ignore_downed = true  # a companion on the ground is finished only if one stumbles onto him
 	var p := camp + Vector3(cos(a), 0, sin(a)) * randf_range(11.0, 15.0)  # out of the dark close by (16-22 m: shot down before they arrived)
 	p.y = DesertRoute.ground_y(p.z)
 	m.global_position = p
