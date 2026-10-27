@@ -37,8 +37,8 @@ func _ready() -> void:
 	if args.size() > 0:
 		get_window().set_flag(Window.FLAG_NO_FOCUS, true)
 	Game.act = 3
-	if args.has("auto") and not Game.flag("act3_back_from", "") and Game.money < 100:
-		Game.money = 300  # a fresh test game: what Act 2 would have left, and a crew
+	if args.has("auto") and not Game.flag("act3_back_from", "") and Game.money < 1000:
+		Game.money = 3000  # a fresh test game: what Act 2 would have left, and a crew
 		for id in ["mahmoud", "khalil"]:
 			Game.companion(id)["recruited"] = true
 			Game.set_flag("hired_" + id)

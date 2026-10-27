@@ -53,6 +53,9 @@ func _ready() -> void:
 	player.died.connect(_on_died)
 	level.interactables["camp_fire"].used.connect(func(_by): _save())
 	level.interactables["camp_bed"].used.connect(func(_by): _end_day())
+	# Our own fire: sit with each companion once a day, the next rung of their rapport ladder
+	# (actions/camp.json, tools/dialogue/rapport.py). Free: the days' actions are for the sites.
+	ActionSpot.make(level, "camp", level.interactables["camp_fire"].global_position + Vector3(1.2, 0.0, -1.6))
 	# The rivals at their camps (stand-in bodies until image-to-3d's leaders exist).
 	npcs["whitfield"] = Npc.make(level, "whitfield", level.camps.americans + Vector3(1.5, 0, 2.0), "act4_whitfield", Characters.glb("whitfield"))
 	npcs["adler"] = Npc.make(level, "adler", level.camps.germans + Vector3(-1.5, 0, 2.0), "act4_adler", Characters.glb("adler"))

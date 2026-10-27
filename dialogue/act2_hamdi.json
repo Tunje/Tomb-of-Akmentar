@@ -8,7 +8,7 @@
 	"nodes": {
 		"start": {
 			"speaker": "hamdi",
-			"line": "Deck passage upriver for your whole party: twenty pounds. But I warn you, the Americans have booked half my deck.",
+			"line": "Deck passage upriver for your whole party: two hundred pounds. But I warn you, the Americans have booked half my deck.",
 			"do": [
 				{
 					"set_flag": "heard_americans_boat"
@@ -22,20 +22,21 @@
 			"choices": [
 				{
 					"label": "Book passage",
-					"line": "Twenty pounds. Keep us a corner of that deck.",
+					"line": "Two hundred pounds. Keep us a corner of that deck.",
 					"if": {
-						"money": 20,
+						"money": 200,
 						"not_flag": "booked_riverboat"
 					},
 					"do": [
 						{
-							"money": -20
+							"money": -200
 						},
 						{
 							"set_flag": "booked_riverboat"
 						}
 					],
 					"next": "booked",
+					"tone": "friendly",
 					"slot": "ur"
 				},
 				{
@@ -50,12 +51,14 @@
 						}
 					],
 					"next": "river",
+					"tone": "ask",
 					"slot": "ul"
 				},
 				{
 					"label": "Leave",
 					"line": "I'll think about it.",
 					"next": "bye",
+					"tone": "leave",
 					"slot": "ll"
 				}
 			]

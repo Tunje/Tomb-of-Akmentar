@@ -65,12 +65,12 @@ def buy(id_, label, price, do, once=False, if_=None):
 # ================================================================ ACT 8: preparations
 
 FILES["actions/act8_caravanserai.json"] = spot("The Caravanserai", "Enter the caravanserai", [
-    buy("horse", "Buy a horse", 12, [{"item": ["horse", 1]}]),
-    buy("truck", "Buy a truck from Abdel's mechanic", 60, [{"item": ["truck", 1]}]),
-    buy("repair", "Repair the expedition's trucks", 20, [flag("trucks_repaired")], once=True),
+    buy("horse", "Buy a horse", 120, [{"item": ["horse", 1]}]),
+    buy("truck", "Buy a truck from Abdel's mechanic", 600, [{"item": ["truck", 1]}]),
+    buy("repair", "Repair the expedition's trucks", 200, [flag("trucks_repaired")], once=True),
 ], "Act 8: horses and trucks. act8.gd turns the 'horse' / 'truck' items into Game.transport entries and sets enough_horses / enough_trucks.")
 FILES["actions/act8_docks.json"] = spot("The Docks", "Find a boat south", [
-    buy("passage", "Passage south for the whole expedition", 30, [flag("act8_boat_booked")], once=True),
+    buy("passage", "Passage south for the whole expedition", 300, [flag("act8_boat_booked")], once=True),
 ], "Act 8: the riverboat (the whole party travels together; the boat battle).")
 FILES["actions/act8_telegraph.json"] = spot("The Telegraph Office", "Go into the telegraph office", [
     {"id": "fletcher", "label": "Wire Danny Fletcher: you need that lift", "cost": 0, "once": True,
@@ -78,14 +78,14 @@ FILES["actions/act8_telegraph.json"] = spot("The Telegraph Office", "Go into the
      "do": [flag("plane_ready")], "log": "Danny Fletcher is fuelling his plane"},
 ], "Act 8: the plane, only if Fletcher offered it in Act 7.")
 FILES["actions/act8_gunsmith.json"] = spot("Ahmed Zaki, Gunsmith", "Look at the guns", [
-    buy("revolver_ammo", "Revolver cartridges, 24", 3, [{"item": ["revolver_ammo", 24]}]),
-    buy("rifle_ammo", "Rifle cartridges, 20", 4, [{"item": ["rifle_ammo", 20]}]),
-    buy("shotgun_shells", "Shotgun shells, 12", 3, [{"item": ["shotgun_shells", 12]}]),
+    buy("revolver_ammo", "Revolver cartridges, 24", 30, [{"item": ["revolver_ammo", 24]}]),
+    buy("rifle_ammo", "Rifle cartridges, 20", 40, [{"item": ["rifle_ammo", 20]}]),
+    buy("shotgun_shells", "Shotgun shells, 12", 30, [{"item": ["shotgun_shells", 12]}]),
 ], "Act 8: last ammunition.")
 FILES["actions/act8_outfitter.json"] = spot("Samira Haddad, Outfitter", "Look at the supplies", [
-    buy("rations", "Rations, a week for the party", 10, [{"item": ["rations", 7]}]),
-    buy("water", "Water casks, a week", 6, [{"item": ["water", 7]}]),
-    buy("medicine", "A medical kit", 8, [{"item": ["medicine", 1]}]),
+    buy("rations", "Rations, a week for the party", 100, [{"item": ["rations", 7]}]),
+    buy("water", "Water casks, a week", 60, [{"item": ["water", 7]}]),
+    buy("medicine", "A medical kit", 80, [{"item": ["medicine", 1]}]),
 ], "Act 8: last supplies.")
 
 FILES["routes/act8_route.json"] = {
@@ -209,6 +209,23 @@ LAST = {
     "khalil": ("My men ask if they can go home after this. I told them yes. Do not make me a liar.", [trust("khalil", 1)]),
     "naguib": ("Everything is packed for the way out. I always pack for the way out.", [trust("naguib", 1)]),
 }
+# Someone you've barely spoken to on the road doesn't confide in you now either (the rapport rule,
+# tools/dialogue/rapport.py): the words above need two stop talks with them; otherwise a plain line.
+# A flag the plot needs (the rearguard, Pembroke's record) comes with either.
+PLAIN = {
+    "eleanor": ("Big day tomorrow. Try to sleep.", []),
+    "pembroke": ("I've written it all down. Every word. If I don't come back, make sure someone reads it.", [flag("pembroke_record_safe")]),
+    "hassan": ("Tomorrow, keep the jars close. Very close.", []),
+    "hargreaves": ("If it comes to it, I'll hold the rear.", [flag("hargreaves_offered_rear")]),
+    "idris": ("Stay behind me on the stairs tomorrow.", []),
+    "isabelle": ("Get some sleep. You look terrible.", []),
+    "saleh": ("Drink some water. Then sleep.", []),
+    "youssef": ("I am not afraid. Tomorrow I am not afraid.", []),
+    "farid": ("Everything is counted. Good night.", []),
+    "mahmoud": ("My men are ready. The ropes are checked.", []),
+    "khalil": ("The men are quiet tonight. Good night.", []),
+    "naguib": ("Everything is packed for the way out.", []),
+}
 menu = []
 for k, (label, ids) in enumerate(GROUPS):
     gid = "g%d" % k
@@ -216,7 +233,10 @@ for k, (label, ids) in enumerate(GROUPS):
     last[gid] = L("player", "Who's awake?", choices=[C(SHORT[i], "%s. Can't sleep either?" % SHORT[i], "l_" + i, if_={"in_party": i, "not_flag": "last_" + i}) for i in ids] + [C("Back", "", "menu")])
     for i in ids:
         line, fx = LAST[i]
-        last["l_" + i] = L(i, line, "menu", do=fx + [flag("last_" + i)])
+        plain, pfx = PLAIN[i]
+        last["l_" + i] = B(({"stat": [i, "talks", 2]}, "l_%s_close" % i), (None, "l_%s_plain" % i))
+        last["l_%s_close" % i] = L(i, line, "menu", do=fx + [flag("last_" + i)])
+        last["l_%s_plain" % i] = L(i, plain, "menu", do=pfx + [flag("last_" + i)])
 menu.append(C("Go on", "Get some rest. We go at first light.", "rear"))
 last["menu"] = L("player", "The fire's almost out.", choices=menu)
 last["rear"] = B(({"flag": "hargreaves_offered_rear", "in_party": "hargreaves"}, "rear_ask"), (None, "end"))
@@ -228,7 +248,7 @@ last["rear_yes"] = L("hargreaves", "Then go. I'll be right behind you. Probably.
 last["rear_no"] = L("hargreaves", "...Right. Together, then.", "end")
 last["end"] = END
 TALKS["act8_last_night"] = talk(
-    "Act 8, the last night before Akmentar (every route but the plane): a last word with each companion (last_<id>), and Hargreaves's offer to hold the rear (hargreaves_rearguard: act8.gd decides if he survives it; his epilogue 'died saving a companion'). rear_held helps the companions get clear if you surrender the amulet.",
+    "Act 8, the last night before Akmentar (every route but the plane): a last word with each companion (last_<id>: the personal one only after two stop talks with them, stat talks; otherwise a plain one), and Hargreaves's offer to hold the rear (hargreaves_rearguard: act8.gd decides if he survives it; his epilogue 'died saving a companion'). rear_held helps the companions get clear if you surrender the amulet.",
     SPEAKERS, last)
 
 # The final approach: go down (Act 9) or surrender the amulet.
@@ -549,7 +569,7 @@ CARDS = [
     ], ("The road, 1926", "Naguib Sabet died on the road back. Everything was packed for the way out."),
        ("Cairo, 1926", "He went on building toward his own caravan, one contract at a time.")),
     {"who": "whitfield", "name": "Charlie Whitfield", "variants": [
-        V("profiteer", "He sold the curse back to you for a hundred pounds and dined out on it for years. Nobody believed the second half of the story.",
+        V("profiteer", "He sold the curse back to you for one thousand pounds and dined out on it for years. Nobody believed the second half of the story.",
           "New York, 1927", {"flag": "bought_artifacts"}),
         V("fought", "He lost the artifacts to you in a gunfight in Cairo and told the newspapers he had been robbed. He was not entirely wrong.",
           "New York, 1927", {"flag": "thieves_americans", "not_flag": "recovered_peacefully"}),

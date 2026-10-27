@@ -1,7 +1,7 @@
 extends Node3D
 ## Conversation wheel test: two capsules and dialogue/archivist.json, played through twice.
 ##   Run 1 (number keys): ask for an Egyptologist -> ask about his staff -> ask for Miss Whitmore = recruit.
-##   Run 2 (mouse on the wheel, second visit, 100 money): ask -> threaten him = event fight_museum_guards.
+##   Run 2 (mouse on the wheel, second visit, 1000 money): ask -> threaten him = event fight_museum_guards.
 ## Prints RESULT lines and saves screenshots; exits 0 when every check passed. Args after "--":
 ##   --shot-dir=C:/path   where PNGs go (default user://dialogue_shots)
 ## Never takes focus or captures the mouse (Simon plays while we test).
@@ -150,7 +150,7 @@ func _run() -> void:
 	# Run 2: mouse on the wheel, second visit, fight.
 	Game.reset()
 	Game.set_flag("met_archivist")
-	Game.money = 100
+	Game.money = 1000
 	_events.clear()
 	_begin()
 	await _wait_line("archivist")
@@ -159,7 +159,7 @@ func _run() -> void:
 	await _wait_choices()
 	await _pick_mouse("Ask for an Egyptologist")
 	await _skip_to_choices()
-	_check(_labels().has("Offer a donation"), "run2 donation shown with 100 money (labels %s)" % [_labels()])
+	_check(_labels().has("Offer a donation"), "run2 donation shown with 1000 money (labels %s)" % [_labels()])
 	await _hover(_labels().find("Threaten him"))
 	await _shot("dlg_6_threat_hover.png")
 	await _pick_mouse("Threaten him")
@@ -170,7 +170,7 @@ func _run() -> void:
 	_check(_ended == "end_fight", "run2 ended at end_fight (got '%s')" % _ended)
 	_check(_events.has("fight_museum_guards"), "run2 event fight_museum_guards (events %s)" % [_events])
 	_check(not Game.in_party("eleanor"), "run2 nobody recruited")
-	_check(Game.money == 100, "run2 money untouched (%d)" % Game.money)
+	_check(Game.money == 1000, "run2 money untouched (%d)" % Game.money)
 	_restored("run2")
 
 	# Run 3: let lines run out on their own (no input at all) until the wheel shows.

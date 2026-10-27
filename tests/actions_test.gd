@@ -1,7 +1,7 @@
 extends Node3D
 ## Action system test: Eleanor (a rigged Npc) recruited by talking (E), three actions in the old
 ## quarter spent until the day ends, "No time left today" on one too costly, the day-end screen,
-## then a camp talk with Eleanor that raises her trust, and sleeping (the bed's day-end screen).
+## then a camp talk with Eleanor (free; the first rung of her rapport ladder: small talk) that raises her trust, and sleeping (the bed's day-end screen).
 ## Prints RESULT lines and saves screenshots; exits 0 when every check passed. Args after "--":
 ##   --shot-dir=C:/path   where PNGs go (default user://actions_shots)
 ## Never takes focus or captures the mouse (Simon plays while we test).
@@ -31,7 +31,7 @@ func _ready() -> void:
 			_dir = a.substr(11)
 	DirAccess.make_dir_recursive_absolute(_dir)
 	Game.reset()
-	Game.money = 50
+	Game.money = 500
 	DayLog.begin_day()
 	_build_scene()
 	_run.call_deferred()
@@ -156,7 +156,7 @@ func _run() -> void:
 	await _shot("act_4_no_time.png")
 	_mouse_click(menu.row_point(1))  # Haggle for supplies, with the mouse
 	await _wait(0.6)
-	_check(Game.actions_left == 0 and Game.money == 30 and int(Game.inventory.get("rations", 0)) == 6,
+	_check(Game.actions_left == 0 and Game.money == 300 and int(Game.inventory.get("rations", 0)) == 6,
 			"supplies bought (money %d, actions %d)" % [Game.money, Game.actions_left])
 	_check(DaySummary.current != null, "the day-end screen opened at 0 actions")
 	var lines: Array[String] = []
@@ -164,7 +164,7 @@ func _run() -> void:
 		lines = DaySummary.current.lines
 	print("RESULT summary day 1: %s" % [lines])
 	for want in ["Talked with Eleanor Whitmore", "Spent the day with a city guide", "Haggled for six days of rations",
-			"Money −£20", "Eleanor Whitmore joined the expedition", "Eleanor Whitmore: trust +1"]:
+			"Money −£200", "Eleanor Whitmore joined the expedition", "Eleanor Whitmore: trust +1"]:
 		_check(want in lines, "summary has '%s'" % want)
 	await _wait(0.6)
 	await _shot("act_5_day_end.png")
@@ -184,13 +184,13 @@ func _run() -> void:
 	await _shot("act_6_camp_menu.png")
 	_key(KEY_1)
 	await _wait(0.2)
-	_check(Conversation.current != null and Game.actions_left == 2, "camp talk started and cost 1 action")
+	_check(Conversation.current != null and Game.actions_left == 3, "camp talk started, free (actions %d)" % Game.actions_left)
 	await _wait_state(Conversation.State.CHOICES)
 	await _shot("act_7_camp_talk.png")
-	await _pick("Ask what it means")
+	await _pick("Laugh with her")  # rung 0: small talk, nothing personal on first contact
 	await _wait_until(func(): return Conversation.current == null, 20.0, true)
 	var e := Game.companion("eleanor")
-	_check(int(e.trust) == 2 and int(e.conviction) == 1, "camp talk: trust %d (want 2), conviction %d (want 1)" % [e.trust, e.conviction])
+	_check(int(e.trust) == 2 and int(e.get("talks", 0)) == 1 and Game.flag("rapport_eleanor_0"), "camp talk: trust %d (want 2), the first rung heard" % e.trust)
 	_use_nearest(_camp.global_position)
 	menu = ActionMenu.current
 	_check(menu != null and menu.rows.is_empty() and menu.message != "", "her talk is done for today ('%s')" % (menu.message if menu else ""))
@@ -201,7 +201,7 @@ func _run() -> void:
 	DaySummary.open(self, _player)
 	lines = DaySummary.current.lines
 	print("RESULT summary day 2: %s" % [lines])
-	for want in ["Talked with Eleanor by the fire", "Eleanor Whitmore: trust +1", "Eleanor Whitmore: conviction +1"]:
+	for want in ["Talked with Eleanor by the fire", "Eleanor Whitmore: trust +1"]:
 		_check(want in lines, "sleep summary has '%s'" % want)
 	await _wait(0.7)
 	await _shot("act_8_sleep.png")

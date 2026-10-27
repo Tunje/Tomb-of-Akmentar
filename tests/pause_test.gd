@@ -102,6 +102,8 @@ func _journal() -> void:
 	_check(not PauseMenu.is_open() and ActionMenu.ui_open(), "Journal closes the menu and opens the journal")
 	JournalScreen.toggle(self, player)
 	await _frames(3)
+	if DisplayServer.get_name() != "headless":  # (headless can't capture the mouse at all)
+		_check(Input.mouse_mode == Input.MOUSE_MODE_CAPTURED, "closing a journal opened from the menu: the mouse is captured again (you can turn)")
 
 
 func _quit_asks() -> void:

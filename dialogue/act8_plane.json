@@ -52,6 +52,7 @@
 						}
 					],
 					"next": "chosen",
+					"tone": "neutral",
 					"slot": "r"
 				},
 				{
@@ -79,6 +80,7 @@
 						}
 					],
 					"next": "chosen",
+					"tone": "neutral",
 					"slot": "ur"
 				},
 				{
@@ -106,12 +108,14 @@
 						}
 					],
 					"next": "chosen",
+					"tone": "neutral",
 					"slot": "lr"
 				},
 				{
 					"label": "Back",
 					"line": "",
 					"next": "pick",
+					"tone": "leave",
 					"slot": "ll"
 				}
 			]
@@ -145,6 +149,7 @@
 						}
 					],
 					"next": "chosen",
+					"tone": "neutral",
 					"slot": "r"
 				},
 				{
@@ -172,6 +177,7 @@
 						}
 					],
 					"next": "chosen",
+					"tone": "neutral",
 					"slot": "ur"
 				},
 				{
@@ -199,12 +205,14 @@
 						}
 					],
 					"next": "chosen",
+					"tone": "neutral",
 					"slot": "lr"
 				},
 				{
 					"label": "Back",
 					"line": "",
 					"next": "pick",
+					"tone": "leave",
 					"slot": "ll"
 				}
 			]
@@ -238,6 +246,7 @@
 						}
 					],
 					"next": "chosen",
+					"tone": "neutral",
 					"slot": "r"
 				},
 				{
@@ -265,6 +274,7 @@
 						}
 					],
 					"next": "chosen",
+					"tone": "neutral",
 					"slot": "ur"
 				},
 				{
@@ -292,12 +302,14 @@
 						}
 					],
 					"next": "chosen",
+					"tone": "neutral",
 					"slot": "lr"
 				},
 				{
 					"label": "Back",
 					"line": "",
 					"next": "pick",
+					"tone": "leave",
 					"slot": "ll"
 				}
 			]
@@ -331,6 +343,7 @@
 						}
 					],
 					"next": "chosen",
+					"tone": "neutral",
 					"slot": "r"
 				},
 				{
@@ -358,6 +371,7 @@
 						}
 					],
 					"next": "chosen",
+					"tone": "neutral",
 					"slot": "ur"
 				},
 				{
@@ -385,12 +399,14 @@
 						}
 					],
 					"next": "chosen",
+					"tone": "neutral",
 					"slot": "lr"
 				},
 				{
 					"label": "Back",
 					"line": "",
 					"next": "pick",
+					"tone": "leave",
 					"slot": "ll"
 				}
 			]
@@ -403,24 +419,28 @@
 					"label": "The scholars",
 					"line": "",
 					"next": "pick_g0",
+					"tone": "neutral",
 					"slot": "r"
 				},
 				{
 					"label": "The fighters",
 					"line": "",
 					"next": "pick_g1",
+					"tone": "neutral",
 					"slot": "ur"
 				},
 				{
 					"label": "The guides",
 					"line": "",
 					"next": "pick_g2",
+					"tone": "neutral",
 					"slot": "lr"
 				},
 				{
 					"label": "The crews",
 					"line": "",
 					"next": "pick_g3",
+					"tone": "neutral",
 					"slot": "l"
 				},
 				{
@@ -438,6 +458,7 @@
 						}
 					],
 					"next": "chosen",
+					"tone": "neutral",
 					"slot": "ul"
 				}
 			]

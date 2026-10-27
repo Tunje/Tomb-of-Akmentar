@@ -1,7 +1,10 @@
 class_name ConversationWheel
 extends CanvasLayer
-## The conversation UI, drawn in code: letterbox bars, the subtitle (speaker + line) and a
-## Mass Effect-style wheel of 2-6 short choices. Mouse: point at a slot from the wheel's centre
+## The conversation UI, drawn in code: letterbox bars that slide in, the subtitle (speaker + line),
+## the speaker's portrait in a brass oval (assets/portraits/<id>.png, when there is one) and a
+## Mass Effect-style wheel of 2-6 short choices: a brass ring, each choice on a paper slip at its
+## slot, in its tone's ink (top right friendly, right neutral, bottom right hostile, the left
+## asks, bottom left leaves). Mouse: point at a slot from the wheel's centre
 ## and click. Keys: 1-6 pick by the number shown. During a line, a click or Space / Enter / E
 ## skips it (signal `advance`). The full-screen root eats every click while it's up, so nothing
 ## underneath (main.gd's click-to-capture) sees them.
@@ -12,10 +15,18 @@ signal advance
 const TEXT := Color(0.95, 0.88, 0.7)
 const TEXT_DIM := Color(0.75, 0.7, 0.58)
 const SPEAKER := Color(0.95, 0.72, 0.35)
-const RING := Color(0.1, 0.08, 0.06, 0.72)
-const RING_HOVER := Color(0.62, 0.45, 0.2, 0.9)
-const EDGE := Color(0.95, 0.8, 0.5, 0.55)
+const RING := Color(0.13, 0.08, 0.05, 0.84)
+const RING_HOVER := Color(0.62, 0.5, 0.28, 0.95)   # brass
+const EDGE := Color(0.78, 0.63, 0.35)
 const BAR := Color(0, 0, 0, 0.85)
+## The ink each tone is written in: friendly a blue-black, hostile red, asking and leaving brown.
+const TONES := {"friendly": Color(0.16, 0.3, 0.55), "neutral": Color(0.2, 0.14, 0.08), "hostile": Color(0.62, 0.16, 0.1),
+	"ask": Color(0.4, 0.3, 0.16), "leave": Color(0.42, 0.38, 0.32)}
+## The tone a slot stands for, when the file gives none.
+const SLOT_TONES := {"ur": "friendly", "r": "neutral", "lr": "hostile", "ul": "ask", "l": "ask", "ll": "leave"}
+const LETTERBOX_IN := 0.45   # s for the bars to slide in
+const PORTRAITS := "res://assets/portraits"
+const OVAL := Vector2(54, 68)   # the portrait's half-size
 const BAR_FRACTION := 0.08
 const INNER_R := 34.0
 const OUTER_R := 86.0
@@ -37,7 +48,12 @@ var _speaker: Label
 var _line: Label
 var _labels: Array[Label] = []
 var _slots: Array[String] = []
+var _tones: Array[String] = []
 var _open := false
+var _t := 0.0                  # s since it came up (the letterbox)
+var portrait_id := ""          # whose portrait shows (tests read it)
+var _portrait: Texture2D
+var _portrait_t := 0.0
 
 
 func _ready() -> void:
@@ -69,7 +85,14 @@ func _label(font_size: int, color: Color) -> Label:
 
 # ---------------------------------------------------------------- API
 
-func show_line(speaker_name: String, text: String) -> void:
+## `who`: the speaker's id: their portrait shows (and stays up through your lines and the wheel).
+func show_line(speaker_name: String, text: String, who := "") -> void:
+	if who != "" and who != "player" and who != portrait_id:
+		var path := PORTRAITS.path_join(who + ".png")
+		if ResourceLoader.exists(path):
+			portrait_id = who
+			_portrait = load(path)
+			_portrait_t = 0.0
 	_speaker.text = speaker_name
 	_line.text = text
 	# The subtitle style (Subtitles): their colour, the options' text size and box.
@@ -84,8 +107,9 @@ func clear_line() -> void:
 	_line.text = ""
 
 
-## `labels` in file order; `slots` the matching slot names ("" = default placement).
-func show_choices(labels: Array, slots: Array = []) -> void:
+## `labels` in file order; `slots` the matching slot names ("" = default placement); `tones` their
+## tones ("" = the slot's own).
+func show_choices(labels: Array, slots: Array = [], tones: Array = []) -> void:
 	for l in _labels:
 		l.queue_free()
 	_labels.clear()
@@ -104,8 +128,12 @@ func show_choices(labels: Array, slots: Array = []) -> void:
 	for i in _slots.size():
 		if _slots[i] == "":
 			_slots[i] = free.pop_front()
+	_tones.clear()
 	for i in _slots.size():
+		var t: String = tones[i] if i < tones.size() else ""
+		_tones.append(t if TONES.has(t) else SLOT_TONES[_slots[i]])
 		var l := _label(21, TEXT_DIM)
+		l.remove_theme_constant_override("outline_size")  # ink on its slip
 		l.text = "%d  %s" % [i + 1, labels[i]] if _is_right(i) else "%s  %d" % [labels[i], i + 1]
 		_labels.append(l)
 	hovered = -1
@@ -125,6 +153,15 @@ func hide_choices() -> void:
 
 func choices_open() -> bool:
 	return _open
+
+
+func tone_of(i: int) -> String:
+	return _tones[i] if i < _tones.size() else ""
+
+
+## How far the letterbox has slid in, 0..1.
+func letterbox() -> float:
+	return smoothstep(0.0, 1.0, clampf(_t / LETTERBOX_IN, 0.0, 1.0))
 
 
 ## Screen point in the middle of slot `i`'s wedge (tests aim the mouse here).
@@ -185,7 +222,9 @@ func _hover_at(p: Vector2) -> void:
 
 # ---------------------------------------------------------------- drawing
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	_t += delta
+	_portrait_t += delta
 	if _open and Controls.last_pad:
 		var v := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 		if v.length() > 0.5:  # the last direction held stays picked when the stick comes back
@@ -219,7 +258,7 @@ func _layout() -> void:
 	var c := _center()
 	for i in _labels.size():
 		var l := _labels[i]
-		l.add_theme_color_override("font_color", TEXT if i == hovered else TEXT_DIM)
+		_slip(l, i)
 		var sz := l.get_minimum_size()
 		var p := c + _dir(SLOT_ANGLES[_slots[i]]) * LABEL_R
 		var x := p.x if _is_right(i) else p.x - sz.x
@@ -229,11 +268,36 @@ func _layout() -> void:
 	_root.queue_redraw()
 
 
+## A choice's paper slip: ink on paper, its tone's colour down the edge toward the ring; the one
+## pointed at brighter and edged all round.
+func _slip(l: Label, i: int) -> void:
+	var on := i == hovered
+	var tone: Color = TONES.get(tone_of(i), ModalScreen.INK)
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(ModalScreen.PAPER.lightened(0.15 if on else 0.0), 0.97 if on else 0.86)
+	box.border_color = tone
+	if _is_right(i):
+		box.border_width_left = 4
+	else:
+		box.border_width_right = 4
+	if on:
+		box.border_width_top = 1
+		box.border_width_bottom = 1
+	box.set_content_margin_all(4)
+	box.content_margin_left = 9
+	box.content_margin_right = 9
+	box.shadow_color = Color(0, 0, 0, 0.35)
+	box.shadow_size = 3
+	l.add_theme_stylebox_override("normal", box)
+	l.add_theme_color_override("font_color", tone.darkened(0.2) if on else Color(tone, 0.92))
+
+
 func _draw() -> void:
 	var s := _root.size
-	var bar := s.y * BAR_FRACTION
+	var bar := s.y * BAR_FRACTION * letterbox()
 	_root.draw_rect(Rect2(0, 0, s.x, bar), BAR)
 	_root.draw_rect(Rect2(0, s.y - bar, s.x, bar), BAR)
+	_draw_portrait()
 	if not _open:
 		return
 	var c := _center()
@@ -247,6 +311,40 @@ func _draw() -> void:
 		for k in steps + 1:
 			pts.append(c + Vector2.from_angle(a + h - 2.0 * h * k / steps) * INNER_R)
 		_root.draw_colored_polygon(pts, RING_HOVER if i == hovered else RING)
+		# The tone's ink along the wedge's outer rim.
+		_root.draw_arc(c, OUTER_R - 3.0, a - h + 0.04, a + h - 0.04, 12, (TONES.get(tone_of(i), EDGE) as Color).lightened(0.4), 4.0, true)
 		pts.append(pts[0])
-		_root.draw_polyline(pts, EDGE, 1.5, true)
-	_root.draw_circle(c, 5.0, EDGE)
+		_root.draw_polyline(pts, EDGE, 1.2, true)
+	# The brass ring round the wedges, and its boss.
+	_root.draw_arc(c, OUTER_R + 4.0, 0, TAU, 64, EDGE, 3.0, true)
+	_root.draw_arc(c, OUTER_R + 8.0, 0, TAU, 64, Color(EDGE, 0.45), 1.0, true)
+	_root.draw_arc(c, INNER_R - 4.0, 0, TAU, 48, EDGE, 2.0, true)
+	_root.draw_circle(c, 7.0, Color(0.13, 0.08, 0.05))
+	_root.draw_circle(c, 4.5, EDGE)
+
+
+## The speaker's portrait in a brass oval, low on the left above the bar; it fades in.
+func _draw_portrait() -> void:
+	if _portrait == null:
+		return
+	var s := _root.size
+	var half := OVAL * lerpf(1.0, Subtitles.scale(), 0.5)
+	var c := Vector2(maxf(40.0 + half.x, s.x * 0.08), s.y - s.y * BAR_FRACTION * letterbox() - half.y - 18.0)
+	var a := clampf(_portrait_t / 0.35, 0.0, 1.0) * letterbox()
+	var pts := PackedVector2Array()
+	var uvs := PackedVector2Array()
+	var cols := PackedColorArray()
+	var crop := half.x / half.y * 0.5  # the square picture cut to the oval: its middle, full height
+	for i in 48:
+		var v := Vector2.from_angle(TAU * i / 48.0)
+		pts.append(c + v * half)
+		uvs.append(Vector2(0.5 + v.x * crop, 0.5 + v.y * 0.5))
+		cols.append(Color(1.0, 0.95, 0.85, a))
+	_root.draw_polygon(pts, cols, uvs, _portrait)
+	pts.append(pts[0])
+	_root.draw_polyline(pts, Color(0, 0, 0, 0.5 * a), 7.0, true)
+	_root.draw_polyline(pts, Color(EDGE, a), 4.0, true)
+	var inner := PackedVector2Array()
+	for p in pts:
+		inner.append(c + (p - c) * (1.0 - 5.0 / half.y))
+	_root.draw_polyline(inner, Color(0.2, 0.14, 0.08, 0.6 * a), 1.0, true)

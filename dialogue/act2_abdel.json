@@ -32,6 +32,7 @@
 						}
 					],
 					"next": "roads",
+					"tone": "ask",
 					"slot": "ul"
 				},
 				{
@@ -46,12 +47,14 @@
 						}
 					],
 					"next": "guides",
+					"tone": "ask",
 					"slot": "l"
 				},
 				{
 					"label": "Thank him",
 					"line": "That's all. Thank you.",
 					"next": "bye",
+					"tone": "leave",
 					"slot": "ll"
 				}
 			]

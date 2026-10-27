@@ -64,7 +64,7 @@
 			"label": "Across the desert",
 			"days": 4,
 			"risk": 2,
-			"cost": 60,
+			"cost": 600,
 			"days_if": [
 				{
 					"if": {
@@ -126,7 +126,7 @@
 			"label": "The riverboat",
 			"days": 4,
 			"risk": 3,
-			"cost": 20,
+			"cost": 200,
 			"cost_if": [
 				{
 					"if": {
@@ -174,7 +174,7 @@
 			"label": "Along the coast",
 			"days": 6,
 			"risk": 1,
-			"cost": 50,
+			"cost": 500,
 			"days_if": [
 				{
 					"if": {

@@ -5,7 +5,7 @@ extends RefCounted
 const KEYS := {
 	"move_forward": [KEY_W], "move_back": [KEY_S], "move_left": [KEY_A], "move_right": [KEY_D],
 	"sprint": [KEY_SHIFT], "crouch": [KEY_C, KEY_CTRL], "dodge": [KEY_SPACE],
-	"reload": [KEY_R], "cover": [KEY_E], "holster": [KEY_X], "journal": [KEY_J], "party_order": [KEY_G],
+	"reload": [KEY_R], "cover": [KEY_E], "holster": [KEY_X], "journal": [KEY_J], "party_order": [KEY_G], "party_focus": [KEY_T],
 	"shove": [KEY_F], "weapon_1": [KEY_1], "weapon_2": [KEY_2], "weapon_3": [KEY_3],
 	"swap_seat": [KEY_V],  # in a truck: a companion takes the wheel, you take the gun (GunnerSeat)
 	"objective": [KEY_TAB],  # held: the objective line in full (Objective)
@@ -154,7 +154,8 @@ const LIST := [
 	["Holster or draw", "holster", "key"], ["Gun 1", "weapon_1", "key"], ["Gun 2", "weapon_2", "key"],
 	["Gun 3", "weapon_3", "key"], ["Use / take cover", "cover", "key"],
 	["Vault (in cover)", "cover", "vault"], ["Journal", "journal", "key"],
-	["Companions: follow / hold", "party_order", "key"], ["Truck: hand a companion the wheel", "swap_seat", "key"],
+	["Companions: follow / hold (hold: focus my target)", "party_order", "key"],
+	["Companions: focus my target", "party_focus", "key"], ["Truck: hand a companion the wheel", "swap_seat", "key"],
 	["Vehicle: look back (hold)", "crouch", "same"], ["Brawl: punch", "fire", "same"],
 	["Brawl: block", "aim", "same"], ["Brawl: shove", "shove", "key"],
 	["Show the objective (hold)", "objective", "key"],

@@ -138,6 +138,7 @@
 						}
 					],
 					"next": "temple_fx_0",
+					"tone": "friendly",
 					"slot": "ur"
 				},
 				{
@@ -149,6 +150,7 @@
 						}
 					],
 					"next": "town_fx_0",
+					"tone": "neutral",
 					"slot": "r"
 				}
 			]

@@ -17,14 +17,14 @@
 		},
 		{
 			"id": "survey_map",
-			"label": "An old survey map of the western desert (£15)",
+			"label": "An old survey map of the western desert (£150)",
 			"cost": 0,
 			"if": {
-				"money": 15
+				"money": 150
 			},
 			"do": [
 				{
-					"money": -15
+					"money": -150
 				},
 				{
 					"item": [

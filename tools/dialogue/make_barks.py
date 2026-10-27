@@ -131,7 +131,7 @@ B = {
         "idle_explore": ["Too quiet.", "Someone has walked here before us. Recently."],
         "idle_city": ["I know people in this street. Do not stop.", "That man is a thief. So is that one."],
         "campfire": ["My sisters would like the stars here.", ["You pay fair. That is rare.", {"flag": "idris_paid_well"}],
-                     ["Twenty pounds. I have not forgotten.", {"flag": "idris_underpaid"}]],
+                     ["Two hundred pounds. I have not forgotten.", {"flag": "idris_underpaid"}]],
         "horse_ride": ["Watch the high ground.", "Good horses. Better than the merchants'."],
         "truck_ride": ["Trucks are loud. Everyone will know we are coming.", "Keep moving. Never stop on a road."],
         "act5_escape": ["Run! Run!", "This way, follow me!"],

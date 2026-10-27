@@ -5,14 +5,14 @@
 	"actions": [
 		{
 			"id": "rations",
-			"label": "Rations, a week for the party (£10)",
+			"label": "Rations, a week for the party (£100)",
 			"cost": 0,
 			"if": {
-				"money": 10
+				"money": 100
 			},
 			"do": [
 				{
-					"money": -10
+					"money": -100
 				},
 				{
 					"item": [
@@ -25,14 +25,14 @@
 		},
 		{
 			"id": "water",
-			"label": "Water casks, a week (£6)",
+			"label": "Water casks, a week (£60)",
 			"cost": 0,
 			"if": {
-				"money": 6
+				"money": 60
 			},
 			"do": [
 				{
-					"money": -6
+					"money": -60
 				},
 				{
 					"item": [
@@ -45,14 +45,14 @@
 		},
 		{
 			"id": "medicine",
-			"label": "A medical kit (£8)",
+			"label": "A medical kit (£80)",
 			"cost": 0,
 			"if": {
-				"money": 8
+				"money": 80
 			},
 			"do": [
 				{
-					"money": -8
+					"money": -80
 				},
 				{
 					"item": [

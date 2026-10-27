@@ -44,12 +44,12 @@
 		},
 		"wager_on": {
 			"speaker": "whitfield",
-			"line": "And don't think I've forgotten our little bet. Five hundred dollars says my boys find the real prize before yours do.",
+			"line": "And don't think I've forgotten our little bet. Five thousand dollars says my boys find the real prize before yours do.",
 			"next": "menu"
 		},
 		"wager_off": {
 			"speaker": "whitfield",
-			"line": "Shame you wouldn't take my bet. Five hundred dollars would have made this a whole lot more fun.",
+			"line": "Shame you wouldn't take my bet. Five thousand dollars would have made this a whole lot more fun.",
 			"next": "menu"
 		},
 		"again": {
@@ -80,7 +80,8 @@
 						}
 					],
 					"next": "pleased",
-					"slot": "ur"
+					"slot": "ur",
+					"tone": "friendly"
 				},
 				{
 					"label": "Needle him",
@@ -101,19 +102,22 @@
 						}
 					],
 					"next": "stung",
-					"slot": "lr"
+					"slot": "lr",
+					"tone": "hostile"
 				},
 				{
 					"label": "Ask about his men",
 					"line": "You've brought a lot of rifles for a dig.",
 					"next": "men",
-					"slot": "ul"
+					"slot": "ul",
+					"tone": "ask"
 				},
 				{
 					"label": "Leave",
 					"line": "Enjoy your coffee.",
 					"next": "bye",
-					"slot": "ll"
+					"slot": "ll",
+					"tone": "leave"
 				}
 			]
 		},

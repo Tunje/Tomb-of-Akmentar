@@ -105,6 +105,9 @@ func _close() -> void:
 func _journal() -> void:
 	_close()
 	get_tree().paused = false
+	# The journal hands back whatever mouse it found: captured, so closing it returns to play
+	# (from here it found the menu's free mouse, and you couldn't turn any more).
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	JournalScreen.toggle(get_tree().current_scene, _player())
 
 

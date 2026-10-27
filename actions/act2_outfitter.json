@@ -5,14 +5,14 @@
 	"actions": [
 		{
 			"id": "rations",
-			"label": "Rations, a week for the party (£10)",
+			"label": "Rations, a week for the party (£100)",
 			"cost": 0,
 			"if": {
-				"money": 10
+				"money": 100
 			},
 			"do": [
 				{
-					"money": -10
+					"money": -100
 				},
 				{
 					"item": [
@@ -25,14 +25,14 @@
 		},
 		{
 			"id": "water",
-			"label": "Water casks, a week (£6)",
+			"label": "Water casks, a week (£60)",
 			"cost": 0,
 			"if": {
-				"money": 6
+				"money": 60
 			},
 			"do": [
 				{
-					"money": -6
+					"money": -60
 				},
 				{
 					"item": [
@@ -45,14 +45,14 @@
 		},
 		{
 			"id": "tents",
-			"label": "Tents and bedding (£12)",
+			"label": "Tents and bedding (£120)",
 			"cost": 0,
 			"if": {
-				"money": 12
+				"money": 120
 			},
 			"do": [
 				{
-					"money": -12
+					"money": -120
 				},
 				{
 					"item": [
@@ -66,14 +66,14 @@
 		},
 		{
 			"id": "tools",
-			"label": "Digging tools (£10)",
+			"label": "Digging tools (£100)",
 			"cost": 0,
 			"if": {
-				"money": 10
+				"money": 100
 			},
 			"do": [
 				{
-					"money": -10
+					"money": -100
 				},
 				{
 					"item": [
@@ -87,14 +87,14 @@
 		},
 		{
 			"id": "lanterns",
-			"label": "Lanterns and oil (£5)",
+			"label": "Lanterns and oil (£50)",
 			"cost": 0,
 			"if": {
-				"money": 5
+				"money": 50
 			},
 			"do": [
 				{
-					"money": -5
+					"money": -50
 				},
 				{
 					"item": [
@@ -108,14 +108,14 @@
 		},
 		{
 			"id": "rope",
-			"label": "Rope, a hundred feet (£2)",
+			"label": "Rope, a hundred feet (£20)",
 			"cost": 0,
 			"if": {
-				"money": 2
+				"money": 20
 			},
 			"do": [
 				{
-					"money": -2
+					"money": -20
 				},
 				{
 					"item": [
@@ -128,14 +128,14 @@
 		},
 		{
 			"id": "medicine",
-			"label": "A medical kit (£8)",
+			"label": "A medical kit (£80)",
 			"cost": 0,
 			"if": {
-				"money": 8
+				"money": 80
 			},
 			"do": [
 				{
-					"money": -8
+					"money": -80
 				},
 				{
 					"item": [
@@ -148,15 +148,15 @@
 		},
 		{
 			"id": "outfit",
-			"label": "Order a full expedition outfit (£45)",
+			"label": "Order a full expedition outfit (£450)",
 			"cost": 1,
 			"once": true,
 			"if": {
-				"money": 45
+				"money": 450
 			},
 			"do": [
 				{
-					"money": -45
+					"money": -450
 				},
 				{
 					"set_flag": "well_supplied"

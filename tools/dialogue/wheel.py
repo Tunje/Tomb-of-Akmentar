@@ -1,8 +1,10 @@
 """Wheel positions by tone, the Mass Effect way (Simon's founding rule for the conversation wheel):
 the right side moves the talk on, top-right friendly ("ur"), right neutral ("r"), bottom-right
 hostile ("lr"); the left side asks about things ("ul", "l"), and bottom-left leaves ("ll").
-assign_slots(talk) gives every choice of every node a slot from its label's tone, never two on the
-same slot in one node. The generators call it before writing; run this file to apply it to the
+assign_slots(talk) gives every choice of every node its "tone" (friendly / neutral / hostile / ask /
+leave: from its label, unless the file already says) and a slot from that tone, never two on the
+same slot in one node. The game colours the wheel by the tone (ConversationWheel) and
+tests/dialogue_lint_test checks both. The generators call it before writing; run this file to apply it to the
 hand-written talks:
 
     python tools/dialogue/wheel.py dialogue/act4_whitfield.json ..."""
@@ -53,7 +55,9 @@ def assign_slots(talk: dict) -> dict:
         cs = n.get("choices", [])
         taken = set()
         for c in cs:
-            for s in PREFER[tone(c["label"])] + ORDER:
+            if c.get("tone") not in PREFER:  # an author's own tone stays
+                c["tone"] = tone(c["label"])
+            for s in PREFER[c["tone"]] + ORDER:
                 if s not in taken:
                     c["slot"] = s
                     taken.add(s)

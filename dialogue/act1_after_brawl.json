@@ -22,10 +22,10 @@
 		},
 		"lost": {
 			"speaker": "finch",
-			"line": "That's for the inconvenience. Ten pounds. Freddie's debt stands.",
+			"line": "That's for the inconvenience. One hundred pounds. Freddie's debt stands.",
 			"do": [
 				{
-					"money": -10
+					"money": -100
 				}
 			],
 			"next": "end"
@@ -50,6 +50,7 @@
 						}
 					],
 					"next": "respect",
+					"tone": "friendly",
 					"slot": "ur"
 				},
 				{
@@ -68,6 +69,7 @@
 						}
 					],
 					"next": "enemy",
+					"tone": "hostile",
 					"slot": "lr"
 				}
 			]

@@ -50,6 +50,7 @@
 						}
 					],
 					"next": "which",
+					"tone": "ask",
 					"slot": "ul"
 				},
 				{
@@ -59,6 +60,7 @@
 						"not_flag": "keeper_horses"
 					},
 					"next": "horses",
+					"tone": "neutral",
 					"slot": "r"
 				},
 				{
@@ -87,6 +89,7 @@
 						}
 					],
 					"next": "ritual",
+					"tone": "friendly",
 					"slot": "ur"
 				},
 				{
@@ -108,12 +111,14 @@
 						}
 					],
 					"next": "promise",
+					"tone": "friendly",
 					"slot": "lr"
 				},
 				{
 					"label": "Go",
 					"line": "Then we go. Now.",
 					"next": "go",
+					"tone": "leave",
 					"slot": "ll"
 				}
 			]

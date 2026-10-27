@@ -38,19 +38,22 @@
 						"flag": "found_warning"
 					},
 					"next": "am_backs_down",
-					"slot": "r"
+					"slot": "r",
+					"tone": "neutral"
 				},
 				{
 					"label": "Tell him to wait",
 					"line": "Hold on. We don't know what's on the other side of that door.",
 					"next": "am_ignores",
-					"slot": "ur"
+					"slot": "ur",
+					"tone": "neutral"
 				},
 				{
 					"label": "Let him",
 					"line": "Go ahead. It's your crowbar.",
 					"next": "am_forces",
-					"slot": "lr"
+					"slot": "lr",
+					"tone": "neutral"
 				}
 			]
 		},
@@ -121,19 +124,22 @@
 						"flag": "found_ritual"
 					},
 					"next": "ge_convinced",
-					"slot": "r"
+					"slot": "r",
+					"tone": "neutral"
 				},
 				{
 					"label": "Urge him to hurry",
 					"line": "Hours? We don't have hours, Professor.",
 					"next": "ge_refuses",
-					"slot": "ur"
+					"slot": "ur",
+					"tone": "neutral"
 				},
 				{
 					"label": "Agree",
 					"line": "Very well. Do it properly.",
 					"next": "ge_delay",
-					"slot": "ul"
+					"slot": "ul",
+					"tone": "friendly"
 				}
 			]
 		},
@@ -204,13 +210,15 @@
 						"flag": "found_ritual"
 					},
 					"next": "safe_open",
-					"slot": "r"
+					"slot": "r",
+					"tone": "neutral"
 				},
 				{
 					"label": "Open it carefully",
 					"line": "Slowly. Watch the ceiling.",
 					"next": "safe_open",
-					"slot": "ur"
+					"slot": "ur",
+					"tone": "neutral"
 				}
 			]
 		},

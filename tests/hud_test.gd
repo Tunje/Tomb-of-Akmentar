@@ -96,6 +96,15 @@ func _ready() -> void:
 		DirAccess.make_dir_recursive_absolute(_dir)
 		get_viewport().get_texture().get_image().save_png(_dir.path_join("hud_down.png"))
 		print("RESULT shot %s" % _dir.path_join("hud_down.png"))
+	# The holster reminder: the bandit near, none; gone, 6 s quiet and armed: the line, with the key.
+	_check(not hud.holster_hint(), "an enemy near: no holster reminder")
+	bandit.queue_free()
+	await _wait(Hud.HOLSTER_AFTER + 0.4)
+	_check(hud.holster_hint() and hud._holster.text == Controls.fill("{holster}  put your guns away") and not "{" in hud._holster.text,
+		"quiet %.0f s, armed: '%s'" % [Hud.HOLSTER_AFTER, hud._holster.text])
+	player.set_armed(false)
+	await _wait(0.1)
+	_check(not hud.holster_hint() and hud._holster.text == "", "holstered: gone")
 	print("RESULT %s (%d failed)" % ["PASS" if _fails == 0 else "FAIL", _fails])
 	get_tree().quit(0 if _fails == 0 else 1)
 

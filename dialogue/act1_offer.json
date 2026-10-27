@@ -61,7 +61,7 @@
 		},
 		"menu": {
 			"speaker": "karim",
-			"line": "Fifty pounds now, for your... present difficulties. A great deal more if the tombs are found.",
+			"line": "Five hundred pounds now, for your... present difficulties. A great deal more if the tombs are found.",
 			"choices": [
 				{
 					"label": "Ask about the first expedition",
@@ -75,6 +75,7 @@
 						}
 					],
 					"next": "first",
+					"tone": "ask",
 					"slot": "ul"
 				},
 				{
@@ -89,11 +90,12 @@
 						}
 					],
 					"next": "reward",
+					"tone": "ask",
 					"slot": "l"
 				},
 				{
 					"label": "Ask for more up front",
-					"line": "Fifty doesn't cover the trouble Freddie left me.",
+					"line": "Five hundred doesn't cover the trouble Freddie left me.",
 					"if": {
 						"not_flag": "karim_more"
 					},
@@ -110,12 +112,14 @@
 						}
 					],
 					"next": "more",
+					"tone": "neutral",
 					"slot": "r"
 				},
 				{
 					"label": "Accept",
 					"line": "All right. I'll take your expedition.",
 					"next": "accept",
+					"tone": "friendly",
 					"slot": "ur"
 				},
 				{
@@ -130,6 +134,7 @@
 						}
 					],
 					"next": "refuse",
+					"tone": "hostile",
 					"slot": "lr"
 				}
 			]
@@ -151,10 +156,10 @@
 		},
 		"more": {
 			"speaker": "karim",
-			"line": "...Seventy-five, then. And Sir Reginald will hear that you drive a hard bargain.",
+			"line": "...Seven hundred and fifty, then. And Sir Reginald will hear that you drive a hard bargain.",
 			"do": [
 				{
-					"money": 25
+					"money": 250
 				}
 			],
 			"next": "menu"
@@ -169,7 +174,7 @@
 			"line": "Excellent. The expedition fund will be at the bank in the morning. You leave Cairo in two days, ready or not.",
 			"do": [
 				{
-					"money": 50
+					"money": 500
 				},
 				{
 					"set_flag": "act1_offer_accepted"
@@ -182,7 +187,7 @@
 				{
 					"if": {
 						"flag": "owe_finch",
-						"money": 50
+						"money": 500
 					},
 					"next": "pay_finch"
 				},
@@ -193,14 +198,14 @@
 		},
 		"pay_finch": {
 			"speaker": "player",
-			"line": "Fifty pounds in my pocket, and Finch wants fifty.",
+			"line": "Five hundred pounds in my pocket, and Finch wants five hundred.",
 			"choices": [
 				{
 					"label": "Pay Finch off",
 					"line": "Might as well start the job with a clean slate.",
 					"do": [
 						{
-							"money": -50
+							"money": -500
 						},
 						{
 							"set_flag": [
@@ -213,12 +218,14 @@
 						}
 					],
 					"next": "end_accepted",
+					"tone": "neutral",
 					"slot": "r"
 				},
 				{
 					"label": "Keep the money",
 					"line": "Finch can wait.",
 					"next": "end_accepted",
+					"tone": "neutral",
 					"slot": "ur"
 				}
 			]

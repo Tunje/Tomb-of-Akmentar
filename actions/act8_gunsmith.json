@@ -5,14 +5,14 @@
 	"actions": [
 		{
 			"id": "revolver_ammo",
-			"label": "Revolver cartridges, 24 (£3)",
+			"label": "Revolver cartridges, 24 (£30)",
 			"cost": 0,
 			"if": {
-				"money": 3
+				"money": 30
 			},
 			"do": [
 				{
-					"money": -3
+					"money": -30
 				},
 				{
 					"item": [
@@ -25,14 +25,14 @@
 		},
 		{
 			"id": "rifle_ammo",
-			"label": "Rifle cartridges, 20 (£4)",
+			"label": "Rifle cartridges, 20 (£40)",
 			"cost": 0,
 			"if": {
-				"money": 4
+				"money": 40
 			},
 			"do": [
 				{
-					"money": -4
+					"money": -40
 				},
 				{
 					"item": [
@@ -45,14 +45,14 @@
 		},
 		{
 			"id": "shotgun_shells",
-			"label": "Shotgun shells, 12 (£3)",
+			"label": "Shotgun shells, 12 (£30)",
 			"cost": 0,
 			"if": {
-				"money": 3
+				"money": 30
 			},
 			"do": [
 				{
-					"money": -3
+					"money": -30
 				},
 				{
 					"item": [

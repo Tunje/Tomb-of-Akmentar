@@ -388,6 +388,7 @@
 						}
 					],
 					"next": "americans_press",
+					"tone": "hostile",
 					"slot": "lr"
 				},
 				{
@@ -410,6 +411,7 @@
 						}
 					],
 					"next": "americans_challenged",
+					"tone": "hostile",
 					"slot": "r"
 				},
 				{
@@ -425,12 +427,14 @@
 						}
 					],
 					"next": "americans_eleanor",
+					"tone": "ask",
 					"slot": "ul"
 				},
 				{
 					"label": "Let it go",
 					"line": "Fine. Let's get moving.",
 					"next": "americans_bye",
+					"tone": "neutral",
 					"slot": "ur"
 				}
 			]
@@ -1000,6 +1004,7 @@
 						}
 					],
 					"next": "germans_press",
+					"tone": "hostile",
 					"slot": "lr"
 				},
 				{
@@ -1022,6 +1027,7 @@
 						}
 					],
 					"next": "germans_challenged",
+					"tone": "hostile",
 					"slot": "r"
 				},
 				{
@@ -1037,12 +1043,14 @@
 						}
 					],
 					"next": "germans_eleanor",
+					"tone": "ask",
 					"slot": "ul"
 				},
 				{
 					"label": "Let it go",
 					"line": "Fine. Let's get moving.",
 					"next": "germans_bye",
+					"tone": "neutral",
 					"slot": "ur"
 				}
 			]

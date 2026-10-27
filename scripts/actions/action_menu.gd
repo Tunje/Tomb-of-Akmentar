@@ -154,6 +154,9 @@ func _draw() -> void:
 	_root.draw_rect(r, Color(GOLD, 0.5), false, 1.5)
 	var x := r.position.x + 24.0
 	_text(title, Vector2(x, r.position.y + 40), 28, GOLD)
+	# The objective, just over the panel: the HUD's line hides while a menu is up.
+	if Objective.current() != "" and Settings.value("show_objective"):
+		_text("Objective: " + Objective.current(), Vector2(r.position.x + r.size.x * 0.5, r.position.y - 14), 18, Color(0.98, 0.84, 0.5), false, true)
 	_text("Day %d" % Game.day, Vector2(x, r.position.y + 74), 19, TEXT)
 	_pips(Vector2(x + 84, r.position.y + 67))
 	for i in rows.size() + 1:

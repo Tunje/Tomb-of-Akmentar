@@ -99,6 +99,7 @@
 					"label": "Question him",
 					"line": "Who paid you?",
 					"next": "answer",
+					"tone": "neutral",
 					"slot": "r"
 				},
 				{
@@ -110,6 +111,7 @@
 						}
 					],
 					"next": "answer",
+					"tone": "hostile",
 					"slot": "lr"
 				},
 				{
@@ -121,6 +123,7 @@
 						}
 					],
 					"next": "hassan",
+					"tone": "friendly",
 					"slot": "ur"
 				}
 			]

@@ -5,14 +5,14 @@
 	"actions": [
 		{
 			"id": "horse",
-			"label": "Buy a horse (£12)",
+			"label": "Buy a horse (£120)",
 			"cost": 0,
 			"if": {
-				"money": 12
+				"money": 120
 			},
 			"do": [
 				{
-					"money": -12
+					"money": -120
 				},
 				{
 					"item": [
@@ -25,14 +25,14 @@
 		},
 		{
 			"id": "truck",
-			"label": "Buy a truck from Abdel's mechanic (£60)",
+			"label": "Buy a truck from Abdel's mechanic (£600)",
 			"cost": 0,
 			"if": {
-				"money": 60
+				"money": 600
 			},
 			"do": [
 				{
-					"money": -60
+					"money": -600
 				},
 				{
 					"item": [
@@ -45,14 +45,14 @@
 		},
 		{
 			"id": "repair",
-			"label": "Repair the expedition's trucks (£20)",
+			"label": "Repair the expedition's trucks (£200)",
 			"cost": 0,
 			"if": {
-				"money": 20
+				"money": 200
 			},
 			"do": [
 				{
-					"money": -20
+					"money": -200
 				},
 				{
 					"set_flag": "trucks_repaired"

@@ -62,12 +62,12 @@ func _run() -> void:
 		"keepers: countdowns 7 / 10 with the ritual, two horses")
 	Game.apply([{"recruit": "isabelle"}])
 	Game.set_flag("act6_desert_pick")
-	r = await _talk("act6_road", ["Break camp and ride"])
+	r = await _talk("act6_road", ["Turn in", "Break camp and ride"])
 	_check(Game.flag("lead_station") and Game.flag("clue_trail_germans") and int(Game.companion("isabelle").fear) == 1,
 		"road: the German trail, ride on (fear)")
 	_fresh([], "italians")
 	Game.set_flag("act6_desert_pick")
-	r = await _talk("act6_road", ["Hold the camp"])
+	r = await _talk("act6_road", ["Turn in", "Hold the camp"])
 	_check(r.end == "end_fight" and "fight_mummy_servants" in _events and not Game.flag("lead_police"), "road: no trail on the wrong road; hold = fight")
 
 	# ---- Act 7 investigation
@@ -117,9 +117,9 @@ func _run() -> void:
 	_check(r.end == "end_recovered" and Game.flag("recovered_peacefully") and Game.flag("artifacts_recovered"), "Whitfield, a friend, yields under the dark sky")
 	_fresh([], "americans")
 	Game.set_flag("sky_dark")
-	Game.money = 200
+	Game.money = 2000
 	r = await _talk("act7_confront", ["Point at the sky", "Buy them back", "Pay him"])
-	_check(r.end == "end_recovered" and Game.money == 100 and Game.flag("bought_artifacts"), "Whitfield sells them for 100")
+	_check(r.end == "end_recovered" and Game.money == 1000 and Game.flag("bought_artifacts"), "Whitfield sells them for 1000")
 	_fresh([], "germans")
 	Game.set_flag("sky_dark")
 	Game.set_flag("stones_falling")
@@ -140,7 +140,7 @@ func _run() -> void:
 	Game.set_flag("heard_blackwood_silence")
 	Game.money = 0
 	r = await _talk("act7_blackwood", ["Confront him"])
-	_check(Game.flag("blackwood_confessed") and Game.money == 100, "Blackwood confesses")
+	_check(Game.flag("blackwood_confessed") and Game.money == 1000, "Blackwood confesses")
 	_fresh([], "germans")
 	r = await _talk("act7_too_late", [])
 	_check(Game.flag("thieves_escaped"), "too late")

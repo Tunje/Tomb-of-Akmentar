@@ -22,6 +22,7 @@
 						}
 					],
 					"next": "fletcher",
+					"tone": "neutral",
 					"slot": "r"
 				},
 				{
@@ -36,6 +37,7 @@
 						}
 					],
 					"next": "london",
+					"tone": "neutral",
 					"slot": "ur"
 				},
 				{
@@ -57,12 +59,14 @@
 						}
 					],
 					"next": "south",
+					"tone": "ask",
 					"slot": "ul"
 				},
 				{
 					"label": "Leave",
 					"line": "Nothing today.",
 					"next": "end",
+					"tone": "leave",
 					"slot": "ll"
 				}
 			]

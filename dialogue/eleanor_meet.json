@@ -32,19 +32,22 @@
 					"label": "Invite her along",
 					"line": "Then you heard I need an Egyptologist. Come with us.",
 					"next": "terms",
-					"slot": "ur"
+					"slot": "ur",
+					"tone": "friendly"
 				},
 				{
 					"label": "Ask what she knows",
 					"line": "What do you know about Akmentar that he doesn't?",
 					"next": "knows",
-					"slot": "ul"
+					"slot": "ul",
+					"tone": "ask"
 				},
 				{
 					"label": "Leave",
 					"line": "Sorry to have bothered you, miss.",
 					"next": "end_left",
-					"slot": "ll"
+					"slot": "ll",
+					"tone": "leave"
 				}
 			]
 		},
@@ -61,13 +64,15 @@
 					"label": "Invite her along",
 					"line": "Then come and help me find him.",
 					"next": "terms",
-					"slot": "ur"
+					"slot": "ur",
+					"tone": "friendly"
 				},
 				{
 					"label": "Leave",
 					"line": "Interesting. Good day.",
 					"next": "end_left",
-					"slot": "ll"
+					"slot": "ll",
+					"tone": "leave"
 				}
 			]
 		},
@@ -88,7 +93,8 @@
 						}
 					],
 					"next": "joined",
-					"slot": "ur"
+					"slot": "ur",
+					"tone": "friendly"
 				},
 				{
 					"label": "Make no promises",
@@ -103,7 +109,8 @@
 						}
 					],
 					"next": "joined_cool",
-					"slot": "lr"
+					"slot": "lr",
+					"tone": "hostile"
 				}
 			]
 		},

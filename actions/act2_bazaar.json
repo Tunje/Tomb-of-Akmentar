@@ -5,14 +5,14 @@
 	"actions": [
 		{
 			"id": "cheap_rations",
-			"label": "Cheap rations, a week (of doubtful age) (£6)",
+			"label": "Cheap rations, a week (of doubtful age) (£60)",
 			"cost": 0,
 			"if": {
-				"money": 6
+				"money": 60
 			},
 			"do": [
 				{
-					"money": -6
+					"money": -60
 				},
 				{
 					"item": [
@@ -25,15 +25,15 @@
 		},
 		{
 			"id": "bargains",
-			"label": "Hunt the bazaar with Rafiq el-Tayeb (£15)",
+			"label": "Hunt the bazaar with Rafiq el-Tayeb (£150)",
 			"cost": 1,
 			"once": true,
 			"if": {
-				"money": 15
+				"money": 150
 			},
 			"do": [
 				{
-					"money": -15
+					"money": -150
 				},
 				{
 					"set_flag": "bazaar_bargains"
@@ -61,15 +61,15 @@
 		},
 		{
 			"id": "salim",
-			"label": "Pay Salim Farouk for a lead (£10)",
+			"label": "Pay Salim Farouk for a lead (£100)",
 			"cost": 1,
 			"once": true,
 			"if": {
-				"money": 10
+				"money": 100
 			},
 			"do": [
 				{
-					"money": -10
+					"money": -100
 				},
 				{
 					"set_flag": "heard_italians"

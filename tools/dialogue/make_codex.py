@@ -78,7 +78,7 @@ P = {
                  ({"flag": "freddie_betrayed"}, "You gave him away."), ({"flag": "freddie_helped"}, "He came back, and paid part of what he owes in information.")], None),
     "landlady": ("Umm Sayed", "Freddie's landlady", "Owed four months' rent, and not shy about it.", [], None),
     "finch": ("Harold Finch", "Moneylender",
-              "Freddie owes him two hundred pounds, and he thinks you know where Freddie is.",
+              "Freddie owes him two thousand pounds, and he thinks you know where Freddie is.",
               [({"flag": "owe_finch"}, "You owe him fifty within the month."), ({"flag": "finch_paid"}, "You paid him off.")], None),
     "musa": ("Musa Kamal", "Finch's enforcer",
              "Big, quiet, and doing unpleasant work because it pays.",

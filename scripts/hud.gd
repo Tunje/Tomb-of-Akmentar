@@ -19,6 +19,8 @@ var _prompt: Label
 var _info: Label
 var _toast: Label
 var _objective: Label   # the current objective, top left (Objective)
+var _holster: Label     # "X  put your guns away", by the ammo, once it's been quiet a while
+var _calm_t := 0.0      # s armed with no enemy within HOLSTER_CLEAR
 var _toast_t := 0.0
 ## O opens the options while the game is paused, or when this is on (main's start screen).
 var allow_options := false
@@ -30,6 +32,8 @@ var _t := 0.0
 const BRASS := Color(0.62, 0.5, 0.28)
 const DOWN_RED := Color(1.0, 0.3, 0.22)
 const STRIP_W := 150.0
+const HOLSTER_CLEAR := 40.0   # m: no enemy this close ...
+const HOLSTER_AFTER := 6.0    # s: ... this long, armed: the reminder to holster
 
 
 func _ready() -> void:
@@ -51,6 +55,8 @@ func _ready() -> void:
 	_info = _label(18, HORIZONTAL_ALIGNMENT_LEFT, Vector2(400, 30))
 	_toast = _label(24, HORIZONTAL_ALIGNMENT_CENTER, Vector2(800, 40))
 	_objective = _label(18, HORIZONTAL_ALIGNMENT_LEFT, Vector2(700, 30))
+	_holster = _label(16, HORIZONTAL_ALIGNMENT_RIGHT, Vector2(300, 26))
+	_holster.add_theme_color_override("font_color", Color(0.9, 0.84, 0.68))
 	_objective.add_theme_color_override("font_color", Color(0.98, 0.84, 0.5))
 	# The prompt in a small framed box, as wide as its text.
 	var box := StyleBoxFlat.new()
@@ -81,6 +87,7 @@ func _layout() -> void:
 	_sub.position = Vector2(s.x * 0.5 - 500, s.y * 0.5 - 60)
 	_ammo.position = Vector2(s.x - 330, s.y - 100)
 	_gun.position = Vector2(s.x - 330, s.y - 130)
+	_holster.position = Vector2(s.x - 330, s.y - 130 - 26.0 * _scale)  # over the gun's name
 	_count.position = Vector2(s.x * 0.5 - 200, 20)
 	_prompt.reset_size()  # the box hugs the text
 	_prompt.position = Vector2(s.x * 0.5 - _prompt.size.x * 0.5, s.y * 0.5 + 150)
@@ -106,6 +113,8 @@ func _label(font_size: int, align: HorizontalAlignment, box: Vector2) -> Label:
 
 
 func show_message(title: String, sub := "") -> void:
+	if title.begins_with("ACT "):
+		MusicDirector.sting(get_tree(), "title")  # an act's title card: its sting
 	if title == "PAUSED" and sub != "":
 		sub += " · O options"
 	_title.text = title
@@ -139,6 +148,7 @@ func _process(delta: float) -> void:
 		# The revolver's rounds are drawn as bullets (_draw_rounds); other guns show a number.
 		_ammo.text = "" if w.id == "revolver" else "%d / %d" % [player.ammo[player.current], w.mag_size]
 		_gun.text = w.display_name + ("   reloading" if player.is_reloading() else "")
+	_holster_step(delta)
 	_count.text = "Mummies: %d" % remaining if remaining > 0 else ""
 	# Only through the player's own eyes (not a test's overview or chase camera).
 	_prompt.text = Controls.fill(player.cover_prompt()) if player and player.camera and player.camera.current and _title.text == "" else ""
@@ -274,6 +284,26 @@ func _draw_bleed_ring(at: Vector2, g: Gunman) -> void:
 
 func strip_font_size() -> int:
 	return roundi(15 * _scale)
+
+
+## Armed with nobody to shoot (no enemy within HOLSTER_CLEAR for HOLSTER_AFTER s): a quiet line by
+## the ammo saying how to put the guns away (people talk more easily to the unarmed). Gone once
+## holstered or when a fight starts.
+func _holster_step(delta: float) -> void:
+	var calm := player != null and player.alive and player.armed and player.controls_enabled
+	if calm:
+		for f in Gunman.hostiles(get_tree()):
+			if is_instance_valid(f) and f.global_position.distance_to(player.global_position) < HOLSTER_CLEAR:
+				calm = false
+				break
+	_calm_t = _calm_t + delta if calm else 0.0
+	_holster.text = Controls.fill("{holster}  put your guns away") if holster_hint() else ""
+	_holster.modulate.a = clampf((_calm_t - HOLSTER_AFTER) / 0.6, 0.0, 0.85)
+
+
+## The holster reminder is up (tests).
+func holster_hint() -> bool:
+	return _calm_t >= HOLSTER_AFTER
 
 
 static func _enemy_near(g: Gunman, foes: Array) -> bool:
@@ -418,7 +448,7 @@ func _rescale() -> void:
 	if is_equal_approx(k, _scale):
 		return
 	_scale = k
-	for l: Label in [_title, _sub, _ammo, _gun, _count, _prompt, _info, _toast, _objective]:
+	for l: Label in [_title, _sub, _ammo, _gun, _count, _prompt, _info, _toast, _objective, _holster]:
 		l.add_theme_font_size_override("font_size", roundi(int(l.get_meta("base_size", 20)) * k))
 
 

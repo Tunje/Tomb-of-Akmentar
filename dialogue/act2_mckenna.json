@@ -27,6 +27,7 @@
 						}
 					],
 					"next": "mercs",
+					"tone": "ask",
 					"slot": "ul"
 				},
 				{
@@ -44,6 +45,7 @@
 						}
 					],
 					"next": "rivals",
+					"tone": "ask",
 					"slot": "l"
 				},
 				{
@@ -58,12 +60,14 @@
 						}
 					],
 					"next": "akmentar",
+					"tone": "ask",
 					"slot": "ur"
 				},
 				{
 					"label": "That's all",
 					"line": "That'll do. Thanks, George.",
 					"next": "bye",
+					"tone": "leave",
 					"slot": "ll"
 				}
 			]

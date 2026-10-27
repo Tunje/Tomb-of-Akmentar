@@ -9,7 +9,7 @@
 	"nodes": {
 		"start": {
 			"speaker": "gunman",
-			"line": "Nobody move. You're Mallory's friend. Where is he? He owes our employer two hundred pounds, and he took something that isn't his. We think you know where.",
+			"line": "Nobody move. You're Mallory's friend. Where is he? He owes our employer two thousand pounds, and he took something that isn't his. We think you know where.",
 			"next": "standoff"
 		},
 		"standoff": {
@@ -48,6 +48,7 @@
 						}
 					],
 					"next": "talk_try",
+					"tone": "neutral",
 					"slot": "r"
 				},
 				{
@@ -63,30 +64,33 @@
 						}
 					],
 					"next": "note",
+					"tone": "hostile",
 					"slot": "lr"
 				},
 				{
 					"label": "Offer what you have",
-					"line": "Twenty pounds. It's all I've got. Take it and go.",
+					"line": "Two hundred pounds. It's all I've got. Take it and go.",
 					"if": {
-						"money": 20,
+						"money": 200,
 						"not_flag": "armed_took_money"
 					},
 					"do": [
 						{
-							"money": -20
+							"money": -200
 						},
 						{
 							"set_flag": "armed_took_money"
 						}
 					],
 					"next": "pocketed",
+					"tone": "neutral",
 					"slot": "ur"
 				},
 				{
 					"label": "Draw",
 					"line": "Have it your way.",
 					"next": "draw",
+					"tone": "hostile",
 					"slot": "ll"
 				}
 			]
@@ -116,7 +120,7 @@
 		},
 		"pocketed": {
 			"speaker": "gunman",
-			"line": "Twenty. Mallory owes two hundred, and you offer me lunch money. I'll keep it, for the insult. Now: where is he?",
+			"line": "Two hundred. Mallory owes two thousand, and you offer me lunch money. I'll keep it, for the insult. Now: where is he?",
 			"next": "pressed"
 		},
 		"pressed": {
@@ -135,6 +139,7 @@
 						}
 					],
 					"next": "talk_try",
+					"tone": "neutral",
 					"slot": "r"
 				},
 				{
@@ -150,30 +155,33 @@
 						}
 					],
 					"next": "note",
+					"tone": "hostile",
 					"slot": "lr"
 				},
 				{
 					"label": "Offer what you have",
-					"line": "Twenty pounds. It's all I've got.",
+					"line": "Two hundred pounds. It's all I've got.",
 					"if": {
-						"money": 20,
+						"money": 200,
 						"not_flag": "armed_took_money"
 					},
 					"do": [
 						{
-							"money": -20
+							"money": -200
 						},
 						{
 							"set_flag": "armed_took_money"
 						}
 					],
 					"next": "pocketed",
+					"tone": "neutral",
 					"slot": "ur"
 				},
 				{
 					"label": "Draw",
 					"line": "Have it your way.",
 					"next": "draw",
+					"tone": "hostile",
 					"slot": "ll"
 				}
 			]

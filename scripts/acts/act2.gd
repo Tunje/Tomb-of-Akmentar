@@ -246,7 +246,7 @@ func _shot(file: String) -> void:
 ## Hire one recruit through his spot's talk effects directly, then sleep through the days.
 func _auto() -> void:
 	print("RESULT act2 start money=%d spots=%d npcs=%d" % [Game.money, get_tree().get_nodes_in_group("interactable").size(), level.npcs.size()])
-	# Through the real talks, fees and all (-f9): the museum (Eleanor, £30), then Mahmoud's crew (£60).
+	# Through the real talks, fees and all (-f9): the museum (Eleanor, £100), then Mahmoud's crew (£600).
 	Game.spend_action(1)
 	await BotTalk.run(self, "act2_museum", player, level.npcs.get("archivist", player))
 	Game.spend_action(1)

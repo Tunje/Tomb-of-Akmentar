@@ -28,6 +28,7 @@
 						}
 					],
 					"next": "riders",
+					"tone": "ask",
 					"slot": "ul"
 				},
 				{
@@ -35,9 +36,10 @@
 					"line": "Water and food for the road. We lost our truck.",
 					"if": {
 						"flag": "supplies_lost",
-						"money": 15
+						"money": 150
 					},
 					"next": "resupply",
+					"tone": "neutral",
 					"slot": "r"
 				},
 				{
@@ -45,11 +47,11 @@
 					"line": "Water for the last stretch, if you can spare it.",
 					"if": {
 						"not_flag": "town_water",
-						"money": 5
+						"money": 50
 					},
 					"do": [
 						{
-							"money": -5
+							"money": -50
 						},
 						{
 							"item": [
@@ -62,6 +64,7 @@
 						}
 					],
 					"next": "water",
+					"tone": "neutral",
 					"slot": "ur"
 				},
 				{
@@ -76,12 +79,14 @@
 						}
 					],
 					"next": "way",
+					"tone": "ask",
 					"slot": "l"
 				},
 				{
 					"label": "Move on",
 					"line": "Thank you. We'll be on our way.",
 					"next": "bye",
+					"tone": "leave",
 					"slot": "ll"
 				}
 			]
@@ -93,10 +98,10 @@
 		},
 		"resupply": {
 			"speaker": "mariam",
-			"line": "Mariam Amin. Fifteen pounds for water and flour enough to reach the ruins, and I will not cheat you, whatever they say about my prices.",
+			"line": "Mariam Amin. One hundred and fifty pounds for water and flour enough to reach the ruins, and I will not cheat you, whatever they say about my prices.",
 			"do": [
 				{
-					"money": -15
+					"money": -150
 				},
 				{
 					"item": [
@@ -121,7 +126,7 @@
 		},
 		"water": {
 			"speaker": "mariam",
-			"line": "Five pounds, and the skins are new.",
+			"line": "Fifty pounds, and the skins are new.",
 			"next": "menu"
 		},
 		"way": {

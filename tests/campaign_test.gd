@@ -172,7 +172,7 @@ class Runner extends Node:
 				for id in s.party:
 					_need(n, _b(s, "hired_" + str(id)), "%s is in the party without hired_%s (the album will call them never-joined)" % [id, id])
 				if handoff.has(1):
-					_need(n, int(s.money) <= int(handoff[1].money) + 300, "money grew past Act 1's + the 300 fund (%d -> %d)" % [int(handoff[1].money), int(s.money)])
+					_need(n, int(s.money) <= int(handoff[1].money) + 3000, "money grew past Act 1's + the 3000 fund (%d -> %d)" % [int(handoff[1].money), int(s.money)])
 			3:
 				_need(n, int(_f(s, "race_step") if _f(s, "race_step") != null else 0) in [3, 4, 5], "race_step not 3/4/5 (%s)" % _f(s, "race_step"))
 				_need(n, _f(s, "route_act3_route") != null, "route_act3_route not set (the board)")

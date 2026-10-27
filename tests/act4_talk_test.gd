@@ -75,7 +75,7 @@ func _run() -> void:
 	# ---- Whitfield
 	_fresh({"wager_accepted": true, "claimed_anubis_americans": true})
 	var r := await _talk("act4_whitfield", ["Congratulate him", "Leave"])
-	_check(_said(r, "Five hundred dollars says"), "Whitfield brings up the wager when wager_accepted")
+	_check(_said(r, "Five thousand dollars says"), "Whitfield brings up the wager when wager_accepted")
 	_check(_stat("whitfield") == 1 and Game.flag("hint_anubis") and not Game.flag("clue_anubis"), "congratulate: trust +1, hint_anubis (no clue)")
 	_check(Game.flag("met_whitfield") and r.end == "end", "met_whitfield set, ends")
 	r = await _talk("act4_whitfield", ["Leave"])

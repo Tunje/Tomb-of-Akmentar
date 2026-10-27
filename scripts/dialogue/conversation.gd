@@ -20,6 +20,8 @@ extends Node
 ##                "if": {conditions},                 hidden unless Game.check passes
 ##                "do": [effects],                    applied after your line
 ##                "slot": "ur|r|lr|ul|l|ll",          optional wheel position (default: right side first)
+##                "tone": "friendly|neutral|hostile|ask|leave",   the wheel's colour for it (tools/dialogue/wheel.py
+##                                                    sets it and the slot from the label; an author's own stays)
 ##                "next": "<id>"}]},
 ##      "<id>": {"branch": [{"if": {...}, "next": "<id>"}, {"next": "<id>"}]},   silent: first match wins
 ##      "<id>": {"end": true, "do": [effects]}}}                                  ends the conversation
@@ -175,7 +177,7 @@ func _goto(next_id: String, hops := 0) -> void:
 func _say(speaker: String, text: String, as_state: State) -> void:
 	state = as_state
 	_t = line_seconds(text)
-	wheel.show_line(speaker_name(speaker), text)
+	wheel.show_line(speaker_name(speaker), text, speaker)
 	if speaker != "player" and speaker != "":
 		Codex.meet(speaker)  # their page in the journal's People
 	_frame(speaker)
@@ -199,7 +201,8 @@ func _line_done() -> void:
 	state = State.CHOICES
 	_frame("")  # the wheel view: over your shoulder at them
 	var labels := visible_choices.map(func(c): return str(c.get("label", "...")))
-	wheel.show_choices(labels, visible_choices.map(func(c): return str(c.get("slot", ""))))
+	wheel.show_choices(labels, visible_choices.map(func(c): return str(c.get("slot", ""))),
+		visible_choices.map(func(c): return str(c.get("tone", ""))))
 	choices_shown.emit(labels)
 
 

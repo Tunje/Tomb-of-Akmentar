@@ -81,11 +81,11 @@ func _run() -> void:
 	_fresh(["hargreaves"])
 	Game.set_flag("ambush_prisoners", 2)
 	Game.set_flag("supplies_lost", true)
-	Game.money = 50
+	Game.money = 500
 	r = await _talk("act3_after_ambush", ["Question him"])
 	_check(Game.flag("recognized_bandits") and Game.flag("keepers_named") and r.speakers.has("hargreaves"), "ambush: the prisoner names the Veil")
 	r = await _talk("act3_town", ["Resupply", "Move on"])
-	_check(not Game.flag("supplies_lost") and Game.money == 35 and int(Game.inventory.get("water", 0)) == 7, "town: resupplied for 15")
+	_check(not Game.flag("supplies_lost") and Game.money == 350 and int(Game.inventory.get("water", 0)) == 7, "town: resupplied for 150")
 
 	# The riverboat and after.
 	_fresh(["isabelle"])
@@ -96,9 +96,20 @@ func _run() -> void:
 
 	# Camp.
 	_fresh(["eleanor", "khalil"])
-	r = await _talk("act3_camp", ["Talk to the scholars", "Eleanor", "Say you believe it", "Talk to the crews", "Khalil",
-		"Give them your share", "Turn in"])
-	_check(_trust("eleanor") == 1 and _trust("khalil") == 2 and Game.flag("camp3_eleanor"), "camp: two talks")
+	r = await _talk("act3_camp", ["Talk to the scholars", "Eleanor", "Laugh with her", "Talk to the crews", "Khalil",
+		"Say yes", "Turn in"])
+	_check(_trust("eleanor") == 1 and _trust("khalil") == 1 and Game.flag("camp3_eleanor") and Game.flag("rapport_eleanor_0")
+		and not Game.flag("rapport_eleanor_1"), "camp, the first night: small talk only (rung 0 of their ladders)")
+	# The ladder (tools/dialogue/rapport.py): one rung a stop; the personal one needs 3 talks and trust 2.
+	r = await _talk("camp_eleanor", ["Ask her why"])
+	_check(Game.flag("heard_forgotten_king") and int(Game.companion("eleanor").get("talks", 0)) == 2, "next stop: the work (the forgotten king)")
+	r = await _talk("camp_eleanor", ["Say it's a payday"])
+	_check(Game.flag("rapport_eleanor_2") and _trust("eleanor") == 1, "then her opinion (trust %d)" % _trust("eleanor"))
+	r = await _talk("camp_eleanor", [])
+	_check(not Game.flag("rapport_eleanor_3") and not Game.flag("promised_eleanor_publish"), "trust 1: nothing personal yet")
+	Game.apply([{"stat": ["eleanor", "trust", 1]}])
+	r = await _talk("camp_eleanor", ["Promise her"])
+	_check(Game.flag("rapport_eleanor_3") and Game.flag("promised_eleanor_publish"), "trust 2, three talks on: her name on the work")
 
 	# The race: Whitfield's wager on the road, Youssef's shortcut works with his trust...
 	_fresh(["youssef"])

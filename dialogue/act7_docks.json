@@ -54,6 +54,7 @@
 					"label": "Leave",
 					"line": "Thank you.",
 					"next": "end",
+					"tone": "leave",
 					"slot": "ll"
 				}
 			]

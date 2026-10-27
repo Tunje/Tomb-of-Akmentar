@@ -5,14 +5,14 @@
 	"actions": [
 		{
 			"id": "revolver_ammo",
-			"label": "Revolver cartridges, 24 (£3)",
+			"label": "Revolver cartridges, 24 (£30)",
 			"cost": 0,
 			"if": {
-				"money": 3
+				"money": 30
 			},
 			"do": [
 				{
-					"money": -3
+					"money": -30
 				},
 				{
 					"item": [
@@ -25,14 +25,14 @@
 		},
 		{
 			"id": "rifle",
-			"label": "A lever rifle and 20 cartridges (£25)",
+			"label": "A lever rifle and 20 cartridges (£250)",
 			"cost": 0,
 			"if": {
-				"money": 25
+				"money": 250
 			},
 			"do": [
 				{
-					"money": -25
+					"money": -250
 				},
 				{
 					"item": [
@@ -52,14 +52,14 @@
 		},
 		{
 			"id": "rifle_ammo",
-			"label": "Rifle cartridges, 20 (£4)",
+			"label": "Rifle cartridges, 20 (£40)",
 			"cost": 0,
 			"if": {
-				"money": 4
+				"money": 40
 			},
 			"do": [
 				{
-					"money": -4
+					"money": -40
 				},
 				{
 					"item": [
@@ -72,14 +72,14 @@
 		},
 		{
 			"id": "shotgun",
-			"label": "A double shotgun and 12 shells (£20)",
+			"label": "A double shotgun and 12 shells (£200)",
 			"cost": 0,
 			"if": {
-				"money": 20
+				"money": 200
 			},
 			"do": [
 				{
-					"money": -20
+					"money": -200
 				},
 				{
 					"item": [
@@ -99,14 +99,14 @@
 		},
 		{
 			"id": "shotgun_shells",
-			"label": "Shotgun shells, 12 (£3)",
+			"label": "Shotgun shells, 12 (£30)",
 			"cost": 0,
 			"if": {
-				"money": 3
+				"money": 30
 			},
 			"do": [
 				{
-					"money": -3
+					"money": -30
 				},
 				{
 					"item": [
@@ -119,15 +119,15 @@
 		},
 		{
 			"id": "arm_party",
-			"label": "Have Zaki arm the whole expedition (£40)",
+			"label": "Have Zaki arm the whole expedition (£400)",
 			"cost": 1,
 			"once": true,
 			"if": {
-				"money": 40
+				"money": 400
 			},
 			"do": [
 				{
-					"money": -40
+					"money": -400
 				},
 				{
 					"set_flag": "party_armed"

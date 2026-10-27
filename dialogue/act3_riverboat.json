@@ -37,6 +37,7 @@
 						}
 					],
 					"next": "outfit",
+					"tone": "ask",
 					"slot": "ul"
 				},
 				{
@@ -51,6 +52,7 @@
 						}
 					],
 					"next": "after",
+					"tone": "ask",
 					"slot": "l"
 				},
 				{
@@ -65,12 +67,14 @@
 						}
 					],
 					"next": "wager",
+					"tone": "ask",
 					"slot": "ur"
 				},
 				{
 					"label": "Excuse yourself",
 					"line": "I'll leave you to your deckchair.",
 					"next": "bye",
+					"tone": "leave",
 					"slot": "ll"
 				}
 			]
@@ -87,7 +91,7 @@
 		},
 		"wager": {
 			"speaker": "whitfield",
-			"line": "Five hundred dollars says my outfit reaches Akmentar before yours. A friendly wager, to make the trip interesting.",
+			"line": "Five thousand dollars says my outfit reaches Akmentar before yours. A friendly wager, to make the trip interesting.",
 			"choices": [
 				{
 					"label": "Accept",
@@ -105,12 +109,14 @@
 						}
 					],
 					"next": "accepted",
+					"tone": "friendly",
 					"slot": "ur"
 				},
 				{
 					"label": "Decline",
 					"line": "I don't bet on things I can't control.",
 					"next": "declined",
+					"tone": "neutral",
 					"slot": "r"
 				}
 			]

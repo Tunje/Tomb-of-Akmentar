@@ -80,6 +80,7 @@ func _ready() -> void:
 		_first = _slider(grid, "Master volume", "master", 0.0, 1.0, 0.05, true)
 		_slider(grid, "Effects volume", "effects", 0.0, 1.0, 0.05, true)
 		_slider(grid, "Ambience volume", "ambience", 0.0, 1.0, 0.05, true)
+		_slider(grid, "Music volume", "music", 0.0, 1.0, 0.05, true)
 		_slider(grid, "Mouse sensitivity", "mouse_sens", 0.3, 2.5, 0.05, false)
 		_check(grid, "Invert mouse Y", "invert_y")
 		_slider(grid, "Field of view", "fov", 60.0, 90.0, 1.0, false)

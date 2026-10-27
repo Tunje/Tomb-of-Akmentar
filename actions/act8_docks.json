@@ -5,14 +5,14 @@
 	"actions": [
 		{
 			"id": "passage",
-			"label": "Passage south for the whole expedition (£30)",
+			"label": "Passage south for the whole expedition (£300)",
 			"cost": 0,
 			"if": {
-				"money": 30
+				"money": 300
 			},
 			"do": [
 				{
-					"money": -30
+					"money": -300
 				},
 				{
 					"set_flag": "act8_boat_booked"

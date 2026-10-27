@@ -15,7 +15,7 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from dlg import L, C, B, END, flag, trust, pay, talk, build
 
-START_MONEY = 25
+START_MONEY = 250
 TALKS = {}
 FILES = {}
 
@@ -45,23 +45,23 @@ TALKS["act1_office"] = talk(
 # ---------------------------------------------------------------- encounter A: the debt collectors
 
 TALKS["act1_debt_collectors"] = talk(
-    "Act 1, encounter A: Harold Finch and his enforcer Musa Kamal think you know where Freddie is. Talk your way out (owe_finch, or freddie_betrayed with the note), pay 20 of Freddie's 200, which only buys time (debt_paid_part, and 50 more owed: owe_finch), or provoke a fight: event fight_debt_collectors (end_fight; the brawl tutorial), after which act1_after_brawl. End ids end_talked / end_paid / end_fight.",
+    "Act 1, encounter A: Harold Finch and his enforcer Musa Kamal think you know where Freddie is. Talk your way out (owe_finch, or freddie_betrayed with the note), pay 200 of Freddie's 2000, which only buys time (debt_paid_part, and 500 more owed: owe_finch), or provoke a fight: event fight_debt_collectors (end_fight; the brawl tutorial), after which act1_after_brawl. End ids end_talked / end_paid / end_fight.",
     {"finch": "Harold Finch", "musa": "Musa Kamal"}, {
-        "start": L("finch", "There he is. Freddie Mallory's old army pal. Freddie owes me two hundred pounds, and I think you know where he is.", "menu"),
+        "start": L("finch", "There he is. Freddie Mallory's old army pal. Freddie owes me two thousand pounds, and I think you know where he is.", "menu"),
         "menu": L("finch", "So. Where is he?", choices=[
             C("Say you don't know", "I don't know. He owes me money too.", "dont_know", if_={"not_flag": "finch_dont_know"}, do=[flag("finch_dont_know")]),
             C("Give up Freddie", "Alexandria. He left a note.", "betray", if_={"flag": "freddie_note"}),
             C("Promise to pay", "I'll have work soon. I'll pay you part of his debt from it.", "promise"),
-            C("Pay part now", "Here's twenty pounds. Call it interest. Now leave me alone.", "paid", if_={"money": 20}, do=[pay(20), flag("debt_paid_part"), flag("owe_finch", 50)]),
+            C("Pay part now", "Here's two hundred pounds. Call it interest. Now leave me alone.", "paid", if_={"money": 200}, do=[pay(200), flag("debt_paid_part"), flag("owe_finch", 500)]),
             C("Insult him", "Get out of my way, Finch, before your bruiser needs a doctor.", "provoke"),
             C("Hit him", "Enough talking.", "fight"),
         ]),
         "dont_know": L("finch", "Then you're no use to me. Unless you'd like to pay his debts, being such good friends.", "menu"),
         "betray": L("finch", "Alexandria. There, that wasn't hard. Come on, Musa. We've a train to catch.", "end_talked",
                     do=[flag("freddie_betrayed")]),
-        "promise": L("finch", "Part of it. From work you don't have. All right, soldier, I'll hold you to that. Fifty pounds within the month.", "end_talked",
-                     do=[flag("owe_finch", 50)]),
-        "paid": L("finch", "Twenty. Of two hundred. That buys you a week, soldier, not a pardon. Fifty more within the month, or Musa comes back.", "end_paid"),
+        "promise": L("finch", "Part of it. From work you don't have. All right, soldier, I'll hold you to that. Five hundred pounds within the month.", "end_talked",
+                     do=[flag("owe_finch", 500)]),
+        "paid": L("finch", "Two hundred. Of two thousand. That buys you a week, soldier, not a pardon. Five hundred more within the month, or Musa comes back.", "end_paid"),
         "provoke": L("musa", "Mr. Finch, may I?", "fight"),
         "fight": L("finch", "Musa. Teach him some manners.", "end_fight", do=[{"event": "fight_debt_collectors"}]),
         "end_talked": END,
@@ -73,7 +73,7 @@ TALKS["act1_after_brawl"] = talk(
     "Act 1, after the brawl. If you won: Musa is down; help him up (musa_respect; in encounter B he won't fight you) or humiliate him (musa_enemy). If you lost (act1.gd sets brawl_lost): they take 10 and leave.",
     {"finch": "Harold Finch", "musa": "Musa Kamal"}, {
         "start": B(({"flag": "brawl_lost"}, "lost"), (None, "won")),
-        "lost": L("finch", "That's for the inconvenience. Ten pounds. Freddie's debt stands.", "end", do=[pay(10)]),
+        "lost": L("finch", "That's for the inconvenience. One hundred pounds. Freddie's debt stands.", "end", do=[pay(100)]),
         "won": L("musa", "...", choices=[
             C("Help him up", "Here. Up you get. Nothing personal.", "respect", do=[flag("musa_respect"), trust("musa", 2)]),
             C("Humiliate him", "Stay down. Next time I won't be gentle.", "enemy", do=[flag("musa_enemy"), trust("musa", -2)]),
@@ -88,7 +88,7 @@ TALKS["act1_after_brawl"] = talk(
 # ---------------------------------------------------------------- encounter B: armed men at Freddie's
 
 armed = {
-    "start": L("gunman", "Nobody move. You're Mallory's friend. Where is he? He owes our employer two hundred pounds, and he took something that isn't his. We think you know where.", "standoff"),
+    "start": L("gunman", "Nobody move. You're Mallory's friend. Where is he? He owes our employer two thousand pounds, and he took something that isn't his. We think you know where.", "standoff"),
     "standoff": B(({"flag": "musa_respect"}, "musa_there"), (None, "talk_down")),
     "musa_there": L("musa", "Wait. This one... this one helped me stand up. He knows nothing. I do not shoot him.", "musa_leaves"),
     "musa_leaves": L("gunman", "Musa! You fool! ...Fine. Fine! Tell Mallory we're still looking.", "avoided"),
@@ -97,22 +97,22 @@ armed = {
           do=[flag("armed_talked")]),
         C("Give them the note", "He's in Alexandria. Here's his note. Go and ask him yourself.", "note",
           if_={"flag": "freddie_note", "not_flag": "freddie_betrayed"}, do=[flag("freddie_betrayed")]),
-        C("Offer what you have", "Twenty pounds. It's all I've got. Take it and go.", "pocketed",
-          if_={"money": 20, "not_flag": "armed_took_money"}, do=[pay(20), flag("armed_took_money")]),
+        C("Offer what you have", "Two hundred pounds. It's all I've got. Take it and go.", "pocketed",
+          if_={"money": 200, "not_flag": "armed_took_money"}, do=[pay(200), flag("armed_took_money")]),
         C("Draw", "Have it your way.", "draw"),
     ]),
     "talk_try": B(({"flag": "warned_finch"}, "talk_works"), (None, "talk_fails")),
     "talk_works": L("gunman", "...Police. Right. Finch's building. You're Finch's problem, not ours. Let's go.", "avoided"),
     "talk_fails": L("gunman", "Nice speech. Where's Mallory?", "pressed"),
-    # Your pockets are an insult to a two-hundred-pound debt: they keep it, and still want Freddie.
-    "pocketed": L("gunman", "Twenty. Mallory owes two hundred, and you offer me lunch money. I'll keep it, for the insult. Now: where is he?", "pressed"),
+    # Your pockets are an insult to a two-thousand-pound debt: they keep it, and still want Freddie.
+    "pocketed": L("gunman", "Two hundred. Mallory owes two thousand, and you offer me lunch money. I'll keep it, for the insult. Now: where is he?", "pressed"),
     "pressed": L("gunman", "Last time I ask.", choices=[
         C("Talk him down", "Think about it. One shot in Finch's building and the police are on the stairs.", "talk_try",
           if_={"not_flag": "armed_talked"}, do=[flag("armed_talked")]),
         C("Give them the note", "All right. Alexandria. Here's his note.", "note",
           if_={"flag": "freddie_note", "not_flag": "freddie_betrayed"}, do=[flag("freddie_betrayed")]),
-        C("Offer what you have", "Twenty pounds. It's all I've got.", "pocketed",
-          if_={"money": 20, "not_flag": "armed_took_money"}, do=[pay(20), flag("armed_took_money")]),
+        C("Offer what you have", "Two hundred pounds. It's all I've got.", "pocketed",
+          if_={"money": 200, "not_flag": "armed_took_money"}, do=[pay(200), flag("armed_took_money")]),
         C("Draw", "Have it your way.", "draw"),
     ]),
     "note": L("gunman", "Alexandria. There, that wasn't so hard. Come on.", "avoided"),
@@ -137,10 +137,10 @@ offer = {
     "case": L("karim", "In this case is the reason I asked for you.", "offer"),
     "offer": L("karim", "A fragment of an inscription, and part of a map. Sir Reginald believes they lead to the tombs of Akmentar. He wants you to lead the expedition.", "menu",
                do=[{"journal": ["act1_cairo", "fragment", "Karim Fahmy's case"]}]),
-    "menu": L("karim", "Fifty pounds now, for your... present difficulties. A great deal more if the tombs are found.", choices=[
+    "menu": L("karim", "Five hundred pounds now, for your... present difficulties. A great deal more if the tombs are found.", choices=[
         C("Ask about the first expedition", "This isn't Blackwood's first try, is it?", "first", if_={"not_flag": "karim_first"}, do=[flag("karim_first")]),
         C("Ask about the reward", "How much is a great deal?", "reward", if_={"not_flag": "karim_reward"}, do=[flag("karim_reward")]),
-        C("Ask for more up front", "Fifty doesn't cover the trouble Freddie left me.", "more",
+        C("Ask for more up front", "Five hundred doesn't cover the trouble Freddie left me.", "more",
           if_={"not_flag": "karim_more"}, do=[flag("karim_more"), trust("karim", -1)]),
         C("Accept", "All right. I'll take your expedition.", "accept"),
         C("Refuse", "Find another fool.", "refuse", if_={"not_flag": "karim_refused"}, do=[flag("karim_refused")]),
@@ -148,13 +148,13 @@ offer = {
     "first": L("karim", "There was an earlier expedition. It did not return. What happened to it is Sir Reginald's affair, and he does not discuss it.", "menu",
                do=[flag("knows_first_expedition_lost")]),
     "reward": L("karim", "Five thousand pounds when the tombs are found and documented. Enough to make Mr. Mallory's debts look very small.", "menu"),
-    "more": L("karim", "...Seventy-five, then. And Sir Reginald will hear that you drive a hard bargain.", "menu", do=[{"money": 25}]),
+    "more": L("karim", "...Seven hundred and fifty, then. And Sir Reginald will hear that you drive a hard bargain.", "menu", do=[{"money": 250}]),
     "refuse": L("karim", "Then consider this: whoever is hunting Freddie Mallory already knows your face. Cairo is not kind to a man without friends, or money.", "menu"),
     "accept": L("karim", "Excellent. The expedition fund will be at the bank in the morning. You leave Cairo in two days, ready or not.", "debts",
-                do=[{"money": 50}, flag("act1_offer_accepted")]),
-    "debts": B(({"flag": "owe_finch", "money": 50}, "pay_finch"), (None, "end_accepted")),
-    "pay_finch": L("player", "Fifty pounds in my pocket, and Finch wants fifty.", choices=[
-        C("Pay Finch off", "Might as well start the job with a clean slate.", "end_accepted", do=[pay(50), flag("owe_finch", 0), flag("finch_paid")]),
+                do=[{"money": 500}, flag("act1_offer_accepted")]),
+    "debts": B(({"flag": "owe_finch", "money": 500}, "pay_finch"), (None, "end_accepted")),
+    "pay_finch": L("player", "Five hundred pounds in my pocket, and Finch wants five hundred.", choices=[
+        C("Pay Finch off", "Might as well start the job with a clean slate.", "end_accepted", do=[pay(500), flag("owe_finch", 0), flag("finch_paid")]),
         C("Keep the money", "Finch can wait.", "end_accepted"),
     ]),
     "end_accepted": END,

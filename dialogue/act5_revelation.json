@@ -105,7 +105,8 @@
 						}
 					],
 					"next": "guardian",
-					"slot": "ul"
+					"slot": "ul",
+					"tone": "ask"
 				},
 				{
 					"label": "Ask why they attacked",
@@ -119,7 +120,8 @@
 						}
 					],
 					"next": "attacks",
-					"slot": "l"
+					"slot": "l",
+					"tone": "ask"
 				},
 				{
 					"label": "Blame them",
@@ -140,13 +142,15 @@
 						}
 					],
 					"next": "blamed",
-					"slot": "lr"
+					"slot": "lr",
+					"tone": "hostile"
 				},
 				{
 					"label": "Ask what to do",
 					"line": "Then tell me how we put it right.",
 					"next": "objective",
-					"slot": "ur"
+					"slot": "ur",
+					"tone": "ask"
 				}
 			]
 		},
@@ -200,7 +204,8 @@
 						}
 					],
 					"next": "guardian",
-					"slot": "ul"
+					"slot": "ul",
+					"tone": "ask"
 				},
 				{
 					"label": "Ask why they attacked",
@@ -214,13 +219,15 @@
 						}
 					],
 					"next": "attacks",
-					"slot": "l"
+					"slot": "l",
+					"tone": "ask"
 				},
 				{
 					"label": "Ask what to do",
 					"line": "Then tell me how we put it right.",
 					"next": "objective",
-					"slot": "ur"
+					"slot": "ur",
+					"tone": "ask"
 				}
 			]
 		},
@@ -247,7 +254,8 @@
 						}
 					],
 					"next": "accepted",
-					"slot": "ur"
+					"slot": "ur",
+					"tone": "friendly"
 				},
 				{
 					"label": "Accept, grudgingly",
@@ -261,7 +269,8 @@
 						}
 					],
 					"next": "grudging",
-					"slot": "r"
+					"slot": "r",
+					"tone": "neutral"
 				}
 			]
 		},

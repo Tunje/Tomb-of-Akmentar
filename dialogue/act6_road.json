@@ -96,11 +96,6 @@
 			],
 			"next": "night"
 		},
-		"night": {
-			"speaker": "player",
-			"line": "The second night. Something stands at the edge of the firelight, very still, and it isn't a man.",
-			"next": "react"
-		},
 		"react": {
 			"branch": [
 				{
@@ -176,12 +171,14 @@
 						}
 					],
 					"next": "ride_fear_0",
+					"tone": "neutral",
 					"slot": "r"
 				},
 				{
 					"label": "Hold the camp",
 					"line": "Nobody runs. We hold here until morning.",
 					"next": "hold",
+					"tone": "neutral",
 					"slot": "ur"
 				}
 			]
@@ -206,6 +203,4377 @@
 		},
 		"end_fight": {
 			"end": true
+		},
+		"night_falls": {
+			"speaker": "player",
+			"line": "The second night. Something stands at the edge of the firelight, very still, and it isn't a man.",
+			"next": "react"
+		},
+		"fire_0": {
+			"speaker": "player",
+			"line": "Who's by the fire?",
+			"choices": [
+				{
+					"label": "Eleanor",
+					"line": "",
+					"if": {
+						"in_party": "eleanor",
+						"not_flag": "camp6_eleanor"
+					},
+					"do": [
+						{
+							"set_flag": "camp6_eleanor"
+						}
+					],
+					"next": "f_eleanor_start",
+					"tone": "neutral",
+					"slot": "r"
+				},
+				{
+					"label": "Pembroke",
+					"line": "",
+					"if": {
+						"in_party": "pembroke",
+						"not_flag": "camp6_pembroke"
+					},
+					"do": [
+						{
+							"set_flag": "camp6_pembroke"
+						}
+					],
+					"next": "f_pembroke_start",
+					"tone": "neutral",
+					"slot": "ur"
+				},
+				{
+					"label": "al-Masri",
+					"line": "",
+					"if": {
+						"in_party": "hassan",
+						"not_flag": "camp6_hassan"
+					},
+					"do": [
+						{
+							"set_flag": "camp6_hassan"
+						}
+					],
+					"next": "f_hassan_start",
+					"tone": "neutral",
+					"slot": "lr"
+				},
+				{
+					"label": "Back",
+					"line": "",
+					"next": "night",
+					"tone": "leave",
+					"slot": "ll"
+				}
+			]
+		},
+		"f_eleanor_start": {
+			"branch": [
+				{
+					"if": {
+						"stat": [
+							"eleanor",
+							"talks",
+							3
+						],
+						"not_flag": "rapport_eleanor_3"
+					},
+					"next": "f_eleanor_t3"
+				},
+				{
+					"if": {
+						"stat": [
+							"eleanor",
+							"talks",
+							2
+						],
+						"not_flag": "rapport_eleanor_2"
+					},
+					"next": "f_eleanor_r2"
+				},
+				{
+					"if": {
+						"stat": [
+							"eleanor",
+							"talks",
+							1
+						],
+						"not_flag": "rapport_eleanor_1"
+					},
+					"next": "f_eleanor_r1"
+				},
+				{
+					"if": {
+						"not_flag": "rapport_eleanor_0"
+					},
+					"next": "f_eleanor_r0"
+				},
+				{
+					"next": "f_eleanor_idle"
+				}
+			]
+		},
+		"f_eleanor_t3": {
+			"branch": [
+				{
+					"if": {
+						"stat": [
+							"eleanor",
+							"trust",
+							2
+						]
+					},
+					"next": "f_eleanor_r3"
+				},
+				{
+					"next": "f_eleanor_idle"
+				}
+			]
+		},
+		"f_eleanor_idle": {
+			"speaker": "eleanor",
+			"line": "Nothing much. Just thinking. Go on, I'm fine.",
+			"next": "night"
+		},
+		"f_eleanor_r0_a": {
+			"speaker": "eleanor",
+			"line": "It's already in my boots.",
+			"next": "night"
+		},
+		"f_eleanor_r0_b": {
+			"speaker": "eleanor",
+			"line": "Wonderful. I'll write that down too.",
+			"next": "night"
+		},
+		"f_eleanor_r0": {
+			"speaker": "eleanor",
+			"line": "Sand in the ink, sand in the bread. I'd no idea the desert got into everything.",
+			"choices": [
+				{
+					"label": "Laugh with her",
+					"line": "Wait till it's in your boots.",
+					"do": [
+						{
+							"stat": [
+								"eleanor",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"eleanor",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_eleanor_0"
+						}
+					],
+					"next": "f_eleanor_r0_a",
+					"tone": "neutral",
+					"slot": "r"
+				},
+				{
+					"label": "Tell her it gets worse",
+					"line": "It gets worse further west.",
+					"do": [
+						{
+							"stat": [
+								"eleanor",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_eleanor_0"
+						}
+					],
+					"next": "f_eleanor_r0_b",
+					"tone": "friendly",
+					"slot": "ur"
+				}
+			]
+		},
+		"f_eleanor_r1_a": {
+			"speaker": "eleanor",
+			"line": "That's what I mean to find out.",
+			"next": "night"
+		},
+		"f_eleanor_r1_b": {
+			"speaker": "eleanor",
+			"line": "To a dealer. Not to me.",
+			"next": "night"
+		},
+		"f_eleanor_r1": {
+			"speaker": "eleanor",
+			"line": "Three papyri in the museum's basement name a king who appears on no list. Someone went to a great deal of trouble to forget him.",
+			"choices": [
+				{
+					"label": "Ask her why",
+					"line": "Why would anyone bother?",
+					"do": [
+						{
+							"set_flag": "heard_forgotten_king"
+						},
+						{
+							"stat": [
+								"eleanor",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"eleanor",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_eleanor_1"
+						}
+					],
+					"next": "f_eleanor_r1_a",
+					"tone": "neutral",
+					"slot": "r"
+				},
+				{
+					"label": "Ask what he's worth",
+					"line": "Is a forgotten king worth more?",
+					"do": [
+						{
+							"set_flag": "heard_forgotten_king"
+						},
+						{
+							"stat": [
+								"eleanor",
+								"trust",
+								-1
+							]
+						},
+						{
+							"stat": [
+								"eleanor",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_eleanor_1"
+						}
+					],
+					"next": "f_eleanor_r1_b",
+					"tone": "ask",
+					"slot": "ul"
+				}
+			]
+		},
+		"f_eleanor_r2_a": {
+			"speaker": "eleanor",
+			"line": "Then I'd better not be wrong.",
+			"next": "night"
+		},
+		"f_eleanor_r2_b": {
+			"speaker": "eleanor",
+			"line": "Then I'll find them on my own.",
+			"next": "night"
+		},
+		"f_eleanor_r2": {
+			"speaker": "eleanor",
+			"line": "Do you think it's really out there? Not the gold. The answers.",
+			"choices": [
+				{
+					"label": "Say you believe it",
+					"line": "I know it is. And you'll be the one who reads it.",
+					"do": [
+						{
+							"stat": [
+								"eleanor",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"eleanor",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_eleanor_2"
+						}
+					],
+					"next": "f_eleanor_r2_a",
+					"tone": "friendly",
+					"slot": "ur"
+				},
+				{
+					"label": "Say it's a payday",
+					"line": "I think it's a payday. Answers are your department.",
+					"do": [
+						{
+							"stat": [
+								"eleanor",
+								"trust",
+								-1
+							]
+						},
+						{
+							"stat": [
+								"eleanor",
+								"conviction",
+								1
+							]
+						},
+						{
+							"stat": [
+								"eleanor",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_eleanor_2"
+						}
+					],
+					"next": "f_eleanor_r2_b",
+					"tone": "neutral",
+					"slot": "r"
+				}
+			]
+		},
+		"f_eleanor_r3_a": {
+			"speaker": "eleanor",
+			"line": "...Thank you. I'll hold you to that.",
+			"next": "night"
+		},
+		"f_eleanor_r3_b": {
+			"speaker": "eleanor",
+			"line": "That's what they all say.",
+			"next": "night"
+		},
+		"f_eleanor_r3": {
+			"speaker": "eleanor",
+			"line": "At the museum they let me translate and never let me sign. Whatever we find out here, I want my name on it.",
+			"choices": [
+				{
+					"label": "Promise her",
+					"line": "Your name, your work. You have my word.",
+					"do": [
+						{
+							"set_flag": "promised_eleanor_publish"
+						},
+						{
+							"stat": [
+								"eleanor",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"eleanor",
+								"conviction",
+								1
+							]
+						},
+						{
+							"stat": [
+								"eleanor",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_eleanor_3"
+						}
+					],
+					"next": "f_eleanor_r3_a",
+					"tone": "friendly",
+					"slot": "ur"
+				},
+				{
+					"label": "Make no promises",
+					"line": "Let's find it first, then argue about the credit.",
+					"do": [
+						{
+							"stat": [
+								"eleanor",
+								"trust",
+								-1
+							]
+						},
+						{
+							"stat": [
+								"eleanor",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_eleanor_3"
+						}
+					],
+					"next": "f_eleanor_r3_b",
+					"tone": "hostile",
+					"slot": "lr"
+				}
+			]
+		},
+		"f_pembroke_start": {
+			"branch": [
+				{
+					"if": {
+						"stat": [
+							"pembroke",
+							"talks",
+							3
+						],
+						"not_flag": "rapport_pembroke_3"
+					},
+					"next": "f_pembroke_t3"
+				},
+				{
+					"if": {
+						"stat": [
+							"pembroke",
+							"talks",
+							2
+						],
+						"not_flag": "rapport_pembroke_2"
+					},
+					"next": "f_pembroke_r2"
+				},
+				{
+					"if": {
+						"stat": [
+							"pembroke",
+							"talks",
+							1
+						],
+						"not_flag": "rapport_pembroke_1"
+					},
+					"next": "f_pembroke_r1"
+				},
+				{
+					"if": {
+						"not_flag": "rapport_pembroke_0"
+					},
+					"next": "f_pembroke_r0"
+				},
+				{
+					"next": "f_pembroke_idle"
+				}
+			]
+		},
+		"f_pembroke_t3": {
+			"branch": [
+				{
+					"if": {
+						"stat": [
+							"pembroke",
+							"trust",
+							2
+						]
+					},
+					"next": "f_pembroke_r3"
+				},
+				{
+					"next": "f_pembroke_idle"
+				}
+			]
+		},
+		"f_pembroke_idle": {
+			"speaker": "pembroke",
+			"line": "I am cataloguing. Perhaps later.",
+			"next": "night"
+		},
+		"f_pembroke_r0_a": {
+			"speaker": "pembroke",
+			"line": "Thank you. I shall.",
+			"next": "night"
+		},
+		"f_pembroke_r0_b": {
+			"speaker": "pembroke",
+			"line": "That is what everyone says before they aren't.",
+			"next": "night"
+		},
+		"f_pembroke_r0": {
+			"speaker": "pembroke",
+			"line": "You've packed the plates badly. The camera will survive. The plates may not.",
+			"choices": [
+				{
+					"label": "Let him repack",
+					"line": "Repack them however you like, Doctor.",
+					"do": [
+						{
+							"stat": [
+								"pembroke",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"pembroke",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_pembroke_0"
+						}
+					],
+					"next": "f_pembroke_r0_a",
+					"tone": "neutral",
+					"slot": "r"
+				},
+				{
+					"label": "Tell him they're fine",
+					"line": "They'll be fine.",
+					"do": [
+						{
+							"stat": [
+								"pembroke",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_pembroke_0"
+						}
+					],
+					"next": "f_pembroke_r0_b",
+					"tone": "neutral",
+					"slot": "ur"
+				}
+			]
+		},
+		"f_pembroke_r1_a": {
+			"speaker": "pembroke",
+			"line": "Yes. Quite. Thank you.",
+			"next": "night"
+		},
+		"f_pembroke_r1_b": {
+			"speaker": "pembroke",
+			"line": "Somebody has to care, or this is just looting.",
+			"next": "night"
+		},
+		"f_pembroke_r1": {
+			"speaker": "pembroke",
+			"line": "Forty sherds catalogued since Cairo. All Roman, all worthless, all properly labelled.",
+			"choices": [
+				{
+					"label": "Encourage him",
+					"line": "Keep at it, Doctor. When we get there, it'll matter.",
+					"do": [
+						{
+							"stat": [
+								"pembroke",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"pembroke",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_pembroke_1"
+						}
+					],
+					"next": "f_pembroke_r1_a",
+					"tone": "friendly",
+					"slot": "ur"
+				},
+				{
+					"label": "Mock him",
+					"line": "Nobody's going to care about your pots.",
+					"do": [
+						{
+							"stat": [
+								"pembroke",
+								"trust",
+								-1
+							]
+						},
+						{
+							"stat": [
+								"pembroke",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_pembroke_1"
+						}
+					],
+					"next": "f_pembroke_r1_b",
+					"tone": "hostile",
+					"slot": "lr"
+				}
+			]
+		},
+		"f_pembroke_r2_a": {
+			"speaker": "pembroke",
+			"line": "Good. Then we understand each other.",
+			"next": "night"
+		},
+		"f_pembroke_r2_b": {
+			"speaker": "pembroke",
+			"line": "Then we shall lose the race and keep the book.",
+			"next": "night"
+		},
+		"f_pembroke_r2": {
+			"speaker": "pembroke",
+			"line": "A site is a book you can only read once. Dig it badly and the page is gone. I'd like us to read it properly.",
+			"choices": [
+				{
+					"label": "Agree with him",
+					"line": "Then we read it properly.",
+					"do": [
+						{
+							"stat": [
+								"pembroke",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"pembroke",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_pembroke_2"
+						}
+					],
+					"next": "f_pembroke_r2_a",
+					"tone": "friendly",
+					"slot": "ur"
+				},
+				{
+					"label": "Say time matters more",
+					"line": "We're racing two expeditions, Doctor.",
+					"do": [
+						{
+							"stat": [
+								"pembroke",
+								"conviction",
+								1
+							]
+						},
+						{
+							"stat": [
+								"pembroke",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_pembroke_2"
+						}
+					],
+					"next": "f_pembroke_r2_b",
+					"tone": "neutral",
+					"slot": "r"
+				}
+			]
+		},
+		"f_pembroke_r3_a": {
+			"speaker": "pembroke",
+			"line": "...I believe you mean that.",
+			"next": "night"
+		},
+		"f_pembroke_r3_b": {
+			"speaker": "pembroke",
+			"line": "Does it matter? It had my name on it.",
+			"next": "night"
+		},
+		"f_pembroke_r3": {
+			"speaker": "pembroke",
+			"line": "Wadi Natrun, 1919. Bad funding, worse records. Half the finds vanished before they were catalogued, and my name went with them.",
+			"choices": [
+				{
+					"label": "Promise every find recorded",
+					"line": "Not this time. Every find goes on paper before anyone touches it.",
+					"do": [
+						{
+							"set_flag": "promised_pembroke_records"
+						},
+						{
+							"stat": [
+								"pembroke",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"pembroke",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_pembroke_3"
+						}
+					],
+					"next": "f_pembroke_r3_a",
+					"tone": "friendly",
+					"slot": "ur"
+				},
+				{
+					"label": "Ask whose fault it was",
+					"line": "Was it your fault?",
+					"do": [
+						{
+							"stat": [
+								"pembroke",
+								"trust",
+								-1
+							]
+						},
+						{
+							"stat": [
+								"pembroke",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_pembroke_3"
+						}
+					],
+					"next": "f_pembroke_r3_b",
+					"tone": "ask",
+					"slot": "ul"
+				}
+			]
+		},
+		"f_hassan_start": {
+			"branch": [
+				{
+					"if": {
+						"stat": [
+							"hassan",
+							"talks",
+							3
+						],
+						"not_flag": "rapport_hassan_3"
+					},
+					"next": "f_hassan_t3"
+				},
+				{
+					"if": {
+						"stat": [
+							"hassan",
+							"talks",
+							2
+						],
+						"not_flag": "rapport_hassan_2"
+					},
+					"next": "f_hassan_r2"
+				},
+				{
+					"if": {
+						"stat": [
+							"hassan",
+							"talks",
+							1
+						],
+						"not_flag": "rapport_hassan_1"
+					},
+					"next": "f_hassan_r1"
+				},
+				{
+					"if": {
+						"not_flag": "rapport_hassan_0"
+					},
+					"next": "f_hassan_r0"
+				},
+				{
+					"next": "f_hassan_idle"
+				}
+			]
+		},
+		"f_hassan_t3": {
+			"branch": [
+				{
+					"if": {
+						"stat": [
+							"hassan",
+							"trust",
+							2
+						]
+					},
+					"next": "f_hassan_r3"
+				},
+				{
+					"next": "f_hassan_idle"
+				}
+			]
+		},
+		"f_hassan_idle": {
+			"speaker": "hassan",
+			"line": "Sit if you like. The fire is good company.",
+			"next": "night"
+		},
+		"f_hassan_r0_a": {
+			"speaker": "hassan",
+			"line": "Then the desert is already teaching us something.",
+			"next": "night"
+		},
+		"f_hassan_r0_b": {
+			"speaker": "hassan",
+			"line": "At my age sleep is a negotiation.",
+			"next": "night"
+		},
+		"f_hassan_r0": {
+			"speaker": "hassan",
+			"line": "The stars are very clear tonight. In Cairo you forget there are so many.",
+			"choices": [
+				{
+					"label": "Look up with him",
+					"line": "I'd forgotten too.",
+					"do": [
+						{
+							"stat": [
+								"hassan",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"hassan",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_hassan_0"
+						}
+					],
+					"next": "f_hassan_r0_a",
+					"tone": "neutral",
+					"slot": "r"
+				},
+				{
+					"label": "Ask if he's tired",
+					"line": "You should sleep, Doctor.",
+					"do": [
+						{
+							"stat": [
+								"hassan",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_hassan_0"
+						}
+					],
+					"next": "f_hassan_r0_b",
+					"tone": "ask",
+					"slot": "ul"
+				}
+			]
+		},
+		"f_hassan_r1_a": {
+			"speaker": "hassan",
+			"line": "Then we share a question, if not yet an answer.",
+			"next": "night"
+		},
+		"f_hassan_r1_b": {
+			"speaker": "hassan",
+			"line": "Honest, at least. Gold has buried more men than the desert.",
+			"next": "night"
+		},
+		"f_hassan_r1": {
+			"speaker": "hassan",
+			"line": "Tell me, now that we are on the road. Why Akmentar, for you?",
+			"choices": [
+				{
+					"label": "To see what's there",
+					"line": "Someone tried very hard to make the world forget it. I want to know why.",
+					"do": [
+						{
+							"stat": [
+								"hassan",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"hassan",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_hassan_1"
+						}
+					],
+					"next": "f_hassan_r1_a",
+					"tone": "neutral",
+					"slot": "r"
+				},
+				{
+					"label": "For the treasure",
+					"line": "There's a king's gold out there.",
+					"do": [
+						{
+							"stat": [
+								"hassan",
+								"trust",
+								-1
+							]
+						},
+						{
+							"set_flag": "hassan_heard_greed"
+						},
+						{
+							"stat": [
+								"hassan",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_hassan_1"
+						}
+					],
+					"next": "f_hassan_r1_b",
+					"tone": "neutral",
+					"slot": "ur"
+				}
+			]
+		},
+		"f_hassan_r2_a": {
+			"speaker": "hassan",
+			"line": "Because some things are not gone. Only covered.",
+			"next": "night"
+		},
+		"f_hassan_r2_b": {
+			"speaker": "hassan",
+			"line": "As you wish. Stories keep.",
+			"next": "night"
+		},
+		"f_hassan_r2": {
+			"speaker": "hassan",
+			"line": "Do you know why the old priests called it the Veil?",
+			"choices": [
+				{
+					"label": "Ask him to tell you",
+					"line": "Tell me.",
+					"do": [
+						{
+							"stat": [
+								"hassan",
+								"trust",
+								1
+							]
+						},
+						{
+							"set_flag": "heard_veil"
+						},
+						{
+							"stat": [
+								"hassan",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_hassan_2"
+						}
+					],
+					"next": "f_hassan_r2_a",
+					"tone": "ask",
+					"slot": "ul"
+				},
+				{
+					"label": "Save it for later",
+					"line": "Save the stories for when we get there.",
+					"do": [
+						{
+							"stat": [
+								"hassan",
+								"conviction",
+								1
+							]
+						},
+						{
+							"stat": [
+								"hassan",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_hassan_2"
+						}
+					],
+					"next": "f_hassan_r2_b",
+					"tone": "neutral",
+					"slot": "r"
+				}
+			]
+		},
+		"f_hassan_r3_a": {
+			"speaker": "hassan",
+			"line": "Then I am glad I came.",
+			"next": "night"
+		},
+		"f_hassan_r3_b": {
+			"speaker": "hassan",
+			"line": "Then I shall have to find other ways of being heard.",
+			"next": "night"
+		},
+		"f_hassan_r3": {
+			"speaker": "hassan",
+			"line": "I have waited thirty years to see that place. When I say a door should stay closed, will you listen?",
+			"choices": [
+				{
+					"label": "Promise to listen",
+					"line": "I'll listen. You have my word.",
+					"do": [
+						{
+							"set_flag": "promised_hassan_listen"
+						},
+						{
+							"stat": [
+								"hassan",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"hassan",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_hassan_3"
+						}
+					],
+					"next": "f_hassan_r3_a",
+					"tone": "friendly",
+					"slot": "ur"
+				},
+				{
+					"label": "Make no promises",
+					"line": "I'll decide about doors when I see them.",
+					"do": [
+						{
+							"stat": [
+								"hassan",
+								"conviction",
+								1
+							]
+						},
+						{
+							"stat": [
+								"hassan",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_hassan_3"
+						}
+					],
+					"next": "f_hassan_r3_b",
+					"tone": "hostile",
+					"slot": "lr"
+				}
+			]
+		},
+		"fire_1": {
+			"speaker": "player",
+			"line": "Who's by the fire?",
+			"choices": [
+				{
+					"label": "Tom",
+					"line": "",
+					"if": {
+						"in_party": "hargreaves",
+						"not_flag": "camp6_hargreaves"
+					},
+					"do": [
+						{
+							"set_flag": "camp6_hargreaves"
+						}
+					],
+					"next": "f_hargreaves_start",
+					"tone": "neutral",
+					"slot": "r"
+				},
+				{
+					"label": "Idris",
+					"line": "",
+					"if": {
+						"in_party": "idris",
+						"not_flag": "camp6_idris"
+					},
+					"do": [
+						{
+							"set_flag": "camp6_idris"
+						}
+					],
+					"next": "f_idris_start",
+					"tone": "neutral",
+					"slot": "ur"
+				},
+				{
+					"label": "Isabelle",
+					"line": "",
+					"if": {
+						"in_party": "isabelle",
+						"not_flag": "camp6_isabelle"
+					},
+					"do": [
+						{
+							"set_flag": "camp6_isabelle"
+						}
+					],
+					"next": "f_isabelle_start",
+					"tone": "neutral",
+					"slot": "lr"
+				},
+				{
+					"label": "Back",
+					"line": "",
+					"next": "night",
+					"tone": "leave",
+					"slot": "ll"
+				}
+			]
+		},
+		"f_hargreaves_start": {
+			"branch": [
+				{
+					"if": {
+						"stat": [
+							"hargreaves",
+							"talks",
+							3
+						],
+						"not_flag": "rapport_hargreaves_3"
+					},
+					"next": "f_hargreaves_t3"
+				},
+				{
+					"if": {
+						"stat": [
+							"hargreaves",
+							"talks",
+							2
+						],
+						"not_flag": "rapport_hargreaves_2"
+					},
+					"next": "f_hargreaves_r2"
+				},
+				{
+					"if": {
+						"stat": [
+							"hargreaves",
+							"talks",
+							1
+						],
+						"not_flag": "rapport_hargreaves_1"
+					},
+					"next": "f_hargreaves_r1"
+				},
+				{
+					"if": {
+						"not_flag": "rapport_hargreaves_0"
+					},
+					"next": "f_hargreaves_r0"
+				},
+				{
+					"next": "f_hargreaves_idle"
+				}
+			]
+		},
+		"f_hargreaves_t3": {
+			"branch": [
+				{
+					"if": {
+						"stat": [
+							"hargreaves",
+							"trust",
+							2
+						]
+					},
+					"next": "f_hargreaves_r3"
+				},
+				{
+					"next": "f_hargreaves_idle"
+				}
+			]
+		},
+		"f_hargreaves_idle": {
+			"speaker": "hargreaves",
+			"line": "All quiet. Get some sleep.",
+			"next": "night"
+		},
+		"f_hargreaves_r0_a": {
+			"speaker": "hargreaves",
+			"line": "Army taught me one thing, anyway.",
+			"next": "night"
+		},
+		"f_hargreaves_r0_b": {
+			"speaker": "hargreaves",
+			"line": "Before the boots, if I'm honest.",
+			"next": "night"
+		},
+		"f_hargreaves_r0": {
+			"speaker": "hargreaves",
+			"line": "Boots, rifle, water. In that order. Everything else is luxury.",
+			"choices": [
+				{
+					"label": "Agree",
+					"line": "Sound order.",
+					"do": [
+						{
+							"stat": [
+								"hargreaves",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"hargreaves",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_hargreaves_0"
+						}
+					],
+					"next": "f_hargreaves_r0_a",
+					"tone": "friendly",
+					"slot": "ur"
+				},
+				{
+					"label": "Ask about tea",
+					"line": "Where does tea come in?",
+					"do": [
+						{
+							"stat": [
+								"hargreaves",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_hargreaves_0"
+						}
+					],
+					"next": "f_hargreaves_r0_b",
+					"tone": "ask",
+					"slot": "ul"
+				}
+			]
+		},
+		"f_hargreaves_r1_a": {
+			"speaker": "hargreaves",
+			"line": "Right. Up, you lot. Rifles.",
+			"next": "night"
+		},
+		"f_hargreaves_r1_b": {
+			"speaker": "hargreaves",
+			"line": "Your call. I hope you don't regret it.",
+			"next": "night"
+		},
+		"f_hargreaves_r1": {
+			"speaker": "hargreaves",
+			"line": "I'd like to drill the lads on the rifles each night. An hour. They'll thank me later.",
+			"choices": [
+				{
+					"label": "Let him drill them",
+					"line": "Do it.",
+					"do": [
+						{
+							"stat": [
+								"hargreaves",
+								"trust",
+								1
+							]
+						},
+						{
+							"set_flag": "drilled_crew"
+						},
+						{
+							"stat": [
+								"hargreaves",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_hargreaves_1"
+						}
+					],
+					"next": "f_hargreaves_r1_a",
+					"tone": "friendly",
+					"slot": "ur"
+				},
+				{
+					"label": "Let them rest",
+					"line": "They're exhausted, Tom. Let them sleep.",
+					"do": [
+						{
+							"stat": [
+								"hargreaves",
+								"trust",
+								-1
+							]
+						},
+						{
+							"stat": [
+								"hargreaves",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_hargreaves_1"
+						}
+					],
+					"next": "f_hargreaves_r1_b",
+					"tone": "neutral",
+					"slot": "r"
+				}
+			]
+		},
+		"f_hargreaves_r2_a": {
+			"speaker": "hargreaves",
+			"line": "Right answer.",
+			"next": "night"
+		},
+		"f_hargreaves_r2_b": {
+			"speaker": "hargreaves",
+			"line": "I've heard that before. Once.",
+			"next": "night"
+		},
+		"f_hargreaves_r2": {
+			"speaker": "hargreaves",
+			"line": "If it goes bad out there, and someone's hurt and can't walk, what do you do?",
+			"choices": [
+				{
+					"label": "Carry them",
+					"line": "We carry them. Nobody gets left behind.",
+					"do": [
+						{
+							"stat": [
+								"hargreaves",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"hargreaves",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_hargreaves_2"
+						}
+					],
+					"next": "f_hargreaves_r2_a",
+					"tone": "friendly",
+					"slot": "ur"
+				},
+				{
+					"label": "Leave them, if I must",
+					"line": "If it's them or everyone, I leave them.",
+					"do": [
+						{
+							"stat": [
+								"hargreaves",
+								"trust",
+								-1
+							]
+						},
+						{
+							"stat": [
+								"hargreaves",
+								"conviction",
+								1
+							]
+						},
+						{
+							"stat": [
+								"hargreaves",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_hargreaves_2"
+						}
+					],
+					"next": "f_hargreaves_r2_b",
+					"tone": "hostile",
+					"slot": "lr"
+				}
+			]
+		},
+		"f_hargreaves_r3_a": {
+			"speaker": "hargreaves",
+			"line": "Kind of you. Doesn't stop the hearing.",
+			"next": "night"
+		},
+		"f_hargreaves_r3_b": {
+			"speaker": "hargreaves",
+			"line": "...Thanks for not saying anything.",
+			"next": "night"
+		},
+		"f_hargreaves_r3": {
+			"speaker": "hargreaves",
+			"line": "Mesopotamia, 1917. An officer told us to leave the wounded at a well and march. I obeyed. I hear them most nights.",
+			"choices": [
+				{
+					"label": "Tell him it wasn't him",
+					"line": "That was his order, Tom. Not your choice.",
+					"do": [
+						{
+							"stat": [
+								"hargreaves",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"hargreaves",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_hargreaves_3"
+						}
+					],
+					"next": "f_hargreaves_r3_a",
+					"tone": "neutral",
+					"slot": "r"
+				},
+				{
+					"label": "Listen in silence",
+					"line": "",
+					"do": [
+						{
+							"stat": [
+								"hargreaves",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"hargreaves",
+								"conviction",
+								1
+							]
+						},
+						{
+							"stat": [
+								"hargreaves",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_hargreaves_3"
+						}
+					],
+					"next": "f_hargreaves_r3_b",
+					"tone": "neutral",
+					"slot": "ur"
+				}
+			]
+		},
+		"f_idris_start": {
+			"branch": [
+				{
+					"if": {
+						"stat": [
+							"idris",
+							"talks",
+							3
+						],
+						"not_flag": "rapport_idris_3"
+					},
+					"next": "f_idris_t3"
+				},
+				{
+					"if": {
+						"stat": [
+							"idris",
+							"talks",
+							2
+						],
+						"not_flag": "rapport_idris_2"
+					},
+					"next": "f_idris_r2"
+				},
+				{
+					"if": {
+						"stat": [
+							"idris",
+							"talks",
+							1
+						],
+						"not_flag": "rapport_idris_1"
+					},
+					"next": "f_idris_r1"
+				},
+				{
+					"if": {
+						"not_flag": "rapport_idris_0"
+					},
+					"next": "f_idris_r0"
+				},
+				{
+					"next": "f_idris_idle"
+				}
+			]
+		},
+		"f_idris_t3": {
+			"branch": [
+				{
+					"if": {
+						"stat": [
+							"idris",
+							"trust",
+							2
+						]
+					},
+					"next": "f_idris_r3"
+				},
+				{
+					"next": "f_idris_idle"
+				}
+			]
+		},
+		"f_idris_idle": {
+			"speaker": "idris",
+			"line": "Nothing to report. Sleep; I will watch.",
+			"next": "night"
+		},
+		"f_idris_r0_a": {
+			"speaker": "idris",
+			"line": "Less. Always less. The sand loves oil.",
+			"next": "night"
+		},
+		"f_idris_r0_b": {
+			"speaker": "idris",
+			"line": "Yet. That word does a lot of work.",
+			"next": "night"
+		},
+		"f_idris_r0": {
+			"speaker": "idris",
+			"line": "You clean a rifle like a soldier. Too much oil.",
+			"choices": [
+				{
+					"label": "Ask how he does it",
+					"line": "Show me, then.",
+					"do": [
+						{
+							"stat": [
+								"idris",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"idris",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_idris_0"
+						}
+					],
+					"next": "f_idris_r0_a",
+					"tone": "ask",
+					"slot": "ul"
+				},
+				{
+					"label": "Tell him it works",
+					"line": "It hasn't failed me yet.",
+					"do": [
+						{
+							"stat": [
+								"idris",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_idris_0"
+						}
+					],
+					"next": "f_idris_r0_b",
+					"tone": "neutral",
+					"slot": "r"
+				}
+			]
+		},
+		"f_idris_r1_a": {
+			"speaker": "idris",
+			"line": "Good. I hope you never need to.",
+			"next": "night"
+		},
+		"f_idris_r1_b": {
+			"speaker": "idris",
+			"line": "He guards their customers.",
+			"next": "night"
+		},
+		"f_idris_r1": {
+			"speaker": "idris",
+			"line": "Every thief in Cairo sells to someone, and I know most of the someones. If something valuable leaves that city, I can usually find out how.",
+			"choices": [
+				{
+					"label": "Remember it",
+					"line": "I'll remember that.",
+					"do": [
+						{
+							"set_flag": "idris_contacts"
+						},
+						{
+							"stat": [
+								"idris",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"idris",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_idris_1"
+						}
+					],
+					"next": "f_idris_r1_a",
+					"tone": "neutral",
+					"slot": "r"
+				},
+				{
+					"label": "Ask how he knows",
+					"line": "How does an honest man know thieves?",
+					"do": [
+						{
+							"set_flag": "idris_contacts"
+						},
+						{
+							"stat": [
+								"idris",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_idris_1"
+						}
+					],
+					"next": "f_idris_r1_b",
+					"tone": "ask",
+					"slot": "ul"
+				}
+			]
+		},
+		"f_idris_r2_a": {
+			"speaker": "idris",
+			"line": "It should. It is not.",
+			"next": "night"
+		},
+		"f_idris_r2_b": {
+			"speaker": "idris",
+			"line": "My mind is always on the job. That is why I am alive.",
+			"next": "night"
+		},
+		"f_idris_r2": {
+			"speaker": "idris",
+			"line": "The merchants I guard never ask my name. You ask. It is strange.",
+			"choices": [
+				{
+					"label": "Say it should be normal",
+					"line": "It should be the least anyone does.",
+					"do": [
+						{
+							"stat": [
+								"idris",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"idris",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_idris_2"
+						}
+					],
+					"next": "f_idris_r2_a",
+					"tone": "neutral",
+					"slot": "r"
+				},
+				{
+					"label": "Keep him on the job",
+					"line": "Keep your mind on the job, Idris.",
+					"do": [
+						{
+							"stat": [
+								"idris",
+								"trust",
+								-1
+							]
+						},
+						{
+							"stat": [
+								"idris",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_idris_2"
+						}
+					],
+					"next": "f_idris_r2_b",
+					"tone": "hostile",
+					"slot": "lr"
+				}
+			]
+		},
+		"f_idris_r3_a": {
+			"speaker": "idris",
+			"line": "You are a strange kind of employer. A good kind.",
+			"next": "night"
+		},
+		"f_idris_r3_b": {
+			"speaker": "idris",
+			"line": "Yes. It is.",
+			"next": "night"
+		},
+		"f_idris_r3": {
+			"speaker": "idris",
+			"line": "My sisters are in Omdurman. Everything I earn goes home. One of them has a place at the school now.",
+			"choices": [
+				{
+					"label": "Send them something",
+					"line": "Send them this from me. For the school.",
+					"if": {
+						"money": 200
+					},
+					"do": [
+						{
+							"money": -200
+						},
+						{
+							"set_flag": "idris_paid_well"
+						},
+						{
+							"stat": [
+								"idris",
+								"trust",
+								2
+							]
+						},
+						{
+							"stat": [
+								"idris",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_idris_3"
+						}
+					],
+					"next": "f_idris_r3_a",
+					"tone": "neutral",
+					"slot": "r"
+				},
+				{
+					"label": "Be glad for him",
+					"line": "Good. That's the best thing this money will do.",
+					"do": [
+						{
+							"stat": [
+								"idris",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"idris",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_idris_3"
+						}
+					],
+					"next": "f_idris_r3_b",
+					"tone": "friendly",
+					"slot": "ur"
+				}
+			]
+		},
+		"f_isabelle_start": {
+			"branch": [
+				{
+					"if": {
+						"stat": [
+							"isabelle",
+							"talks",
+							3
+						],
+						"not_flag": "rapport_isabelle_3"
+					},
+					"next": "f_isabelle_t3"
+				},
+				{
+					"if": {
+						"stat": [
+							"isabelle",
+							"talks",
+							2
+						],
+						"not_flag": "rapport_isabelle_2"
+					},
+					"next": "f_isabelle_r2"
+				},
+				{
+					"if": {
+						"stat": [
+							"isabelle",
+							"talks",
+							1
+						],
+						"not_flag": "rapport_isabelle_1"
+					},
+					"next": "f_isabelle_r1"
+				},
+				{
+					"if": {
+						"not_flag": "rapport_isabelle_0"
+					},
+					"next": "f_isabelle_r0"
+				},
+				{
+					"next": "f_isabelle_idle"
+				}
+			]
+		},
+		"f_isabelle_t3": {
+			"branch": [
+				{
+					"if": {
+						"stat": [
+							"isabelle",
+							"trust",
+							2
+						]
+					},
+					"next": "f_isabelle_r3"
+				},
+				{
+					"next": "f_isabelle_idle"
+				}
+			]
+		},
+		"f_isabelle_idle": {
+			"speaker": "isabelle",
+			"line": "Not tonight. I'm counting cartridges.",
+			"next": "night"
+		},
+		"f_isabelle_r0_a": {
+			"speaker": "isabelle",
+			"line": "Careful. That almost sounded sincere.",
+			"next": "night"
+		},
+		"f_isabelle_r0_b": {
+			"speaker": "isabelle",
+			"line": "Maybe. Keep giving me reasons not to.",
+			"next": "night"
+		},
+		"f_isabelle_r0": {
+			"speaker": "isabelle",
+			"line": "You keep watching me as if I'm about to ride off.",
+			"choices": [
+				{
+					"label": "Tell her you're glad",
+					"line": "I'm just glad you're here.",
+					"do": [
+						{
+							"stat": [
+								"isabelle",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"isabelle",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_isabelle_0"
+						}
+					],
+					"next": "f_isabelle_r0_a",
+					"tone": "friendly",
+					"slot": "ur"
+				},
+				{
+					"label": "Ask if she would",
+					"line": "Would you?",
+					"do": [
+						{
+							"stat": [
+								"isabelle",
+								"conviction",
+								1
+							]
+						},
+						{
+							"stat": [
+								"isabelle",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_isabelle_0"
+						}
+					],
+					"next": "f_isabelle_r0_b",
+					"tone": "ask",
+					"slot": "ul"
+				}
+			]
+		},
+		"f_isabelle_r1_a": {
+			"speaker": "isabelle",
+			"line": "Then we'll get along.",
+			"next": "night"
+		},
+		"f_isabelle_r1_b": {
+			"speaker": "isabelle",
+			"line": "We'll see who does what, monsieur.",
+			"next": "night"
+		},
+		"f_isabelle_r1": {
+			"speaker": "isabelle",
+			"line": "In a fight I pick my own ground. Don't send me where you'd stand; send me where I can see.",
+			"choices": [
+				{
+					"label": "Agree",
+					"line": "Your ground, your call.",
+					"do": [
+						{
+							"set_flag": "promised_isabelle_free"
+						},
+						{
+							"stat": [
+								"isabelle",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"isabelle",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_isabelle_1"
+						}
+					],
+					"next": "f_isabelle_r1_a",
+					"tone": "friendly",
+					"slot": "ur"
+				},
+				{
+					"label": "Say you give the orders",
+					"line": "Out there you go where I say.",
+					"do": [
+						{
+							"stat": [
+								"isabelle",
+								"trust",
+								-1
+							]
+						},
+						{
+							"stat": [
+								"isabelle",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_isabelle_1"
+						}
+					],
+					"next": "f_isabelle_r1_b",
+					"tone": "neutral",
+					"slot": "r"
+				}
+			]
+		},
+		"f_isabelle_r2_a": {
+			"speaker": "isabelle",
+			"line": "Did. Do. Depends who's asking.",
+			"next": "night"
+		},
+		"f_isabelle_r2_b": {
+			"speaker": "isabelle",
+			"line": "Tomorrow, then. Always tomorrow.",
+			"next": "night"
+		},
+		"f_isabelle_r2": {
+			"speaker": "isabelle",
+			"line": "Hargreaves thinks I take too many risks. Hargreaves has never been paid by the head.",
+			"choices": [
+				{
+					"label": "Ask about bounty work",
+					"line": "Is that what you did?",
+					"do": [
+						{
+							"stat": [
+								"isabelle",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"isabelle",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_isabelle_2"
+						}
+					],
+					"next": "f_isabelle_r2_a",
+					"tone": "ask",
+					"slot": "ul"
+				},
+				{
+					"label": "Change the subject",
+					"line": "Let's talk about tomorrow.",
+					"do": [
+						{
+							"stat": [
+								"isabelle",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_isabelle_2"
+						}
+					],
+					"next": "f_isabelle_r2_b",
+					"tone": "neutral",
+					"slot": "r"
+				}
+			]
+		},
+		"f_isabelle_r3_a": {
+			"speaker": "isabelle",
+			"line": "...You might be the first.",
+			"next": "night"
+		},
+		"f_isabelle_r3_b": {
+			"speaker": "isabelle",
+			"line": "Somewhere he hopes I'll never look.",
+			"next": "night"
+		},
+		"f_isabelle_r3": {
+			"speaker": "isabelle",
+			"line": "Those men in McKenna's said I owed someone a shipment. I didn't. My partner did, and he left me holding the bill.",
+			"choices": [
+				{
+					"label": "Say you believe her",
+					"line": "I believe you.",
+					"do": [
+						{
+							"stat": [
+								"isabelle",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"isabelle",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_isabelle_3"
+						}
+					],
+					"next": "f_isabelle_r3_a",
+					"tone": "friendly",
+					"slot": "ur"
+				},
+				{
+					"label": "Ask where he is now",
+					"line": "Where's your partner now?",
+					"do": [
+						{
+							"stat": [
+								"isabelle",
+								"conviction",
+								1
+							]
+						},
+						{
+							"stat": [
+								"isabelle",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_isabelle_3"
+						}
+					],
+					"next": "f_isabelle_r3_b",
+					"tone": "neutral",
+					"slot": "r"
+				}
+			]
+		},
+		"fire_2": {
+			"speaker": "player",
+			"line": "Who's by the fire?",
+			"choices": [
+				{
+					"label": "Saleh",
+					"line": "",
+					"if": {
+						"in_party": "saleh",
+						"not_flag": "camp6_saleh"
+					},
+					"do": [
+						{
+							"set_flag": "camp6_saleh"
+						}
+					],
+					"next": "f_saleh_start",
+					"tone": "neutral",
+					"slot": "r"
+				},
+				{
+					"label": "Youssef",
+					"line": "",
+					"if": {
+						"in_party": "youssef",
+						"not_flag": "camp6_youssef"
+					},
+					"do": [
+						{
+							"set_flag": "camp6_youssef"
+						}
+					],
+					"next": "f_youssef_start",
+					"tone": "neutral",
+					"slot": "ur"
+				},
+				{
+					"label": "Farid",
+					"line": "",
+					"if": {
+						"in_party": "farid",
+						"not_flag": "camp6_farid"
+					},
+					"do": [
+						{
+							"set_flag": "camp6_farid"
+						}
+					],
+					"next": "f_farid_start",
+					"tone": "neutral",
+					"slot": "lr"
+				},
+				{
+					"label": "Back",
+					"line": "",
+					"next": "night",
+					"tone": "leave",
+					"slot": "ll"
+				}
+			]
+		},
+		"f_saleh_start": {
+			"branch": [
+				{
+					"if": {
+						"stat": [
+							"saleh",
+							"talks",
+							3
+						],
+						"not_flag": "rapport_saleh_3"
+					},
+					"next": "f_saleh_t3"
+				},
+				{
+					"if": {
+						"stat": [
+							"saleh",
+							"talks",
+							2
+						],
+						"not_flag": "rapport_saleh_2"
+					},
+					"next": "f_saleh_r2"
+				},
+				{
+					"if": {
+						"stat": [
+							"saleh",
+							"talks",
+							1
+						],
+						"not_flag": "rapport_saleh_1"
+					},
+					"next": "f_saleh_r1"
+				},
+				{
+					"if": {
+						"not_flag": "rapport_saleh_0"
+					},
+					"next": "f_saleh_r0"
+				},
+				{
+					"next": "f_saleh_idle"
+				}
+			]
+		},
+		"f_saleh_t3": {
+			"branch": [
+				{
+					"if": {
+						"stat": [
+							"saleh",
+							"trust",
+							2
+						]
+					},
+					"next": "f_saleh_r3"
+				},
+				{
+					"next": "f_saleh_idle"
+				}
+			]
+		},
+		"f_saleh_idle": {
+			"speaker": "saleh",
+			"line": "Drink some water. Then sleep.",
+			"next": "night"
+		},
+		"f_saleh_r0_a": {
+			"speaker": "saleh",
+			"line": "Good. Small sips. You are learning.",
+			"next": "night"
+		},
+		"f_saleh_r0_b": {
+			"speaker": "saleh",
+			"line": "That is what the dead say.",
+			"next": "night"
+		},
+		"f_saleh_r0": {
+			"speaker": "saleh",
+			"line": "Drink before you are thirsty. Thirst is the desert telling you it is already too late.",
+			"choices": [
+				{
+					"label": "Drink",
+					"line": "Then I'll drink.",
+					"do": [
+						{
+							"stat": [
+								"saleh",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"saleh",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_saleh_0"
+						}
+					],
+					"next": "f_saleh_r0_a",
+					"tone": "neutral",
+					"slot": "r"
+				},
+				{
+					"label": "Say you're fine",
+					"line": "I'm not thirsty.",
+					"do": [
+						{
+							"stat": [
+								"saleh",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_saleh_0"
+						}
+					],
+					"next": "f_saleh_r0_b",
+					"tone": "neutral",
+					"slot": "ur"
+				}
+			]
+		},
+		"f_saleh_r1_a": {
+			"speaker": "saleh",
+			"line": "Good. The desert respects a careful man.",
+			"next": "night"
+		},
+		"f_saleh_r1_b": {
+			"speaker": "saleh",
+			"line": "We will see who manages.",
+			"next": "night"
+		},
+		"f_saleh_r1": {
+			"speaker": "saleh",
+			"line": "We are drinking more water than I planned. Tomorrow, half rations.",
+			"choices": [
+				{
+					"label": "Agree",
+					"line": "Half rations. Make sure everyone knows why.",
+					"do": [
+						{
+							"stat": [
+								"saleh",
+								"trust",
+								1
+							]
+						},
+						{
+							"set_flag": "rationing"
+						},
+						{
+							"stat": [
+								"saleh",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_saleh_1"
+						}
+					],
+					"next": "f_saleh_r1_a",
+					"tone": "friendly",
+					"slot": "ur"
+				},
+				{
+					"label": "Overrule him",
+					"line": "We'll manage. People need their strength.",
+					"do": [
+						{
+							"stat": [
+								"saleh",
+								"trust",
+								-1
+							]
+						},
+						{
+							"stat": [
+								"saleh",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_saleh_1"
+						}
+					],
+					"next": "f_saleh_r1_b",
+					"tone": "hostile",
+					"slot": "lr"
+				}
+			]
+		},
+		"f_saleh_r2_a": {
+			"speaker": "saleh",
+			"line": "Then we will all come home.",
+			"next": "night"
+		},
+		"f_saleh_r2_b": {
+			"speaker": "saleh",
+			"line": "The desert does not care who is ahead.",
+			"next": "night"
+		},
+		"f_saleh_r2": {
+			"speaker": "saleh",
+			"line": "The others race. I do not like a race. When I say stop, will you stop?",
+			"choices": [
+				{
+					"label": "Promise to listen",
+					"line": "When you say stop, we stop.",
+					"do": [
+						{
+							"set_flag": "promised_saleh_listen"
+						},
+						{
+							"stat": [
+								"saleh",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"saleh",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_saleh_2"
+						}
+					],
+					"next": "f_saleh_r2_a",
+					"tone": "friendly",
+					"slot": "ur"
+				},
+				{
+					"label": "Say it depends",
+					"line": "Depends who's ahead of us.",
+					"do": [
+						{
+							"stat": [
+								"saleh",
+								"trust",
+								-1
+							]
+						},
+						{
+							"stat": [
+								"saleh",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_saleh_2"
+						}
+					],
+					"next": "f_saleh_r2_b",
+					"tone": "neutral",
+					"slot": "r"
+				}
+			]
+		},
+		"f_saleh_r3_a": {
+			"speaker": "saleh",
+			"line": "...Hamid, Rashad, and my brother Ali.",
+			"next": "night"
+		},
+		"f_saleh_r3_b": {
+			"speaker": "saleh",
+			"line": "Inshallah.",
+			"next": "night"
+		},
+		"f_saleh_r3": {
+			"speaker": "saleh",
+			"line": "I know three men who did not come back from this road. I led them. I have brought people home for forty years, and I remember the three.",
+			"choices": [
+				{
+					"label": "Ask their names",
+					"line": "Tell me their names.",
+					"do": [
+						{
+							"stat": [
+								"saleh",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"saleh",
+								"conviction",
+								1
+							]
+						},
+						{
+							"stat": [
+								"saleh",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_saleh_3"
+						}
+					],
+					"next": "f_saleh_r3_a",
+					"tone": "neutral",
+					"slot": "r"
+				},
+				{
+					"label": "Tell him not this time",
+					"line": "Not this time. Not with you leading.",
+					"do": [
+						{
+							"stat": [
+								"saleh",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"saleh",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_saleh_3"
+						}
+					],
+					"next": "f_saleh_r3_b",
+					"tone": "neutral",
+					"slot": "ur"
+				}
+			]
+		},
+		"f_youssef_start": {
+			"branch": [
+				{
+					"if": {
+						"stat": [
+							"youssef",
+							"talks",
+							3
+						],
+						"not_flag": "rapport_youssef_3"
+					},
+					"next": "f_youssef_t3"
+				},
+				{
+					"if": {
+						"stat": [
+							"youssef",
+							"talks",
+							2
+						],
+						"not_flag": "rapport_youssef_2"
+					},
+					"next": "f_youssef_r2"
+				},
+				{
+					"if": {
+						"stat": [
+							"youssef",
+							"talks",
+							1
+						],
+						"not_flag": "rapport_youssef_1"
+					},
+					"next": "f_youssef_r1"
+				},
+				{
+					"if": {
+						"not_flag": "rapport_youssef_0"
+					},
+					"next": "f_youssef_r0"
+				},
+				{
+					"next": "f_youssef_idle"
+				}
+			]
+		},
+		"f_youssef_t3": {
+			"branch": [
+				{
+					"if": {
+						"stat": [
+							"youssef",
+							"trust",
+							2
+						]
+					},
+					"next": "f_youssef_r3"
+				},
+				{
+					"next": "f_youssef_idle"
+				}
+			]
+		},
+		"f_youssef_idle": {
+			"speaker": "youssef",
+			"line": "Tomorrow I will find us a shortcut. You will see.",
+			"next": "night"
+		},
+		"f_youssef_r0_a": {
+			"speaker": "youssef",
+			"line": "You see? Good luck!",
+			"next": "night"
+		},
+		"f_youssef_r0_b": {
+			"speaker": "youssef",
+			"line": "Vultures. Let us not talk about vultures.",
+			"next": "night"
+		},
+		"f_youssef_r0": {
+			"speaker": "youssef",
+			"line": "Did you see the hawk this morning? Following us since dawn. It is good luck. Probably.",
+			"choices": [
+				{
+					"label": "Say you saw it",
+					"line": "I saw it.",
+					"do": [
+						{
+							"stat": [
+								"youssef",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"youssef",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_youssef_0"
+						}
+					],
+					"next": "f_youssef_r0_a",
+					"tone": "neutral",
+					"slot": "r"
+				},
+				{
+					"label": "Ask about bad luck",
+					"line": "And what's bad luck?",
+					"do": [
+						{
+							"stat": [
+								"youssef",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_youssef_0"
+						}
+					],
+					"next": "f_youssef_r0_b",
+					"tone": "ask",
+					"slot": "ul"
+				}
+			]
+		},
+		"f_youssef_r1_a": {
+			"speaker": "youssef",
+			"line": "By noon! You will see.",
+			"next": "night"
+		},
+		"f_youssef_r1_b": {
+			"speaker": "youssef",
+			"line": "As you say. But I would have found it.",
+			"next": "night"
+		},
+		"f_youssef_r1": {
+			"speaker": "youssef",
+			"line": "Let me scout ahead tomorrow, alone. I will find us a faster way.",
+			"choices": [
+				{
+					"label": "Let him go",
+					"line": "Go. Back by noon.",
+					"do": [
+						{
+							"stat": [
+								"youssef",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"youssef",
+								"conviction",
+								1
+							]
+						},
+						{
+							"stat": [
+								"youssef",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_youssef_1"
+						}
+					],
+					"next": "f_youssef_r1_a",
+					"tone": "friendly",
+					"slot": "ur"
+				},
+				{
+					"label": "Keep him close",
+					"line": "You stay with the column.",
+					"do": [
+						{
+							"stat": [
+								"youssef",
+								"trust",
+								-1
+							]
+						},
+						{
+							"stat": [
+								"youssef",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_youssef_1"
+						}
+					],
+					"next": "f_youssef_r1_b",
+					"tone": "neutral",
+					"slot": "r"
+				}
+			]
+		},
+		"f_youssef_r2_a": {
+			"speaker": "youssef",
+			"line": "You guessed? ...Thank you for not saying.",
+			"next": "night"
+		},
+		"f_youssef_r2_b": {
+			"speaker": "youssef",
+			"line": "Because nobody hires a boy who has not.",
+			"next": "night"
+		},
+		"f_youssef_r2": {
+			"speaker": "youssef",
+			"line": "I have not been this far west before. Not truly. Saleh knows. He has not told anyone.",
+			"choices": [
+				{
+					"label": "Say you'd guessed",
+					"line": "I'd guessed. You're doing fine.",
+					"do": [
+						{
+							"stat": [
+								"youssef",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"youssef",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_youssef_2"
+						}
+					],
+					"next": "f_youssef_r2_a",
+					"tone": "neutral",
+					"slot": "r"
+				},
+				{
+					"label": "Ask why he lied",
+					"line": "Why say you had?",
+					"do": [
+						{
+							"stat": [
+								"youssef",
+								"trust",
+								-1
+							]
+						},
+						{
+							"stat": [
+								"youssef",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_youssef_2"
+						}
+					],
+					"next": "f_youssef_r2_b",
+					"tone": "ask",
+					"slot": "ul"
+				}
+			]
+		},
+		"f_youssef_r3_a": {
+			"speaker": "youssef",
+			"line": "Then I will find it!",
+			"next": "night"
+		},
+		"f_youssef_r3_b": {
+			"speaker": "youssef",
+			"line": "Then I will earn it.",
+			"next": "night"
+		},
+		"f_youssef_r3": {
+			"speaker": "youssef",
+			"line": "When we find it, will you tell them? That I am the one who found the road? My uncle says I will never be anything.",
+			"choices": [
+				{
+					"label": "Promise him the credit",
+					"line": "If you find it, the road is yours. I'll tell them.",
+					"do": [
+						{
+							"set_flag": "promised_youssef_credit"
+						},
+						{
+							"stat": [
+								"youssef",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"youssef",
+								"conviction",
+								1
+							]
+						},
+						{
+							"stat": [
+								"youssef",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_youssef_3"
+						}
+					],
+					"next": "f_youssef_r3_a",
+					"tone": "friendly",
+					"slot": "ur"
+				},
+				{
+					"label": "Credit goes to whoever earns",
+					"line": "Credit goes to whoever earns it.",
+					"do": [
+						{
+							"stat": [
+								"youssef",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_youssef_3"
+						}
+					],
+					"next": "f_youssef_r3_b",
+					"tone": "neutral",
+					"slot": "r"
+				}
+			]
+		},
+		"f_farid_start": {
+			"branch": [
+				{
+					"if": {
+						"stat": [
+							"farid",
+							"talks",
+							3
+						],
+						"not_flag": "rapport_farid_3"
+					},
+					"next": "f_farid_t3"
+				},
+				{
+					"if": {
+						"stat": [
+							"farid",
+							"talks",
+							2
+						],
+						"not_flag": "rapport_farid_2"
+					},
+					"next": "f_farid_r2"
+				},
+				{
+					"if": {
+						"stat": [
+							"farid",
+							"talks",
+							1
+						],
+						"not_flag": "rapport_farid_1"
+					},
+					"next": "f_farid_r1"
+				},
+				{
+					"if": {
+						"not_flag": "rapport_farid_0"
+					},
+					"next": "f_farid_r0"
+				},
+				{
+					"next": "f_farid_idle"
+				}
+			]
+		},
+		"f_farid_t3": {
+			"branch": [
+				{
+					"if": {
+						"stat": [
+							"farid",
+							"trust",
+							2
+						]
+					},
+					"next": "f_farid_r3"
+				},
+				{
+					"next": "f_farid_idle"
+				}
+			]
+		},
+		"f_farid_idle": {
+			"speaker": "farid",
+			"line": "Everything is counted. Good night.",
+			"next": "night"
+		},
+		"f_farid_r0_a": {
+			"speaker": "farid",
+			"line": "You see? Business begins with a gift.",
+			"next": "night"
+		},
+		"f_farid_r0_b": {
+			"speaker": "farid",
+			"line": "No catch. A small debt of gratitude, only.",
+			"next": "night"
+		},
+		"f_farid_r0": {
+			"speaker": "farid",
+			"line": "Dates from Siwa. The best. Take one. No charge. This time.",
+			"choices": [
+				{
+					"label": "Take one",
+					"line": "Thank you.",
+					"do": [
+						{
+							"stat": [
+								"farid",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"farid",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_farid_0"
+						}
+					],
+					"next": "f_farid_r0_a",
+					"tone": "neutral",
+					"slot": "r"
+				},
+				{
+					"label": "Ask the catch",
+					"line": "What's the catch?",
+					"do": [
+						{
+							"stat": [
+								"farid",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_farid_0"
+						}
+					],
+					"next": "f_farid_r0_b",
+					"tone": "neutral",
+					"slot": "ur"
+				}
+			]
+		},
+		"f_farid_r1_a": {
+			"speaker": "farid",
+			"line": "You will not even notice I was gone.",
+			"next": "night"
+		},
+		"f_farid_r1_b": {
+			"speaker": "farid",
+			"line": "Business never sleeps. But it can wait.",
+			"next": "night"
+		},
+		"f_farid_r1": {
+			"speaker": "farid",
+			"line": "There is a trader near here who owes me. Let me do a little business on the way.",
+			"choices": [
+				{
+					"label": "Let him trade",
+					"line": "Go ahead. Just don't slow us down.",
+					"do": [
+						{
+							"stat": [
+								"farid",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"farid",
+								"conviction",
+								1
+							]
+						},
+						{
+							"stat": [
+								"farid",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_farid_1"
+						}
+					],
+					"next": "f_farid_r1_a",
+					"tone": "friendly",
+					"slot": "ur"
+				},
+				{
+					"label": "No side deals",
+					"line": "No side deals, Farid. Not on my time.",
+					"do": [
+						{
+							"stat": [
+								"farid",
+								"trust",
+								-1
+							]
+						},
+						{
+							"stat": [
+								"farid",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_farid_1"
+						}
+					],
+					"next": "f_farid_r1_b",
+					"tone": "hostile",
+					"slot": "lr"
+				}
+			]
+		},
+		"f_farid_r2_a": {
+			"speaker": "farid",
+			"line": "At last, a man who appreciates arithmetic.",
+			"next": "night"
+		},
+		"f_farid_r2_b": {
+			"speaker": "farid",
+			"line": "Your money. Kindly.",
+			"next": "night"
+		},
+		"f_farid_r2": {
+			"speaker": "farid",
+			"line": "Everyone in this caravan is counting something. Saleh counts water, Naguib counts camels. I count everything, so nobody has to worry.",
+			"choices": [
+				{
+					"label": "Thank him",
+					"line": "I'm glad someone does.",
+					"do": [
+						{
+							"stat": [
+								"farid",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"farid",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_farid_2"
+						}
+					],
+					"next": "f_farid_r2_a",
+					"tone": "leave",
+					"slot": "ll"
+				},
+				{
+					"label": "Ask what he counts",
+					"line": "And what do you count about me?",
+					"do": [
+						{
+							"stat": [
+								"farid",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_farid_2"
+						}
+					],
+					"next": "f_farid_r2_b",
+					"tone": "ask",
+					"slot": "ul"
+				}
+			]
+		},
+		"f_farid_r3_a": {
+			"speaker": "farid",
+			"line": "Twelve towns. He would have laughed. Then cried.",
+			"next": "night"
+		},
+		"f_farid_r3_b": {
+			"speaker": "farid",
+			"line": "This one I could not count at all. And I came.",
+			"next": "night"
+		},
+		"f_farid_r3": {
+			"speaker": "farid",
+			"line": "My father had a caravan of forty camels. He lost them all in one season, to one bad road. I have never once taken a road I had not counted twice.",
+			"choices": [
+				{
+					"label": "Say he's done well",
+					"line": "You've done better than forty camels.",
+					"do": [
+						{
+							"stat": [
+								"farid",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"farid",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_farid_3"
+						}
+					],
+					"next": "f_farid_r3_a",
+					"tone": "neutral",
+					"slot": "r"
+				},
+				{
+					"label": "Ask if he's afraid",
+					"line": "Is this road counted twice?",
+					"do": [
+						{
+							"stat": [
+								"farid",
+								"conviction",
+								1
+							]
+						},
+						{
+							"stat": [
+								"farid",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_farid_3"
+						}
+					],
+					"next": "f_farid_r3_b",
+					"tone": "ask",
+					"slot": "ul"
+				}
+			]
+		},
+		"fire_3": {
+			"speaker": "player",
+			"line": "Who's by the fire?",
+			"choices": [
+				{
+					"label": "Mahmoud",
+					"line": "",
+					"if": {
+						"in_party": "mahmoud",
+						"not_flag": "camp6_mahmoud"
+					},
+					"do": [
+						{
+							"set_flag": "camp6_mahmoud"
+						}
+					],
+					"next": "f_mahmoud_start",
+					"tone": "neutral",
+					"slot": "r"
+				},
+				{
+					"label": "Khalil",
+					"line": "",
+					"if": {
+						"in_party": "khalil",
+						"not_flag": "camp6_khalil"
+					},
+					"do": [
+						{
+							"set_flag": "camp6_khalil"
+						}
+					],
+					"next": "f_khalil_start",
+					"tone": "neutral",
+					"slot": "ur"
+				},
+				{
+					"label": "Naguib",
+					"line": "",
+					"if": {
+						"in_party": "naguib",
+						"not_flag": "camp6_naguib"
+					},
+					"do": [
+						{
+							"set_flag": "camp6_naguib"
+						}
+					],
+					"next": "f_naguib_start",
+					"tone": "neutral",
+					"slot": "lr"
+				},
+				{
+					"label": "Back",
+					"line": "",
+					"next": "night",
+					"tone": "leave",
+					"slot": "ll"
+				}
+			]
+		},
+		"f_mahmoud_start": {
+			"branch": [
+				{
+					"if": {
+						"stat": [
+							"mahmoud",
+							"talks",
+							3
+						],
+						"not_flag": "rapport_mahmoud_3"
+					},
+					"next": "f_mahmoud_t3"
+				},
+				{
+					"if": {
+						"stat": [
+							"mahmoud",
+							"talks",
+							2
+						],
+						"not_flag": "rapport_mahmoud_2"
+					},
+					"next": "f_mahmoud_r2"
+				},
+				{
+					"if": {
+						"stat": [
+							"mahmoud",
+							"talks",
+							1
+						],
+						"not_flag": "rapport_mahmoud_1"
+					},
+					"next": "f_mahmoud_r1"
+				},
+				{
+					"if": {
+						"not_flag": "rapport_mahmoud_0"
+					},
+					"next": "f_mahmoud_r0"
+				},
+				{
+					"next": "f_mahmoud_idle"
+				}
+			]
+		},
+		"f_mahmoud_t3": {
+			"branch": [
+				{
+					"if": {
+						"stat": [
+							"mahmoud",
+							"trust",
+							2
+						]
+					},
+					"next": "f_mahmoud_r3"
+				},
+				{
+					"next": "f_mahmoud_idle"
+				}
+			]
+		},
+		"f_mahmoud_idle": {
+			"speaker": "mahmoud",
+			"line": "My men are asleep. I should be too.",
+			"next": "night"
+		},
+		"f_mahmoud_r0_a": {
+			"speaker": "mahmoud",
+			"line": "Old songs. About water, mostly.",
+			"next": "night"
+		},
+		"f_mahmoud_r0_b": {
+			"speaker": "mahmoud",
+			"line": "Good.",
+			"next": "night"
+		},
+		"f_mahmoud_r0": {
+			"speaker": "mahmoud",
+			"line": "My men sing when they dig. If they stop singing, look up. Something is wrong.",
+			"choices": [
+				{
+					"label": "Ask what they sing",
+					"line": "What do they sing?",
+					"do": [
+						{
+							"stat": [
+								"mahmoud",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"mahmoud",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_mahmoud_0"
+						}
+					],
+					"next": "f_mahmoud_r0_a",
+					"tone": "ask",
+					"slot": "ul"
+				},
+				{
+					"label": "Say you'll listen for it",
+					"line": "I'll listen.",
+					"do": [
+						{
+							"stat": [
+								"mahmoud",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_mahmoud_0"
+						}
+					],
+					"next": "f_mahmoud_r0_b",
+					"tone": "neutral",
+					"slot": "r"
+				}
+			]
+		},
+		"f_mahmoud_r1_a": {
+			"speaker": "mahmoud",
+			"line": "Then nobody will be buried.",
+			"next": "night"
+		},
+		"f_mahmoud_r1_b": {
+			"speaker": "mahmoud",
+			"line": "Longer than you want. Shorter than a funeral.",
+			"next": "night"
+		},
+		"f_mahmoud_r1": {
+			"speaker": "mahmoud",
+			"line": "The sand here is soft on top and hard under. We will need shoring before we go deep.",
+			"choices": [
+				{
+					"label": "Trust his judgement",
+					"line": "Shore it however you think best.",
+					"do": [
+						{
+							"stat": [
+								"mahmoud",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"mahmoud",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_mahmoud_1"
+						}
+					],
+					"next": "f_mahmoud_r1_a",
+					"tone": "neutral",
+					"slot": "r"
+				},
+				{
+					"label": "Ask how long",
+					"line": "How long will that take us?",
+					"do": [
+						{
+							"stat": [
+								"mahmoud",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_mahmoud_1"
+						}
+					],
+					"next": "f_mahmoud_r1_b",
+					"tone": "ask",
+					"slot": "ul"
+				}
+			]
+		},
+		"f_mahmoud_r2_a": {
+			"speaker": "mahmoud",
+			"line": "I will tell them. They will dig twice as carefully.",
+			"next": "night"
+		},
+		"f_mahmoud_r2_b": {
+			"speaker": "mahmoud",
+			"line": "That is how it always works.",
+			"next": "night"
+		},
+		"f_mahmoud_r2": {
+			"speaker": "mahmoud",
+			"line": "My men ask: when we dig, whose name goes on the finds?",
+			"choices": [
+				{
+					"label": "Theirs",
+					"line": "The men who dig them up. The record says who found it.",
+					"do": [
+						{
+							"stat": [
+								"mahmoud",
+								"trust",
+								1
+							]
+						},
+						{
+							"set_flag": "promised_mahmoud_credit"
+						},
+						{
+							"stat": [
+								"mahmoud",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_mahmoud_2"
+						}
+					],
+					"next": "f_mahmoud_r2_a",
+					"tone": "neutral",
+					"slot": "r"
+				},
+				{
+					"label": "The expedition's",
+					"line": "The expedition's. That's how it works.",
+					"do": [
+						{
+							"stat": [
+								"mahmoud",
+								"trust",
+								-1
+							]
+						},
+						{
+							"stat": [
+								"mahmoud",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_mahmoud_2"
+						}
+					],
+					"next": "f_mahmoud_r2_b",
+					"tone": "neutral",
+					"slot": "ur"
+				}
+			]
+		},
+		"f_mahmoud_r3_a": {
+			"speaker": "mahmoud",
+			"line": "We will see. But thank you.",
+			"next": "night"
+		},
+		"f_mahmoud_r3_b": {
+			"speaker": "mahmoud",
+			"line": "Fawzi. Like mine. Write it somewhere, if you like.",
+			"next": "night"
+		},
+		"f_mahmoud_r3": {
+			"speaker": "mahmoud",
+			"line": "My men have dug for the British, the French and the Americans. Every one of them took the credit. My father dug at Karnak. His name is on nothing.",
+			"choices": [
+				{
+					"label": "Say that ends here",
+					"line": "Not on this dig.",
+					"do": [
+						{
+							"stat": [
+								"mahmoud",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"mahmoud",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_mahmoud_3"
+						}
+					],
+					"next": "f_mahmoud_r3_a",
+					"tone": "neutral",
+					"slot": "r"
+				},
+				{
+					"label": "Ask his father's name",
+					"line": "What was his name?",
+					"do": [
+						{
+							"stat": [
+								"mahmoud",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"mahmoud",
+								"conviction",
+								1
+							]
+						},
+						{
+							"stat": [
+								"mahmoud",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_mahmoud_3"
+						}
+					],
+					"next": "f_mahmoud_r3_b",
+					"tone": "neutral",
+					"slot": "ur"
+				}
+			]
+		},
+		"f_khalil_start": {
+			"branch": [
+				{
+					"if": {
+						"stat": [
+							"khalil",
+							"talks",
+							3
+						],
+						"not_flag": "rapport_khalil_3"
+					},
+					"next": "f_khalil_t3"
+				},
+				{
+					"if": {
+						"stat": [
+							"khalil",
+							"talks",
+							2
+						],
+						"not_flag": "rapport_khalil_2"
+					},
+					"next": "f_khalil_r2"
+				},
+				{
+					"if": {
+						"stat": [
+							"khalil",
+							"talks",
+							1
+						],
+						"not_flag": "rapport_khalil_1"
+					},
+					"next": "f_khalil_r1"
+				},
+				{
+					"if": {
+						"not_flag": "rapport_khalil_0"
+					},
+					"next": "f_khalil_r0"
+				},
+				{
+					"next": "f_khalil_idle"
+				}
+			]
+		},
+		"f_khalil_t3": {
+			"branch": [
+				{
+					"if": {
+						"stat": [
+							"khalil",
+							"trust",
+							2
+						]
+					},
+					"next": "f_khalil_r3"
+				},
+				{
+					"next": "f_khalil_idle"
+				}
+			]
+		},
+		"f_khalil_idle": {
+			"speaker": "khalil",
+			"line": "The men are well. Thank you for asking.",
+			"next": "night"
+		},
+		"f_khalil_r0_a": {
+			"speaker": "khalil",
+			"line": "Good. Then I did not lie.",
+			"next": "night"
+		},
+		"f_khalil_r0_b": {
+			"speaker": "khalil",
+			"line": "Farid will want money for the meat.",
+			"next": "night"
+		},
+		"f_khalil_r0": {
+			"speaker": "khalil",
+			"line": "The men want to know if there is meat tomorrow. I said yes. Is there meat tomorrow?",
+			"choices": [
+				{
+					"label": "Say yes",
+					"line": "There's meat tomorrow.",
+					"do": [
+						{
+							"stat": [
+								"khalil",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"khalil",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_khalil_0"
+						}
+					],
+					"next": "f_khalil_r0_a",
+					"tone": "neutral",
+					"slot": "r"
+				},
+				{
+					"label": "Say ask Farid",
+					"line": "Ask Farid.",
+					"do": [
+						{
+							"stat": [
+								"khalil",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_khalil_0"
+						}
+					],
+					"next": "f_khalil_r0_b",
+					"tone": "neutral",
+					"slot": "ur"
+				}
+			]
+		},
+		"f_khalil_r1_a": {
+			"speaker": "khalil",
+			"line": "They will not forget this. Neither will I.",
+			"next": "night"
+		},
+		"f_khalil_r1_b": {
+			"speaker": "khalil",
+			"line": "They are men, not mules.",
+			"next": "night"
+		},
+		"f_khalil_r1": {
+			"speaker": "khalil",
+			"line": "Two of my men are sick from the water.",
+			"choices": [
+				{
+					"label": "Give them your share",
+					"line": "Give them clean water from my ration.",
+					"do": [
+						{
+							"stat": [
+								"khalil",
+								"trust",
+								2
+							]
+						},
+						{
+							"stat": [
+								"khalil",
+								"fear",
+								-1
+							]
+						},
+						{
+							"stat": [
+								"khalil",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_khalil_1"
+						}
+					],
+					"next": "f_khalil_r1_a",
+					"tone": "friendly",
+					"slot": "ur"
+				},
+				{
+					"label": "They'll toughen up",
+					"line": "They're grown men. They'll toughen up.",
+					"do": [
+						{
+							"stat": [
+								"khalil",
+								"trust",
+								-2
+							]
+						},
+						{
+							"stat": [
+								"khalil",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_khalil_1"
+						}
+					],
+					"next": "f_khalil_r1_b",
+					"tone": "hostile",
+					"slot": "lr"
+				}
+			]
+		},
+		"f_khalil_r2_a": {
+			"speaker": "khalil",
+			"line": "I will tell them you said so.",
+			"next": "night"
+		},
+		"f_khalil_r2_b": {
+			"speaker": "khalil",
+			"line": "Somebody always does.",
+			"next": "night"
+		},
+		"f_khalil_r2": {
+			"speaker": "khalil",
+			"line": "My men are dockworkers without docks. They carry. Nobody thinks they can do anything else.",
+			"choices": [
+				{
+					"label": "Say they're more than that",
+					"line": "They've done more than carry on this trip.",
+					"do": [
+						{
+							"stat": [
+								"khalil",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"khalil",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_khalil_2"
+						}
+					],
+					"next": "f_khalil_r2_a",
+					"tone": "neutral",
+					"slot": "r"
+				},
+				{
+					"label": "Say carrying matters",
+					"line": "Somebody has to carry.",
+					"do": [
+						{
+							"stat": [
+								"khalil",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_khalil_2"
+						}
+					],
+					"next": "f_khalil_r2_b",
+					"tone": "neutral",
+					"slot": "ur"
+				}
+			]
+		},
+		"f_khalil_r3_a": {
+			"speaker": "khalil",
+			"line": "Then they will follow you down any hole.",
+			"next": "night"
+		},
+		"f_khalil_r3_b": {
+			"speaker": "khalil",
+			"line": "Nothing. That is what happens to such men.",
+			"next": "night"
+		},
+		"f_khalil_r3": {
+			"speaker": "khalil",
+			"line": "Half my men have been cheated before. A Frenchman left them in Luxor without a piastre. That is why they ask about pay.",
+			"choices": [
+				{
+					"label": "Promise they'll be paid",
+					"line": "Every man gets paid. In full.",
+					"do": [
+						{
+							"stat": [
+								"khalil",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"khalil",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_khalil_3"
+						}
+					],
+					"next": "f_khalil_r3_a",
+					"tone": "friendly",
+					"slot": "ur"
+				},
+				{
+					"label": "Ask about the Frenchman",
+					"line": "What happened to him?",
+					"do": [
+						{
+							"stat": [
+								"khalil",
+								"conviction",
+								1
+							]
+						},
+						{
+							"stat": [
+								"khalil",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_khalil_3"
+						}
+					],
+					"next": "f_khalil_r3_b",
+					"tone": "ask",
+					"slot": "ul"
+				}
+			]
+		},
+		"f_naguib_start": {
+			"branch": [
+				{
+					"if": {
+						"stat": [
+							"naguib",
+							"talks",
+							3
+						],
+						"not_flag": "rapport_naguib_3"
+					},
+					"next": "f_naguib_t3"
+				},
+				{
+					"if": {
+						"stat": [
+							"naguib",
+							"talks",
+							2
+						],
+						"not_flag": "rapport_naguib_2"
+					},
+					"next": "f_naguib_r2"
+				},
+				{
+					"if": {
+						"stat": [
+							"naguib",
+							"talks",
+							1
+						],
+						"not_flag": "rapport_naguib_1"
+					},
+					"next": "f_naguib_r1"
+				},
+				{
+					"if": {
+						"not_flag": "rapport_naguib_0"
+					},
+					"next": "f_naguib_r0"
+				},
+				{
+					"next": "f_naguib_idle"
+				}
+			]
+		},
+		"f_naguib_t3": {
+			"branch": [
+				{
+					"if": {
+						"stat": [
+							"naguib",
+							"trust",
+							2
+						]
+					},
+					"next": "f_naguib_r3"
+				},
+				{
+					"next": "f_naguib_idle"
+				}
+			]
+		},
+		"f_naguib_idle": {
+			"speaker": "naguib",
+			"line": "Loads are fine. Camels are fine. I am fine.",
+			"next": "night"
+		},
+		"f_naguib_r0_a": {
+			"speaker": "naguib",
+			"line": "Good. They would be offended.",
+			"next": "night"
+		},
+		"f_naguib_r0_b": {
+			"speaker": "naguib",
+			"line": "The one that does not bite you. Today.",
+			"next": "night"
+		},
+		"f_naguib_r0": {
+			"speaker": "naguib",
+			"line": "A good camel is worth three bad men. Do not tell the men.",
+			"choices": [
+				{
+					"label": "Laugh",
+					"line": "Your secret's safe.",
+					"do": [
+						{
+							"stat": [
+								"naguib",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"naguib",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_naguib_0"
+						}
+					],
+					"next": "f_naguib_r0_a",
+					"tone": "neutral",
+					"slot": "r"
+				},
+				{
+					"label": "Ask which is best",
+					"line": "Which camel is best?",
+					"do": [
+						{
+							"stat": [
+								"naguib",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_naguib_0"
+						}
+					],
+					"next": "f_naguib_r0_b",
+					"tone": "ask",
+					"slot": "ul"
+				}
+			]
+		},
+		"f_naguib_r1_a": {
+			"speaker": "naguib",
+			"line": "A wise choice. The camels thank you.",
+			"next": "night"
+		},
+		"f_naguib_r1_b": {
+			"speaker": "naguib",
+			"line": "Then pray for cool nights.",
+			"next": "night"
+		},
+		"f_naguib_r1": {
+			"speaker": "naguib",
+			"line": "The camels are carrying too much. Lighten the loads, or we lose one by the end of the week.",
+			"choices": [
+				{
+					"label": "Lighten the loads",
+					"line": "Do it. Leave the spare crates.",
+					"do": [
+						{
+							"stat": [
+								"naguib",
+								"trust",
+								1
+							]
+						},
+						{
+							"set_flag": "promised_naguib_loads"
+						},
+						{
+							"stat": [
+								"naguib",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_naguib_1"
+						}
+					],
+					"next": "f_naguib_r1_a",
+					"tone": "friendly",
+					"slot": "ur"
+				},
+				{
+					"label": "Push on",
+					"line": "We need everything. Push on.",
+					"do": [
+						{
+							"stat": [
+								"naguib",
+								"trust",
+								-1
+							]
+						},
+						{
+							"stat": [
+								"naguib",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_naguib_1"
+						}
+					],
+					"next": "f_naguib_r1_b",
+					"tone": "hostile",
+					"slot": "lr"
+				}
+			]
+		},
+		"f_naguib_r2_a": {
+			"speaker": "naguib",
+			"line": "It runs. Well is for God to say.",
+			"next": "night"
+		},
+		"f_naguib_r2_b": {
+			"speaker": "naguib",
+			"line": "Every night is a long night.",
+			"next": "night"
+		},
+		"f_naguib_r2": {
+			"speaker": "naguib",
+			"line": "Every load has a place, and every place has a load. When something is out of place, I cannot sleep.",
+			"choices": [
+				{
+					"label": "Say it shows",
+					"line": "It shows. The column runs well.",
+					"do": [
+						{
+							"stat": [
+								"naguib",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"naguib",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_naguib_2"
+						}
+					],
+					"next": "f_naguib_r2_a",
+					"tone": "neutral",
+					"slot": "r"
+				},
+				{
+					"label": "Tease him",
+					"line": "Must be a long night, then.",
+					"do": [
+						{
+							"stat": [
+								"naguib",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_naguib_2"
+						}
+					],
+					"next": "f_naguib_r2_b",
+					"tone": "neutral",
+					"slot": "ur"
+				}
+			]
+		},
+		"f_naguib_r3_a": {
+			"speaker": "naguib",
+			"line": "I already have.",
+			"next": "night"
+		},
+		"f_naguib_r3_b": {
+			"speaker": "naguib",
+			"line": "They believed in going forward. Only forward.",
+			"next": "night"
+		},
+		"f_naguib_r3": {
+			"speaker": "naguib",
+			"line": "I always pack for the way out. In the war, a column I carried for did not plan to come back. I did. Alone.",
+			"choices": [
+				{
+					"label": "Say he packs well",
+					"line": "Then pack for all of us.",
+					"do": [
+						{
+							"stat": [
+								"naguib",
+								"trust",
+								1
+							]
+						},
+						{
+							"stat": [
+								"naguib",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_naguib_3"
+						}
+					],
+					"next": "f_naguib_r3_a",
+					"tone": "neutral",
+					"slot": "r"
+				},
+				{
+					"label": "Ask what happened",
+					"line": "What happened to them?",
+					"do": [
+						{
+							"stat": [
+								"naguib",
+								"conviction",
+								1
+							]
+						},
+						{
+							"stat": [
+								"naguib",
+								"talks",
+								1
+							]
+						},
+						{
+							"set_flag": "rapport_naguib_3"
+						}
+					],
+					"next": "f_naguib_r3_b",
+					"tone": "ask",
+					"slot": "ul"
+				}
+			]
+		},
+		"night": {
+			"speaker": "player",
+			"line": "Camp is made. The fire's going, and nobody's asleep yet.",
+			"choices": [
+				{
+					"label": "Sit with the scholars",
+					"line": "",
+					"next": "fire_0",
+					"tone": "neutral",
+					"slot": "r"
+				},
+				{
+					"label": "Sit with the fighters",
+					"line": "",
+					"next": "fire_1",
+					"tone": "neutral",
+					"slot": "ur"
+				},
+				{
+					"label": "Sit with the guides",
+					"line": "",
+					"next": "fire_2",
+					"tone": "neutral",
+					"slot": "lr"
+				},
+				{
+					"label": "Sit with the crews",
+					"line": "",
+					"next": "fire_3",
+					"tone": "neutral",
+					"slot": "l"
+				},
+				{
+					"label": "Turn in",
+					"line": "Get some rest. We ride at first light.",
+					"next": "night_falls",
+					"tone": "leave",
+					"slot": "ll"
+				}
+			]
 		},
 		"ride_fear_0": {
 			"branch": [

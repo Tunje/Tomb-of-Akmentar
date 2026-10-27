@@ -75,7 +75,8 @@
 						}
 					],
 					"next": "whitfield_yes",
-					"slot": "ur"
+					"slot": "ur",
+					"tone": "friendly"
 				},
 				{
 					"label": "Turn him down",
@@ -89,7 +90,8 @@
 						}
 					],
 					"next": "whitfield_no",
-					"slot": "r"
+					"slot": "r",
+					"tone": "neutral"
 				}
 			]
 		},
@@ -132,7 +134,8 @@
 						}
 					],
 					"next": "adler_yes",
-					"slot": "ur"
+					"slot": "ur",
+					"tone": "friendly"
 				},
 				{
 					"label": "Decline",
@@ -146,7 +149,8 @@
 						}
 					],
 					"next": "adler_no",
-					"slot": "r"
+					"slot": "r",
+					"tone": "neutral"
 				}
 			]
 		},
@@ -182,7 +186,8 @@
 						}
 					],
 					"next": "end_americans",
-					"slot": "r"
+					"slot": "r",
+					"tone": "neutral"
 				},
 				{
 					"label": "Join the Germans",
@@ -202,7 +207,8 @@
 						}
 					],
 					"next": "end_germans",
-					"slot": "ur"
+					"slot": "ur",
+					"tone": "neutral"
 				},
 				{
 					"label": "Go alone",
@@ -216,7 +222,8 @@
 						}
 					],
 					"next": "end_alone",
-					"slot": "lr"
+					"slot": "lr",
+					"tone": "neutral"
 				}
 			]
 		},

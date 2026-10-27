@@ -57,7 +57,8 @@
 						}
 					],
 					"next": "pleased",
-					"slot": "ur"
+					"slot": "ur",
+					"tone": "friendly"
 				},
 				{
 					"label": "Ask about treasure",
@@ -78,19 +79,22 @@
 						}
 					],
 					"next": "stung",
-					"slot": "ul"
+					"slot": "ul",
+					"tone": "ask"
 				},
 				{
 					"label": "Ask about Krüger",
 					"line": "Your young man with the notebook never seems to stop writing.",
 					"next": "kruger",
-					"slot": "l"
+					"slot": "l",
+					"tone": "ask"
 				},
 				{
 					"label": "Leave",
 					"line": "I'll let you get back to work.",
 					"next": "bye",
-					"slot": "ll"
+					"slot": "ll",
+					"tone": "leave"
 				}
 			]
 		},

@@ -801,7 +801,7 @@
 					}
 				},
 				{
-					"text": "Twenty pounds. I have not forgotten.",
+					"text": "Two hundred pounds. I have not forgotten.",
 					"if": {
 						"flag": "idris_underpaid"
 					}

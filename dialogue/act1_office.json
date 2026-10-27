@@ -33,6 +33,7 @@
 						}
 					],
 					"next": "owes",
+					"tone": "neutral",
 					"slot": "r"
 				},
 				{
@@ -42,6 +43,7 @@
 						"not_flag": "freddie_note"
 					},
 					"next": "search",
+					"tone": "neutral",
 					"slot": "ur"
 				},
 				{
@@ -56,12 +58,14 @@
 						}
 					],
 					"next": "others",
+					"tone": "ask",
 					"slot": "ul"
 				},
 				{
 					"label": "Leave",
 					"line": "Thank you. I'll find him.",
 					"next": "bye",
+					"tone": "leave",
 					"slot": "ll"
 				}
 			]

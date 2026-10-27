@@ -287,7 +287,7 @@
 		"finch": {
 			"name": "Harold Finch",
 			"role": "Moneylender",
-			"text": "Freddie owes him two hundred pounds, and he thinks you know where Freddie is.",
+			"text": "Freddie owes him two thousand pounds, and he thinks you know where Freddie is.",
 			"notes": [
 				{
 					"if": {

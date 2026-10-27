@@ -40,18 +40,18 @@ FILES["routes/act3_route.json"] = {
     "to": {"name": "Akmentar", "at": [0.88, 0.7]},
     "marks": [[[0.05, 0.2], [0.3, 0.42], [0.55, 0.6], [0.82, 0.62], [0.95, 0.66]], [[0.02, 0.9], [0.4, 0.95], [0.75, 0.92], [0.98, 0.85]]],
     "options": [
-        {"id": "desert", "label": "Across the desert", "days": 4, "risk": 2, "cost": 60,
+        {"id": "desert", "label": "Across the desert", "days": 4, "risk": 2, "cost": 600,
          "days_if": [{"if": {"flag": "hired_" + g}, "days": 3} for g in GUIDES],
          "risk_if": [{"if": {"flag": "hired_saleh"}, "risk": 1}],
          "desc": "The fastest way, straight across the sand, if you have a guide (without one it takes a day longer). Horses for everyone make it the dearest start. The road splits at an old temple.",
          "path": [[0.1, 0.32], [0.35, 0.22], [0.6, 0.38], [0.88, 0.7]],
          "do": [flag("has_horses"), {"event": "desert_fork"}]},
-        {"id": "riverboat", "label": "The riverboat", "days": 4, "risk": 3, "cost": 20,
+        {"id": "riverboat", "label": "The riverboat", "days": 4, "risk": 3, "cost": 200,
          "cost_if": [{"if": {"flag": "booked_riverboat"}, "cost": 0}],
          "desc": "The cheapest passage for people and equipment (already paid if you booked with Captain Hamdi). The American expedition has booked the same boat.",
          "path": [[0.1, 0.32], [0.3, 0.42], [0.55, 0.6], [0.88, 0.7]],
          "do": [flag("race_step", 5), flag("rode_with_americans"), {"event": "riverboat_attack"}]},
-        {"id": "coast", "label": "Along the coast", "days": 6, "risk": 1, "cost": 50,
+        {"id": "coast", "label": "Along the coast", "days": 6, "risk": 1, "cost": 500,
          "days_if": [{"if": {"flag": "hired_farid"}, "days": 5}, {"if": {"flag": "hired_naguib"}, "days": 5}],
          "desc": "The longest way round, but two trucks carry the expedition and the coast road avoids the worst of the desert. Farid or Naguib could save a day on the loading.",
          "path": [[0.1, 0.32], [0.2, 0.75], [0.5, 0.88], [0.88, 0.7]],
@@ -231,16 +231,16 @@ town = {
     "menu": L("rashid", "What do you need?", choices=[
         C("Ask about the riders", "The riders who hit us. Who are they?", "riders", if_={"not_flag": "town_riders"}, do=[flag("town_riders")]),
         C("Resupply", "Water and food for the road. We lost our truck.", "resupply",
-          if_={"flag": "supplies_lost", "money": 15}),
+          if_={"flag": "supplies_lost", "money": 150}),
         C("Buy water", "Water for the last stretch, if you can spare it.", "water",
-          if_={"not_flag": "town_water", "money": 5}, do=[pay(5), {"item": ["water", 7]}, flag("town_water")]),
+          if_={"not_flag": "town_water", "money": 50}, do=[pay(50), {"item": ["water", 7]}, flag("town_water")]),
         C("Ask the way", "How far to the old ruins west of here?", "way", if_={"not_flag": "town_way"}, do=[flag("town_way")]),
         C("Move on", "Thank you. We'll be on our way.", "bye"),
     ]),
     "riders": L("rashid", "They came through two days ago, asking about foreigners with maps. They paid for their water and harmed no one. Men like that frighten me more than thieves.", "menu"),
-    "resupply": L("mariam", "Mariam Amin. Fifteen pounds for water and flour enough to reach the ruins, and I will not cheat you, whatever they say about my prices.", "menu",
-                  do=[pay(15), {"item": ["rations", 7]}, {"item": ["water", 7]}, flag("supplies_lost", False)]),
-    "water": L("mariam", "Five pounds, and the skins are new.", "menu"),
+    "resupply": L("mariam", "Mariam Amin. One hundred and fifty pounds for water and flour enough to reach the ruins, and I will not cheat you, whatever they say about my prices.", "menu",
+                  do=[pay(150), {"item": ["rations", 7]}, {"item": ["water", 7]}, flag("supplies_lost", False)]),
+    "water": L("mariam", "Fifty pounds, and the skins are new.", "menu"),
     "way": L("rashid", "Two days west, past the black rocks. The Germans asked the same yesterday. They did not stop to drink.", "menu"),
     "bye": L("rashid", "Go carefully. And if you meet the men in dark robes again, listen to them.", "end"),
     "end": END,
@@ -265,7 +265,7 @@ TALKS["act3_riverboat"] = talk(
         ]),
         "outfit": L("whitfield", "Maggie there takes the pictures. Red Callahan keeps the bad men off. And half the guns on the docks, at a very fair price.", "menu"),
         "after": L("maggie", "Charlie wants gold. I want the photograph that makes the front page. Between us we keep each other honest. Mostly.", "menu"),
-        "wager": L("whitfield", "Five hundred dollars says my outfit reaches Akmentar before yours. A friendly wager, to make the trip interesting.", choices=[
+        "wager": L("whitfield", "Five thousand dollars says my outfit reaches Akmentar before yours. A friendly wager, to make the trip interesting.", choices=[
             C("Accept", "You're on.", "accepted", do=[flag("wager_accepted"), trust("whitfield", 1)]),
             C("Decline", "I don't bet on things I can't control.", "declined"),
         ]),
@@ -313,57 +313,11 @@ TALKS["act3_coast"] = talk("Act 3, the quiet coast road (coast -> continue, even
 
 # ---------------------------------------------------------------- the camp on the road
 
-def camp_entry(who, opener, a, b):
-    """who's short exchange: opener line, then two answers (label, line, effects, reply)."""
-    nodes = {
-        "c_" + who: L(who, opener, choices=[
-            C(a[0], a[1], "c_%s_a" % who, do=a[2] + [flag("camp3_" + who)]),
-            C(b[0], b[1], "c_%s_b" % who, do=b[2] + [flag("camp3_" + who)]),
-        ]),
-        "c_%s_a" % who: L(who, a[3], "menu"),
-        "c_%s_b" % who: L(who, b[3], "menu"),
-    }
-    return nodes
+# Each companion's next rung of their rapport ladder (tools/dialogue/rapport.py): contact on the
+# first night, more as the stops go by; never their life story on first contact.
+from rapport import ladder_nodes  # noqa: E402
 
 
-CAMP = {
-    "eleanor": ("Do you think it's really out there? Not the gold. The answers.",
-                ("Say you believe it", "I know it is. And you'll be the one who reads it.", [trust("eleanor", 1)], "Then I'd better not be wrong."),
-                ("Say it's a payday", "I think it's a payday. Answers are your department.", [trust("eleanor", -1), conv("eleanor", 1)], "Then I'll find them on my own.")),
-    "pembroke": ("Forty sherds catalogued since Cairo. All Roman, all worthless, all properly labelled.",
-                 ("Encourage him", "Keep at it, Doctor. When we get there, it'll matter.", [trust("pembroke", 1)], "Yes. Quite. Thank you."),
-                 ("Mock him", "Nobody's going to care about your pots.", [trust("pembroke", -1)], "Somebody has to care, or this is just looting.")),
-    "hassan": ("Do you know why the old priests called it the Veil?",
-               ("Ask him to tell you", "Tell me.", [trust("hassan", 1), flag("heard_veil")], "Because some things are not gone. Only covered. Sleep well."),
-               ("Save it for later", "Save the stories for when we get there.", [conv("hassan", 1)], "As you wish. Stories keep.")),
-    "hargreaves": ("I'd like to drill the lads on the rifles each night. An hour. They'll thank me later.",
-                   ("Let him drill them", "Do it.", [trust("hargreaves", 1), flag("drilled_crew")], "Right. Up, you lot. Rifles."),
-                   ("Let them rest", "They're exhausted, Tom. Let them sleep.", [trust("hargreaves", -1)], "Your call. I hope you don't regret it.")),
-    "idris": ("My sister writes. She has a place at the school now, because of your money.",
-              ("Be glad for him", "Good. That's the best thing this money will do.", [trust("idris", 1)], "You are a strange kind of employer. A good kind."),
-              ("Keep him on the job", "Keep your mind on the job, Idris.", [trust("idris", -1)], "My mind is always on the job. That is why I am alive.")),
-    "isabelle": ("You keep watching me as if I'm about to ride off.",
-                 ("Tell her you're glad", "I'm just glad you're here.", [trust("isabelle", 1)], "Careful. That almost sounded sincere."),
-                 ("Ask if she would", "Would you?", [conv("isabelle", 1)], "Maybe. Keep giving me reasons not to.")),
-    "saleh": ("We are drinking more water than I planned. Tomorrow, half rations.",
-              ("Agree", "Half rations. Make sure everyone knows why.", [trust("saleh", 1), flag("rationing")], "Good. The desert respects a careful man."),
-              ("Overrule him", "We'll manage. People need their strength.", [trust("saleh", -1)], "We will see who manages.")),
-    "youssef": ("Let me scout ahead tomorrow, alone. I will find us a faster way.",
-                ("Let him go", "Go. Back by noon.", [trust("youssef", 1), conv("youssef", 1)], "By noon! You will see."),
-                ("Keep him close", "You stay with the column.", [trust("youssef", -1)], "As you say. But I would have found it.")),
-    "farid": ("There is a trader near here who owes me. Let me do a little business on the way.",
-              ("Let him trade", "Go ahead. Just don't slow us down.", [trust("farid", 1), conv("farid", 1)], "You will not even notice I was gone."),
-              ("No side deals", "No side deals, Farid. Not on my time.", [trust("farid", -1)], "Business never sleeps. But it can wait.")),
-    "mahmoud": ("My men ask: when we dig, whose name goes on the finds?",
-                ("Theirs", "The men who dig them up.", [trust("mahmoud", 1)], "I will tell them. They will dig twice as carefully."),
-                ("The expedition's", "The expedition's. That's how it works.", [trust("mahmoud", -1)], "That is how it always works.")),
-    "khalil": ("Two of my men are sick from the water.",
-               ("Give them your share", "Give them clean water from my ration.", [trust("khalil", 2), fear("khalil", -1)], "They will not forget this. Neither will I."),
-               ("They'll toughen up", "They're grown men. They'll toughen up.", [trust("khalil", -2)], "They are men, not mules.")),
-    "naguib": ("The camels are carrying too much. Lighten the loads, or we lose one by the end of the week.",
-               ("Lighten the loads", "Do it. Leave the spare crates.", [trust("naguib", 1)], "A wise choice. The camels thank you."),
-               ("Push on", "We need everything. Push on.", [trust("naguib", -1)], "Then pray for cool nights.")),
-}
 GROUPS = [("Talk to the scholars", ["eleanor", "pembroke", "hassan"]), ("Talk to the fighters", ["hargreaves", "idris", "isabelle"]),
           ("Talk to the guides", ["saleh", "youssef", "farid"]), ("Talk to the crews", ["mahmoud", "khalil", "naguib"])]
 camp = {"start": L("player", "Night on the road. The fire's low and the party's still awake.", "menu"), "end": END}
@@ -373,14 +327,14 @@ for k, (label, ids) in enumerate(GROUPS):
     menu.append(C(label, "", gid))
     camp[gid] = L("player", "Who's still up?", choices=[
         C(SPEAKERS[i].split(" ")[0] if not SPEAKERS[i].startswith("Dr.") else SPEAKERS[i].split(" ")[2],
-          "%s, got a minute?" % (SPEAKERS[i].split(" ")[0] if not SPEAKERS[i].startswith("Dr.") else SPEAKERS[i].split(" ")[0] + " " + SPEAKERS[i].split(" ")[-1]), "c_" + i,
-          if_={"in_party": i, "not_flag": "camp3_" + i}) for i in ids] + [C("Back", "", "menu")])
+          "%s, got a minute?" % (SPEAKERS[i].split(" ")[0] if not SPEAKERS[i].startswith("Dr.") else SPEAKERS[i].split(" ")[0] + " " + SPEAKERS[i].split(" ")[-1]), "c_%s_start" % i,
+          if_={"in_party": i, "not_flag": "camp3_" + i}, do=[flag("camp3_" + i)]) for i in ids] + [C("Back", "", "menu")])
     for i in ids:
-        camp.update(camp_entry(i, *CAMP[i]))
+        camp.update(ladder_nodes(i, "c_%s_" % i, "menu"))
 menu.append(C("Turn in", "Get some sleep. Long day tomorrow.", "end"))
 camp["menu"] = L("player", "The fire crackles.", choices=menu)
 TALKS["act3_camp"] = talk(
-    "Act 3, a night camp on the road (any route, before the race): talk to each companion once (camp3_<id>), grouped so the wheel never holds more than 6. Small trust / conviction changes and a few flags (heard_veil, drilled_crew, rationing).",
+    "Act 3, a night camp on the road (any route, before the race): talk to each companion once (camp3_<id>), grouped so the wheel never holds more than 6. Each talk is that companion's next rung of their rapport ladder (tools/dialogue/rapport.py; on this first night, contact and small talk).",
     SPEAKERS, camp)
 
 
@@ -390,7 +344,7 @@ race = {
     "start": L("player", "The last stretch. Dust on the horizon: we aren't alone out here.", "rivals"),
     "rivals": L("player", "German riders to the north, keeping a hard pace, and further back the Americans' column.", "wager"),
     "wager": B(({"flag": "wager_offered"}, "shortcut"), (None, "whit_rides")),
-    "whit_rides": L("whitfield", "Hey there, neighbour! Charlie Whitfield. Five hundred dollars says we beat you to the ruins. What do you say?", choices=[
+    "whit_rides": L("whitfield", "Hey there, neighbour! Charlie Whitfield. Five thousand dollars says we beat you to the ruins. What do you say?", choices=[
         C("Accept", "You're on.", "whit_yes", do=[flag("wager_accepted"), flag("wager_offered"), flag("met_whitfield"), trust("whitfield", 1)]),
         C("Decline", "Not today.", "whit_no", do=[flag("wager_offered"), flag("met_whitfield")]),
     ]),

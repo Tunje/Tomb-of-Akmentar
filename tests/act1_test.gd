@@ -58,12 +58,12 @@ func _run() -> void:
 	_fresh([])
 	Game.apply(plan.start)
 	var r := await _talk("act1_office", ["Search his desk", "Ask who else came", "Leave"])
-	_check(Game.flag("freddie_note") and Game.flag("warned_finch") and Game.flag("clue_freddie_note") and Game.money == 25,
+	_check(Game.flag("freddie_note") and Game.flag("warned_finch") and Game.flag("clue_freddie_note") and Game.money == 250,
 		"office: the note and the warning")
 	r = await _talk("act1_debt_collectors", ["Give up Freddie"])
 	_check(r.end == "end_talked" and Game.flag("freddie_betrayed"), "collectors: Freddie given up")
 	r = await _talk("act1_debt_collectors", ["Promise to pay"])
-	_check(r.end == "end_talked" and int(Game.flag("owe_finch", 0)) == 50, "collectors: promised 50")
+	_check(r.end == "end_talked" and int(Game.flag("owe_finch", 0)) == 500, "collectors: promised 500")
 	r = await _talk("act1_debt_collectors", ["Hit him"])
 	_check(r.end == "end_fight" and "fight_debt_collectors" in _events, "collectors: the brawl")
 	r = await _talk("act1_after_brawl", ["Help him up"])
@@ -72,7 +72,7 @@ func _run() -> void:
 	_check(r.end == "end_avoided" and Game.flag("act1_gunfight_avoided") and Game.flag("act1_confrontation_done") and r.speakers.has("musa"),
 		"armed men at Freddie's: Musa won't shoot")
 	r = await _talk("act1_offer", ["Accept", "Pay Finch off"])
-	_check(r.end == "end_accepted" and Game.flag("clue_fragment") and Game.flag("finch_paid") and Game.money == 25
+	_check(r.end == "end_accepted" and Game.flag("clue_fragment") and Game.flag("finch_paid") and Game.money == 250
 		and r.speakers == ["karim", "player"], "offer: a talk only, accepted, Finch paid (%d)" % Game.money)
 
 	# No friends among the gunmen and no warning: the talk fails and you draw; Karim has heard.
@@ -83,24 +83,24 @@ func _run() -> void:
 	Game.set_flag("act1_gunfight_won")
 	Game.set_flag("act1_confrontation_done")
 	r = await _talk("act1_offer", ["Ask for more up front", "Accept"])
-	_check(r.end == "end_accepted" and Game.money == 100 and not r.speakers.has("gunman"), "offer after the gunfight: 75 advance (%d)" % Game.money)
+	_check(r.end == "end_accepted" and Game.money == 1000 and not r.speakers.has("gunman"), "offer after the gunfight: 750 advance (%d)" % Game.money)
 	# The note buys them off too (and gives Freddie away).
 	_fresh([])
 	Game.set_flag("freddie_note")
 	r = await _talk("act1_armed_men", ["Give them the note"])
 	_check(r.end == "end_avoided" and Game.flag("freddie_betrayed"), "armed men: Freddie's note sends them to Alexandria")
-	# Your 20 against Freddie's 200: they pocket it and press on; you still have to choose.
+	# Your 200 against Freddie's 2000: they pocket it and press on; you still have to choose.
 	_fresh([])
 	Game.apply(plan.start)
 	r = await _talk("act1_armed_men", ["Offer what you have", "Draw"])
-	_check(r.end == "end_fight" and Game.money == 5 and Game.flag("armed_took_money") and not Game.flag("act1_gunfight_avoided"),
+	_check(r.end == "end_fight" and Game.money == 50 and Game.flag("armed_took_money") and not Game.flag("act1_gunfight_avoided"),
 		"armed men: the money doesn't buy them off (%d left)" % Game.money)
-	# Finch: 20 of the 200 only buys a week (50 more owed).
+	# Finch: 200 of the 2000 only buys a week (500 more owed).
 	_fresh([])
 	Game.apply(plan.start)
 	r = await _talk("act1_debt_collectors", ["Pay part now"])
-	_check(r.end == "end_paid" and Game.flag("debt_paid_part") and int(Game.flag("owe_finch", 0)) == 50 and Game.money == 5,
-		"collectors: 20 buys time, 50 still owed")
+	_check(r.end == "end_paid" and Game.flag("debt_paid_part") and int(Game.flag("owe_finch", 0)) == 500 and Game.money == 50,
+		"collectors: 200 buys time, 500 still owed")
 
 
 func _fresh(party: Array) -> void:

@@ -23,6 +23,7 @@
 						}
 					],
 					"next": "o_0",
+					"tone": "neutral",
 					"slot": "r"
 				},
 				{
@@ -37,6 +38,7 @@
 						}
 					],
 					"next": "o_1",
+					"tone": "neutral",
 					"slot": "ur"
 				},
 				{
@@ -51,12 +53,14 @@
 						}
 					],
 					"next": "o_2",
+					"tone": "neutral",
 					"slot": "lr"
 				},
 				{
 					"label": "Fight through",
 					"line": "Then we go straight through them.",
 					"next": "fight",
+					"tone": "hostile",
 					"slot": "ll"
 				}
 			]

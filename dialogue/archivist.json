@@ -42,19 +42,22 @@
 					"label": "Ask for an Egyptologist",
 					"line": "I'm putting together a private expedition. I need an Egyptologist, and they tell me you have the best in Cairo.",
 					"next": "ask",
-					"slot": "r"
+					"slot": "r",
+					"tone": "neutral"
 				},
 				{
 					"label": "Mention Akmentar",
 					"line": "We're going after the tombs of Akmentar.",
 					"next": "myth",
-					"slot": "ul"
+					"slot": "ul",
+					"tone": "ask"
 				},
 				{
 					"label": "Leave",
 					"line": "I'll see myself out.",
 					"next": "bye",
-					"slot": "ll"
+					"slot": "ll",
+					"tone": "leave"
 				}
 			]
 		},
@@ -79,36 +82,40 @@
 						}
 					],
 					"next": "staff",
-					"slot": "ul"
+					"slot": "ul",
+					"tone": "ask"
 				},
 				{
 					"label": "Offer a donation",
-					"line": "The museum could use a generous donation. Shall we say fifty pounds?",
+					"line": "The museum could use a generous donation. Shall we say five hundred pounds?",
 					"if": {
-						"money": 50
+						"money": 500
 					},
 					"do": [
 						{
-							"money": -50
+							"money": -500
 						},
 						{
 							"set_flag": "archivist_bribed"
 						}
 					],
 					"next": "bribe",
-					"slot": "r"
+					"slot": "r",
+					"tone": "neutral"
 				},
 				{
 					"label": "Threaten him",
 					"line": "Find me someone, Professor, or I'll make this your problem. Personally.",
 					"next": "threat",
-					"slot": "lr"
+					"slot": "lr",
+					"tone": "hostile"
 				},
 				{
 					"label": "Leave",
 					"line": "Suit yourself.",
 					"next": "bye",
-					"slot": "ll"
+					"slot": "ll",
+					"tone": "leave"
 				}
 			]
 		},
@@ -120,13 +127,15 @@
 					"label": "Ask for Miss Whitmore",
 					"line": "Then send her in. If she wants to come, she comes.",
 					"next": "recruit",
-					"slot": "r"
+					"slot": "r",
+					"tone": "neutral"
 				},
 				{
 					"label": "Thank him",
 					"line": "That's all I needed. Good day, Professor.",
 					"next": "bye",
-					"slot": "ll"
+					"slot": "ll",
+					"tone": "leave"
 				}
 			]
 		},
@@ -142,7 +151,7 @@
 		},
 		"bribe": {
 			"speaker": "archivist",
-			"line": "Fifty pounds buys the museum a new display case. It does not buy you my staff.",
+			"line": "Five hundred pounds buys the museum a new display case. It does not buy you my staff.",
 			"next": "ask"
 		},
 		"threat": {

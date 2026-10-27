@@ -69,12 +69,14 @@
 						}
 					],
 					"next": "help",
+					"tone": "neutral",
 					"slot": "r"
 				},
 				{
 					"label": "Leave",
 					"line": "Thank you.",
 					"next": "end",
+					"tone": "leave",
 					"slot": "ll"
 				}
 			]

@@ -64,16 +64,15 @@ func _run() -> void:
 
 	Game.reset()
 	Game.apply(plan.start)
-	_check(Game.money == 300, "Act 2 starts with 300 (%d)" % Game.money)
+	_check(Game.money == 3000, "Act 2 starts with 3000 (%d)" % Game.money)
 
 	# The museum: a fresh visit offers the archivist and the archive only.
 	var museum := ActionSpot.make(self, "act2_museum", Vector3(4, 0, 0))
 	await get_tree().process_frame
 	var labels: Array = museum.rows().map(func(r: Dictionary) -> String: return r.label)
 	_check(labels.size() == 2, "museum, first: %s" % [labels])
-	var r := await _talk("act2_museum", ["Ask for an Egyptologist", "Ask about his staff", "Approach Dr. Pembroke",
-		"Offer him the job", "Admit you can't afford him"])
-	_check(r.end == "end_left" and Game.flag("knows_hassan") and not Game.in_party("pembroke") and Game.money == 300,
+	var r := await _talk("act2_museum", ["Ask for an Egyptologist", "Ask about his staff", "Approach Dr. Pembroke", "Leave"])
+	_check(r.end == "end_left" and Game.flag("knows_hassan") and not Game.in_party("pembroke") and Game.money == 3000,
 		"Pembroke turned down for money, points to Hassan")
 	labels = museum.rows().map(func(rr: Dictionary) -> String: return rr.label)
 	_check("Find Miss Whitmore in the reading room" in labels and "Find Dr. Pembroke in his office" in labels
@@ -81,43 +80,43 @@ func _run() -> void:
 	r = await _talk("act2_archive", [])
 	_check(Game.flag("researched_akmentar") and Game.flag("clue_cairo_archive") and not Game.flag("clue_cairo_first_report"),
 		"archive research writes the journal")
-	r = await _talk("act2_pembroke", ["Offer him the job", "Show him the archive papers"])
-	_check(r.end == "end_recruited" and Game.in_party("pembroke") and Game.money == 250, "Pembroke for 50 with the archive (%d)" % Game.money)
+	r = await _talk("act2_pembroke", ["Haggle"])
+	_check(r.end == "end_recruited" and Game.in_party("pembroke") and Game.money == 2500, "Pembroke haggled to 500 with the archive (%d)" % Game.money)
 
 	# Isabelle: money alone won't do; the bounty men will.
-	r = await _talk("act2_isabelle", ["Offer her work", "Leave"])
+	r = await _talk("act2_isabelle", ["Leave"])
 	_check(r.end == "end_left" and not Game.in_party("isabelle"), "Isabelle says come back")
 	Game.set_flag("heard_isabelle_trouble")
-	r = await _talk("act2_isabelle", ["Offer her work", "Offer to deal with her trouble"])
+	r = await _talk("act2_isabelle", ["Offer to handle her trouble"])
 	_check(r.end == "end_fight" and "fight_bounty_hunters" in _events, "Isabelle's trouble starts the fight")
 	Game.set_flag("isabelle_trouble_settled")
-	r = await _talk("act2_isabelle", ["Agree"])
-	_check(Game.in_party("isabelle") and Game.money == 205 and int(Game.companion("isabelle").trust) == 3,
+	r = await _talk("act2_isabelle", ["Hire her"])
+	_check(Game.in_party("isabelle") and Game.money == 2050 and int(Game.companion("isabelle").trust) == 2,
 		"Isabelle joins after the fight (%d, trust %d)" % [Game.money, Game.companion("isabelle").trust])
 
-	# Karim, pressed first: the truth and 50.
+	# Karim, pressed first: the truth and 500.
 	r = await _talk("act2_karim", ["Ask about the first expedition", "Push harder", "Ask for more money"])
-	_check(Game.flag("heard_blackwood_silence") and Game.money == 255, "Karim pressed: truth and 50 (%d)" % Game.money)
+	_check(Game.flag("heard_blackwood_silence") and Game.money == 2550, "Karim pressed: truth and 500 (%d)" % Game.money)
 
 	# Khalil, half now (Fatima introduces him).
-	r = await _talk("act2_khalil", ["Hire the crew", "Half now, half later"])
-	_check(Game.in_party("khalil") and int(Game.flag("owe_khalil", 0)) == 12 and Game.money == 242
+	r = await _talk("act2_khalil", ["Half now, half later"])
+	_check(Game.in_party("khalil") and int(Game.flag("owe_khalil", 0)) == 120 and Game.money == 2420
 		and r.speakers.has("fatima"), "Khalil half pay (%d)" % Game.money)
 
 	# The fallback: no Egyptologist hired -> Hassan for free.
-	r = await _talk("act2_hassan_fallback", ["Ask what he wants", "Promise"])
-	_check(Game.in_party("hassan") and Game.money == 242, "Hassan fallback joins free")
+	r = await _talk("act2_hassan_fallback", ["Accept"])
+	_check(Game.in_party("hassan") and Game.money == 2420, "Hassan fallback joins free")
 
 	# Shops: a free buy, then a one-action deal.
 	var gun := ActionSpot.make(self, "act2_gunsmith", Vector3(-4, 0, 0))
 	await get_tree().process_frame
 	var rows := gun.rows()
 	var rifle: Dictionary = rows.filter(func(x: Dictionary) -> bool: return x.action.id == "rifle")[0].action
-	_check(gun.run(rifle) and int(Game.inventory.get("rifle", 0)) == 1 and Game.money == 217 and Game.actions_left == 3,
+	_check(gun.run(rifle) and int(Game.inventory.get("rifle", 0)) == 1 and Game.money == 2170 and Game.actions_left == 3,
 		"buy a rifle (free action, %d)" % Game.money)
 	_check(gun.rows().all(func(x: Dictionary) -> bool: return x.action.id != "rifle"), "rifle gone (once)")
 	var arm: Dictionary = gun.rows().filter(func(x: Dictionary) -> bool: return x.action.id == "arm_party")[0].action
-	_check(gun.run(arm) and Game.flag("party_armed") and Game.actions_left == 2 and Game.money == 177,
+	_check(gun.run(arm) and Game.flag("party_armed") and Game.actions_left == 2 and Game.money == 1770,
 		"arm the party (1 action, %d)" % Game.money)
 	await _shot("act2_gunsmith.png")
 

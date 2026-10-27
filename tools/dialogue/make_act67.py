@@ -139,6 +139,22 @@ road = {
     "end": END,
     "end_fight": END,
 }
+# The night stop: before the dark brings anything, a while at the fire with the expedition, each
+# companion's next rung of their rapport ladder (tools/dialogue/rapport.py; camp6_<id>, once).
+from rapport import ladder_nodes  # noqa: E402
+road["night_falls"] = road.pop("night")
+fire_menu = []
+for k, (label, ids) in enumerate([("Sit with the scholars", ["eleanor", "pembroke", "hassan"]), ("Sit with the fighters", ["hargreaves", "idris", "isabelle"]),
+                                  ("Sit with the guides", ["saleh", "youssef", "farid"]), ("Sit with the crews", ["mahmoud", "khalil", "naguib"])]):
+    gid = "fire_%d" % k
+    fire_menu.append(C(label, "", gid))
+    road[gid] = L("player", "Who's by the fire?", choices=[
+        C(SPEAKERS[i].split(" ")[2] if SPEAKERS[i].startswith("Dr.") else SPEAKERS[i].split(" ")[0], "", "f_%s_start" % i,
+          if_={"in_party": i, "not_flag": "camp6_" + i}, do=[flag("camp6_" + i)]) for i in ids] + [C("Back", "", "night")])
+    for i in ids:
+        road.update(ladder_nodes(i, "f_%s_" % i, "night"))
+fire_menu.append(C("Turn in", "Get some rest. We ride at first light.", "night_falls"))
+road["night"] = L("player", "Camp is made. The fire's going, and nobody's asleep yet.", choices=fire_menu)
 road["choose"]["choices"][0]["next"] = per_member(road, "ride_fear", {c: [fear(c, 1)] for c in COMPANIONS}, "rode")
 TALKS["act6_road"] = talk(
     "Act 6, the road back (any route, once): act6.gd sets act6_desert_pick or act6_coast_pick first. If the thieves fled the same way (Germans: desert; Italians: coast), you find their trail: a journal clue and a lead for Act 7 (lead_station / lead_police). Then the guardian's servants at the night camp: ride on (everyone's fear +1, act6_night_ride) or hold (event fight_mummy_servants, end_fight).",
@@ -363,7 +379,7 @@ TALKS["act7_blackwood"] = talk(
                     do=[flag("blackwood_refused")]),
         "confront": L("blackwood", "...Ashby came back alone. Raving about a man in bronze bands who followed him to the camp. I paid his family and buried the report. I told myself it was heatstroke.", "confess"),
         "confess": L("blackwood", "Take it back. Take the money too. Karim, give him whatever he needs. I've been running from that report for two years.", "end",
-                     do=[flag("blackwood_confessed"), {"money": 100}]),
+                     do=[flag("blackwood_confessed"), {"money": 1000}]),
         "end": END,
     })
 
@@ -384,8 +400,8 @@ conf["am_refuse"] = L("whitfield", "Weather's weather. I didn't come all this wa
     C("Buy them back", "Then let's talk money.", "am_buy"),
     C("Take them", "Then I'm taking them.", "fight"),
 ])
-conf["am_buy"] = L("whitfield", "A hundred pounds, and you can have the whole cursed lot. I'll even throw in the crates.", choices=[
-    C("Pay him", "Done.", "am_paid", if_={"money": 100}, do=[pay(100), flag("bought_artifacts")]),
+conf["am_buy"] = L("whitfield", "One thousand pounds, and you can have the whole cursed lot. I'll even throw in the crates.", choices=[
+    C("Pay him", "Done.", "am_paid", if_={"money": 1000}, do=[pay(1000), flag("bought_artifacts")]),
     C("Take them", "I'm not paying you for stolen goods.", "fight"),
 ])
 conf["am_paid"] = L("whitfield", "Pleasure doing business. Now get them out of my sight.", "recovered")

@@ -43,7 +43,7 @@
 		},
 		"whit_rides": {
 			"speaker": "whitfield",
-			"line": "Hey there, neighbour! Charlie Whitfield. Five hundred dollars says we beat you to the ruins. What do you say?",
+			"line": "Hey there, neighbour! Charlie Whitfield. Five thousand dollars says we beat you to the ruins. What do you say?",
 			"choices": [
 				{
 					"label": "Accept",
@@ -67,6 +67,7 @@
 						}
 					],
 					"next": "whit_yes",
+					"tone": "friendly",
 					"slot": "ur"
 				},
 				{
@@ -81,6 +82,7 @@
 						}
 					],
 					"next": "whit_no",
+					"tone": "neutral",
 					"slot": "r"
 				}
 			]
@@ -122,6 +124,7 @@
 						}
 					],
 					"next": "shortcut_try",
+					"tone": "friendly",
 					"slot": "ur"
 				},
 				{
@@ -137,6 +140,7 @@
 						}
 					],
 					"next": "arrive",
+					"tone": "neutral",
 					"slot": "r"
 				}
 			]

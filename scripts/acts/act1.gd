@@ -1,7 +1,7 @@
 extends Node3D
 ## Act 1: a bad day in Cairo, on -7f's Cairo map with -f9's data (actions/act1_plan.json,
 ## dialogue/act1_*.json). One guided afternoon, each scene opening the next:
-##   arrival at the docks (a suitcase, a revolver, £25)
+##   arrival at the docks (a suitcase, a revolver, £250)
 ##   ──► Freddie's office (act1_office: Umm Sayed; he's gone; a note; who else came)
 ##   ──► Finch's debt collectors in the street (act1_debt_collectors: talk, pay, or a fist fight,
 ##       then act1_after_brawl)
@@ -275,7 +275,7 @@ func _talk(id: String, who: Node3D, next: Callable) -> void:
 		if end == "end_fight":
 			Game.event.emit("fight_debt_collectors" if id == "act1_debt_collectors" else "fight_armed_men")
 		elif end == "end_accepted":
-			Game.apply([{"set_flag": "act1_offer_accepted"}, {"money": 50}])
+			Game.apply([{"set_flag": "act1_offer_accepted"}, {"money": 500}])
 		next.call(end)
 		return
 	var c := Conversation.new()

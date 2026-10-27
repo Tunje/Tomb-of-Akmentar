@@ -19,6 +19,7 @@
 						"not_flag": "fletcher_delay"
 					},
 					"next": "fletcher",
+					"tone": "neutral",
 					"slot": "r"
 				},
 				{
@@ -33,12 +34,14 @@
 						}
 					],
 					"next": "nabil",
+					"tone": "ask",
 					"slot": "ul"
 				},
 				{
 					"label": "Leave",
 					"line": "Nothing today.",
 					"next": "end",
+					"tone": "leave",
 					"slot": "ll"
 				}
 			]

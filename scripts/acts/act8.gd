@@ -45,7 +45,7 @@ func _ready() -> void:
 		for id in ["mahmoud", "khalil", "eleanor"]:
 			Game.companion(id)["recruited"] = true
 			Game.set_flag("hired_" + id)
-		Game.money = maxi(Game.money, 200)
+		Game.money = maxi(Game.money, 2000)
 		Game.set_flag("artifacts_recovered")
 	var cairo := Cairo.new()
 	level = cairo
@@ -135,6 +135,9 @@ func _set_out() -> void:
 				picked = b.choose(i)
 	while not closed[0]:
 		await get_tree().process_frame
+	var route := str(Game.flag("route_act8_route", ""))
+	if route in ["desert", "coast"]:
+		await _choose_riders(route)
 	for e in _events:
 		if FIGHT_EVENTS.has(e):
 			_route_event = e
@@ -150,8 +153,46 @@ func _count_transport() -> void:
 	for t in Game.transport.trucks:
 		trucks += int(float((t as Dictionary).get("health", 100.0)) > 0.0 or Game.flag("trucks_repaired", false))
 	trucks += int(Game.inventory.get("truck", 0))
-	Game.set_flag("enough_horses", horses >= people)
-	Game.set_flag("enough_trucks", trucks * 4 >= people)
+	# Simon: check against what you have, and you can go with less than all of your party: one horse
+	# (yours) or one truck opens the way; whoever there's no mount or seat for stays in Cairo.
+	Game.set_flag("act8_horses", horses)
+	Game.set_flag("act8_trucks", trucks)
+	Game.set_flag("enough_horses", horses >= 1)
+	Game.set_flag("enough_trucks", trucks >= 1)
+
+
+## The overland routes with fewer mounts than people: you pick who comes, one at a time; the rest
+## stay in Cairo (left_behind: out of the party from here on, alive).
+func _choose_riders(route: String) -> void:
+	var seats: int = int(Game.flag("act8_horses", 0)) - 1 if route == "desert" else int(Game.flag("act8_trucks", 0)) * 4 - 1
+	var left: Array = Game.party()
+	if left.size() <= seats:
+		return
+	var riders: Array = []
+	while riders.size() < seats and not left.is_empty():
+		if args.has("auto"):
+			riders.append(left.pop_front())
+			continue
+		var rows: Array = []
+		for id in left:
+			rows.append({"label": DayLog.person(str(id)), "enabled": true, "action": {}})
+		var what := "horse" if route == "desert" else "seat"
+		var menu := ActionMenu.open(self, "Who comes with you? (%d %s%s left)" % [seats - riders.size(), what, "" if seats - riders.size() == 1 else "s"], rows, player)
+		var pick := [-1]
+		menu.picked.connect(func(i: int) -> void:
+			pick[0] = i
+			menu.close())
+		await menu.closed
+		if pick[0] < 0:
+			break  # Leave: nobody more
+		riders.append(left.pop_at(pick[0]))
+	for id in left:
+		Game.companion(str(id))["left_behind"] = true
+		if companions.has(id) and is_instance_valid(companions[id]):
+			(companions[id] as Node).queue_free()
+		companions.erase(id)
+	if not left.is_empty():
+		hud.toast("%s stay%s in Cairo." % [", ".join(left.map(func(i): return DayLog.person(str(i)))), "s" if left.size() == 1 else ""], 4.0)
 
 
 # ---------------------------------------------------------------- the road

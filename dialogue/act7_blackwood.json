@@ -20,6 +20,7 @@
 					"label": "Refuse",
 					"line": "No. They go back where they came from.",
 					"next": "refuse",
+					"tone": "hostile",
 					"slot": "lr"
 				},
 				{
@@ -29,6 +30,7 @@
 						"flag": "clue_cairo_first_report"
 					},
 					"next": "confront",
+					"tone": "neutral",
 					"slot": "r"
 				},
 				{
@@ -39,6 +41,7 @@
 						"not_flag": "clue_cairo_first_report"
 					},
 					"next": "confront",
+					"tone": "neutral",
 					"slot": "ur"
 				},
 				{
@@ -53,6 +56,7 @@
 						}
 					],
 					"next": "danger",
+					"tone": "neutral",
 					"slot": "l"
 				}
 			]
@@ -85,7 +89,7 @@
 					"set_flag": "blackwood_confessed"
 				},
 				{
-					"money": 100
+					"money": 1000
 				}
 			],
 			"next": "end"

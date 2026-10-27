@@ -26,7 +26,7 @@ func _ready() -> void:
 			_dir = a.substr(11)
 	DirAccess.make_dir_recursive_absolute(_dir)
 	Game.reset()
-	Game.money = 300
+	Game.money = 3000
 	Game.event.connect(func(e: String) -> void: _events.append(e))
 	DayLog.begin_day()
 	var we := WorldEnvironment.new()
@@ -57,8 +57,8 @@ func _run() -> void:
 	_click(b.option_point(0))  # a second click takes it
 	await _wait(0.2)
 	# No guide hired: the desert takes 4 days, not 3; the fork talk (event desert_fork) comes next.
-	_check(Game.money == 240 and Game.day == 5 and Game.flag("route_act3_route") == "desert",
-			"desert: £60 paid (money %d), 4 days without a guide (day %d)" % [Game.money, Game.day])
+	_check(Game.money == 2400 and Game.day == 5 and Game.flag("route_act3_route") == "desert",
+			"desert: £600 paid (money %d), 4 days without a guide (day %d)" % [Game.money, Game.day])
 	_check(_gone(b) and "desert_fork" in _events, "the desert board closes and raises desert_fork (%s)" % [_events])
 	Game.set_flag("fork_temple")  # what act3_fork decided
 	b = RouteBoard.open(self, "act3_desert_branch", _player)

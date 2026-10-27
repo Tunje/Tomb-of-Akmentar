@@ -63,6 +63,7 @@
 						}
 					],
 					"next": "rite",
+					"tone": "ask",
 					"slot": "ul"
 				},
 				{
@@ -84,6 +85,7 @@
 						}
 					],
 					"next": "omar_answer",
+					"tone": "friendly",
 					"slot": "ur"
 				},
 				{
@@ -112,12 +114,14 @@
 						}
 					],
 					"next": "mock",
+					"tone": "hostile",
 					"slot": "lr"
 				},
 				{
 					"label": "Go",
 					"line": "Then let's go. Stay close to me, both of you.",
 					"next": "go",
+					"tone": "leave",
 					"slot": "ll"
 				}
 			]

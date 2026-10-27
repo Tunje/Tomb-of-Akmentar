@@ -50,18 +50,21 @@
 						"flag": "sky_dark"
 					},
 					"next": "am_sky",
+					"tone": "neutral",
 					"slot": "r"
 				},
 				{
 					"label": "Buy them back",
 					"line": "Name your price for the jars and the amulet.",
 					"next": "am_buy",
+					"tone": "neutral",
 					"slot": "ur"
 				},
 				{
 					"label": "Take them",
 					"line": "I'm taking them. Now.",
 					"next": "fight",
+					"tone": "hostile",
 					"slot": "lr"
 				}
 			]
@@ -101,41 +104,45 @@
 					"label": "Buy them back",
 					"line": "Then let's talk money.",
 					"next": "am_buy",
+					"tone": "neutral",
 					"slot": "r"
 				},
 				{
 					"label": "Take them",
 					"line": "Then I'm taking them.",
 					"next": "fight",
+					"tone": "hostile",
 					"slot": "lr"
 				}
 			]
 		},
 		"am_buy": {
 			"speaker": "whitfield",
-			"line": "A hundred pounds, and you can have the whole cursed lot. I'll even throw in the crates.",
+			"line": "One thousand pounds, and you can have the whole cursed lot. I'll even throw in the crates.",
 			"choices": [
 				{
 					"label": "Pay him",
 					"line": "Done.",
 					"if": {
-						"money": 100
+						"money": 1000
 					},
 					"do": [
 						{
-							"money": -100
+							"money": -1000
 						},
 						{
 							"set_flag": "bought_artifacts"
 						}
 					],
 					"next": "am_paid",
+					"tone": "friendly",
 					"slot": "ur"
 				},
 				{
 					"label": "Take them",
 					"line": "I'm not paying you for stolen goods.",
 					"next": "fight",
+					"tone": "hostile",
 					"slot": "lr"
 				}
 			]
@@ -156,6 +163,7 @@
 						"flag": "sky_dark"
 					},
 					"next": "ge_sky",
+					"tone": "neutral",
 					"slot": "r"
 				},
 				{
@@ -165,12 +173,14 @@
 						"flag": "stones_falling"
 					},
 					"next": "ge_vogel",
+					"tone": "neutral",
 					"slot": "ur"
 				},
 				{
 					"label": "Take them",
 					"line": "I'm not asking, Professor.",
 					"next": "fight",
+					"tone": "hostile",
 					"slot": "lr"
 				}
 			]
@@ -210,6 +220,7 @@
 					"label": "Take them",
 					"line": "Then I'm taking them.",
 					"next": "fight",
+					"tone": "hostile",
 					"slot": "lr"
 				}
 			]
@@ -247,6 +258,7 @@
 						"flag": "sickness"
 					},
 					"next": "it_sofia",
+					"tone": "neutral",
 					"slot": "r"
 				},
 				{
@@ -262,12 +274,14 @@
 						}
 					],
 					"next": "it_sky",
+					"tone": "neutral",
 					"slot": "ur"
 				},
 				{
 					"label": "Take them",
 					"line": "Business is over.",
 					"next": "fight",
+					"tone": "hostile",
 					"slot": "lr"
 				}
 			]

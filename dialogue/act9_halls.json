@@ -23,6 +23,7 @@
 						}
 					],
 					"next": "o_0",
+					"tone": "neutral",
 					"slot": "r"
 				},
 				{
@@ -37,6 +38,7 @@
 						}
 					],
 					"next": "o_1",
+					"tone": "neutral",
 					"slot": "ur"
 				},
 				{
@@ -51,6 +53,7 @@
 						}
 					],
 					"next": "o_2",
+					"tone": "neutral",
 					"slot": "lr"
 				},
 				{
@@ -65,6 +68,7 @@
 						}
 					],
 					"next": "o_3",
+					"tone": "neutral",
 					"slot": "l"
 				},
 				{
@@ -79,12 +83,14 @@
 						}
 					],
 					"next": "o_4",
+					"tone": "neutral",
 					"slot": "ul"
 				},
 				{
 					"label": "Force it",
 					"line": "Stand back. We force it.",
 					"next": "fight",
+					"tone": "hostile",
 					"slot": "ll"
 				}
 			]

@@ -8,7 +8,7 @@ extends RefCounted
 
 const FILE := "user://settings.cfg"
 const DEFAULTS := {
-	"master": 1.0, "effects": 1.0, "ambience": 1.0,     # volumes, 0..1
+	"master": 1.0, "effects": 1.0, "ambience": 1.0, "music": 1.0,     # volumes, 0..1
 	"mouse_sens": 1.0, "invert_y": false, "fov": 72.0,
 	"quality": "high",                                  # low / medium / high
 	"fullscreen": false, "barks": true, "hints": true,
@@ -33,7 +33,7 @@ const QUALITY := {
 	"medium": {"lights": 2, "sun": true, "scale": 1.0, "msaa": Viewport.MSAA_DISABLED, "fxaa": true},
 	"high": {"lights": 4, "sun": true, "scale": 1.0, "msaa": Viewport.MSAA_2X, "fxaa": false},
 }
-const BUSES := ["SFX", "Ambience"]
+const BUSES := ["SFX", "Ambience", "Music"]
 
 static var values := {}
 static var _loaded := false
@@ -58,6 +58,7 @@ static func ensure(tree: SceneTree) -> void:
 	if not _loaded:
 		_load()
 	apply(tree)
+	MusicDirector.ensure(tree)  # once, on the root: the music carries across scenes (not in test runs)
 
 
 ## Set by a test before anything reads the settings (options_test): never touch the real file.
@@ -118,6 +119,7 @@ static func apply(tree: SceneTree) -> void:
 	_volume("Master", float(value("master")))
 	_volume("SFX", float(value("effects")))
 	_volume("Ambience", float(value("ambience")))
+	_volume("Music", float(value("music")))
 	var q: Dictionary = QUALITY.get(str(value("quality")), QUALITY.high)
 	RenderBudget.max_shadowed = int(q.lights)
 	if tree:
