@@ -93,11 +93,18 @@ class NoiseHook extends Node:
 	var _t := 0.0
 	var _player: Node3D
 
+	# Bound methods, not lambdas: Game (an autoload) outlives the scene; a freed hook drops them.
 	func _ready() -> void:
-		Game.event.connect(func(e: String) -> void:
-			if e.begins_with("fight") or "attack" in e or "battle" in e:
-				var at := _player.global_position if is_instance_valid(_player) else Vector3.ZERO
-				Crowd.alarm(get_tree(), at, 60.0))
+		Game.event.connect(_on_event)
+
+	func _on_event(e: String) -> void:
+		if e.begins_with("fight") or "attack" in e or "battle" in e:
+			var at := _player.global_position if is_instance_valid(_player) else Vector3.ZERO
+			Crowd.alarm(get_tree(), at, 60.0)
+
+	func _on_fired(p: Player) -> void:
+		if is_instance_valid(p) and is_inside_tree():
+			Crowd.alarm(get_tree(), p.global_position)
 
 	func _process(delta: float) -> void:
 		_t += delta
@@ -109,17 +116,19 @@ class NoiseHook extends Node:
 				_player = c
 				if not c.has_meta("crowd_hooked"):
 					c.set_meta("crowd_hooked", true)
-					var p := c as Player
-					p.fired.connect(func() -> void: Crowd.alarm(get_tree(), p.global_position))
+					c.fired.connect(_on_fired.bind(c))
 
 
 func _ready() -> void:
 	add_to_group("crowd")
-	Game.event.connect(func(e: String) -> void:
-		if e.begins_with("fight_"):
-			var p := _find_player()
-			if p:
-				_alarm(p.global_position, alarm_radius))
+	Game.event.connect(_on_event)
+
+
+func _on_event(e: String) -> void:
+	if e.begins_with("fight_"):
+		var p := _find_player()
+		if p:
+			_alarm(p.global_position, alarm_radius)
 
 
 # ---------------------------------------------------------------- building
@@ -345,7 +354,12 @@ func _hook_player() -> void:
 	var p := _find_player()
 	if p and p.has_signal("fired") and not p.has_meta("crowd_hooked"):
 		p.set_meta("crowd_hooked", true)
-		p.connect("fired", func() -> void: Crowd.alarm(get_tree(), p.global_position))
+		p.connect("fired", _on_fired.bind(p))
+
+
+func _on_fired(p: Node3D) -> void:
+	if is_instance_valid(p) and is_inside_tree():
+		Crowd.alarm(get_tree(), p.global_position)
 
 
 func _find_player() -> Node3D:

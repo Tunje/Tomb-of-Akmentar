@@ -66,14 +66,19 @@ static func call_to_prayer(parent: Node3D, at: Vector3, every := Vector2(240.0, 
 	p.bus = "Ambience"
 	parent.add_child(p)
 	p.global_position = at
-	var again := func(self_call: Callable) -> void:
-		if is_instance_valid(p) and p.is_inside_tree():
-			p.get_tree().create_timer(randf_range(every.x, every.y)).timeout.connect(func() -> void:
-				if is_instance_valid(p):
-					p.play()
-					self_call.call(self_call))
-	again.call(again)
+	# A Timer under the player (not a SceneTree timer): it goes with the player, never firing late.
+	var t := Timer.new()
+	t.one_shot = true
+	t.wait_time = randf_range(every.x, every.y)
+	p.add_child(t)
+	t.timeout.connect(_prayer_again.bind(p, t, every))
+	t.start()
 	return p
+
+
+static func _prayer_again(p: AudioStreamPlayer3D, t: Timer, every: Vector2) -> void:
+	p.play()
+	t.start(randf_range(every.x, every.y))
 
 
 ## How many one-shot players are sounding now (tests), in this scene.

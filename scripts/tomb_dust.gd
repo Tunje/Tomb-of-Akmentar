@@ -159,15 +159,25 @@ func _grit() -> void:
 	puff.emitting = false  # when the grit lands
 	add_child(puff)
 	puff.global_position = floor_at + Vector3.UP * 0.05
-	get_tree().create_timer(fall.lifetime - 0.35).timeout.connect(func() -> void:
-		if is_instance_valid(puff):
-			puff.emitting = true)
+	# Bound methods, not lambdas: SceneTree timers outlive a retried scene, and a freed TombDust
+	# drops these connections (a lambda would fire with its captures freed).
+	get_tree().create_timer(fall.lifetime - 0.35).timeout.connect(_land.bind(puff))
 	# The trickle heard from where it lands (SoundLife: pooled, on the ambience bus).
-	get_tree().create_timer(maxf(fall.lifetime - 0.9, 0.1)).timeout.connect(func() -> void:
-		if is_inside_tree():
-			SoundLife.play(self, "grit", floor_at))
-	get_tree().create_timer(fall.lifetime + 3.0).timeout.connect(func() -> void:
-		if is_instance_valid(fall):
-			fall.queue_free()
-		if is_instance_valid(puff):
-			puff.queue_free())
+	get_tree().create_timer(maxf(fall.lifetime - 0.9, 0.1)).timeout.connect(_grit_sound.bind(floor_at))
+	get_tree().create_timer(fall.lifetime + 3.0).timeout.connect(_done.bind(fall, puff))
+
+
+func _land(puff: GPUParticles3D) -> void:
+	if is_instance_valid(puff):
+		puff.emitting = true
+
+
+func _grit_sound(at: Vector3) -> void:
+	if is_inside_tree():
+		SoundLife.play(self, "grit", at)
+
+
+func _done(fall: GPUParticles3D, puff: GPUParticles3D) -> void:
+	for n: Node in [fall, puff]:
+		if is_instance_valid(n):
+			n.queue_free()
