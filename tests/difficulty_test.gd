@@ -168,6 +168,7 @@ static func _table(rows: Array, label: String, seeds: int) -> String:
 		var fired := 0
 		var hit := 0
 		var downs := 0
+		var helps := 0
 		var won := 0
 		var deaths := 0
 		var dmg := 0.0
@@ -186,10 +187,11 @@ static func _table(rows: Array, label: String, seeds: int) -> String:
 			lost += (r.lost as Array).size()
 			party += (r.party as Array).size()
 			downs += int(r.get("downs", 0))
+			helps += int(r.get("ally_helps", 0))
 			fired += int(r.get("fired", 0))
 			hit += int(r.get("hit", 0))
-		lines.append("| %s | %d | %d | %d%s | %d%% (%d%%) | %.0f s | %d/%d (%d down) | %s |" % [n, rs.size(), won, deaths,
-			" (+%d timeout)" % timeouts if timeouts > 0 else "", int(dmg / rs.size()), int(dmax), t / rs.size(), lost, party, downs,
+		lines.append("| %s | %d | %d | %d%s | %d%% (%d%%) | %.0f s | %d/%d (%d down, %d helped up by a companion) | %s |" % [n, rs.size(), won, deaths,
+			" (+%d timeout)" % timeouts if timeouts > 0 else "", int(dmg / rs.size()), int(dmax), t / rs.size(), lost, party, downs, helps,
 			"%d%% of %d" % [100 * hit / fired, fired] if fired > 0 else "-"])
 	return "\n".join(lines)
 
@@ -209,6 +211,7 @@ var _seg_t := 0.0
 var _seg_dmg := 0.0
 var _shots := Vector2i.ZERO  # this fight: (fired, hit)
 var _downs := {}  # companion ids that went down in this fight
+var _helps_at := 0  # the party's Gunman.ally_helps when this fight began
 var _seg_party: Array = []
 var _trucks_hp := 0.0  # "dmg": "trucks" fights (the chase): the convoy takes the hits, not him
 var _hp_used := 0.0  # damage the current player has taken: his health, god mode or not
@@ -314,6 +317,7 @@ func _check(delta: float) -> void:
 			_quiet = 0.0
 			_fought = false
 			_seg_party = Game.party()
+			_helps_at = _ally_helps()
 			_trucks_hp = _trucks_health()
 			print("DIFF %s start t=%.1f party=%s" % [s.name, _t, _seg_party])
 			if s.get("at", "") == "intercept" and act.get("intercept") != null:
@@ -380,7 +384,7 @@ func _finish_seg(outcome: String) -> void:
 	# Still down at the end isn't lost: the fight over, Gunman gets them up (UP_AFTER).
 	var lost := _seg_party.filter(func(id): return not Game.in_party(id))
 	var r := {"name": s.name, "seed": _seed, "outcome": outcome, "t": snappedf(_seg_t, 0.1), "dmg": snappedf(_seg_dmg, 0.1),
-		"dmg_pct": snappedf(minf(100.0 * _seg_dmg / full, 100.0), 0.1), "party": _seg_party, "lost": lost, "fired": _shots.x, "hit": _shots.y, "downs": _downs.size()}
+		"dmg_pct": snappedf(minf(100.0 * _seg_dmg / full, 100.0), 0.1), "party": _seg_party, "lost": lost, "fired": _shots.x, "hit": _shots.y, "downs": _downs.size(), "ally_helps": _ally_helps() - _helps_at}
 	print("DIFF %s" % JSON.stringify(r))
 	var f := FileAccess.open(_out, FileAccess.READ_WRITE if FileAccess.file_exists(_out) else FileAccess.WRITE)
 	f.seek_end()
@@ -407,3 +411,11 @@ func _trucks_health() -> float:
 	for t in act.get("trucks") if act.get("trucks") is Array else []:
 		hp += maxf((t as Truck).health, 0.0) if is_instance_valid(t) else 0.0
 	return hp
+
+
+func _ally_helps() -> int:
+	var n := 0
+	for g in get_tree().get_nodes_in_group("gunmen"):
+		if g is Gunman and (g as Gunman).team == Gunman.PARTY:
+			n += (g as Gunman).ally_helps
+	return n

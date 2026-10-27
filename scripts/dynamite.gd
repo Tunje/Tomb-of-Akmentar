@@ -15,6 +15,7 @@ const DAMAGE := 70.0  # at the centre (the player's share also follows the diffi
 const KNOCK := 6.0
 const AIM_ERROR := 1.4  # m off where it was aimed, at random
 const MASK_WORLD := 1
+const CALL_RANGE := 10.0  # m: a companion this near calls it
 
 var vel := Vector3.ZERO
 var thrower: Node3D
@@ -24,6 +25,7 @@ var _hiss: AudioStreamPlayer3D
 var _hiss_t := 0.0
 var _spark: OmniLight3D
 var _done := false
+var _called := false  # "Dynamite!" from the party, once, when it first lands
 
 
 ## Throw a lit stick from `from` (the hand) to land near `at`.
@@ -115,6 +117,9 @@ func _physics_process(delta: float) -> void:
 		return
 	var n: Vector3 = hit.normal
 	global_position = (hit.position as Vector3) + n * 0.05
+	if not _called:
+		_called = true
+		_callout()
 	if n.y > 0.6 and vel.length() < 4.0:
 		_resting = true  # lies there, fizzing
 		return
@@ -179,3 +184,12 @@ func explode() -> void:
 		elif b.has_method("take_damage"):
 			b.call("take_damage", dmg, at)
 
+
+
+## It's landed: a companion within CALL_RANGE shouts it.
+func _callout() -> void:
+	for n in get_tree().get_nodes_in_group("party"):
+		var g := n as Node3D
+		if g and g.global_position.distance_to(global_position) < CALL_RANGE:
+			Barks.say_any(get_tree(), "callout_dynamite", global_position)
+			return

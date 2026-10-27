@@ -16,7 +16,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 
 SITUATIONS = ["combat_start", "reloading", "ally_down", "enemy_down", "low_health", "helped_up", "mummy_seen",
               "guardian_seen", "scarabs", "slab_falling", "entering_tomb", "idle_explore", "idle_city", "campfire",
-              "horse_ride", "truck_ride", "act5_escape", "act7_curse"]
+              "horse_ride", "truck_ride", "act5_escape", "act7_curse",
+              "helping_up", "callout_dynamite", "callout_flank_left", "callout_flank_right", "callout_leader_down",
+              "callout_rifleman", "focus_target", "sandstorm"]
 
 
 def T(who, n):
@@ -76,6 +78,7 @@ B = {
     },
     "hassan": {
         "combat_start": ["God forgive us.", "Stay behind the stone. Let them come to us."],
+        "sandstorm": ["The old texts call this the breath of the west."],
         "reloading": ["A moment. My hands are old.", "Reloading."],
         "ally_down": ["One of ours has fallen!", "Help them up. Quickly."],
         "enemy_down": ["Rest now.", "It is finished, for that one."],
@@ -159,6 +162,7 @@ B = {
     },
     "saleh": {
         "combat_start": ["Stay low. The sand is your friend.", "Find cover, then fight."],
+        "sandstorm": ["Down, and keep the camels' heads low. It passes."],
         "reloading": ["Reloading.", "Patience. One moment."],
         "ally_down": ["A traveller is down! Help them!", "We bring them home. All of them."],
         "enemy_down": ["Down.", "God have mercy."],
@@ -179,6 +183,7 @@ B = {
     },
     "youssef": {
         "combat_start": ["Let them come! I'm not afraid!", ["I'm... I'm not afraid.", F("youssef", 1)]],
+        "sandstorm": ["I cannot see the road! I can still feel it. Follow me."],
         "reloading": ["Reloading, reloading!", "How do you load this thing fast?"],
         "ally_down": ["They are down! What do we do?", "Help them!"],
         "enemy_down": ["I got one! Did you see?", "Ha! Down!"],
@@ -286,6 +291,15 @@ B = {
         "truck_ride": ["Bumpy road.", "Hold on."],
         "act5_escape": ["Run!", "This way!"],
         "act7_curse": ["The sky...", "Something is coming."],
+        "helping_up": ["Up you get!", "Come on, on your feet.", "I've got you."],
+        "callout_dynamite": ["Dynamite!", "Get clear, dynamite!", "Fuse! Move!"],
+        "callout_flank_left": ["Flanking left!", "One going round on the left!"],
+        "callout_flank_right": ["Flanking right!", "One going round on the right!"],
+        "callout_leader_down": ["Their leader's down!", "That was their man in charge!"],
+        "callout_rifleman": ["Rifle, long range!", "Rifleman! Keep your head down!"],
+        "focus_target": ["On it.", "That one, got it.", "Him? Right."],
+        "sandstorm": ["Cover your faces!", "Sandstorm! Keep close, keep moving!", "Tie the scarves, it's coming!",
+                      "Stay with the trucks, you'll lose the road in this!"],
     },
 }
 

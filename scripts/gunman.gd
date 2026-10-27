@@ -418,6 +418,12 @@ func _choose_target() -> void:
 		return
 	# Look from where we'd shoot: over / round the cover, not from the crouch.
 	var eye := _peek_eye() if not _spot.get("exposed", true) else _eye()
+	# "Focus my target": the player's pick, while it lasts and they can see it.
+	if team == PARTY and _focus_on() and _clear(eye, _point_on(focus_target)):
+		if target != focus_target:
+			_seen_t = 0.0
+		target = focus_target
+		return
 	var keep := _target_alive(target) and _seen_t < 3.0
 	var best: Node3D = target if keep else null
 	var best_d := global_position.distance_to(target.global_position) - 5.0 if keep else SIGHT
@@ -611,59 +617,65 @@ func _physics_process(delta: float) -> void:
 
 	var move := Vector3.ZERO
 	crouched = false
-	match state:
-		State.IDLE:
-			if has_target:
-				_pick("hold")
-			elif team == PARTY:
-				move = _follow(delta)
-		State.MOVE:
-			var speed := SPRINT if retreating and _t < 4.0 else RUN
-			move = _move_to(_spot.pos, speed, delta, true)
-			if _arrived(_spot.pos):
-				flanking = false
-				if _spot.exposed:
-					_enter(State.AIM if has_target else State.IDLE)
-				else:
-					_spot_age = 0.0
-					_enter(State.COVER)
-			elif _fire_on_the_move(has_target):
-				pass
-			elif _stuck(delta) or _t > 15.0:
-				# Something the navmesh doesn't know about is in the way (it misses props, the
-				# truck, other gunmen): give this spot up for a while and choose again.
-				stuck_count += 1
-				if _spot.key != "":
-					_bad_spots[_spot.key] = _now()
-				_pick("hold")
-		State.COVER:
-			crouched = true
-			cover_time += delta
-			_spot_age += delta
-			move = _move_to(_spot.pos, STEP_OUT, delta, false)
-			_cover_think(has_target)
-		State.AIM:
-			move = _move_to(_spot.peek, STEP_OUT, delta, false)
-			_aim_step(delta, has_target)
-		State.RELOAD:
-			crouched = not _spot.get("exposed", true)
-			if crouched:
-				cover_time += delta
-				move = _move_to(_spot.pos, STEP_OUT, delta, false)
-			if _t >= RELOAD:
-				ammo = MAG
-				_enter(State.COVER if crouched else State.AIM)
-				if not crouched and not has_target:
-					_enter(State.IDLE)
-		State.STAGGER:
-			if _t >= STAGGER_TIME:
-				if _retreat_pending:
-					_retreat_pending = false
-					_pick("retreat")
-				elif _spot.is_empty() or _spot.exposed or not _arrived(_spot.pos):
+	# A companion going to help another up (and kneeling there): that's all he does meanwhile.
+	if team == PARTY:
+		_poll_focus(delta)
+	if team == PARTY and _help_step(delta):
+		move = _help_move
+	else:
+		match state:
+			State.IDLE:
+				if has_target:
 					_pick("hold")
-				else:
-					_enter(State.COVER)
+				elif team == PARTY:
+					move = _follow(delta)
+			State.MOVE:
+				var speed := SPRINT if retreating and _t < 4.0 else RUN
+				move = _move_to(_spot.pos, speed, delta, true)
+				if _arrived(_spot.pos):
+					flanking = false
+					if _spot.exposed:
+						_enter(State.AIM if has_target else State.IDLE)
+					else:
+						_spot_age = 0.0
+						_enter(State.COVER)
+				elif _fire_on_the_move(has_target):
+					pass
+				elif _stuck(delta) or _t > 15.0:
+					# Something the navmesh doesn't know about is in the way (it misses props, the
+					# truck, other gunmen): give this spot up for a while and choose again.
+					stuck_count += 1
+					if _spot.key != "":
+						_bad_spots[_spot.key] = _now()
+					_pick("hold")
+			State.COVER:
+				crouched = true
+				cover_time += delta
+				_spot_age += delta
+				move = _move_to(_spot.pos, STEP_OUT, delta, false)
+				_cover_think(has_target)
+			State.AIM:
+				move = _move_to(_spot.peek, STEP_OUT, delta, false)
+				_aim_step(delta, has_target)
+			State.RELOAD:
+				crouched = not _spot.get("exposed", true)
+				if crouched:
+					cover_time += delta
+					move = _move_to(_spot.pos, STEP_OUT, delta, false)
+				if _t >= RELOAD:
+					ammo = MAG
+					_enter(State.COVER if crouched else State.AIM)
+					if not crouched and not has_target:
+						_enter(State.IDLE)
+			State.STAGGER:
+				if _t >= STAGGER_TIME:
+					if _retreat_pending:
+						_retreat_pending = false
+						_pick("retreat")
+					elif _spot.is_empty() or _spot.exposed or not _arrived(_spot.pos):
+						_pick("hold")
+					else:
+						_enter(State.COVER)
 
 	_face(delta, move)
 	_push = _push.move_toward(Vector3.ZERO, delta * 8.0)
@@ -711,6 +723,9 @@ func _cover_think(has_target: bool) -> void:
 			_pick("flank")
 			return
 		if _maybe_throw():
+			return
+		if team == PARTY and _leapfrog():
+			_pick("hold")  # up with him
 			return
 		if _spot_age > 10.0 and _seen_t > 6.0:
 			_pick("reposition")
@@ -1174,6 +1189,8 @@ func _pick(mode: String) -> void:
 			continue
 		if (team == PARTY or guard_at != Vector3.INF) and _flat(pos - anchor).length() > LEASH:
 			continue
+		if team == PARTY and _in_players_fire(pos):
+			continue  # never between the player and what he's shooting at
 		var travel := _flat(pos - global_position).length()
 		if travel > MAX_TRAVEL * (2.0 if mode in ["retreat", "flank"] else 1.0):
 			continue
@@ -1226,6 +1243,7 @@ func _pick(mode: String) -> void:
 			best = best.duplicate()
 			best.exposed = true  # shoot a burst from the open there, then find cover again
 		flanking = true
+		_flank_callout()
 		flanks += 1
 		_last_flank = _now()
 	# Already there (the best is the spot we hold): stay put instead of restarting the move,
@@ -1440,6 +1458,9 @@ func _target_point() -> Vector3:
 func _fire() -> void:
 	ammo -= 1
 	shots_fired += 1
+	if role == "rifleman" and not _called_rifle:
+		_called_rifle = true
+		Barks.say_any(get_tree(), "callout_rifleman", global_position)
 	Crowd.alarm(get_tree(), global_position)  # gunfire scatters a crowd (none: nothing)
 	var eye := _eye()
 	# Rounds leave the muzzle (no hitscan: Bullets flies them), unless the muzzle is inside
@@ -1543,6 +1564,7 @@ func take_damage(amount: float, from: Vector3) -> bool:
 func _hurt(part: String, dmg: float, dir: Vector3, stagger: float, knock: float) -> Dictionary:
 	if state == State.DEAD:
 		return {"killed": false}
+	_last_hurt = alive_time
 	if downed and stumbled:
 		# Hit while down: it bleeds them faster (a swipe ~10 s of BLEED_OUT); the guardian's grab
 		# (100000) is the end at once.
@@ -1769,6 +1791,7 @@ func _leader_fell() -> void:
 			g._retreat_pending = true
 			n_back += 1
 	print("GUNMAN leader %s (%s) down: %d of his side fall back" % [name, team, n_back])
+	Barks.say_any(get_tree(), "callout_leader_down", global_position)
 
 
 ## Riflemen: you're behind cover he can see the top of: keep it busy (rounds into the cover).
@@ -1790,3 +1813,180 @@ func _maybe_throw() -> bool:
 	Dynamite.throw(get_parent(), _eye() + Vector3.UP * 0.2, target.global_position, self)
 	print("GUNMAN %s throws dynamite at %.0f m" % [name, d])
 	return true
+
+
+# ---------------------------------------------------------------- companions helping companions
+
+const ALLY_HELP_TIME := 3.0      # s kneeling to get a downed companion up (the player's E is instant)
+const ALLY_HELP_SAFE := 8.0      # m: nothing hostile this near the downed one, or no going
+const ALLY_HELP_REACH := 15.0    # m they'll go to help
+const ALLY_HELP_RANGE := 1.4
+const SHOT_AT_GAP := 2.0         # s since they were last hit before they'll go
+static var _helping := {}        # downed instance id -> helper instance id (one help at a time)
+var ally_helps := 0              # how many this one got up (tests)
+var _help_target: Gunman
+var _help_t := 0.0
+var _help_look := 0.0
+var _help_move := Vector3.ZERO
+var _last_hurt := -100.0
+
+
+## Going to (or kneeling by) a downed companion: true while that's what this one is doing, with
+## the move in _help_move. Only when it's safe; anything coming near, or a hit, calls it off.
+func _help_step(delta: float) -> bool:
+	if escape or stumbled or not is_active():
+		return false
+	if _help_target == null:
+		_help_look -= delta
+		if _help_look > 0.0:
+			return false
+		_help_look = 0.5
+		_help_target = _find_downed()
+		if _help_target == null:
+			return false
+		_helping[_help_target.get_instance_id()] = get_instance_id()
+		_help_t = 0.0
+	var g := _help_target
+	if not is_instance_valid(g) or not g.stumbled or not g.is_active() or not _help_safe(g):
+		_drop_help()
+		return false
+	var off := _flat(g.global_position - global_position)
+	if off.length() > ALLY_HELP_RANGE:
+		_help_move = _move_to(g.global_position, RUN, delta, true)
+		_help_t = 0.0
+		return true
+	_help_move = Vector3.ZERO
+	if _help_t == 0.0:
+		Barks.say(self, "helping_up")
+	_help_t += delta
+	crouched = true
+	if _help_t >= ALLY_HELP_TIME:
+		print("COMPANION %s helps %s up" % [companion_id, g.companion_id])
+		g.help_up()
+		ally_helps += 1
+		_drop_help()
+	return true
+
+
+func _find_downed() -> Gunman:
+	for k in _helping.keys():  # one help at a time, party-wide
+		if is_instance_id_valid(_helping[k]) and is_instance_id_valid(k):
+			return null
+		_helping.erase(k)
+	var best: Gunman = null
+	var bd := ALLY_HELP_REACH
+	for n in get_tree().get_nodes_in_group("gunmen"):
+		var g := n as Gunman
+		if g == null or g == self or g.team != PARTY or not g.downed or not g.stumbled or not g.is_active():
+			continue
+		var d := global_position.distance_to(g.global_position)
+		if d < bd and _help_safe(g):
+			bd = d
+			best = g
+	return best
+
+
+func _help_safe(g: Gunman) -> bool:
+	if alive_time - _last_hurt < SHOT_AT_GAP:
+		return false  # being shot at
+	for f in hostiles(get_tree()):
+		if f.global_position.distance_to(g.global_position) < ALLY_HELP_SAFE:
+			return false
+	return true
+
+
+func _drop_help() -> void:
+	if _help_target and is_instance_valid(_help_target):
+		_helping.erase(_help_target.get_instance_id())
+	_help_target = null
+	_help_t = 0.0
+
+
+# ---------------------------------------------------------------- orders, callouts, cover
+
+const FOCUS_TIME := 10.0         # s companions prefer the player's target after "focus"
+const FOCUS_HOLD := 0.45         # s holding party_order (G / d-pad left) makes it "focus", not follow/hold
+const LEAPFROG_GAP := 7.0        # m the player has moved on from a companion's cover before he follows
+const LEAPFROG_EVERY := 1.5      # s between two companions moving up: one goes, the other covers
+static var focus_target: Node3D
+static var _focus_until := -100.0
+static var _order_held := 0.0
+static var _order_frame := -1
+static var _last_leap := -100.0
+var _called_rifle := false
+
+
+static func _focus_on() -> bool:
+	return _now() < _focus_until and is_instance_valid(focus_target) and _target_alive(focus_target)
+
+
+## Polled once a frame (by whichever companion runs first): "party_focus", or party_order held,
+## puts the party on what's under the player's crosshair.
+func _poll_focus(delta: float) -> void:
+	var f := Engine.get_physics_frames()
+	if f == _order_frame:
+		return
+	_order_frame = f
+	var p := leader as Player
+	if p == null or not p.alive or not p.controls_enabled:
+		return
+	var focus := InputMap.has_action("party_focus") and Input.is_action_just_pressed("party_focus")
+	if Input.is_action_pressed("party_order"):
+		_order_held += delta
+		if _order_held >= FOCUS_HOLD and _order_held - delta < FOCUS_HOLD:
+			toggle_party_order(get_tree())  # the press toggled follow/hold: a hold means focus instead
+			focus = true
+	else:
+		_order_held = 0.0
+	if focus:
+		_focus_from(p)
+
+
+func _focus_from(p: Player) -> void:
+	var from := p.camera.global_position
+	var q := PhysicsRayQueryParameters3D.create(from, from - p.camera.global_basis.z * 60.0, MASK_WORLD | 8, [p.get_rid()])
+	var hit := get_world_3d().direct_space_state.intersect_ray(q)
+	var n: Variant = (hit.collider as Object).get_meta("mummy", null) if hit and hit.collider else null
+	var foe: bool = n is Mummy or (n is Gunman and (n as Gunman).is_hostile(p)) or (n is Node and (n as Node).is_in_group("chariots"))
+	if foe and is_instance_valid(n) and _target_alive(n):  # (not a stick of dynamite: its hitbox reads the same)
+		focus_target = n
+		_focus_until = _now() + FOCUS_TIME
+		Barks.say_any(get_tree(), "focus_target", p.global_position)
+		print("COMPANION focus on %s" % (n as Node).name)
+
+
+## Never take cover where the player is shooting: within 1.2 m of his line of fire, ahead of him.
+func _in_players_fire(pos: Vector3) -> bool:
+	var p := leader as Player
+	if p == null or not is_instance_valid(p) or p.camera == null:
+		return false
+	var from := p.camera.global_position
+	var dir := -p.camera.global_basis.z
+	var v := pos + Vector3.UP - from
+	var t := v.dot(dir)
+	return t > 1.0 and t < 30.0 and (v - dir * t).length() < 1.2
+
+
+## The player has moved up past us towards the fight: one at a time, the party moves up too.
+func _leapfrog() -> bool:
+	var p := leader as Node3D
+	if p == null or not is_instance_valid(p) or not _target_alive(target) or _spot.get("exposed", true):
+		return false
+	var spot: Vector3 = _spot.pos
+	var t := target.global_position
+	if _flat(p.global_position - spot).length() < LEAPFROG_GAP or p.global_position.distance_to(t) > spot.distance_to(t) - 2.0:
+		return false
+	if _now() - _last_leap < LEAPFROG_EVERY:
+		return false
+	_last_leap = _now()
+	return true
+
+
+## A flank has started: whoever's nearest the player calls it, left or right as he faces.
+func _flank_callout() -> void:
+	var p: Variant = foe_player if foe_player else (target if target is Player else null)
+	if not (p is Player) or not is_instance_valid(p):
+		return
+	var right := (p as Player).camera.global_basis.x if (p as Player).camera else Vector3.RIGHT
+	var side := "callout_flank_right" if (global_position - (p as Player).global_position).dot(right) > 0.0 else "callout_flank_left"
+	Barks.say_any(get_tree(), side, (p as Player).global_position)

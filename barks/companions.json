@@ -18,7 +18,15 @@
 		"horse_ride",
 		"truck_ride",
 		"act5_escape",
-		"act7_curse"
+		"act7_curse",
+		"helping_up",
+		"callout_dynamite",
+		"callout_flank_left",
+		"callout_flank_right",
+		"callout_leader_down",
+		"callout_rifleman",
+		"focus_target",
+		"sandstorm"
 	],
 	"speakers": {
 		"eleanor": {
@@ -364,6 +372,11 @@
 				},
 				{
 					"text": "Stay behind the stone. Let them come to us."
+				}
+			],
+			"sandstorm": [
+				{
+					"text": "The old texts call this the breath of the west."
 				}
 			],
 			"reloading": [
@@ -1016,6 +1029,11 @@
 					"text": "Find cover, then fight."
 				}
 			],
+			"sandstorm": [
+				{
+					"text": "Down, and keep the camels' heads low. It passes."
+				}
+			],
 			"reloading": [
 				{
 					"text": "Reloading."
@@ -1174,6 +1192,11 @@
 							1
 						]
 					}
+				}
+			],
+			"sandstorm": [
+				{
+					"text": "I cannot see the road! I can still feel it. Follow me."
 				}
 			],
 			"reloading": [
@@ -1969,6 +1992,85 @@
 				},
 				{
 					"text": "Something is coming."
+				}
+			],
+			"helping_up": [
+				{
+					"text": "Up you get!"
+				},
+				{
+					"text": "Come on, on your feet."
+				},
+				{
+					"text": "I've got you."
+				}
+			],
+			"callout_dynamite": [
+				{
+					"text": "Dynamite!"
+				},
+				{
+					"text": "Get clear, dynamite!"
+				},
+				{
+					"text": "Fuse! Move!"
+				}
+			],
+			"callout_flank_left": [
+				{
+					"text": "Flanking left!"
+				},
+				{
+					"text": "One going round on the left!"
+				}
+			],
+			"callout_flank_right": [
+				{
+					"text": "Flanking right!"
+				},
+				{
+					"text": "One going round on the right!"
+				}
+			],
+			"callout_leader_down": [
+				{
+					"text": "Their leader's down!"
+				},
+				{
+					"text": "That was their man in charge!"
+				}
+			],
+			"callout_rifleman": [
+				{
+					"text": "Rifle, long range!"
+				},
+				{
+					"text": "Rifleman! Keep your head down!"
+				}
+			],
+			"focus_target": [
+				{
+					"text": "On it."
+				},
+				{
+					"text": "That one, got it."
+				},
+				{
+					"text": "Him? Right."
+				}
+			],
+			"sandstorm": [
+				{
+					"text": "Cover your faces!"
+				},
+				{
+					"text": "Sandstorm! Keep close, keep moving!"
+				},
+				{
+					"text": "Tie the scarves, it's coming!"
+				},
+				{
+					"text": "Stay with the trucks, you'll lose the road in this!"
 				}
 			]
 		}
