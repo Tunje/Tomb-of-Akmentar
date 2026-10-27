@@ -203,10 +203,22 @@ func from_dict(d: Dictionary) -> void:
 ## "test" slot: they were overwriting Simon's real save in "main" all the time.
 ## Every slot is redirected in a test run: "main" -> "test", "slot2" -> "test_slot2" (and their
 ## thumbnails), so tests never touch Simon's saves.
+## With --save-slot=<name> a test run uses its own files ("main" and "test" -> <name>, "slot2" ->
+## <name>_slot2): concurrent sessions' tests clobbered each other's test.json (a death in one
+## loaded another's save). Without it, "test" as before.
 static func _slot(slot: String) -> String:
-	if OS.get_cmdline_user_args().is_empty() or slot.begins_with("test"):
+	var args := OS.get_cmdline_user_args()
+	if args.is_empty():
 		return slot
-	return "test" if slot == "main" else "test_" + slot
+	var name := "test"
+	for a in args:
+		if a.begins_with("--save-slot="):
+			name = a.substr(12).validate_filename()
+	if slot == "main" or slot == "test":
+		return name
+	if slot.begins_with(name + "_") or slot.begins_with("test_"):
+		return slot  # already a test file's name
+	return name + "_" + slot
 
 
 func save_game(slot := "main") -> bool:

@@ -35,7 +35,9 @@ func _ready() -> void:
 	await _prompt()
 	await _load_screen()
 	_check(_real_times() == before, "Simon's real saves and thumbnails untouched")
-	for s in ["test_slot1", "test_slot2", "test_slot3"]:
+	var own := str(TestDriver.parse_args().get("save-slot", "test"))
+	# Its own files (the shared test.json stays: other sessions' bots use it).
+	for s in ([own] if own != "test" else []) + [own + "_slot1", own + "_slot2", own + "_slot3"]:
 		for ext in [".json", ".png"]:
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(Game.SAVE_DIR.path_join(s + ext)))
 	print("RESULT %s (%d failed)" % ["PASS" if _fails == 0 else "FAIL", _fails])
@@ -51,8 +53,10 @@ func _save_and_load() -> void:
 	Game.companion("mahmoud")["recruited"] = true
 	Game.play_time = 3725.0
 	_check(Game.save_game("slot2"), "saved to slot 2")
-	_check(FileAccess.file_exists(Game.SAVE_DIR.path_join("test_slot2.json")) and not FileAccess.file_exists(Game.SAVE_DIR.path_join("slot2.json.tmp")),
-		"it went to the test file (test_slot2.json)")
+	var own := str(TestDriver.parse_args().get("save-slot", "test"))
+	_check(Game._slot("main") == own and Game._slot("slot2") == own + "_slot2" and Game._slot("test") == own,
+		"this run's own save files (--save-slot): %s, %s" % [Game._slot("main"), Game._slot("slot2")])
+	_check(FileAccess.file_exists(Game.SAVE_DIR.path_join(own + "_slot2.json")), "it went to the test file (%s_slot2.json)" % own)
 	if DisplayServer.get_name() != "headless":
 		_check(FileAccess.file_exists(SaveSlots.thumb_path("slot2")), "its thumbnail exists (%s)" % SaveSlots.thumb_path("slot2"))
 		var img := Image.load_from_file(ProjectSettings.globalize_path(SaveSlots.thumb_path("slot2")))
