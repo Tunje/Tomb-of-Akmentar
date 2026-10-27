@@ -38,6 +38,19 @@ var _pelvis_t := -1
 var _pelvis_s := -1
 ## Target leg length / source leg length (world): the pelvis' moves scale with the body.
 var _leg_ratio := 1.0
+var _skip := 0
+
+
+## Frames between pose copies: every frame near and on screen, fewer far off, few off screen.
+func _every() -> int:
+	var cam := target.get_viewport().get_camera_3d() if target.is_inside_tree() else null
+	if cam == null:
+		return 1
+	var at := target.global_position + Vector3.UP
+	if not cam.is_position_in_frustum(at):
+		return 6
+	var d := cam.global_position.distance_to(at)
+	return 1 if d < 18.0 else (2 if d < 40.0 else 4)
 
 
 ## `map`: UAL bone name -> target bone name. Call after both skeletons are in the tree.
@@ -121,6 +134,12 @@ func _exit_tree() -> void:
 func apply() -> void:
 	if source == null or target == null:
 		return
+	# Far off or off screen the pose is copied less often: this loop over every bone in GDScript,
+	# for each of Cairo's ~45 people, was most of its frame.
+	_skip -= 1
+	if _skip > 0:
+		return
+	_skip = _every()
 	var sb := _src_basis()
 	var tb_inv := _tgt_basis().inverse()
 	var global := {}  # target index -> global basis this frame (target space)

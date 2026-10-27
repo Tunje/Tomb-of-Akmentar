@@ -191,6 +191,7 @@ func _ready() -> void:
 	set_day_time(day_time)
 	_nav.bake_navigation_mesh(false)
 	_townsfolk()
+	RenderBudget.quiet_minor(_deco)  # small and wall-flat decoration casts no sun shadow (draw calls)
 
 
 ## The recruits and hosts at their places. `conversations`: Characters id -> dialogue id (none =

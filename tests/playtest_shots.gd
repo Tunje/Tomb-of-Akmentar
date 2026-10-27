@@ -105,12 +105,14 @@ class Shooter extends Node:
 		var draws := int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))
 		_pf_draws.append(draws)
 		var scene := get_tree().current_scene
-		print("PERF t=%.0f %s fps=%d mean_ms=%.2f worst_ms=%.1f draws=%d prims=%d objs=%d vram_mb=%d" % [_t,
+		print("PERF t=%.0f %s fps=%d mean_ms=%.2f worst_ms=%.1f draws=%d prims=%d objs=%d vram_mb=%d process_ms=%.2f physics_ms=%.2f nav_ms=%.2f" % [_t,
 			scene.scene_file_path.get_file().get_basename() if scene else "-", _pf_frames.size(),
 			sum / maxf(_pf_frames.size(), 1), worst, draws,
 			int(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME)),
 			int(Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME)),
-			int(Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0)])
+			int(Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0),
+			Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
+			Performance.get_monitor(Performance.TIME_NAVIGATION_PROCESS) * 1000.0])
 		_pf_frames.clear()
 
 	func _census() -> void:

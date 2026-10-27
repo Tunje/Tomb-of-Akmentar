@@ -68,6 +68,26 @@ static func quiet_small(node: Node, max_size: float, draw_end := 0.0) -> int:
 	return n
 
 
+## A town's decoration: no shadows from what's small (under `small` m: jars, lantern bits; also
+## not drawn past `small_end` m) or flat against a wall (thinner than `thin` and under `flat_max`
+## across: windows, trims, plaques). Awnings, domes and palms keep theirs. Returns how many.
+static func quiet_minor(node: Node, small := 0.6, small_end := 60.0, thin := 0.12, flat_max := 1.5) -> int:
+	var n := 0
+	for m: MeshInstance3D in node.find_children("*", "MeshInstance3D", true, false):
+		if m.mesh == null or m.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF:
+			continue
+		var s := m.mesh.get_aabb().size * m.global_basis.get_scale()
+		var big := maxf(s.x, maxf(s.y, s.z))
+		var least := minf(s.x, minf(s.y, s.z))
+		if big < small:
+			quiet(m, small_end)
+			n += 1
+		elif least < thin and big < flat_max:
+			quiet(m)
+			n += 1
+	return n
+
+
 func _process(delta: float) -> void:
 	_t -= delta
 	if _t > 0.0:
