@@ -31,7 +31,8 @@ const COVER := [
 	[Vector3(31.0, 0, 92.6), Vector3(1.2, 1.0, 1.0)],
 ]
 const SCATTER := 35.0        # townsfolk this near the street go indoors for it
-const MAX_HEALTH := 90.0
+const MAX_HEALTH := 80.0
+const DAMAGE := 7.0  # (Gunman: 8) Act 2 has no party yet: at 8 the bot died 2 runs in 5 (tests/difficulty_test)
 const SURRENDER_CHANCE := 0.8
 const GIVE_UP_AFTER := 3.0   # the fight's over this long after the last one stops
 
@@ -66,6 +67,7 @@ func _run() -> void:
 		g.glb = MODELS[i]
 		g.max_health = MAX_HEALTH
 		g.health = MAX_HEALTH
+		g.damage = DAMAGE
 		g.surrender_chance = SURRENDER_CHANCE
 		g.hunt_at = DOOR
 		g.hunt_radius = 45.0

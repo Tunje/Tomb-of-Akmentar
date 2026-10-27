@@ -16,9 +16,9 @@ const MODELS := ["res://assets/characters/bandits/bandit_brute.glb", "res://asse
 	"res://assets/characters/bandits/bandit_gunhand.glb"]
 ## Each guard: [offset from the doors, delay (s), hp, skill]. Doormen, not prize-fighters.
 const GUARDS := [
-	[Vector3(-1.6, 0, 1.2), 0.0, 60.0, 0.45],
-	[Vector3(1.6, 0, 1.2), 0.0, 55.0, 0.35],
-	[Vector3(0.0, 0, 0.6), 4.0, 65.0, 0.5],
+	[Vector3(-1.6, 0, 1.2), 0.0, 50.0, 0.4],
+	[Vector3(1.6, 0, 1.2), 0.0, 45.0, 0.3],
+	[Vector3(0.0, 0, 0.6), 6.0, 55.0, 0.45],  # late: two at once is the fight (tests/difficulty_test)
 ]
 const TAKE_AWAY := 4.0  # the floored guards are helped back inside after this long
 
@@ -88,9 +88,9 @@ func _lost() -> void:
 
 func _end() -> void:
 	_over = true
-	Game.set_flag("archivist_hostile")
 	if won:
-		Game.set_flag("museum_guards_beaten")
+		Game.set_flag("museum_guards_beaten")  # first: a listener on archivist_hostile sees the outcome
+	Game.set_flag("archivist_hostile")
 	await get_tree().create_timer(1.5 if won else 2.5).timeout
 	if not won:
 		# Thrown out: you come round in the avenue, the doors shut behind you.

@@ -14,8 +14,8 @@ signal finished(result: Dictionary)
 
 static var next_scene := "res://act8.tscn"
 
-const CHARIOTS := [5, 8]             # in all, for one truck / two
-const AT_ONCE := 3
+const CHARIOTS := [8, 14]             # in all, for one truck / two
+const AT_ONCE := 5
 const SHOT_RANGE := 25.0
 const HIT_CHANCE := 0.35
 const SHOT_DAMAGE := 9.0

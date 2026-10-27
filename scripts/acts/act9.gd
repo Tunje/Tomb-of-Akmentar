@@ -27,7 +27,9 @@ const WAVE_SIZE := 2
 const SCARABS_EVERY := 3                   # a scarab burst every this many waves
 const RITUAL_SLAMS := 2                      # grabs that slam before one kills (Act 5's: 1)
 const GUARDIAN_AT := 0.45                  # the guardian wakes this far through the rite
-const FIGHT := {"surface": 9, "halls": 13, "royal": 13}  # minions in each level's fight
+const MINION_HP := 180.0                     # the levels' minions (mummy.gd: 100): at 100 the party shot them down unhurt
+const MINION_PACE := 1.5                     # x their walk (tests/difficulty_test)
+const FIGHT := {"surface": 6, "halls": 8, "royal": 6}  # minions in each level's fight (at most one per spawn: the map has 8; the antechamber is close quarters)
 const TRIGGER := 5.0                       # how close to a level's point its threat starts
 const SINGER_HEALTH := 220.0
 const AVOID := ["Mock their beliefs"]      # the bot never picks these
@@ -398,13 +400,16 @@ func _wake_foes(around: Vector3, n: int) -> void:
 	spots.append_array(level.minion_spawns)
 	spots.sort_custom(func(a: Vector3, b: Vector3) -> bool: return a.distance_to(around) < b.distance_to(around))
 	for k in mini(n, spots.size()):
-		_spawn_minion(spots[k])
+		_spawn_minion(spots[k], true)
 
 
-func _spawn_minion(at: Vector3) -> void:
+func _spawn_minion(at: Vector3, level_fight := false) -> void:
 	var m := Mummy.new()
 	m.priest = randf() < 0.25
 	add_child(m)
+	if level_fight:  # the levels' minions: the last tomb's, not the ritual's waves (the guardian is enough there)
+		m.health = MINION_HP
+		m.speed *= MINION_PACE
 	m.global_position = at
 	m.target = player
 	m.wake()

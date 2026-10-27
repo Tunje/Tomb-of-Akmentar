@@ -16,7 +16,9 @@ static var next_scene := "res://act8.tscn"
 
 @export var visit := false
 
-const WAVES := [5, 6]                 # mummies per wave; the second brings a priest
+const MUMMY_HP := 150.0               # the temple's servants (mummy.gd: 100; tests/difficulty_test)
+const MUMMY_PACE := 1.3               # x their walk
+const WAVES := [10, 13]                 # mummies per wave; the second brings a priest
 
 var level: DesertTemple
 var player: Player
@@ -127,6 +129,8 @@ func _battle() -> void:
 			var m := Mummy.new()
 			m.priest = w == WAVES.size() - 1 and k == 0
 			add_child(m)
+			m.health = MUMMY_HP
+			m.speed *= MUMMY_PACE
 			m.global_position = spawns[(k + w * 3) % spawns.size()] + Vector3(randf_range(-2, 2), 0, randf_range(-2, 2))
 			m.target = player
 			m.wake()

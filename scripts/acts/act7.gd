@@ -28,6 +28,7 @@ const THIEVES_START := 4
 const MUMMY_START := 6
 const THIEVES := ["americans", "germans", "italians"]
 ## Who guards each crew's getaway (Characters ids; anyone missing gets the stand-in).
+const GUARD_HP := 130.0  # hired guns, harder to put down than Act 3's bandits (tests/difficulty_test)
 const GUARDS := {"americans": ["callahan", "maggie", "callahan"], "germans": ["vogel", "kruger", "vogel"],
 	"italians": ["bellini", "bellini", "bellini"]}
 ## How full the streets stay at each sign (the crowds thin as the curse grows).
@@ -352,6 +353,22 @@ func _place_intercept() -> void:
 	hud.toast("You know where to catch the thieves: %s." % str(Cairo.SPOTS[where][2]).to_lower(), 4.0)
 
 
+## A guard's spot must be a short walk from the meeting place, or nobody can get at anybody.
+static func _walkable(map: RID, from: Vector3, to: Vector3) -> bool:
+	var path := NavigationServer3D.map_get_path(map, NavigationServer3D.map_get_closest_point(map, from), to, true)
+	if path.size() < 2 or path[path.size() - 1].distance_to(to) > 0.6:
+		return false
+	var length := 0.0
+	for i in range(1, path.size()):
+		length += path[i - 1].distance_to(path[i])
+	return length < 14.0
+
+
+func _in_view(from: Vector3, to: Vector3) -> bool:
+	var q := PhysicsRayQueryParameters3D.create(from + Vector3.UP * 1.4, to + Vector3.UP * 1.4, 1)
+	return get_world_3d().direct_space_state.intersect_ray(q).is_empty()
+
+
 ## The talk turned to guns: their guards come at you round the meeting place.
 func _fight_thieves() -> void:
 	if _fighting:
@@ -363,19 +380,23 @@ func _fight_thieves() -> void:
 	var map := get_world_3d().navigation_map
 	var ids: Array = GUARDS.get(_thief(), GUARDS.americans)
 	var placed := 0
-	for k in 12:
+	for k in 36:  # 12 round at 8 m, then 12 m, then 16 m: a dead end like the road gate has few spots close
 		if placed >= ids.size():
 			break
-		var a := TAU * k / 12.0
-		var want := centre + Vector3(cos(a), 0, sin(a)) * 8.0
+		var a := TAU * (k % 12) / 12.0 + (k / 12) * 0.26
+		var want := centre + Vector3(cos(a), 0, sin(a)) * (8.0 + 4.0 * (k / 12))
 		var on := NavigationServer3D.map_get_closest_point(map, want)
 		if Vector2(on.x - want.x, on.z - want.z).length() > 0.6:
 			continue  # inside a building
+		if not _walkable(map, centre, on) or not _in_view(centre, on):
+			continue  # behind a wall from the meeting place (the road gate: outside it; its leaf isn't in the navmesh)
 		var g := Gunman.new()
 		g.team = Gunman.BANDITS
 		g.glb = Characters.glb(ids[placed])
 		add_child(g)
 		g.global_position = on
+		g.max_health = GUARD_HP
+		g.health = GUARD_HP
 		g.target = player
 		guards.append(g)
 		placed += 1
@@ -556,6 +577,9 @@ func _auto() -> void:
 	if not await _talk("act7_confront", player, avoid):
 		Game.apply([{"event": "fight_thieves"}])
 	await get_tree().create_timer(1.0).timeout
+	if args.has("skill-bot"):  # tests/difficulty_test fights them: wait it out
+		while player.alive and not Game.flag("artifacts_recovered", false):
+			await get_tree().create_timer(0.5).timeout
 	for g in guards:
 		if is_instance_valid(g):
 			g.take_damage(1000.0, player.global_position)

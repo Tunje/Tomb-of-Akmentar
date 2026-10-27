@@ -9,7 +9,7 @@ extends CharacterBody3D
 
 signal destroyed(chariot: Chariot)
 
-const MAX_HEALTH := 90.0
+const MAX_HEALTH := 160.0
 const TOP_SPEED := 17.0        # faster than a loaded truck: it always catches up
 const ACCEL := 7.0
 const TURN := 2.2              # rad/s

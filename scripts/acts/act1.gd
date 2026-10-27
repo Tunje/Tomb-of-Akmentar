@@ -225,9 +225,9 @@ func _gunfight() -> void:
 		g.team = Gunman.BANDITS
 		g.glb = GunmanBody.BANDITS[i % GunmanBody.BANDITS.size()]
 		add_child(g)
-		g.damage = 6.0  # the first gunfight: softer than Act 3's bandits (tests/difficulty_test)
-		g.max_health = 80.0
-		g.health = 80.0
+		g.damage = 4.5  # the first gunfight: softer than Act 3's bandits (tests/difficulty_test: at 6 / 80 the bot still died 1 run in 5)
+		g.max_health = 70.0
+		g.health = 70.0
 		g.global_position = level.open_point(player.global_position + Vector3(-5.0 + i * 5.0, 0, -10.0))
 		g.target = player
 		men.append(g)

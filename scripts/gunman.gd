@@ -824,6 +824,7 @@ func stumble() -> void:
 	_help.used.connect(func(_by): help_up())
 	Sfx.play_at(get_parent(), Sfx.impact(), global_position + Vector3.UP * 0.4, -2.0)
 	Barks.say_any(get_tree(), "ally_down", global_position)
+	Hints.once("help_up")
 	stumbled_down.emit(self)
 
 

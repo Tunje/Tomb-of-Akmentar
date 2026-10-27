@@ -153,6 +153,7 @@ func awaken(delay := 1.5) -> void:
 	_t = 0.0
 	Sfx.play_at(get_parent(), Sfx.groan(), global_position + Vector3.UP * 2.0, 2.0, 0.05)
 	Barks.say_any(get_tree(), "guardian_seen", global_position)
+	Hints.once("guardian")
 	get_tree().create_timer(delay).timeout.connect(func():
 		if state == State.RISING:
 			_enter(State.CHASE))

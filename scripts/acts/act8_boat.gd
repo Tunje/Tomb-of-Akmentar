@@ -16,7 +16,8 @@ signal finished(result: Dictionary)
 
 static var next_scene := "res://act8.tscn"
 
-const WAVES := [6, 7]
+const WAVES := [6, 8]
+const SERVANT_HP := 115.0  # (mummy.gd: 100; tests/difficulty_test: at 130 the boat fell 2 runs in 5)
 const NEXT_WAVE_WHEN := 1          # the next wave comes when this few are still up...
 const NEXT_WAVE_AFTER := 40.0      # ...or after this long
 const DRIFT := 1.5                 # m/s on the still water before they come
@@ -252,6 +253,7 @@ func _climb_aboard(climb: Array, priest: bool) -> void:
 	var m := Mummy.new()
 	m.priest = priest
 	add_child(m)
+	m.health = SERVANT_HP
 	var from := boat.to_global(climb[0] as Vector3)
 	var to := boat.to_global((climb[1] as Vector3) + Vector3.UP * (RiverBoat.DECK_Y + 0.05))
 	m.target = carrier
