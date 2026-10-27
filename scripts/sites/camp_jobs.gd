@@ -190,6 +190,7 @@ func _assign(companions: Dictionary, where: String, at_night: bool, opts: Dictio
 		_props(id, job)
 		g.set_order("hold")
 		g.hold_at = job.spot
+		g.set("at_job", true)  # -bf's Gunman: no "(holding)" tag for a job (set(): harmless before it's there)
 		_talk_spot(id, job)
 	print("CAMPJOBS %s: %s" % [where, ", ".join(jobs.keys().map(func(k: String) -> String: return "%s %s" % [k, jobs[k].kind]))])
 
@@ -211,6 +212,7 @@ func _release() -> void:
 			if g.rig and g.rig.gun_holder:
 				g.rig.gun_holder.visible = true
 			g.set_order("follow")
+			g.set("at_job", false)
 		for n in [j.get("props"), j.get("talk")]:
 			if n is Node and is_instance_valid(n):
 				(n as Node).queue_free()
