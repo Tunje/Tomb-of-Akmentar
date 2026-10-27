@@ -8,6 +8,7 @@ extends Node
 ##                what follows as a player's: no bot quitting on death, its input handler runs)
 ##                and the player dies, whatever health a bot gave him; 2.5 s on, a "dead" shot and
 ##                the state, then Enter; 8 s on, an "after" shot and the state. DEATH lines.
+##   --set-flag=name:value,...   Game flags before the scene starts (e.g. act8_back_from:boat)
 ##   --mutate     with --die-at: +£777 and a flag just before the death (a retry should undo them)
 ## Never takes focus.
 
@@ -22,6 +23,8 @@ func _ready() -> void:
 	s.die_at = float(args.get("die-at", -1.0))
 	s.mutate = args.has("mutate")
 	DirAccess.make_dir_recursive_absolute(s.dir)
+	for kv in str(args.get("set-flag", "")).split(",", false):
+		Game.set_flag(kv.get_slice(":", 0), kv.get_slice(":", 1))
 	get_tree().root.add_child.call_deferred(s)
 	get_tree().change_scene_to_file.call_deferred(str(args.get("scene", "res://act1.tscn")))
 
