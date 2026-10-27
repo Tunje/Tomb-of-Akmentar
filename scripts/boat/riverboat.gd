@@ -57,6 +57,8 @@ var _plank_mesh: MeshInstance3D
 var _gate_shape: CollisionShape3D
 var _gate_mesh: MeshInstance3D
 var _wheel: Node3D
+var _paddle: AudioStreamPlayer3D   # the wheel's churn, louder with speed (SoundLife)
+var _creak_in := 3.0
 var _mats := {}
 
 
@@ -83,6 +85,9 @@ func _ready() -> void:
 	_build()
 	_place(0.0, true)
 	_set_docked(true)
+	_paddle = SoundLife.loop(self, "paddle")
+	_paddle.position = _wheel.position
+	_paddle.stream_paused = true
 
 
 # ---------------------------------------------------------------- sailing
@@ -122,6 +127,18 @@ func _physics_process(delta: float) -> void:
 	_watch_falls()
 	if _wheel:
 		_wheel.rotate_x(-speed / 1.6 * delta)
+	_sounds(delta)
+
+
+## The paddle's churn with the speed, and now and then a creak of the hull or the upper deck.
+func _sounds(delta: float) -> void:
+	if _paddle:
+		_paddle.stream_paused = speed < 0.05
+		_paddle.volume_db = float(SoundLife.MIX.paddle[0]) + linear_to_db(clampf(speed / CRUISE, 0.05, 1.0))
+	_creak_in -= delta
+	if _creak_in <= 0.0:
+		_creak_in = randf_range(4.0, 11.0) if speed > 0.05 else randf_range(8.0, 18.0)
+		SoundLife.play(self, "creak", to_global(Vector3(randf_range(-2.0, 2.0), DECK_Y + randf_range(0.0, 2.5), randf_range(-12.0, 12.0))))
 
 
 ## The transform on the path at `progress`, with the heading eased toward the river's.

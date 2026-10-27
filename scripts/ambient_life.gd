@@ -37,6 +37,7 @@ var _bird_mm: MultiMeshInstance3D
 var _pigeon_mm: MultiMeshInstance3D
 var _critter_mm: MultiMeshInstance3D
 var _t := 0.0
+var _flapped := -9.0        # when wings last sounded (a flock going up is one flurry, not twenty)
 var _player: Node3D
 var _rng := RandomNumberGenerator.new()
 var _critter_count := 0
@@ -143,6 +144,9 @@ func _take_off(p: Dictionary, from: Vector3) -> void:
 	p.vel = away * _rng.randf_range(4.0, 6.0) + Vector3.UP * _rng.randf_range(3.5, 5.0)
 	p.state = "fly"
 	p.t = 0.0
+	if _t - _flapped > 0.3:
+		_flapped = _t
+		SoundLife.play(self, "flap", p.pos)
 
 
 func _process(delta: float) -> void:

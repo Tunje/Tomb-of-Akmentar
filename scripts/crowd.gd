@@ -28,6 +28,8 @@ const CULL := 80.0
 const ALARM_RADIUS := 30.0
 const HIDE_SECS := Vector2(16.0, 24.0)
 const THINK := 0.5
+const MURMURS := 3              # positional murmur loops, moved to the busiest knots of people near you
+const MURMUR_NEAR := 30.0
 
 var data := {}
 var groups: Array = []          # [{name, team, waypoints, stalls, digs, seats, night_seats, sleep, routes, prop}]
@@ -41,6 +43,7 @@ var night := false
 var alarm_radius := ALARM_RADIUS
 var _t := 0.0
 var _player: Node3D
+var _murmurs: Array[AudioStreamPlayer3D] = []
 
 
 static func populate(lvl: Node3D, place := "cairo", count := -1) -> Crowd:
@@ -302,7 +305,40 @@ func _process(delta: float) -> void:
 		# An animal nobody can see stands still (its legs are animated in code, every frame).
 		var seen := b.global_position.distance_to(at) < CULL and cam.is_position_in_frustum(b.global_position + Vector3.UP * 0.6)
 		b.set_process(seen or (b as Beast)._bolt > 0.0)
+	_murmur(at)
 	_hook_player()
+
+
+## The talk of the crowd where it is: up to MURMURS loops placed at knots of people (awake, not
+## fleeing) within MURMUR_NEAR of the camera, louder for more of them. Fewer about (set_fraction),
+## fewer and quieter knots; none at all and they fall silent.
+func _murmur(at: Vector3) -> void:
+	var near: Array[CrowdPerson] = []
+	for p in people:
+		if p.about and p.state not in ["night", "flee", "hide"] and p.global_position.distance_to(at) < MURMUR_NEAR:
+			near.append(p)
+	near.sort_custom(func(x: CrowdPerson, y: CrowdPerson) -> bool: return x.global_position.distance_squared_to(at) < y.global_position.distance_squared_to(at))
+	var knots: Array = []   # [centre, count]
+	for p in near:
+		var joined := false
+		for k: Array in knots:
+			if (k[0] as Vector3).distance_to(p.global_position) < 8.0:
+				k[1] = int(k[1]) + 1
+				joined = true
+				break
+		if not joined and knots.size() < MURMURS:
+			knots.append([p.global_position + Vector3.UP * 1.5, 1])
+	for i in MURMURS:
+		if i >= knots.size() or int(knots[i][1]) < 2:
+			if i < _murmurs.size():
+				_murmurs[i].stream_paused = true
+			continue
+		while _murmurs.size() <= i:
+			_murmurs.append(SoundLife.loop(self, "murmur"))
+		var m := _murmurs[i]
+		m.global_position = knots[i][0]
+		m.volume_db = float(SoundLife.MIX.murmur[0]) + linear_to_db(clampf(float(knots[i][1]) / 6.0, 0.25, 1.0))
+		m.stream_paused = false
 
 
 func _hook_player() -> void:
@@ -414,6 +450,7 @@ class Beast extends Node3D:
 	var _wait := 0.0
 	var _bolt := 0.0
 	var _away := Vector3.ZERO
+	var _call := randf_range(6.0, 30.0)   # till it brays (a donkey) or bleats (a goat)
 
 	func _ready() -> void:
 		rig = HorseRig.create()
@@ -422,12 +459,18 @@ class Beast extends Node3D:
 		speed = 0.9 if size > 0.6 else 0.7
 
 	func bolt(from: Vector3) -> void:
+		if _bolt <= 0.0 and randf() < 0.6:
+			_call = 0.0
 		_bolt = randf_range(3.0, 5.0)
 		_away = global_position - from
 		_away.y = 0
 		_away = _away.normalized() if _away.length() > 0.1 else Vector3.FORWARD
 
 	func _process(delta: float) -> void:
+		_call -= delta
+		if _call <= 0.0:
+			_call = randf_range(18.0, 45.0)
+			SoundLife.play(self, "bray" if size > 0.6 else "bleat", global_position + Vector3.UP * size)
 		if _bolt > 0.0:
 			_bolt -= delta
 			rotation.y = lerp_angle(rotation.y, atan2(-_away.x, -_away.z), minf(delta * 4.0, 1.0))

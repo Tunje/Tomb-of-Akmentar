@@ -162,6 +162,10 @@ func _grit() -> void:
 	get_tree().create_timer(fall.lifetime - 0.35).timeout.connect(func() -> void:
 		if is_instance_valid(puff):
 			puff.emitting = true)
+	# The trickle heard from where it lands (SoundLife: pooled, on the ambience bus).
+	get_tree().create_timer(maxf(fall.lifetime - 0.9, 0.1)).timeout.connect(func() -> void:
+		if is_inside_tree():
+			SoundLife.play(self, "grit", floor_at))
 	get_tree().create_timer(fall.lifetime + 3.0).timeout.connect(func() -> void:
 		if is_instance_valid(fall):
 			fall.queue_free()

@@ -45,6 +45,7 @@ var _route_i := 0
 var _load: MeshInstance3D     # a crate, basket or sack (carriers, porters, diggers on a trip)
 var _carrying := false
 var _rod_node: Node3D
+var _clink := 1.0             # digging: till the next pick on stone (SoundLife)
 
 
 ## Starts the role (stall keepers, diggers and sitters already in place, so the place isn't empty).
@@ -134,6 +135,11 @@ func _process(delta: float) -> void:
 			_walk(delta)
 		"pause", "stall", "dig", "sit", "hide":
 			_hold -= delta
+			if state == "dig" and anim != "kneel":
+				_clink -= delta
+				if _clink <= 0.0:
+					_clink = _rng.randf_range(1.1, 2.6)
+					SoundLife.play(self, "clink", global_position + global_basis.z * -0.6, 0.0, 0.15)
 			if _hold <= 0.0:
 				_next()
 	if _load and _load.visible:
