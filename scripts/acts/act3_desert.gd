@@ -49,6 +49,7 @@ var _fight_bot: FightBot
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	Checkpoint.take(self)  # a retry after a death starts from the state on entry
 	child_entered_tree.connect(func(n: Node):
 		if n.process_mode == Node.PROCESS_MODE_INHERIT:
 			n.process_mode = Node.PROCESS_MODE_PAUSABLE)
@@ -99,7 +100,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if step == Step.END and event is InputEventKey and event.pressed and event.keycode in [KEY_ENTER, KEY_KP_ENTER]:
 		get_tree().change_scene_to_file(next_scene)  # Game (race_step, the party) carries over
 	elif event is InputEventKey and event.pressed and event.keycode in [KEY_ENTER, KEY_KP_ENTER] and not player.alive:
-		get_tree().reload_current_scene()
+		Checkpoint.retry(self)  # Game as it was on entry, then the scene from its start
 	elif event.is_action_pressed("party_order"):
 		hud.toast("Companions: " + str(Gunman.toggle_party_order(get_tree())))
 	elif event.is_action_pressed("ui_cancel"):
