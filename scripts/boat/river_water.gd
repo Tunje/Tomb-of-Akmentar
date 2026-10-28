@@ -10,6 +10,10 @@ extends MeshInstance3D
 ## under its water would show through as sand.) No physics: anything that falls through is the boat's problem
 ## (RiverBoat.watch puts people back on deck).
 ##   RiverWater.make(self, Vector2(400, 400), 0.0)
+## Hulls: RiverWater.mask_hull(boat, Vector2(half_beam, half_length)) keeps the water out of a
+## boat's waterline footprint (an oriented rounded rectangle, following the boat), so a hold below
+## the waterline doesn't show the river plane through its floor: boats sit at a real freeboard.
+## Up to MAX_HULLS at once; a freed boat drops out by itself.
 ## On a RiverRoute it also lays reed beds along both banks (one MultiMesh, swaying in the wind).
 
 const SHADER := """
@@ -24,6 +28,9 @@ uniform float swell = 0.06;
 uniform vec3 sun_dir = vec3(0.4, 0.6, 0.3);   // toward the sun, world space
 uniform vec4 sun_col : source_color = vec4(1.0, 0.92, 0.75, 1.0);
 uniform float glint = 1.0;
+uniform mat4 hull_inv[8];                      // world -> each hull's own frame (mask_hull)
+uniform vec4 hull_dim[8];                       // half beam, half length, roundness (2 an oval .. 8 a box)
+uniform int hull_count = 0;
 uniform float depth_fx = 0.0;                   // 1: the depth tint and the shore foam (depth())
 uniform float murk = 3.0;                       // how fast the bed fades out, per metre (the Nile: mud)
 uniform vec4 foam_col : source_color = vec4(0.92, 0.93, 0.88, 1.0);
@@ -65,6 +72,15 @@ void vertex() {
 }
 
 void fragment() {
+	// Not inside a hull's waterline (its hold would show the river through its floor).
+	vec3 at_w = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	for (int i = 0; i < hull_count; i++) {
+		vec3 l = (hull_inv[i] * vec4(at_w, 1.0)).xyz;
+		vec4 hd = hull_dim[i];
+		if (pow(abs(l.x) / hd.x, hd.z) + pow(abs(l.z) / hd.y, hd.z) < 1.0) {
+			discard;
+		}
+	}
 	// Broad ripples with the current, finer ones faster across them.
 	vec2 p1 = wpos.xz - flow * TIME;
 	vec2 p2 = wpos.xz * 2.6 - flow * TIME * 2.2 + vec2(13.0, 7.0);
@@ -123,8 +139,13 @@ void fragment() {
 """
 const REED_EVERY := 1.0       # m along each bank between clumps (some skipped: the beds come and go)
 
+const MAX_HULLS := 8
+
+static var _hulls: Array = []   # [Node3D, Vector2 half size, roundness]
+
 var _sun: DirectionalLight3D
 var _sun_t := 0.0
+var _had_hulls := false
 
 
 static func make(parent: Node3D, size: Vector2, y := 0.0, centre := Vector3.ZERO) -> RiverWater:
@@ -158,8 +179,45 @@ static func depth(w: RiverWater, murk := 3.0, foam_w := 0.3) -> void:
 	m.set_shader_parameter("foam_w", foam_w)
 
 
+## Keep the water out of `boat`'s waterline: `half_size` (half the beam, half the length, in the
+## boat's own x / z, at the waterline), `roundness` 2 (an oval) .. 8 (near a box); 4 a hull's
+## rounded ends. Make it a hand's width inside the hull's sides, so the water still meets them.
+static func mask_hull(boat: Node3D, half_size: Vector2, roundness := 4.0) -> void:
+	for h: Array in _hulls:
+		if h[0] == boat:
+			h[1] = half_size
+			h[2] = roundness
+			return
+	_hulls.append([boat, half_size, roundness])
+
+
+static func unmask_hull(boat: Node3D) -> void:
+	_hulls = _hulls.filter(func(h: Array) -> bool: return h[0] != boat)
+
+
+## The hulls into the shader, every frame (they move).
+func _hulls_in() -> void:
+	_hulls = _hulls.filter(func(h: Array) -> bool: return is_instance_valid(h[0]) and (h[0] as Node3D).is_inside_tree())
+	var inv: Array[Projection] = []
+	var dim := PackedVector4Array()
+	for h: Array in _hulls.slice(0, MAX_HULLS):
+		inv.append(Projection((h[0] as Node3D).global_transform.affine_inverse()))
+		var hs: Vector2 = h[1]
+		dim.append(Vector4(hs.x, hs.y, float(h[2]), 0.0))
+	while inv.size() < MAX_HULLS:
+		inv.append(Projection.IDENTITY)
+		dim.append(Vector4(1, 1, 2, 0))
+	var m := material_override as ShaderMaterial
+	m.set_shader_parameter("hull_count", mini(_hulls.size(), MAX_HULLS))
+	m.set_shader_parameter("hull_inv", inv)
+	m.set_shader_parameter("hull_dim", dim)
+
+
 ## The sun's direction and height into the glints, twice a second (the level sets its sun after).
 func _process(delta: float) -> void:
+	if not _hulls.is_empty() or _had_hulls:
+		_had_hulls = not _hulls.is_empty()
+		_hulls_in()
 	_sun_t -= delta
 	if _sun_t > 0.0:
 		return

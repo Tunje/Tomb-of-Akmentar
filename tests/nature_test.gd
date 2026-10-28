@@ -6,6 +6,8 @@ extends Node3D
 ##     Waterfall: one built (sheet, churn, spray, mist, its roar looping); SoundLife's "falls"
 ##       loop: loud enough, no click at its seam;
 ##     Palms: 40 batched into one MultiMesh per variant, their trunks solid.
+##     RiverWater.mask_hull: a boat's waterline kept dry (--look --cam=hull: a hollow hull afloat,
+##     its hold under the waterline; --no-mask for the before).
 ##   --look  (windowed) a showcase: a cliff with a waterfall into a pool dug into the ground (its
 ##           bed sloping from the shore to 3 m), palms round it, a lake beyond; --cam=fall|pool|grove|
 ##           lake|wide, --shots=t1,.. --shot-dir=path; PERFSUM over --seconds (default 12), the camera
@@ -20,6 +22,7 @@ const CAMS := {
 	"grove": [Vector3(-30, 2.0, 40), Vector3(-6, 6, 18)],
 	"lake": [Vector3(30, 2.5, 70), Vector3(10, 0, 40)],
 	"wide": [Vector3(60, 22, 80), Vector3(0, 8, 20)],
+	"hull": [Vector3(26, 6, 58), Vector3(20, -0.4, 50)],
 }
 
 var args := {}
@@ -51,6 +54,7 @@ func _ready() -> void:
 	_falls_sound()
 	await _waterfall()
 	await _palms()
+	await _hull_mask()
 	_end()
 
 
@@ -163,6 +167,23 @@ func _palms() -> void:
 	print("RESULT info palm variants: heights %s" % str(tall))
 
 
+## RiverWater.mask_hull: a boat's footprint goes to the water's shader, and leaves when it's freed.
+func _hull_mask() -> void:
+	var w := RiverWater.make(self, Vector2(40, 40), 0.0)
+	var boat := Node3D.new()
+	add_child(boat)
+	RiverWater.mask_hull(boat, Vector2(2, 6))
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var m := w.material_override as ShaderMaterial
+	_check(int(m.get_shader_parameter("hull_count")) == 1, "hull mask: a boat's waterline in the water's shader")
+	boat.free()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_check(int(m.get_shader_parameter("hull_count")) == 0, "hull mask: gone with the boat")
+	w.queue_free()
+
+
 # ---------------------------------------------------------------- the showcase
 
 func _showcase() -> void:
@@ -223,6 +244,21 @@ func _showcase() -> void:
 	var lake := RiverWater.make(self, Vector2(50, 36), -0.3, Vector3(15, 0, 52))
 	RiverWater.depth(lake, 0.5, 0.6)
 	(lake.material_override as ShaderMaterial).set_shader_parameter("flow", Vector2(0.05, 0.05))
+	# A hollow hull afloat on the lake, its hold's floor under the waterline (RiverWater.mask_hull
+	# keeps the river out of it; --no-mask for the before).
+	var hull := Node3D.new()
+	hull.name = "Hull"
+	add_child(hull)
+	hull.position = Vector3(20, -0.3, 50)
+	hull.rotation.y = 0.4
+	var wood := StandardMaterial3D.new()
+	wood.albedo_color = Color(0.42, 0.3, 0.2)
+	_box(hull, Vector3(0, -0.5, 0), Vector3(4.0, 0.2, 11.0), wood)            # the hold's floor, 0.5 m under
+	for side: float in [-1.0, 1.0]:
+		_box(hull, Vector3(side * 1.95, 0.15, 0), Vector3(0.1, 1.5, 11.0), wood)  # the sides, 0.9 m freeboard
+		_box(hull, Vector3(0, 0.15, side * 5.45), Vector3(4.0, 1.5, 0.1), wood)  # bow and stern
+	if not "--no-mask" in OS.get_cmdline_user_args():
+		RiverWater.mask_hull(hull, Vector2(1.85, 5.35), 8.0)
 	# Palms: round the pool and the lake, a grove to the west.
 	var pts: Array = []
 	for k in 30:
