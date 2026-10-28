@@ -112,7 +112,7 @@ static func impact(parent: Node, pos: Vector3, normal: Vector3, kind: Kind) -> v
 		p.amount = 14
 		p.initial_velocity_min = 2.5
 		p.initial_velocity_max = 6.0
-		qm.size = Vector2(0.03, 0.03)
+		qm.size = Vector2(0.05, 0.05)  # (the soft texture's edge fades: a little bigger keeps the spark's size)
 		mat = _unshaded("spark", Color(1.0, 0.7, 0.35), 5.0)
 		_dust(parent, pos, normal, Color(0.6, 0.5, 0.36, 0.55))
 		_hole(parent, pos, normal)
@@ -121,10 +121,12 @@ static func impact(parent: Node, pos: Vector3, normal: Vector3, kind: Kind) -> v
 		p.lifetime = 0.5
 		p.initial_velocity_min = 1.0
 		p.initial_velocity_max = 3.5
-		qm.size = Vector2(0.06, 0.06)
+		qm.size = Vector2(0.09, 0.09)
 		mat = _unshaded("rag", Color(0.45, 0.4, 0.3), 0.0)
 		_dust(parent, pos, normal, Color(0.38, 0.33, 0.24, 0.6))
 	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	# Soft round flecks, not little squares: up close on a mummy the bare quads read as tiles (-2d's QA).
+	mat.albedo_texture = soft_dot()
 	qm.material = mat
 	p.mesh = qm
 	parent.add_child(p)
