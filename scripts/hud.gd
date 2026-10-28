@@ -157,9 +157,10 @@ func _process(delta: float) -> void:
 	# Only through the player's own eyes (not a test's overview or chase camera).
 	_prompt.text = Controls.fill(player.cover_prompt()) if player and player.camera and player.camera.current and _title.text == "" else ""
 	if actions_shown():
-		_info.text = "Day %d   Actions %s   £%d" % [Game.day, "●".repeat(Game.actions_left) + "○".repeat(maxi(Game.ACTIONS_PER_DAY - Game.actions_left, 0)), Game.money]
+		_info.text = "Day %d   Actions %s   %s" % [Game.day, "●".repeat(Game.actions_left) + "○".repeat(maxi(Game.ACTIONS_PER_DAY - Game.actions_left, 0)), Game.money_text()]
 	else:
-		_info.text = "Day %d   £%d" % [Game.day, Game.money]
+		_info.text = "Day %d   %s" % [Game.day, Game.money_text()]
+	_info.modulate = Color(1.0, 0.55, 0.45) if Game.money < 0 else Color.WHITE  # in debt: red
 	_toast_t = maxf(_toast_t - delta, 0.0)
 	_toast.modulate.a = clampf(_toast_t, 0.0, 1.0)
 	_objective.text = Objective.current()

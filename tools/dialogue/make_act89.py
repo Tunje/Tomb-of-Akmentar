@@ -96,9 +96,9 @@ FILES["routes/act8_route.json"] = {
     "to": {"name": "Akmentar", "at": [0.88, 0.7]},
     "marks": [[[0.05, 0.2], [0.3, 0.42], [0.55, 0.6], [0.82, 0.62], [0.95, 0.66]], [[0.02, 0.9], [0.4, 0.95], [0.75, 0.92], [0.98, 0.85]]],
     "options": [
-        {"id": "riverboat", "label": "The riverboat", "days": 4, "risk": 3, "cost": 0,
-         "if": {"flag": "act8_boat_booked"}, "locked_text": "Book passage at the docks",
-         "desc": "The whole expedition aboard one boat. He will catch it on the river, and there is nowhere to run on a deck.",
+        {"id": "riverboat", "label": "The riverboat", "days": 4, "risk": 3, "cost_per_head": 30, "owed_to": "the river steamer's purser",
+         "cost_if": [{"if": {"flag": "act8_boat_booked"}, "cost": 0}],
+         "desc": "Paid at the docks, or a fare a head on the quay. The whole expedition aboard one boat. He will catch it on the river, and there is nowhere to run on a deck.",
          "path": [[0.1, 0.32], [0.3, 0.42], [0.55, 0.6], [0.88, 0.7]],
          "do": [flag("act8_route", "riverboat"), {"event": "boat_battle"}]},
         {"id": "desert", "label": "Across the desert", "days": 3, "risk": 2, "cost": 0,

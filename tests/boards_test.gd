@@ -46,6 +46,29 @@ func _run() -> void:
 	await _wait(0.3)
 
 	# ---- Act 3 route map
+	# Broke: every road is still open, on credit (Simon: broke is never a dead end; pay later).
+	Game.money = 40
+	var broke := RouteBoard.open(self, "act3_route", _player)
+	await _wait(0.2)
+	var open_ways := 0
+	for i in broke.options().size():
+		open_ways += int(broke.reason(i) == "")
+	_check(open_ways == broke.options().size() and broke.owed(0) == 20, "broke: every road open, the desert owing £20 (%d open, owes %d)" % [open_ways, broke.owed(0)])
+	broke.choose(0)
+	_check(Game.money == -20 and int((Game.flag("debts", {}) as Dictionary).get("Abdel Rahman's camel-men", 0)) == 20 and Game.money_text() == "−£20",
+		"on credit: money %s, owed to the camel-men %s" % [Game.money_text(), Game.flag("debts", {})])
+	_check(not Game.check({"money": 1}), "in debt: nothing with a price")
+	await _wait(0.3)
+	if is_instance_valid(broke):
+		broke.close()
+	await _wait(0.2)
+	Game.reset()
+	DayLog.begin_day()
+	_events.clear()
+	Game.money = 3000
+	# Travel is a fare a head: you and four companions.
+	for id in ["eleanor", "hargreaves", "idris", "khalil"]:
+		Game.companion(id)["recruited"] = true
 	var b := RouteBoard.open(self, "act3_route", _player)
 	await _wait(0.3)
 	_check(not _player.controls_enabled, "controls off on the map")
@@ -57,8 +80,8 @@ func _run() -> void:
 	_click(b.option_point(0))  # a second click takes it
 	await _wait(0.2)
 	# No guide hired: the desert takes 4 days, not 3; the fork talk (event desert_fork) comes next.
-	_check(Game.money == 2400 and Game.day == 5 and Game.flag("route_act3_route") == "desert",
-			"desert: £600 paid (money %d), 4 days without a guide (day %d)" % [Game.money, Game.day])
+	_check(Game.money == 2700 and Game.day == 5 and Game.flag("route_act3_route") == "desert",
+			"desert: £60 a head for a party of 5 paid (money %d), 4 days without a guide (day %d)" % [Game.money, Game.day])
 	_check(_gone(b) and "desert_fork" in _events, "the desert board closes and raises desert_fork (%s)" % [_events])
 	Game.set_flag("fork_temple")  # what act3_fork decided
 	b = RouteBoard.open(self, "act3_desert_branch", _player)

@@ -70,6 +70,21 @@ func reset() -> void:
 
 # ---------------------------------------------------------------- access
 
+## A sum as it reads: "£240", or "−£240" in debt (money can go below zero: a journey offered
+## to be paid later, RouteBoard). Conditions {"money": N} still need N or more, so in debt you
+## buy nothing until you've earned.
+func money_text(n: int = money) -> String:
+	return ("−£%d" if n < 0 else "£%d") % absi(n)
+
+
+## Owe `who` another `amount` (pay later): the debts are Game flag "debts", {who: amount}, for
+## the story to pick up; the money itself just goes below zero.
+func owe(who: String, amount: int) -> void:
+	var d: Dictionary = (flag("debts", {}) as Dictionary).duplicate()
+	d[who] = int(d.get(who, 0)) + amount
+	set_flag("debts", d)
+
+
 func flag(name: String, default: Variant = false) -> Variant:
 	return flags.get(name, default)
 

@@ -10,6 +10,11 @@ extends ModalScreen
 ##    "options": [
 ##      {"id": "desert", "label": "Across the desert", "desc": "...",
 ##       "days": 3, "risk": 2, "cost": 120,            risk 0-3 (none / low / high / severe)
+##       "cost_per_head": 60,                           instead of "cost": that much for each of the
+##                                                      party (you and your companions); cost_if wins
+##       "owed_to": "Captain Hamdi",                    who you owe if you go on credit (below)
+## Short of money, a route is still yours: "Offer to pay later" takes it, money goes below zero and
+## Game.owe(owed_to, the shortfall) records the debt (Simon: broke is never a dead end).
 ##       "days_if": [{"if": {...}, "days": 2}],         first match overrides (also cost_if, risk_if)
 ##       "if": {conditions}, "locked_text": "...",     greyed when it fails
 ##       "unavailable": "No riverboats are left.",     always greyed with this reason
@@ -67,7 +72,14 @@ static func num(o: Dictionary, key: String) -> int:
 	for e: Dictionary in o.get(key + "_if", []):
 		if Game.check(e.get("if", {})):
 			return int(e.get(key, 0))
+	if key == "cost" and o.has("cost_per_head"):
+		return int(o.cost_per_head) * party_size()
 	return int(o.get(key, 0))
+
+
+## Who travels: you and your companions (a crew's men are in their foreman's price).
+static func party_size() -> int:
+	return Game.party().size() + 1
 
 
 ## Why option `i` can't be taken ("" = it can).
@@ -77,9 +89,12 @@ func reason(i: int) -> String:
 		return str(o.unavailable)
 	if not Game.check(o.get("if", {})):
 		return str(o.get("locked_text", "Not possible"))
-	if Game.money < num(o, "cost"):
-		return "Needs £%d" % num(o, "cost")
 	return ""
+
+
+## How much taking option `i` now would leave you owing (0 = you can pay it).
+func owed(i: int) -> int:
+	return maxi(0, num(options()[i], "cost") - maxi(Game.money, 0))
 
 
 ## Take option `i` now (what the confirm does). False if it isn't possible.
@@ -91,7 +106,11 @@ func choose(i: int) -> bool:
 		_flash(why)
 		return false
 	var o: Dictionary = options()[i]
+	var short := owed(i)
 	Game.apply([{"money": -num(o, "cost")}])
+	if short > 0:
+		Game.owe(str(o.get("owed_to", data.get("title", "the road"))), short)
+		print("ROUTE on credit: owes %s £%d" % [o.get("owed_to", ""), short])
 	Game.set_flag("route_" + board_id, str(o.get("id", i)))
 	for d in num(o, "days"):
 		Game.end_day()
@@ -278,9 +297,11 @@ func _draw_card() -> void:
 		root.draw_rect(Rect2(c.end.x - 150 + k * 18, y - 13, 12, 12), RED if k < risk else Color(DIM, 0.4))
 	y += 32
 	text("Cost", Vector2(x, y), 18, DIM)
-	text("£%d" % num(o, "cost"), Vector2(c.end.x - 24, y), 20, TEXT, HORIZONTAL_ALIGNMENT_RIGHT)
+	var per_head := o.has("cost_per_head") and num(o, "cost") == int(o.cost_per_head) * party_size()
+	text(("£%d for your party of %d" % [num(o, "cost"), party_size()]) if per_head else "£%d" % num(o, "cost"),
+		Vector2(c.end.x - 24, y), 20, TEXT, HORIZONTAL_ALIGNMENT_RIGHT)
 	y += 22
-	text("You have £%d" % Game.money, Vector2(c.end.x - 24, y), 15, DIM, HORIZONTAL_ALIGNMENT_RIGHT)
+	text("You have %s" % Game.money_text(), Vector2(c.end.x - 24, y), 15, RED if Game.money < 0 else DIM, HORIZONTAL_ALIGNMENT_RIGHT)
 	y += 30
 	y += para(str(o.get("desc", "")), Vector2(x, y), c.size.x - 48, 17, TEXT) + 16
 	if not Game.countdowns.is_empty():
@@ -288,7 +309,10 @@ func _draw_card() -> void:
 	var why := reason(i)
 	var b := _confirm_rect()
 	panel(b, Color(0.3, 0.2, 0.1, 0.9) if why == "" else Color(0.15, 0.13, 0.11, 0.9))
-	text("Take this route (Enter)" if why == "" else why, b.get_center() + Vector2(0, 7), 19, TEXT if why == "" else DIM, HORIZONTAL_ALIGNMENT_CENTER)
+	var label := why
+	if why == "":
+		label = ("Offer to pay later (£%d, you'll owe £%d)" % [num(o, "cost"), owed(i)]) if owed(i) > 0 else "Take this route (Enter)"
+	text(label, b.get_center() + Vector2(0, 7), 19, TEXT if why == "" else DIM, HORIZONTAL_ALIGNMENT_CENTER)
 
 
 ## Each countdown now, and what this route would leave of it.

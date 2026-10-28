@@ -59,7 +59,8 @@ func _run() -> void:
 	Game.set_flag("plane_ready")
 	var o: Array = RouteBoard.load_board("act8_route").options
 	var open_routes: Array = o.filter(func(x: Dictionary) -> bool: return Game.check(x.get("if", {}))).map(func(x: Dictionary) -> String: return x.id)
-	_check(open_routes == ["plane"], "act8 board: only the plane without boat, horses or trucks (%s)" % [open_routes])
+	_check(open_routes == ["riverboat", "plane"], "act8 board: without horses or trucks, the riverboat (a fare a head, or on credit) and the plane (%s)" % [open_routes])
+	_check(RouteBoard.num(o[0], "cost") == 60, "the riverboat: £30 a head for 2 (£%d)" % RouteBoard.num(o[0], "cost"))
 	var r := await _talk("act8_carrier", ["The scholars", "Eleanor"])
 	_check(Game.flag("carrier") == "eleanor" and Game.flag("carrier_eleanor"), "Eleanor carries the amulet")
 

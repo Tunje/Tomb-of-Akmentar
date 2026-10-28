@@ -64,12 +64,17 @@
 			"label": "The riverboat",
 			"days": 4,
 			"risk": 3,
-			"cost": 0,
-			"if": {
-				"flag": "act8_boat_booked"
-			},
-			"locked_text": "Book passage at the docks",
-			"desc": "The whole expedition aboard one boat. He will catch it on the river, and there is nowhere to run on a deck.",
+			"cost_per_head": 30,
+			"owed_to": "the river steamer's purser",
+			"cost_if": [
+				{
+					"if": {
+						"flag": "act8_boat_booked"
+					},
+					"cost": 0
+				}
+			],
+			"desc": "Paid at the docks, or a fare a head on the quay. The whole expedition aboard one boat. He will catch it on the river, and there is nowhere to run on a deck.",
 			"path": [
 				[
 					0.1,

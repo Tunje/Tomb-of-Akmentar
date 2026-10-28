@@ -37,8 +37,8 @@ func _ready() -> void:
 	if args.size() > 0:
 		get_window().set_flag(Window.FLAG_NO_FOCUS, true)
 	Game.act = 3
-	if args.has("auto") and not Game.flag("act3_back_from", "") and Game.money < 1000:
-		Game.money = 3000  # a fresh test game: what Act 2 would have left, and a crew
+	if args.has("auto") and not Game.flag("act3_back_from", "") and not Game.flag("act2_started", false) and Game.money < 1000:
+		Game.money = 3000  # a fresh test start (no Act 2 played): what Act 2 would have left. A chained run keeps what it has: broke, it takes the caravan
 		for id in ["mahmoud", "khalil"]:
 			Game.companion(id)["recruited"] = true
 			Game.set_flag("hired_" + id)

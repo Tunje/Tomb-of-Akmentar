@@ -101,7 +101,7 @@ func _row(slot: String, info: Dictionary) -> Control:
 	if info.exists:
 		text.add_child(_label("Act %d · %s · day %d · %s" % [info.act, info.place, info.day, info.get("difficulty", "Normal")], 18, INK))
 		text.add_child(_label("With: " + (", ".join(info.party) if not info.party.is_empty() else "nobody"), 16, DIM))
-		text.add_child(_label("£%d · %s · %s" % [info.money, SaveSlots.date_text(info.saved_at), SaveSlots.play_time_text(info.play_time)], 16, DIM))
+		text.add_child(_label("%s · %s · %s" % [Game.money_text(info.money), SaveSlots.date_text(info.saved_at), SaveSlots.play_time_text(info.play_time)], 16, DIM))
 	else:
 		text.add_child(_label("Empty", 18, DIM))
 	row.add_child(text)

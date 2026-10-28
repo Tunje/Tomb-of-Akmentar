@@ -70,7 +70,7 @@ func _ready() -> void:
 	Game.changed.connect(_on_changed)
 	Game.event.connect(_on_event)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE if args.size() > 0 else Input.MOUSE_MODE_CAPTURED
-	hud.show_message("CAIRO, 1926", "%d days to raise an expedition. Money: £%d" % [int(plan.get("days", 2)), Game.money])
+	hud.show_message("CAIRO, 1926", "%d days to raise an expedition. Money: %s" % [int(plan.get("days", 2)), Game.money_text()])
 	Objective.set_goal("Raise an expedition: hire a crew, gather supplies, then leave Cairo")
 	await get_tree().create_timer(3.0).timeout
 	hud.show_message("")
@@ -193,8 +193,8 @@ func _leave() -> void:
 	Game.place = "act2_end"
 	Game.save_game()
 	var names: Array = Game.party().map(func(id): return str(id).capitalize())
-	hud.show_message("LEAVING CAIRO", "With you: %s.\nMoney left: £%d.\n\nEnter  set out for Akmentar (Act 3)" % [
-		", ".join(names) if not names.is_empty() else "nobody", Game.money])
+	hud.show_message("LEAVING CAIRO", "With you: %s.\nMoney left: %s.\n\nEnter  set out for Akmentar (Act 3)" % [
+		", ".join(names) if not names.is_empty() else "nobody", Game.money_text()])
 	Objective.set_goal("")
 	print("RESULT act2 end day=%d party=%s money=%d" % [Game.day, Game.party(), Game.money])
 	if args.has("auto"):

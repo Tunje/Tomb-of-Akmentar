@@ -161,7 +161,7 @@ func _bought_line(a: Dictionary, money_before: int) -> String:
 	var parts: Array[String] = [str(a.get("log", a.get("label", "Done")))]
 	var spent := money_before - Game.money
 	if spent != 0:
-		parts.append("%s£%d (£%d left)" % ["−" if spent > 0 else "+", absi(spent), Game.money])
+		parts.append("%s£%d (%s left)" % ["−" if spent > 0 else "+", absi(spent), Game.money_text()])
 	for d in a.get("do", []):
 		if d is Dictionary and d.has("item"):
 			var it: Array = d["item"]
