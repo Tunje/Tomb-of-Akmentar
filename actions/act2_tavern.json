@@ -15,7 +15,7 @@
 		{
 			"id": "hire_idris",
 			"label": "Talk to Idris Mahjoub (gunman)",
-			"cost": 1,
+			"cost": 0,
 			"if": {
 				"not_flag": "hired_idris"
 			},
@@ -27,7 +27,7 @@
 		{
 			"id": "hire_isabelle",
 			"label": "Talk to Isabelle Moreau (gunwoman)",
-			"cost": 1,
+			"cost": 0,
 			"if": {
 				"not_flag": "hired_isabelle"
 			},

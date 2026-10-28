@@ -6,7 +6,7 @@
 		{
 			"id": "hire_hargreaves",
 			"label": "Look up Tom Hargreaves",
-			"cost": 1,
+			"cost": 0,
 			"if": {
 				"not_flag": "hired_hargreaves"
 			},

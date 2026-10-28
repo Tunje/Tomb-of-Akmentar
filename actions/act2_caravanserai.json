@@ -15,7 +15,7 @@
 		{
 			"id": "hire_saleh",
 			"label": "Talk to Saleh al-Rashidi (veteran guide)",
-			"cost": 1,
+			"cost": 0,
 			"if": {
 				"not_flag": "hired_saleh"
 			},
@@ -27,7 +27,7 @@
 		{
 			"id": "hire_youssef",
 			"label": "Talk to Youssef Nabil (young scout)",
-			"cost": 1,
+			"cost": 0,
 			"if": {
 				"not_flag": "hired_youssef"
 			},
@@ -39,7 +39,7 @@
 		{
 			"id": "hire_farid",
 			"label": "Talk to Farid Mansour (caravan merchant)",
-			"cost": 1,
+			"cost": 0,
 			"if": {
 				"not_flag": "hired_farid"
 			},

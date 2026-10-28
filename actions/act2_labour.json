@@ -6,7 +6,7 @@
 		{
 			"id": "hire_mahmoud",
 			"label": "Hire Mahmoud Fawzi's excavators",
-			"cost": 1,
+			"cost": 0,
 			"if": {
 				"not_flag": "hired_mahmoud"
 			},
@@ -18,7 +18,7 @@
 		{
 			"id": "hire_khalil",
 			"label": "Hire Khalil Darwish's labourers",
-			"cost": 1,
+			"cost": 0,
 			"if": {
 				"not_flag": "hired_khalil"
 			},
@@ -30,7 +30,7 @@
 		{
 			"id": "hire_naguib",
 			"label": "Hire Naguib Sabet's porters",
-			"cost": 1,
+			"cost": 0,
 			"if": {
 				"not_flag": "hired_naguib"
 			},

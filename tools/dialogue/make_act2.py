@@ -544,7 +544,9 @@ def recruit_action(who, label, log, talk_id=None, extra_if=None):
     if extra_if:
         assert not set(extra_if) & set(cond), "one condition per key"
         cond.update(extra_if)
-    return {"id": "hire_" + who, "label": label, "cost": 1, "if": cond, "hide_if_locked": True,
+    # Agreeing terms costs no time, only money and the candidate's own conditions (Simon: "no
+    # limit" on the party); finding people out (the museum, the rumours) still takes actions.
+    return {"id": "hire_" + who, "label": label, "cost": 0, "if": cond, "hide_if_locked": True,
             "conversation": talk_id or "act2_" + who, "with": who, "log": log}
 
 
@@ -566,7 +568,7 @@ ACTIONS["act2_museum"] = spot("The Cairo Museum", "Enter the museum", [
     {"id": "archive", "label": "Research Akmentar in the archive", "cost": 1, "once": True,
      "if": {"not_flag": "archivist_hostile"}, "locked_text": "The archivist has had you banned",
      "conversation": "act2_archive", "log": "Researched Akmentar in the museum archive"},
-], "Act 2: the museum. The first visit (archivist) can recruit Eleanor OR Pembroke in the same action; the other costs a later visit.")
+], "Act 2: the museum. The first visit (the archivist, one action) names Eleanor and Pembroke and can take you to one of them; after that either can be found and hired here, free (terms cost money, not time).")
 
 ACTIONS["act2_dealer"] = spot("Yacoub Ben-Ami, Antiquities", "Step into the dealer's office", [
     recruit_action("hassan", "Ask after the independent scholar", "Visited Dr. Hassan al-Masri at Yacoub's"),
