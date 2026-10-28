@@ -25,6 +25,21 @@ const QUAY_SPOTS := {"docks": Vector3(220, 0, 110), "labour": Vector3(220, 0, 13
 ## -f9's crowd for v2 (crowd/cairo_v2.json): off until the acts use v2 (cairo_v2_test --with-life).
 static var with_life := false
 
+## Stage 2: image-to-3d's facade kit (gameplan/asset_briefs.md, Cairo). Flat-fronted boxes that
+## tile; each module's front is its +Z, its origin at the bottom centre of the front's width.
+const KIT := "res://assets/props/cairo/"
+const OLD_GROUND := ["cai_house_shop_open", "cai_house_shop_closed"]
+const OLD_UPPER := ["cai_house_upper_shutters"]
+const OLD_CORNER := "cai_house_corner"
+const EURO := ["cai_euro_bay_balconies", "cai_euro_bay_arcade"]
+const QUAY := "cai_quay_wall_rings"
+const STOREY := 4.0      # an old-quarter module's height (and its width)
+const EURO_W := 6.0
+const EURO_H := 14.0
+
+var _kit := ""           # "old" / "euro" while _v2_blocks builds that district; "" = blockout
+var _kit_scenes := {}    # id -> PackedScene
+
 
 func _ready() -> void:
 	_rng.seed = 1922
@@ -62,6 +77,75 @@ func _ready() -> void:
 	RenderBudget.quiet_minor(_deco)
 	if not "--no-merge" in OS.get_cmdline_user_args():
 		print("CAIRO v2 deco merged: %d draw calls fewer" % RenderBudget.merge_static(_deco))
+
+
+## A kit piece's scene, or null when it hasn't been delivered (the blockout stands in).
+func _kit_scene(id: String) -> PackedScene:
+	if not _kit_scenes.has(id):
+		var path := KIT + id + ".glb"
+		_kit_scenes[id] = load(path) if ResourceLoader.exists(path) else null
+	return _kit_scenes[id]
+
+
+## A building: in a kit district, a plain block (its collision and roof) faced on the street with
+## the kit's modules, tiled to fill each face exactly; elsewhere Cairo's blockout building.
+func _building(r: Rect2, h: float, mat: Material, faces: Array, door := true) -> void:
+	var euro := _kit == "euro" and _kit_scene(EURO[0]) != null
+	var old := _kit == "old" and _kit_scene(OLD_GROUND[0]) != null and _kit_scene(OLD_UPPER[0]) != null
+	if not (euro or old):
+		super(r, h, mat, faces, door)
+		return
+	h = EURO_H if euro else STOREY * clampf(roundf(h / STOREY), 2.0, 3.0)
+	var c := Vector3(r.get_center().x, 0, r.get_center().y)
+	_box(_nav, c + Vector3.UP * h * 0.5, Vector3(r.size.x, h, r.size.y), mat)
+	_mesh(c + Vector3.UP * (h + 0.15), Vector3(r.size.x + 0.2, 0.3, r.size.y + 0.2), _trim)  # the roof's lip
+	for f in faces:
+		var n := Vector3(f.x, 0, f.y)
+		var along := Vector3(absf(n.z), 0, absf(n.x))
+		var width := r.size.x if n.z != 0 else r.size.y
+		var depth := r.size.y if n.z != 0 else r.size.x
+		var face := c + n * depth * 0.5
+		if euro:
+			_kit_row(face, n, along, width, 0.0, EURO, EURO_W, EURO_H)
+		else:
+			var corner := _kit_scene(OLD_CORNER)
+			var inner := width - (3.0 if corner else 0.0)
+			_kit_row(face, n, along, inner, 0.0, OLD_GROUND, STOREY, STOREY)
+			for fl in range(1, int(h / STOREY)):
+				_kit_row(face, n, along, inner, fl * STOREY, OLD_UPPER, STOREY, STOREY)
+			if corner:
+				for side: float in [-1.0, 1.0]:
+					_kit_piece(corner, face + along * side * (width * 0.5 - 0.75), n, Vector3(1.0, h / 9.0, 1.0))
+
+
+## One row of modules along a face, `width` wide, its foot at `y`: as many as fit, stretched (or
+## squeezed) a little so the row fills the face edge to edge.
+func _kit_row(face: Vector3, n: Vector3, along: Vector3, width: float, y: float, ids: Array, w: float, h: float) -> void:
+	var count := maxi(1, roundi(width / w))
+	var sx := width / (count * w)
+	for k in count:
+		var u := (k - (count - 1) * 0.5) * w * sx
+		var id: String = ids[_rng.randi() % ids.size()]
+		var sc := _kit_scene(id)
+		if sc:
+			_kit_piece(sc, face + along * u + Vector3.UP * y, n, Vector3(sx, 1.0, 1.0))
+
+
+## A module standing against a face: its front just proud of the wall, turned to face `n`.
+func _kit_piece(sc: PackedScene, at: Vector3, n: Vector3, scale_by: Vector3) -> void:
+	var m: Node3D = sc.instantiate()
+	_deco.add_child(m)
+	m.rotation.y = atan2(n.x, n.z)
+	m.scale = scale_by
+	m.global_position = at + n * (0.03 - _front_z(m))  # its front 3 cm proud of the wall, the rest inside
+
+
+## How far a module's front (+Z) stands from its origin, from its meshes' bounds.
+func _front_z(m: Node3D) -> float:
+	var z := 0.0
+	for mi: MeshInstance3D in m.find_children("*", "MeshInstance3D", true, false):
+		z = maxf(z, (mi.transform * mi.get_aabb()).end.z)
+	return z
 
 
 ## Build with today's builder, shifted by `off`: its solids and its dressing go under offset
@@ -119,10 +203,21 @@ func _v2_blocks() -> void:
 	for b: Array in blocks:
 		var r: Rect2 = b[0]
 		var inside := holes.filter(func(h: Rect2) -> bool: return r.intersects(h))
+		_kit = _district(r)
 		_block(r, inside, b[1], b[2])
+	_kit = ""
 	# The ring outside, so the city's edges end in facades.
 	_block(Rect2(-RING, -RING, RING, V2_SOUTH + RING), [], 8.0, 16.0)
 	_block(Rect2(0, -RING, V2_RIVER_X - 27.0, RING), [], 8.0, 16.0)
+
+
+## Which kit faces a block: the European quarter's bays north of the Boulevard, and south of it
+## east of the Old Street down to z 106; the old houses everywhere else inside the walls.
+func _district(r: Rect2) -> String:
+	var c := r.get_center()
+	if (c.y < 58.0 and c.x > 40.0) or (c.x > 104.0 and c.y < 106.0):
+		return "euro"
+	return "old"
 
 
 ## The city wall along the south, with the gate (today's, moved) at the Old Street's end.
@@ -172,6 +267,14 @@ func _v2_quay() -> void:
 		var at := Vector3(_rng.randf_range(208, 216), 0, 100.0 + i * 4.6)
 		var crate := _box(_nav, at + Vector3.UP * 0.6, Vector3(1.4, 1.2, 1.4), _wood)
 		_mark_cover(crate, Vector3(1.4, 1.2, 1.4))
+	# The quay wall's face on the river: the kit's stone with its mooring rings, the length of the city.
+	var qw := _kit_scene(QUAY)
+	if qw:
+		for z in range(3, int(V2_SOUTH), 6):
+			var m: Node3D = qw.instantiate()
+			_deco.add_child(m)
+			m.rotation.y = PI * 0.5  # its front (+Z) to the river (+X)
+			m.global_position = Vector3(V2_RIVER_X + 0.03 - _front_z(m), -3.0, float(z))
 	# The landing stage where the steamer ties up.
 	_box(_nav, Vector3(V2_RIVER_X + 4.0, -0.25, 90.0), Vector3(8.0, 0.5, 4.0), _wood)
 	for z in [100.0, 107.0, 114.0]:
