@@ -7,7 +7,7 @@ extends Node3D
 ##   --shots=3,8         screenshot times (s) after the brawl starts; --shot-dir=C:/path
 ## RESULT lines on knockdowns / yields, every 2 s, and the outcome with flags and where he ended up.
 
-const START := Vector3(0, 0, 1.9)  # from the museum's spot: before its doors (either Cairo)
+const START := Vector3(0, 0, 1.9)  # from the museum's door: before its doors (either Cairo)
 
 var args := {}
 var act: Node
@@ -33,7 +33,7 @@ func _ready() -> void:
 	await get_tree().create_timer(3.5).timeout
 	player = act.get("player")
 	pm = player.melee
-	player.global_position = (act.get("level") as Cairo).spots.museum + START
+	player.global_position = (act.get("level") as Cairo).door_of("museum") + START
 	player.yaw = 0.0  # facing the doors (-Z)
 	for i in 3:
 		await get_tree().physics_frame

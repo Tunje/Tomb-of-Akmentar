@@ -83,6 +83,7 @@ func _ready() -> void:
 		spots[id] = interiors.room_spots.get(id, at) if interiors else at
 	interactables["hotel_bed"] = Interactable.make(self, spots.hotel_bed + Vector3.UP * 0.9, SPOTS.hotel_bed[2], "hotel_bed", 1.0)
 	player_spawn = spots.hotel + Vector3(0, 0, 2.0)
+	tavern_door = door_of("tavern")
 	mooring = Transform3D(Basis.IDENTITY, Vector3(V2_RIVER_X + 9.0, WATER_Y, 90.0))
 	_environment()
 	set_day_time(day_time)
@@ -92,6 +93,11 @@ func _ready() -> void:
 	RenderBudget.quiet_minor(_deco)
 	if not "--no-merge" in OS.get_cmdline_user_args():
 		print("CAIRO v2 deco merged: %d draw calls fewer" % RenderBudget.merge_static(_deco))
+
+
+## Spot `id`'s place in the street before its door, at its moved landmark.
+func door_of(id: String) -> Vector3:
+	return QUAY_SPOTS.get(id, SPOTS[id][0] + MOVES.get(SPOT_OF.get(id, id), Vector3.ZERO))
 
 
 ## A kit piece's scene, or null when it hasn't been delivered (the blockout stands in).

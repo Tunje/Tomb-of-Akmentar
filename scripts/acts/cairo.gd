@@ -114,6 +114,8 @@ var mooring := Transform3D(Basis.IDENTITY, MOORING)
 var day_time := 0.5         # 0 morning .. 0.5 noon .. 1 dusk (set_day_time)
 var dust := 0.0             # the curse (set_curse): ochre dust in the air
 var gloom := 0.0            # the curse: the sky darkening by day
+## Outside the tavern's door (-bf's StreetFight hangs the bounty men's street off it).
+var tavern_door: Vector3 = SPOTS.tavern[0]
 var interiors: CairoInteriors  # -f9's rooms behind the doors (where the talks happen)
 var townsfolk: Array[Node3D] = []  # the chatting pairs (the Crowd has the walkers)
 var crowd: Crowd                     # -f9's: walkers, carriers, stall customers, sitters, donkeys
@@ -1213,6 +1215,11 @@ static func countdown_line() -> String:
 	var t := int(Game.countdowns.get("thieves", 0))
 	var m := int(Game.countdowns.get("mummy", 0))
 	return "The thieves leave in %d day%s. He reaches the city in %d day%s." % [t, "" if t == 1 else "s", m, "" if m == 1 else "s"]
+
+
+## Spot `id`'s place out in the street, before its door (`spots` has some indoors now: the rooms).
+func door_of(id: String) -> Vector3:
+	return SPOTS[id][0]
 
 
 ## A point by spot `id`'s door for an act to stand someone: `along` metres along the facade (+ =

@@ -440,7 +440,7 @@ class Checker extends Node:
 	## Act 2's fights aren't in its test flow: stand where the tests do and raise the talk's event.
 	func _street(cs: Node, p: Player) -> void:
 		await get_tree().create_timer(3.5).timeout
-		p.global_position = (cs.get("level") as Cairo).spots.tavern + Vector3(2.3, 0, 4.7)  # behind StreetFight's upturned table
+		p.global_position = (cs.get("level") as Cairo).door_of("tavern") + Vector3(2.3, 0, 4.7)  # behind StreetFight's upturned table
 		p.yaw = PI
 		for i in 3:
 			await get_tree().physics_frame
@@ -448,7 +448,7 @@ class Checker extends Node:
 
 	func _guards(cs: Node, p: Player) -> void:
 		await get_tree().create_timer(3.5).timeout
-		p.global_position = (cs.get("level") as Cairo).spots.museum + Vector3(0, 0, 1.9)  # before the museum doors
+		p.global_position = (cs.get("level") as Cairo).door_of("museum") + Vector3(0, 0, 1.9)  # before the museum doors
 		p.yaw = 0.0
 		for i in 3:
 			await get_tree().physics_frame
