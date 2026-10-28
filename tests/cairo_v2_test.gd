@@ -12,6 +12,8 @@ const VIEWS := {
 	"mosque_square": [Vector3(108, 2.0, 158), Vector3(126, 10.0, 126)],
 	"souk_lane": [Vector3(152, 2.0, 135), Vector3(205, 3.0, 135)],
 	"corniche": [Vector3(218, 2.0, 8), Vector3(218, 2.0, 200)],
+	"gate": [Vector3(100, 2.0, 182), Vector3(100, 10.0, 210)],
+	"mosque_portal": [Vector3(147, 2.0, 129), Vector3(131, 6.0, 129)],
 }
 
 ## Spots inside a room (-f9's interiors): checked like the rest now the rooms are built in v2.

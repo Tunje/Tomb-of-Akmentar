@@ -35,6 +35,14 @@ const OLD_CORNER := "cai_house_corner"
 const EURO := ["cai_euro_bay_balconies", "cai_euro_bay_arcade"]
 const QUAY := "cai_quay_wall_rings"
 const MOSQUE := "cai_mosque_wall"
+## The landmarks' one-off pieces (image-to-3d, TRELLIS): origin on the ground at the footprint's
+## centre, front +Z.
+const PORTAL := "cai_mosque_portal"           # 6.9 x 2.9 m, 12 m tall: at the mosque's east door
+const MINARET := "cai_minaret_mamluk"         # 40 m: the mosque's
+const MINARET_2 := "cai_minaret_ottoman"      # 40 m: a second one over the old quarter's roofs
+const GATE_TOWER := "cai_gate_tower"          # 22 m, 9.6 m across: either side of the south gate
+const AWNING := "cai_awning_patchwork"        # 6 m span along its Z
+const QUAY_STEPS := "cai_quay_wall_steps"     # every few modules along the quay
 const MOSQUE_W := 6.0
 const MOSQUE_H := 10.0
 const STOREY := 4.0      # an old-quarter module's height (and its width)
@@ -66,6 +74,7 @@ func _ready() -> void:
 	_v2_blocks()
 	_v2_wall()
 	_v2_quay()
+	_v2_landmarks()
 	interiors = CairoInteriors.build(self)  # -f9's rooms, at the moved venues (it reads MOVES); before the bake and the merge
 	_moved(Vector3(60, 0, 52), _skyline)
 	for id: String in SPOTS:
@@ -148,6 +157,28 @@ func _mosque_walls(r: Rect2) -> void:
 			if n.x > 0.5 and absf(at.z - 24.0) < MOSQUE_W * sx * 0.5:
 				continue  # the door (today's builder puts it at z 24 on the east face)
 			_kit_piece(_kit_scene(MOSQUE), at, n, Vector3(sx, 1.0, 1.0))
+	# The portal over the east door, standing out from the wall into the square.
+	var portal := _kit_scene(PORTAL)
+	if portal:
+		_one_off(portal, Vector3(r.end.x + 1.4, 0, 24.0), PI * 0.5)
+
+
+## A one-off piece on the ground at `at` (in _deco's frame), its front turned by `yaw`.
+func _one_off(sc: PackedScene, at: Vector3, yaw: float) -> Node3D:
+	var m: Node3D = sc.instantiate()
+	_deco.add_child(m)
+	m.rotation.y = yaw
+	m.position = at
+	return m
+
+
+## The minaret: the kit's (from the ground, through the roof it stood on) where it's delivered.
+func _minaret(base: Vector3, h: float) -> void:
+	var sc := _kit_scene(MINARET)
+	if sc == null:
+		super(base, h)
+		return
+	_one_off(sc, Vector3(base.x, 0, base.z), 0.0)
 
 
 ## One row of modules along a face, `width` wide, its foot at `y`: as many as fit, stretched (or
@@ -254,6 +285,23 @@ func _district(r: Rect2) -> String:
 	return "old"
 
 
+## The pieces that stand on their own: the gate's towers, the second minaret, the souk's awnings.
+func _v2_landmarks() -> void:
+	var tower := _kit_scene(GATE_TOWER)
+	if tower:
+		for x: float in [91.5, 108.5]:
+			_one_off(tower, Vector3(x, 0, V2_SOUTH + 1.0), PI)  # (their fronts to the north, into the city)
+	var m2 := _kit_scene(MINARET_2)
+	if m2:
+		_one_off(m2, Vector3(41, 0, 163), 0.0)  # over the old quarter's roofs (inside a block)
+	var aw := _kit_scene(AWNING)
+	if aw:
+		for x: float in [162.0, 186.0, 199.0]:
+			_one_off(aw, Vector3(x, 0, 135.0), 0.0)  # across the souk lane (its span along Z)
+		for z: float in [142.0, 172.0, 190.0]:
+			_one_off(aw, Vector3(100.0, 0, z), PI * 0.5)  # across the Old Street
+
+
 ## The city wall along the south, with the gate (today's, moved) at the Old Street's end.
 func _v2_wall() -> void:
 	for seg: Array in [[0.0, 97.0], [103.0, 205.0]]:
@@ -304,8 +352,9 @@ func _v2_quay() -> void:
 	# The quay wall's face on the river: the kit's stone with its mooring rings, the length of the city.
 	var qw := _kit_scene(QUAY)
 	if qw:
+		var steps := _kit_scene(QUAY_STEPS)
 		for z in range(3, int(V2_SOUTH), 6):
-			var m: Node3D = qw.instantiate()
+			var m: Node3D = (steps if steps and z % 30 == 9 else qw).instantiate()
 			_deco.add_child(m)
 			m.rotation.y = PI * 0.5  # its front (+Z) to the river (+X)
 			m.global_position = Vector3(V2_RIVER_X + 0.03 - _front_z(m), -3.0, float(z))
