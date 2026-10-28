@@ -78,6 +78,7 @@ func _ready() -> void:
 	tomb_door = Vector3(0, TERRACE_Y, 0)
 	_environment()
 	_sun.directional_shadow_max_distance = 140.0
+	_sun.rotation = Vector3(deg_to_rad(-42), deg_to_rad(18), 0)  # from the south: the facade (facing south) in the light
 	_env.fog_density = 0.0012
 	var t0 := Time.get_ticks_msec()
 	_nav.bake_navigation_mesh(false)
