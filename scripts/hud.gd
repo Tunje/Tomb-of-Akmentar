@@ -2,6 +2,9 @@ class_name Hud
 extends CanvasLayer
 ## Crosshair that opens with spread, hit/kill markers, ammo, health, messages.
 
+## A title card is up (show_message with a title): world labels (WorldMarker) keep off it.
+static var card_up := false
+
 var player: Player
 var remaining := 0
 
@@ -41,6 +44,7 @@ const HOLSTER_AFTER := 6.0    # s: ... this long, armed: the reminder to holster
 
 
 func _ready() -> void:
+	card_up = false  # (static: not the last scene's card)
 	(func() -> void: Settings.ensure(get_tree())).call_deferred()  # the options, on this scene
 	var keys := OptionsKey.new()
 	keys.hud = self
@@ -123,6 +127,7 @@ func show_message(title: String, sub := "") -> void:
 		sub += " · O options"
 	_title.text = title
 	_sub.text = sub
+	card_up = title != ""
 
 
 func on_hit(killed: bool, headshot: bool) -> void:
@@ -180,7 +185,12 @@ func _draw_overlay() -> void:
 	if card:
 		var top := _title.position.y - 24.0
 		var bottom := _sub.position.y + 36.0 + 30.0 * maxi(_sub.get_line_count(), 1)
-		_canvas.draw_rect(Rect2(0, top, size.x, bottom - top), Color(0.05, 0.04, 0.03, 0.5))
+		_canvas.draw_rect(Rect2(0, top, size.x, bottom - top), Color(0.05, 0.04, 0.03, 0.55))
+		# A darker core behind the words, feathered at its ends, so world text behind the band (the
+		# hotel's ROOMS sign) never reads as part of the title.
+		for k in 6:
+			var w := 1300.0 - k * 60.0
+			_canvas.draw_rect(Rect2(size.x * 0.5 - w * 0.5, top + 4.0, w, bottom - top - 8.0), Color(0.05, 0.04, 0.03, 0.13))
 	if not player:
 		return
 	if player.alive and player.controls_enabled and player.armed and not card:

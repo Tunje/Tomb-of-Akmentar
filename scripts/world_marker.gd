@@ -74,7 +74,7 @@ func _look() -> void:
 	if visible_if.is_valid() and not bool(visible_if.call()):
 		return
 	var cam := get_viewport().get_camera_3d()
-	if cam == null or ActionMenu.ui_open():
+	if cam == null or ActionMenu.ui_open() or Hud.card_up:
 		return
 	var d := cam.global_position.distance_to(global_position)
 	if d > range:

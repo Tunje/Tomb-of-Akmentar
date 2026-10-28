@@ -38,9 +38,9 @@ Shots referred to below are in [qa_pass/](qa_pass/).
 | What | Where | Owner |
 |---|---|---|
 | Barks and name tags draw over the end-of-fight card ("Thank you. I'm all right. Really", "Eleanor (holding)" over THE RIVER, AT DAWN). The "Down." bark prints across the downed companion's tag. | Act 8's boat ([shot](qa_pass/boat_end_card_tags.jpg), [shot](qa_pass/boat_help_label_after.jpg)) | -bf: fixing. `Gunman.screen_busy()` hides tags and barks while a HUD title card or a screen is up. The "Down." overlap was the help-up marker removed above |
-| Hit dust shows as a hard-edged translucent square, not a soft puff | Act 9, Act 8's boat ([shot](qa_pass/act9_square_dust.jpg), lower middle) | lead (Fx `_dust`: the quad's soft_dot texture isn't showing) |
-| The heat shimmer ripples the world markers that sit in its horizon band ("Rest by the fire (save)" bent) | Act 6's dawn camp ([shot](qa_pass/act6_markers_after.jpg)) | -f9: fixing. The shimmer moves into the 3D view's transparent pass, drawn first, so labels, water and particles stay straight |
-| The hotel's "ROOMS" sign shows through the act title banner, reading as part of the title | Acts 2, 7 and 8 opening in front of the hotel | lead (HUD title banner: a little more opaque, or the camera off the sign) |
+| Hit dust shows as a hard-edged translucent square, not a soft puff | Act 9, Act 8's boat ([shot](qa_pass/act9_square_dust.jpg), lower middle) | lead: **done** in 2a01ae9. It was the sparks and the rag flecks (untextured quads), now soft dots |
+| The heat shimmer ripples the world markers that sit in its horizon band ("Rest by the fire (save)" bent) | Act 6's dawn camp ([shot](qa_pass/act6_markers_after.jpg)) | -f9: **done** in b434d86. The shimmer is drawn first in the 3D transparent pass, so labels, water and particles stay straight |
+| The hotel's "ROOMS" sign shows through the act title banner, reading as part of the title | Acts 2, 7 and 8 opening in front of the hotel | -2d: **done**. The banner is a little darker, with a darker feathered core behind the words, and world markers keep off it while it's up (`Hud.card_up`) |
 | Pale, near-white servant or mummy figures among the textured ones | Act 9's halls ([shot](qa_pass/act9_square_dust.jpg), left), Act 8's boat | -bf: it's the hit flash (a white overlay for 0.12 s after a hit), caught mid-frame. Now halved, to a warm glint |
 
 ## Not bugs
