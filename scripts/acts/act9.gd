@@ -184,10 +184,13 @@ func _arrival() -> void:
 	await _talk("act9_arrival", _speaker())
 	Barks.say_any(get_tree(), "entering_tomb")
 	await _level("surface", "act9_surface", "The stair down. Something waits at the bottom.")
-	hud.toast("Down into the halls.", 3.0)
-	Objective.set_goal("Down into the halls")
-	await _reach(points.halls)
-	await _level("halls", "act9_halls", "The halls. The way down is sealed again.")
+	if await _builders_choice():
+		await _builders_way()   # (the halls and their fight left above)
+	else:
+		hud.toast("Down into the halls.", 3.0)
+		Objective.set_goal("Down into the halls")
+		await _reach(points.halls)
+		await _level("halls", "act9_halls", "The halls. The way down is sealed again.")
 	hud.toast("On to the king's door.", 3.0)
 	Objective.set_goal("On to the king's door")
 	await _reach(points.royal)
@@ -207,6 +210,71 @@ func _arrival() -> void:
 	await _talk("act9_ritual", _speaker())
 	if step != Step.RITUAL:  # end_failed: nobody left to sing
 		_end()
+
+
+## The Builders' Way (BuildersWay; the design's "Sealed Storeroom: a concealed route bypassing a
+## dangerous section"): known from Act 4, it's a choice at the surface. The ravine or the stair.
+## --builders: the bot takes it (and knows it).
+func _builders_choice() -> bool:
+	if args.has("builders"):
+		Game.set_flag(BuildersWay.FOUND)
+	if not Game.flag(BuildersWay.FOUND):
+		return false
+	var at := level.stair_top + Vector3(6, 0, 0)
+	var taken := [args.has("builders")]
+	var way := Interactable.make(level, at + Vector3.UP, "Take the Builders' Way (the ravine behind the east temple)", "builders_way", 1.6)
+	way.used.connect(func(_by: Node) -> void: taken[0] = true)
+	hud.toast("Or the workmen's way: the ravine, and their stair down inside the rock.", 4.0)
+	while not taken[0] and player.alive and player.global_position.y > level.stair_top.y - 3.0:
+		await get_tree().create_timer(0.2).timeout
+	way.queue_free()
+	return taken[0]
+
+
+## Down the workmen's stair: a card (a placeholder for the loading card), everyone at its top on
+## level 2 behind the Scarab Mother's shrine, then down inside the rock to the forecourt's low door.
+func _builders_way() -> void:
+	print("RESULT act9 builders_way taken t=%.1f" % _t)
+	await _card("THE BUILDERS' WAY", "Down the workmen's stair, in the dark.")
+	var top: Vector3 = level.points["builders_way"]
+	player.global_position = top + Vector3(0, 0.2, 0)
+	var spots := [Vector3(0, 0, 2), Vector3(2, 0, 0), Vector3(2, 0, 2), Vector3(-2, 0, 2), Vector3(-2, 0, 0), Vector3(-4, 0, 2)]
+	var i := 0
+	for g in companions.values() + singers.values():
+		if is_instance_valid(g) and g.alive:
+			g.global_position = top + spots[mini(i, spots.size() - 1)] + Vector3.UP * 0.2
+			i += 1
+	# The forecourt's low door: once it's open, the navmesh takes it in (the party follows through).
+	for d in level.secret_doors:
+		if d is ClueDoor and (d as ClueDoor).needs == BuildersWay.FOUND:
+			(d as ClueDoor).opened.connect(func() -> void: level._nav.bake_navigation_mesh(true), CONNECT_ONE_SHOT)
+			if args.has("auto"):
+				(d as ClueDoor).try_open()
+	hud.toast("Narrow, and dark. Keep them close.", 3.0)
+	Objective.set_goal("Down the workmen's stair to the forecourt")
+	await _reach(level.points["builders_door"])
+	print("RESULT act9 builders_way out at the forecourt t=%.1f" % _t)
+
+
+## A black card over everything with a title, as long as `secs`: the cut while the party moves.
+func _card(title: String, line: String, secs := 1.4) -> void:
+	var layer := CanvasLayer.new()
+	layer.layer = 0   # over the 3D, under the HUD (its title shows on the black)
+	add_child(layer)
+	var black := ColorRect.new()
+	black.color = Color(0, 0, 0, 0)
+	black.set_anchors_preset(Control.PRESET_FULL_RECT)
+	black.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(black)
+	var tw := create_tween()
+	tw.tween_property(black, "color:a", 1.0, 0.4)
+	await tw.finished
+	hud.show_message(title, line)
+	await get_tree().create_timer(secs).timeout
+	hud.show_message("")
+	var back := create_tween()
+	back.tween_property(black, "color:a", 0.0, 0.5)
+	back.tween_callback(layer.queue_free)
 
 
 const STRAY_AFTER := 25.0

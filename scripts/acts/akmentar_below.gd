@@ -39,7 +39,17 @@ const FLIGHTS := [  # [lane rect, top end, bottom end] in cell coordinates
 const BRIDGES := {1: Rect2i(24, 25, 16, 2), 3: Rect2i(31, 18, 2, 16)}
 ## Side stairs: [upper level, the cells (2 wide, running south), descending toward +z].
 const STAIRS := [[0, Rect2i(12, 20, 2, 7)], [0, Rect2i(50, 20, 2, 7)], [1, Rect2i(8, 39, 2, 7)],
-	[1, Rect2i(54, 39, 2, 7)], [2, Rect2i(8, 16, 2, 7)], [2, Rect2i(56, 16, 2, 7)], [3, Rect2i(8, 35, 2, 7)]]
+	[1, Rect2i(54, 39, 2, 7)], [2, Rect2i(8, 16, 2, 7)], [2, Rect2i(56, 16, 2, 7)], [3, Rect2i(8, 35, 2, 7)],
+	[2, BUILDERS_STAIRS[0]], [3, BUILDERS_STAIRS[1]]]
+## The Builders' Way (gameplan/akmentar_valley_plan.md, the hidden path): the workmen's own stair
+## from the valley's ravine comes in at level 2's east edge (BUILDERS_TOP), behind the Scarab
+## Mother's shrine; its east wall is a seal (forced, or opened with clue_builders_seal). From there
+## two narrow stairs go down inside the rock, past level 3, to level 4 and a low secret door into
+## the forecourt's east side (opened with found_builders_way).
+const BUILDERS_TOP := Vector2i(62, 26)
+const BUILDERS_STAIRS := [Rect2i(61, 28, 2, 7), Rect2i(61, 37, 2, 7)]
+const BUILDERS_PASSAGES := [[2, Rect2i(59, 26, 4, 2)], [3, Rect2i(61, 35, 2, 2)], [4, Rect2i(61, 44, 2, 2)],
+	[4, Rect2i(43, 44, 18, 2)], [4, Rect2i(41, 30, 2, 16)]]
 const ROYAL := Rect2i(24, 1, 16, 8)
 const ANTE := Rect2i(26, 10, 12, 6)
 ## The chambers per level. A one-letter key is a point of interest at its centre.
@@ -77,7 +87,9 @@ const BLIND := [[0, Rect2i(30, 12, 2, 3), Vector2i(30, 14)], [1, Rect2i(26, 12, 
 ## Secret walls: [level, cell, the clue flag that reveals the trick]. The shrine of the Scarab
 ## Mother ("h", level 2) is sealed; the other is a shortcut from the Builders (b) down to level 1's west hall.
 const SECRETS := [[2, Vector2i(51, 26), "found_builders"], [2, Vector2i(51, 27), "found_builders"],
-	[1, Vector2i(8, 16), "found_symbols"], [1, Vector2i(9, 16), "found_symbols"]]
+	[1, Vector2i(8, 16), "found_symbols"], [1, Vector2i(9, 16), "found_symbols"],
+	[2, Vector2i(58, 26), "clue_builders_seal"], [2, Vector2i(58, 27), "clue_builders_seal"],
+	[4, Vector2i(40, 30), "found_builders_way"], [4, Vector2i(40, 31), "found_builders_way"]]
 ## The point of interest at the Weeping Stair's foot (level 4, the forecourt).
 const STAIR_FOOT := Vector2i(35, 22)
 const SLABS := 7
@@ -105,6 +117,8 @@ var amulet: Node3D  # on the royal tomb's plinth "2" until the thieves take it
 var sarc_lid: Node3D  # the royal sarcophagus's lid (it slides off at the awakening)
 ## Named places for the acts (act9's fights, the views): world positions.
 var points := {}
+signal builders_stair_used(by: Node)    # the Builders' Way's stair up to the valley, from its top
+signal builders_seal_forced(at: Vector3)  # the shrine's seal broken without the trick: loud
 ## Per level: its rows (Array of Array of one-char Strings while laying out, then Strings).
 var decks: Array = []
 var _door_cells: Array[Vector3] = []
@@ -151,6 +165,9 @@ func map_rows() -> Array:
 			_stamp(d, ROOMS[k][key], ".")
 		for r: Rect2i in PASSAGES[k]:
 			_stamp(d, r, ".")
+		for b: Array in BUILDERS_PASSAGES:
+			if b[0] == k:
+				_stamp(d, b[1], ".")
 		# The well: open on every level but the bottom (the forecourt); each level's landing.
 		if k < DECKS - 1:
 			_stamp(d, SHAFT, "O")
@@ -486,6 +503,7 @@ func _build_tomb() -> void:
 	for s in STAIRS:
 		_side_stair(s[0], s[1])
 	_main_stairs()
+	_builders_way()
 	_glyph_walls()
 	# Every still piece of the five levels as a few meshes per 24 m (2525 meshes were ~5800 draw
 	# calls with their shadows); the doors (scripted), the amulet and the lid stay their own.
@@ -843,10 +861,13 @@ func _secret(k: int, r: int, c: int) -> void:
 	for s in SECRETS:
 		if s[0] == k and s[1] == Vector2i(c, r):
 			flag = s[2]
-	var d := ClueDoor.make(_nav, "secret_%d_%d_%d" % [k, c, r], p, Vector3(CELL, ROOM_H, CELL), flag,
-		"The stone here sounds hollow. Fine cracks run round a block the size of a door, but it won't move.",
-		"You press where the builders marked it. The block grinds back into the dark.")
+	var texts: Array = BUILDERS_TEXTS.get(flag, ["The stone here sounds hollow. Fine cracks run round a block the size of a door, but it won't move.",
+		"You press where the builders marked it. The block grinds back into the dark."])
+	var d := ClueDoor.make(_nav, "secret_%d_%d_%d" % [k, c, r], p, Vector3(CELL, ROOM_H, CELL), flag, texts[0], texts[1])
 	secret_doors.append(d)
+	if flag == "clue_builders_seal":
+		d.can_force = true
+		d.forced.connect(func() -> void: builders_seal_forced.emit(p))
 	var block := _kit_mesh("wall_glyph_b")
 	if block == null:
 		return
@@ -860,6 +881,25 @@ func _secret(k: int, r: int, c: int) -> void:
 			d.add_child(mi)
 			mi.global_transform = Transform3D(Basis.looking_at(-out, Vector3.UP),
 				p + out * (CELL * 0.5 - BLOCK.z * 0.5 + 0.02) + Vector3.UP * h * BLOCK.y)
+
+
+## (Story placeholders, like the clue texts: Simon will rewrite the story.)
+const BUILDERS_TEXTS := {
+	"clue_builders_seal": ["Plaster seals this wall, stamped over and over with a scarab. Behind it, the rock sounds hollow.",
+		"You press the one scarab that faces east. The plaster cracks along a line, and the seal swings in."],
+	"found_builders_way": ["A low block, a hand's width proud of the wall. It doesn't move from this side.",
+		"You lift where the workmen's tally said. The low door scrapes open onto the forecourt."],
+}
+
+
+## The Builders' Way: where its stair comes in (points.builders_way, an arrival for the acts) and
+## the way back up it to the valley (E there: builders_stair_used; the act does the loading card).
+func _builders_way() -> void:
+	var top := dcell(2, BUILDERS_TOP.y, BUILDERS_TOP.x)
+	points["builders_way"] = top - Vector3(CELL, 0, 0)
+	points["builders_door"] = dcell(4, 30, 41)
+	var up := Interactable.make(self, top + Vector3.UP, "Climb the builders' stair", "builders_stair", 1.6)
+	up.used.connect(func(by: Node) -> void: builders_stair_used.emit(by))
 
 
 func _marker(ch: String, p: Vector3, _r: int, _c: int) -> void:
@@ -1202,14 +1242,14 @@ func _build_surface() -> void:
 	# Rubble on the way out: the gallery off level 2's landing, and level 0's east corridor.
 	collapse_points.append(dcell(2, 31, 21) + Vector3(0, 0, CELL * 0.5))
 	collapse_points.append(dcell(0, 30, 42) + Vector3(CELL * 0.5, 0, 0))
-	points = {
+	points.merge({  # (merged: the Builders' Way's went in with the tomb)
 		"surface": stair_top,
 		"south": dcell(0, 42, 31),
 		"halls": dcell(1, 42, 31),  # level 1's low hall, under the landing
 		"forecourt": dcell(4, 26, 31),
 		"royal": dcell(4, ANTE.position.y + 2, ANTE.position.x + ANTE.size.x / 2),
 		"stair_foot": dcell(4, STAIR_FOOT.y, STAIR_FOOT.x),
-	}
+	}, true)
 	for k in DECKS - 1:
 		var l: Rect2i = LANDINGS[k]
 		points["landing%d" % k] = dcell(k, l.position.y + 1, l.position.x + 1)

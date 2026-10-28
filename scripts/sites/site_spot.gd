@@ -14,7 +14,9 @@ extends Node3D
 ##                 "if": {conditions},                            Game.check; else locked_text
 ##                 "locked_text": "...",
 ##                 "clue": {"id": "clue_anubis", "title": "...", "text": "..."},
-##                 "do": [effects]},                              extra Game.apply after the clue
+##                 "do": [effects],                               extra Game.apply after the clue
+##                 "builders": {"id": "clue_builders_..", ...}},  a second clue, the Builders' Way's
+##                                                                trail (BuildersWay): journal only
 ##      ...},
 ##    "draft": {...}}                                 see scripts/boards/site_draft.gd
 ## A site another expedition claimed in the draft (flag "claimed_<site>") can't be inspected.
@@ -226,9 +228,24 @@ func report(by: Node) -> ClueCard:
 		"title": str(c.get("title", "")), "text": str(c.get("text", ""))})
 	Game.set_flag(clue_id())
 	Game.apply(site.get("do", []))
+	_second_clue()
 	DayLog.add("Studied the %s" % site.get("name", site_id))
 	inspected.emit(site_id)
 	return ClueCard.open(get_parent(), str(site.get("name", site_id)), c, by)
+
+
+## The site's second clue (the Builders' Way's trail), into the journal with a word on the notice
+## line; then whether the trail is put together.
+func _second_clue() -> void:
+	var b: Dictionary = site.get("builders", {})
+	if b.is_empty() or Journal.has(str(b.get("id", ""))):
+		return
+	Journal.add({"id": str(b.id), "place": str(data.get("place", "")), "site": str(site.get("name", site_id)),
+		"title": str(b.get("title", "")), "text": str(b.get("text", ""))})
+	Game.set_flag(str(b.id))
+	Notice.say(get_parent(), "Also noted: %s" % b.get("title", ""))
+	if BuildersWay.check():
+		Notice.say(get_parent(), "In the journal: %s" % BuildersWay.ENTRY.title)
 
 
 func inspect(by: Node) -> bool:
@@ -245,6 +262,7 @@ func inspect(by: Node) -> bool:
 		"title": str(c.get("title", "")), "text": str(c.get("text", ""))})
 	Game.set_flag(clue_id())
 	Game.apply(site.get("do", []))
+	_second_clue()
 	DayLog.add("Inspected the %s" % site.get("name", site_id))
 	inspected.emit(site_id)
 	var card := ClueCard.open(get_parent(), str(site.get("name", site_id)), c, by)

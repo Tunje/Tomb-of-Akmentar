@@ -3,9 +3,15 @@ extends StaticBody3D
 ## A stone door (or slab over a passage) that only opens for someone who knows the trick: E on it
 ## opens it when Game has `needs` (a flag, e.g. a clue's), else says `locked_text`. It sinks into
 ## the floor over OPEN_TIME and stays open (flag "door_<id>_open", saved).
+## `can_force`: without the trick, E twice (the second within FORCE_WINDOW s of being told it
+## won't move) forces it anyway: it opens, loudly ("forced" signal, flag "door_<id>_forced"), and
+## whatever's near hears it (the act's business: Simon's rule, a clue is never required).
 ##   ClueDoor.make(level, "anubis_door", Vector3(4, 0, 9), Vector3(2, 3, 0.4), "clue_anubis", ...)
 
 signal opened
+signal forced
+
+const FORCE_WINDOW := 4.0
 
 const OPEN_TIME := 1.6
 
@@ -16,8 +22,11 @@ var locked_text := "The door won't move."
 var open_text := "The slab grinds down into the floor."
 var interactable: Interactable
 var is_open := false
+var can_force := false
+var force_text := "You set your shoulder to it and heave. Something gives with a crack that rolls away down the dark."
 
 var _t := -1.0
+var _force_until := -1.0
 var _closed_y := 0.0
 
 
@@ -65,13 +74,23 @@ func _ready() -> void:
 func try_open() -> bool:
 	if is_open:
 		return true
+	var now := Time.get_ticks_msec() / 1000.0
+	var by_force := false
 	if needs != "" and not Game.flag(needs):
-		Notice.say(get_parent(), locked_text)
-		return false
+		if not can_force or now > _force_until:
+			_force_until = now + FORCE_WINDOW
+			Notice.say(get_parent(), locked_text + (" You could force it. It would be loud." if can_force else ""))
+			return false
+		by_force = true
 	is_open = true
 	_t = 0.0
 	Game.set_flag(_open_flag())
-	Notice.say(get_parent(), open_text)
+	if by_force:
+		Game.set_flag("door_%s_forced" % door_id)
+		Notice.say(get_parent(), force_text)
+		forced.emit()
+	else:
+		Notice.say(get_parent(), open_text)
 	interactable.when = {"not_flag": _open_flag()}
 	opened.emit()
 	return true

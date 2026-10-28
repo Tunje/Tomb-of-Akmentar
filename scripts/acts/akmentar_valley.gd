@@ -1,5 +1,7 @@
 class_name AkmentarValley
 extends AkmentarSurface
+
+signal builders_cleft_used(by: Node)    # the Builders' Way's cleft (the act takes it from here)
 ## Stage 1 of gameplan/akmentar_valley_plan.md: the Golden Pharaoh valley in blockout, beside
 ## today's surface (AkmentarSurface). No act uses it yet: today's surface stays Act 4's until Simon
 ## answers the plan's questions (tests/akmentar_valley_test walks it).
@@ -47,6 +49,7 @@ const PLACEHOLDERS := {
 var horse_spot := Vector3.ZERO
 var stair_down := Vector3.ZERO    # the placeholder at the tunnel's foot (Act 5's tomb, later)
 var boat_landing := Vector3.ZERO
+var builders_cleft := Vector3.ZERO  # the Builders' Way's cleft in the ravine (BuildersWay)
 var airstrip := Vector3.ZERO
 var _gold: StandardMaterial3D
 var _rock: StandardMaterial3D
@@ -82,6 +85,21 @@ func _ready() -> void:
 	var t0 := Time.get_ticks_msec()
 	var cached := NavCache.bake(_nav, "akmentar_valley")
 	print("VALLEY navmesh %s in %d ms" % ["from the cache" if cached else "baked", Time.get_ticks_msec() - t0])
+
+
+## The Builders' Way's cleft in the ravine's east wall, behind a rockfall: E there (only once
+## found_builders_way is set) is builders_cleft_used; the act does the loading card down to
+## AkmentarBelow.points.builders_way.
+func _builders_cleft() -> void:
+	var z := -40.0
+	var y := 25.0 * (4.0 - z) / 84.0   # the ravine's ramp, here
+	for k in 4:
+		var rock := _box(_nav, Vector3(127.6 - k * 0.3, y + 0.5 + k * 0.35, z - 2.0 + k * 1.3), Vector3(1.4, 1.0 + k * 0.4, 1.2), _rock)
+		rock.rotation = Vector3(0.2 * k, 0.6 * k, 0.1)
+	builders_cleft = Vector3(127.0, y, z)
+	var cleft := Interactable.make(self, builders_cleft + Vector3.UP, "Squeeze into the cleft", "builders_cleft", 1.5)
+	cleft.when = {"flag": BuildersWay.FOUND}
+	cleft.used.connect(func(by: Node) -> void: builders_cleft_used.emit(by))
 
 
 ## Act 4's SiteSpots at the valley's sites (main calls this, as for the surface).
@@ -326,9 +344,12 @@ func _sides() -> void:
 	_block(Rect2(150, 40, 85, 95), 0, LEDGE_Y, _rock)
 	_ramp(Vector3(144, 0, 255), Vector3(144, LEDGE_Y, 132), 8.0, _rock)
 	_box(_nav, Vector3(146, LEDGE_Y - 0.15, 129), Vector3(12, 0.3, 6), _rock)   # the stair's head (from where it ends, z 132), onto the ledge
-	# 19: the hidden path: up the ravine behind the east side temple to the rear cliffs (+25).
+	# 19: the hidden path: up the ravine behind the east side temple to the rear cliffs (+25). The
+	# raiders' flanking way; halfway up, the Builders' Way's cleft (a secret: no marker, no prompt
+	# until the trail is put together, BuildersWay).
 	_ramp(Vector3(124, 0, 4), Vector3(124, 25, -80), 6.0, _rock)
 	_block(Rect2(100, -180, 180, 100), 0, 25, _rock)            # the rear plateau
+	_builders_cleft()
 	# 15: the valley of statues: weathered colossi and pillars, half sunk.
 	for c in [Vector3(165, 0, 270), Vector3(215, 0, 285), Vector3(170, 0, 340), Vector3(222, 0, 350), Vector3(198, 0, 365)]:
 		_block(Rect2(c.x - 3, c.z - 4, 6, 8), -1.0, 4, _stone)
