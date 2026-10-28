@@ -54,10 +54,11 @@ static func merge_static(node: Node3D, cell := 24.0, keep: Array = []) -> int:
 	var groups := {}  # key -> {"st": SurfaceTool, "mat", "shadow", "end", ...}
 	var merged: Array[MeshInstance3D] = []
 	var to_local := node.global_transform.affine_inverse()
+	var anim_cache := {}  # parent id -> animated (one look per parent, not per mesh)
 	for m: MeshInstance3D in node.find_children("*", "MeshInstance3D", true, false):
 		if m.mesh == null or not m.is_visible_in_tree() or _going(m, node) or _kept(m, node, keep) or m.get_node_or_null(m.skeleton) is Skeleton3D:
 			continue
-		if (m.mesh is ArrayMesh and (m.mesh as ArrayMesh).get_blend_shape_count() > 0) or m.get_child_count() > 0 or _animated(m, node):
+		if (m.mesh is ArrayMesh and (m.mesh as ArrayMesh).get_blend_shape_count() > 0) or m.get_child_count() > 0 or _animated(m, node, anim_cache):
 			continue
 		var ok := true
 		for i in m.mesh.get_surface_count():
@@ -113,15 +114,32 @@ static func _going(m: Node, top: Node) -> bool:
 	return false
 
 
-static func _animated(m: Node, top: Node) -> bool:
+## Under something that moves (a body that isn't static, or a node with an AnimationPlayer child).
+## `cache` (parent id -> answer) is shared across one merge: every child of a big parent (a level's
+## _nav, thousands of bodies) looked through all its children per mesh before.
+static func _animated(m: Node, top: Node, cache := {}) -> bool:
 	var n := m.get_parent()
+	var walked: Array[int] = []
+	var found := false
 	while n != null and n != top:
-		if n is AnimatableBody3D or n is RigidBody3D or n is CharacterBody3D:
-			return true
-		for c in n.get_children():
-			if c is AnimationPlayer:
-				return true
+		var id := n.get_instance_id()
+		if cache.has(id):
+			found = cache[id]
+			break
+		walked.append(id)
+		if n is AnimatableBody3D or n is RigidBody3D or n is CharacterBody3D or _has_player(n):
+			found = true
+			break
 		n = n.get_parent()
+	for id in walked:
+		cache[id] = found
+	return found
+
+
+static func _has_player(n: Node) -> bool:
+	for c in n.get_children():
+		if c is AnimationPlayer:
+			return true
 	return false
 
 

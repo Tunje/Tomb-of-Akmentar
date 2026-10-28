@@ -1042,6 +1042,7 @@ func _glyph_walls() -> void:
 ## under `keep` or a scripted node, not animated, no surface overrides. Returns how many.
 func _instance_kit(cell: float, keep: Array) -> int:
 	var groups := {}
+	var anim_cache := {}
 	var to_local := global_transform.affine_inverse()
 	for m: MeshInstance3D in find_children("*", "MeshInstance3D", true, false):
 		if m.mesh == null or not ".glb::" in m.mesh.resource_path or not m.is_visible_in_tree() or m.get_child_count() > 0:
@@ -1053,7 +1054,7 @@ func _instance_kit(cell: float, keep: Array) -> int:
 			overridden = overridden or m.get_surface_override_material(i) != null
 		if verts < KIT_INSTANCE_VERTS or overridden or m.get_node_or_null(m.skeleton) is Skeleton3D:
 			continue
-		if (m.mesh as ArrayMesh).get_blend_shape_count() > 0 or RenderBudget._going(m, self) or RenderBudget._kept(m, self, keep) or RenderBudget._animated(m, self):
+		if (m.mesh as ArrayMesh).get_blend_shape_count() > 0 or RenderBudget._going(m, self) or RenderBudget._kept(m, self, keep) or RenderBudget._animated(m, self, anim_cache):
 			continue
 		var xf := to_local * m.global_transform
 		var c := Vector2i(floori(xf.origin.x / cell), floori(xf.origin.z / cell))
