@@ -912,18 +912,13 @@ func _cylinder_post(at: Vector3, radius: float, h: float, mat: Material) -> Stat
 
 
 ## A date palm: a leaning trunk and a crown of fronds. `solid`: the trunk blocks.
+## -f9's date palm (Palms: a ringed trunk, swaying fronds, one MultiMesh a variant). Its trunk's
+## collider is ours, placed in _nav's frame like the rest (in Cairo v2, inside a moved landmark's
+## holder; Palms.add's own is placed in world space).
 func _palm(at: Vector3, h: float, solid := true) -> void:
-	var lean := Vector3(_rng.randf_range(-0.08, 0.08), 0, _rng.randf_range(-0.08, 0.08))
-	var trunk := MeshInstance3D.new()
-	var cm := CylinderMesh.new()
-	cm.top_radius = 0.16
-	cm.bottom_radius = 0.26
-	cm.height = h
-	trunk.mesh = cm
-	trunk.material_override = _wood
-	_deco.add_child(trunk)
-	trunk.position = at + Vector3.UP * h * 0.5
-	trunk.rotation = lean
+	for k in 20:
+		_rng.randf()  # (the old palm's 20 dice: everything placed after it stays where it was)
+	Palms.add(_deco, at, h, null)
 	if solid:
 		var b := StaticBody3D.new()
 		var cs := CollisionShape3D.new()
@@ -934,18 +929,6 @@ func _palm(at: Vector3, h: float, solid := true) -> void:
 		b.add_child(cs)
 		_nav.add_child(b)
 		b.position = at + Vector3.UP
-	var top := at + (trunk.transform.basis * Vector3.UP) * h
-	for k in 9:
-		var a := TAU * k / 9.0 + _rng.randf() * 0.3
-		var frond := MeshInstance3D.new()
-		var qm := BoxMesh.new()
-		qm.size = Vector3(0.5, 0.02, 3.0)
-		frond.mesh = qm
-		frond.material_override = _leaf
-		_deco.add_child(frond)
-		frond.rotation_order = EULER_ORDER_YXZ
-		frond.rotation = Vector3(-0.45 + _rng.randf_range(-0.1, 0.2), a, 0)
-		frond.position = top + Vector3(sin(a), -0.35, cos(a)) * 1.3
 
 
 func _pot_palm(at: Vector3) -> void:
