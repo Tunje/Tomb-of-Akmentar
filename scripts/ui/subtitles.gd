@@ -123,8 +123,8 @@ func _process(delta: float) -> void:
 		return
 	_t += delta
 	_label.modulate.a = clampf((_secs - _t) / 0.5, 0.0, 1.0)
-	if Conversation.current != null:
-		_label.modulate.a = 0.0  # never over a talk's own line
+	if ActionMenu.ui_open():
+		_label.modulate.a = 0.0  # never over a talk's own line, nor a screen (the album: a fight's bark on it)
 	_place()
 	if _t >= _secs:
 		_label.visible = false

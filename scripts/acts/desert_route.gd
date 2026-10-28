@@ -38,6 +38,7 @@ var rider_from := Vector3.ZERO
 var rider_to := Vector3.ZERO
 var _road_mat: StandardMaterial3D
 var _crest: Array[Vector3] = []
+var _night := 0.0           # (Crowd reads it: the townsfolk go to their night places past 0.5)
 
 
 func _ready() -> void:
@@ -68,6 +69,27 @@ func _ready() -> void:
 	_env.fog_light_color = Color(0.8, 0.66, 0.48)
 	_nav.bake_navigation_mesh(false)
 	Crowd.populate(self, "desert_town")  # villagers, goats and a donkey by the town (-f9's Crowd)
+
+
+# ---------------------------------------------------------------- night
+
+## 0 = day, 1 = night (Act 3's camp on the road): the sun sets, moonlight, the camp fire carries
+## it. As AkmentarSurface's and DesertTemple's, from this map's own day.
+func set_night(f: float) -> void:
+	if _sun == null:
+		return
+	_night = f
+	_sun.light_energy = lerpf(1.0, 0.16, f)
+	_sun.light_color = Color(1.0, 0.9, 0.75).lerp(Color(0.55, 0.65, 0.95), f)
+	_env.ambient_light_energy = lerpf(1.0, 0.1, f)
+	_env.ambient_light_sky_contribution = lerpf(1.0, 0.25, f)
+	_env.fog_light_color = Color(0.8, 0.66, 0.48).lerp(Color(0.05, 0.06, 0.1), f)
+	_env.fog_density = lerpf(0.003, 0.01, f)
+	_env.tonemap_exposure = lerpf(1.0, 1.25, f)
+	var sky := _env.sky.sky_material as ProceduralSkyMaterial
+	sky.sky_top_color = Color(0.32, 0.5, 0.75).lerp(Color(0.02, 0.03, 0.08), f)
+	sky.sky_horizon_color = Color(0.85, 0.75, 0.6).lerp(Color(0.08, 0.08, 0.14), f)
+	sky.ground_horizon_color = Color(0.8, 0.68, 0.5).lerp(Color(0.06, 0.05, 0.05), f)
 
 
 # ---------------------------------------------------------------- the coast

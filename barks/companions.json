@@ -1502,10 +1502,10 @@
 		"mahmoud": {
 			"combat_start": [
 				{
-					"text": "Men, to the shovels and the stones!"
+					"text": "Heads down! Stay together!"
 				},
 				{
-					"text": "Protect the dig!"
+					"text": "Men, behind me! Keep together!"
 				}
 			],
 			"enemy_down": [

@@ -177,8 +177,9 @@ func _build_marker() -> void:
 	_ring.position = Vector3.UP * 0.04
 	_label = Label3D.new()
 	_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	_label.font_size = 40
-	_label.pixel_size = 0.004
+	_label.font_size = 30
+	_label.fixed_size = true    # the same size on screen near or far (close up, a world-sized one filled it)
+	_label.pixel_size = 0.0009
 	_label.outline_size = 10
 	_label.outline_modulate = Color(0, 0, 0, 0.8)
 	_label.visibility_range_end = MARK_SEEN * 0.6

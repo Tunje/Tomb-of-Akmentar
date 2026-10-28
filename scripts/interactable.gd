@@ -38,7 +38,8 @@ static func make(parent: Node3D, pos: Vector3, prompt_text: String, spot_id := "
 
 func _ready() -> void:
 	add_to_group("interactable")
-	if show_marker:
+	# (A downed companion's "help up": their own tag says so; a second label printed over it.)
+	if show_marker and not id.begins_with("help_"):
 		marker = WorldMarker.attach(self, prompt, 1.4)
 		marker.visible_if = available
 

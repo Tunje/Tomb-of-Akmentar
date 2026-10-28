@@ -223,7 +223,7 @@ B = {
         "act7_curse": ["Half the merchants have closed. Terrible.", "Fear is very bad for business."],
     },
     "mahmoud": {
-        "combat_start": ["Men, to the shovels and the stones!", "Protect the dig!"],
+        "combat_start": ["Heads down! Stay together!", "Men, behind me! Keep together!"],  # (anywhere: the boat, the city, the tomb)
         "enemy_down": ["Down.", "Good."],
         "ally_down": ["One of my men is hurt!", "Carry him, carefully!"],
         "entering_tomb": ["Carefully. We dig carefully.", "My men will hold the lamps."],

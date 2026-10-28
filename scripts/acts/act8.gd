@@ -8,7 +8,8 @@ extends Node3D
 ##   (act8_last_night, not after the plane), the final choice (act8_final):
 ##     end_descend ──► Act 9 (res://act9.tscn)        end_sacrifice ──► the epilogue
 ## Test args (after --): --auto (buys what the bot can, picks --route=..., default the first open;
-## talks skipped; the fight is won), --seconds=N.
+## talks skipped; the fight is won), --no-prep (buys and books nothing), --money=N (what you have
+## when you set out: --no-prep --money=20 --route=riverboat takes the boat on credit), --seconds=N.
 
 const PREP_SPOTS := ["caravanserai", "docks", "telegraph", "gunsmith", "outfitter"]
 const FIGHT_EVENTS := {"boat_battle": "act8_boat", "temple_battle": "act8_temple", "chariot_chase": "act8_chase", "flight": "act8_plane"}
@@ -95,7 +96,10 @@ func _ready() -> void:
 	await get_tree().create_timer(3.5).timeout
 	hud.show_message("")
 	if args.has("auto"):
-		Game.apply([{"item": ["horse", 4]}, {"item": ["truck", 1]}, {"set_flag": "act8_boat_booked"}])
+		if not args.has("no-prep"):  # (--no-prep: nothing bought or booked; with --money=N, the pay-later path)
+			Game.apply([{"item": ["horse", 4]}, {"item": ["truck", 1]}, {"set_flag": "act8_boat_booked"}])
+		if args.has("money"):
+			Game.money = int(args.money)
 		if args.get("route", "") == "plane":
 			Game.set_flag("plane_ready")  # the bot "wired Fletcher"
 		_set_out()

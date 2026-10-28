@@ -117,6 +117,14 @@ func _run() -> void:
 				RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME)])
 			await RenderingServer.frame_post_draw
 			get_viewport().get_texture().get_image().save_png(_dir.path_join("coast_town_%s.png" % name))
+			if TestDriver.parse_args().has("crowd-near"):  # who's near the camera, and are they animating
+				var crowd := _level.get_node_or_null("Crowd") as Crowd
+				for p: CrowdPerson in (crowd.people if crowd else []):
+					if p.global_position.distance_to(cam.global_position) < 15.0:
+						var tree := p.get("_tree") as AnimationTree
+						print("RESULT near %s: %s at %s role %s state %s anim %s lod %d visible %s tree %s" % [name, p.name,
+							p.global_position.snapped(Vector3.ONE * 0.1), p.role, p.state, p.anim, p.lod, p.visible,
+							"active" if tree and tree.active else ("off" if tree else "none")])
 	print("RESULT coast_town_test %s (%d failed)" % ["PASS" if _fails == 0 else "FAIL", _fails])
 	get_tree().quit(0 if _fails == 0 else 1)
 

@@ -93,6 +93,26 @@ func _look() -> void:
 	else:
 		label.text = "%s\n%s\n▼" % [text, why] if d < maxf(range * 0.75, 11.0) else "%s\n▼" % text  # the reason on approach
 		label.modulate = Color(BARRED, label.modulate.a)
+	_declutter(cam, d)
+
+
+## Markers that would print over each other (a bed beside a fire): the farther one steps up two
+## lines for each nearer one in its way, so both read.
+func _declutter(cam: Camera3D, d: float) -> void:
+	var me := cam.unproject_position(global_position)
+	var h := get_viewport().get_visible_rect().size.y
+	var up := 0
+	for n in get_tree().get_nodes_in_group("world_marker"):
+		var o := n as WorldMarker
+		if o == self or not o.shown() or cam.is_position_behind(o.global_position):
+			continue
+		var od := cam.global_position.distance_to(o.global_position)
+		if od > d or (od == d and o.get_instance_id() > get_instance_id()):
+			continue
+		var at := cam.unproject_position(o.global_position)
+		if absf(at.x - me.x) < h * 0.19 and absf(at.y - me.y) < h * 0.045:
+			up += 1
+	label.offset.y = up * label.font_size * 2.4
 
 
 ## Something solid between the camera and the marker (the world's layer 1, not people).
