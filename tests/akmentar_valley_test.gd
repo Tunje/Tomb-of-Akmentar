@@ -1,9 +1,11 @@
 extends Node3D
 ## The Akmentar valley blockout (scripts/acts/akmentar_valley.gd, stage 1 of
 ## gameplan/akmentar_valley_plan.md), walked:
-##   every study site reachable from each camp (its SiteSpot's place), with the path's length and
+##   every study site reachable from each camp (its SiteSpot's place: the crews walk from their camp
+##   each day; the claim race itself is run from one shared start, --from), with the path's length and
 ##   the time walking (4 m/s), sprinting (6.6) and at a gallop (10); the door's stair down, the boat
 ##   landing, the airstrip and our horse spot reachable from our camp; a horse at the spot
+## --from=x,z  instead: every site's path from one shared start (the claim race)
 ## --perf  instead: a frame rate on a walk up the axis from the approach to the door (windowed);
 ##         --quality=low|medium|high, --seconds=N; --shots=t1,.. --cam=<view> --shot-dir=path
 ## Never takes focus or captures the mouse.
@@ -74,6 +76,8 @@ func _ready() -> void:
 	if args.has("perf") or args.has("look"):
 		_perf = true
 		await _walk(float(args.get("seconds", "40")))
+	elif args.has("from"):
+		_from(str(args["from"]))
 	else:
 		_sites()
 		_places()
@@ -123,7 +127,21 @@ func _sites() -> void:
 	print(table)
 	print("RESULT info nearest camp per site: %s" % str(near))
 	_check(bad.is_empty(), "sites: all 12 reachable from all 3 camps (not: %s)" % str(bad))
-	_check(near.size() == 3, "sites: each camp is nearest to some (the claim race): %s" % str(near))
+	# (Not the claim race any more: Simon, 18-21 in the plan, runs it from one shared start, --from.)
+
+
+## --from=x,z: every site's path length from one shared start (the claim race: all three arrive
+## there), nearest first.
+func _from(at: String) -> void:
+	var xz := at.split(",")
+	var start := Vector3(float(xz[0]), 0, float(xz[1]))
+	var rows := []
+	for id: String in AkmentarValley.VALLEY_SITES:
+		rows.append([_path_len(start, level.site_spot(id)), id])
+	rows.sort_custom(func(a: Array, b: Array) -> bool: return float(a[0]) < float(b[0]))
+	for r: Array in rows:
+		print("RESULT info from %s: %-14s %4.0f m  %3.0f s walking, %3.0f s at a gallop" % [at, r[1], r[0], float(r[0]) / 4.0, float(r[0]) / 10.0])
+	_check(rows.all(func(r: Array) -> bool: return float(r[0]) > 0.0), "from %s: every site reachable" % at)
 
 
 func _places() -> void:

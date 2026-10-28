@@ -71,36 +71,29 @@ Each of the 12 sites moves into an area that fits it.
 | scarabs | 17 a grotto in the waterfall gardens | −165, 235 |
 | astronomer | 18 the watchers' ledges | 210, 85 |
 
-**The camps, and the claim race.**
-- **Our camp** (40, 492), on the desert approach.
-- **The Americans** (175, 410), at the mouth of the valley of statues.
-- **The Germans** (−160, 400), at the foot of the waterfall gardens.
+**The camps, and the claim race (Simon's answer 3, below: one shared start).**
+- **The camps stay for the night:** ours (40, 492) on the desert approach, the Americans (190, 388) at the mouth of the valley of statues, the Germans (−160, 388) at the foot of the waterfall gardens. They are where people sleep and where the crews walk from each day; they no longer decide the race.
+- **The race starts at one place for all three:** the valley's approach, at the south end of the causeway over the gorge (0, 470). Every expedition rides in to the same point; whoever arrives first (the race from Act 3, and the travel choices) picks first at the claim board, then the others in arrival order, and so on round.
+- **So the distances that matter are from that start**, the same for everyone. Near sites are quick to reach and to work; far ones cost the crew's day. Measured on the navmesh (tests/akmentar_valley_test --from=0,470):
 
-The camps sit in different corners on purpose. Arriving first (the race from Act 3) wins the first pick at the claim board, so which sites are near whom matters:
-- **Our side:** the near sites are the gate (greetings) and the axis.
-- **The Americans:** the statues, the lake and the east cliff.
-- **The Germans:** the gardens and the guardian.
-
-Path distances from each camp (about 1.15 × the straight line):
-
-| Site | Ours | Americans | Germans |
+| Site | From the approach | Walking | At a gallop |
 |---|---|---|---|
-| greetings | **142** | 192 | 200 |
-| horus | 295 | 292 | **248** |
-| offering | 331 | **294** | 307 |
-| obelisk | 399 | 374 | **330** |
-| hieroglyphs | 424 | **376** | **376** |
-| ra | 508 | 470 | **423** |
-| mummification | 513 | 496 | **399** |
-| storeroom | 497 | **415** | 477 |
-| souls | 299 | **211** | 356 |
-| anubis | 277 | **127** | 413 |
-| scarabs | 378 | 440 | **190** |
-| astronomer | 507 | **376** | 559 |
+| greetings | 91 m | 23 s | 9 s |
+| horus | 230 m | 58 s | 23 s |
+| offering | 266 m | 66 s | 27 s |
+| anubis | 272 m | 68 s | 27 s |
+| souls | 289 m | 72 s | 29 s |
+| scarabs | 299 m | 75 s | 30 s |
+| hieroglyphs | 333 m | 83 s | 33 s |
+| obelisk | 337 m | 84 s | 34 s |
+| ra | 427 m | 107 s | 43 s |
+| storeroom | 473 m | 118 s | 47 s |
+| mummification | 473 m | 118 s | 47 s |
+| astronomer | 482 m | 120 s | 48 s |
 
-- **Who is nearest (bold):** we are nearest one site, the Americans six and the Germans six, sharing hieroglyphs.
-- **The trade-off:** coming first matters most for the sites near the rivals.
-- **Unchanged:** CampJobs' crews and companions work the claimed sites wherever they are; the anchors come from the new camp positions.
+- **What decides a pick now:** what the site is worth (its clue, and what it gives in Act 9) against how far in it lies. The first to arrive can take a far, rich site (the astronomer, the storeroom) before the others, or several near ones.
+- **The rivals' picks:** each rival's preference (the Americans the impressive and valuable, the Germans the scholarly) orders their list; the distance from the approach breaks ties.
+- **Unchanged:** CampJobs' crews and companions work the claimed sites wherever they are, walking out from their own camp each day.
 
 ## The night raid, Act 8's arrivals, Act 9, the tomb
 
@@ -230,3 +223,10 @@ Measured today against the plan:
 2. **The river.** The map shows a river and waterfalls. Here the river comes over the west cliff in falls, crosses under the causeway in a gorge, and gives Act 8's boat its landing. Is that the river you want, or should the valley open onto the Nile itself?
 3. **The camps.** The rivals camp inside the valley (by the statues, by the gardens) and we camp outside it, on the approach. Being farther out is part of the claim race. Or should all three camp outside, on the approach?
 4. **The hidden path.** A way in for raiders and a way out, or something to find: a secret route to the tomb's lower levels, or to Act 9's end?
+
+## Simon's answers (2026-10-28)
+
+1. **Size:** keep it as it is for now.
+2. **The river:** as planned, over the west cliff in falls and through the gorge under the causeway, with Act 8's boat landing. "That sounds excellent!"
+3. **The camps and the race:** all three expeditions start the claim race from the same point; it is not run from the camps. Arrival order decides it, from a shared start (the approach, above). The camps stay where they are, for the night.
+4. **The hidden path:** a secret, something to find. A proposal for what it leads to, and the clue trail to it, goes to the lead before anything is built.
