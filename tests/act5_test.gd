@@ -177,6 +177,10 @@ func _fresh(flags: Dictionary) -> void:
 	_events.clear()
 	for k in flags:
 		Game.set_flag(k, flags[k])
+	# (No first-time hints: the journal's, queued again after every reset, would land on the
+	# notice line between an inspect and its check.)
+	Game.set_flag("hints_off", true)
+	Hints.reset()
 
 
 ## Inspect a site as E would, then read and close its clue card.

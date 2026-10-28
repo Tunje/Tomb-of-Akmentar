@@ -10,6 +10,7 @@ extends Node3D
 ##           bed sloping from the shore to 3 m), palms round it, a lake beyond; --cam=fall|pool|grove|
 ##           lake|wide, --shots=t1,.. --shot-dir=path; PERFSUM over --seconds (default 12), the camera
 ##           sweeping round. --quality=low|medium|high
+##   --bakes  the acts' big maps (AkmentarSurface, AkmentarBelow) built twice: navmesh times
 ##   --ship  also write res://nav/akmentar_valley.res (to commit: the game then loads it at once)
 ## Never takes focus or captures the mouse.
 
@@ -38,6 +39,10 @@ func _ready() -> void:
 	if args.has("quality"):
 		Settings.set_value("quality", str(args.quality), get_tree())
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	if args.has("bakes"):
+		await _bakes()
+		_end()
+		return
 	if args.has("look"):
 		_look = true
 		await _showcase()
@@ -82,6 +87,26 @@ func _navcache() -> void:
 		remove_child(v)
 		v.free()
 		await get_tree().process_frame
+
+
+## --bakes: the acts' big maps built twice each (the first may bake, the second should read the
+## cache), with their navmesh times.
+func _bakes() -> void:
+	for make: Callable in [func() -> Node3D: return AkmentarSurface.new(), func() -> Node3D: return AkmentarBelow.new()]:
+		for run: String in ["first", "second"]:
+			var t0 := Time.get_ticks_msec()
+			var lvl: Node3D = make.call()
+			add_child(lvl)
+			var nav: NavigationRegion3D = lvl.get("_nav")
+			var key := (lvl.get_script() as Script).resource_path.get_file().get_basename()
+			var info: Dictionary = NavCache.last.get(key, {})
+			print("RESULT info %s %s: built in %d ms, navmesh %s in %d ms, %d polygons" % [key, run, Time.get_ticks_msec() - t0,
+				info.get("from", "(no NavCache)"), int(info.get("ms", -1)), nav.navigation_mesh.get_polygon_count()])
+			if run == "second" and not info.is_empty():
+				_check(info.get("from", "") in ["res", "user"], "bakes: %s read back from the cache" % key)
+			remove_child(lvl)
+			lvl.free()
+			await get_tree().process_frame
 
 
 # ---------------------------------------------------------------- the waterfall

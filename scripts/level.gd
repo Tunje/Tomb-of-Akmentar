@@ -87,7 +87,8 @@ func _ready() -> void:
 	_build_tomb()
 	_build_surface()
 	_environment()
-	_nav.bake_navigation_mesh(false)
+	# (Kept between runs: the same tomb reads its navmesh back instead of baking it again.)
+	NavCache.bake(_nav, (get_script() as Script).resource_path.get_file().get_basename())
 
 
 func _process(delta: float) -> void:

@@ -145,7 +145,7 @@ func _resume_at_door() -> void:
 ## Loaded at the escape's save: in the tomb as it wakes, and the run again.
 func _resume_escape() -> void:
 	level.open_royal_door()
-	level._nav.bake_navigation_mesh(false)
+	NavCache.bake(level._nav, "akmentar_below_resume")
 	var door := level.royal_door.global_position
 	var at := door.lerp(level.guardian_spawn, 0.5)
 	at.y = AkmentarBelow.deck_y(AkmentarBelow.DECKS - 1)
@@ -241,7 +241,7 @@ func _royal_door() -> void:
 		_door_traps()
 	level.open_royal_door()
 	await get_tree().create_timer(3.2).timeout
-	level._nav.bake_navigation_mesh(false)
+	NavCache.bake(level._nav, "akmentar_below_open")   # (5 s baked, a few ms from the cache)
 	_tomb()
 
 

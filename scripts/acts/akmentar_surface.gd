@@ -45,7 +45,7 @@ func _ready() -> void:
 	_dress_ruins()
 	player_spawn = CAMPS.party + Vector3(0, 0, 4)
 	_environment()
-	_nav.bake_navigation_mesh(false)
+	NavCache.bake(_nav, "akmentar_surface")
 
 
 ## Inspect spots go in after the map (they need the tree): main calls this.
