@@ -121,6 +121,7 @@ var crouched := false
 var companion_id := ""
 var leader: Node3D
 var order := "follow"
+var at_job := false  # CampJobs: holding at a camp job, not by the player's order (no "(holding)" tag)
 var hold_at := Vector3.ZERO
 ## Defenders (any team): their cover stays within LEASH of this point (INF = free to roam).
 var guard_at := Vector3.INF
@@ -1032,7 +1033,7 @@ func _update_tag() -> void:
 	if _tag == null:
 		return
 	var k := clampf(health / max_health, 0.0, 1.0)
-	_tag.visible = state != State.DEAD and (k < 1.0 or state != State.IDLE or order == "hold" or stumbled)
+	_tag.visible = state != State.DEAD and (k < 1.0 or state != State.IDLE or (order == "hold" and not at_job) or stumbled)
 	if not _tag.visible:
 		return
 	var full := int(ceilf(k * 10.0))
@@ -1041,7 +1042,7 @@ func _update_tag() -> void:
 	if stumbled:  # down: just who and what to do (the HUD draws the bleed ring above the tag)
 		_tag.text = who + char(10) + Controls.fill("{cover}  help up")  # the HUD shows cover's prompt while you're in cover
 	else:
-		_tag.text = who + ("  (holding)" if order == "hold" else "") + char(10) + bar
+		_tag.text = who + ("  (holding)" if order == "hold" and not at_job else "") + char(10) + bar
 	_tag.modulate = Color(1.0, 0.35, 0.25).lerp(Color(0.55, 1.0, 0.45), k)
 	_stack_tag()
 
@@ -1356,6 +1357,10 @@ func _move_to(dest: Vector3, speed: float, delta: float, path: bool) -> Vector3:
 			_repath = 0.3
 			_agent.target_position = dest
 		var next := _flat(_agent.get_next_path_position() - global_position)
+		# Not the agent's next point as such: its path starts where we were at the last repath, and
+		# by a raised floor it rides 0.7 m over our feet, so a point we're level with or past can stay
+		# "unreached" and turn us back. Go by where we are along the path, on the flat.
+		next = _path_ahead(next)
 		if next.length() > 0.05 and not _agent.is_navigation_finished():
 			dir = next.normalized()
 	# A stair or a raised floor's edge: step up onto it (CharacterBody3D won't).
@@ -1373,6 +1378,30 @@ func _move_to(dest: Vector3, speed: float, delta: float, path: bool) -> Vector3:
 			_detour_t = 0.6
 			dir = _detour
 	return dir * minf(speed, to.length() / maxf(delta, 0.001) * 0.5)
+
+
+## The agent's path from the segment nearest us (on the flat): the way to its first point at
+## least 0.6 m on. `fallback` when the path's too short for that. (Only segments near our
+## height: a stair's flight above us lies right over the one we're on.)
+func _path_ahead(fallback: Vector3) -> Vector3:
+	var way := _agent.get_current_navigation_path()
+	var at := _flat(global_position)
+	var seg := -1
+	var best := INF
+	for i in range(maxi(_agent.get_current_navigation_path_index(), 1), way.size()):
+		if minf(absf(way[i - 1].y - global_position.y), absf(way[i].y - global_position.y)) > 1.5:
+			continue
+		var d := at.distance_to(Geometry3D.get_closest_point_to_segment(at, _flat(way[i - 1]), _flat(way[i])))
+		if d < best:
+			best = d
+			seg = i
+	if seg < 0:
+		return fallback
+	for i in range(seg, way.size()):
+		var d := _flat(way[i]) - at
+		if d.length() >= 0.6:
+			return d
+	return fallback
 
 
 ## On a boat's deck (DeckNav): the way to `dest`, the path kept in the boat's frame so it sails
