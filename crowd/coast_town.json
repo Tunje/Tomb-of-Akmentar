@@ -1,5 +1,5 @@
 {
-	"_help": "CoastTown's crowd (gameplan/route_stops_plan.md stage 1; scripts/acts/coast_town.gd's layout): fishermen mending nets at the racks and sitting by the boats on the beach, sellers behind the fish market's tables and buyers among them, men at the coffee house's terrace tables, boatbuilders at the hull on stocks, walkers on the harbour street, the quay and out along the harbour wall. Gulls over the harbour (AmbientLife birds, white). Written by tools/crowd/make_route_crowds.py; tests/coast_town_test checks every point is on the navmesh.",
+	"_help": "CoastTown's crowd (gameplan/route_stops_plan.md stage 1; scripts/acts/coast_town.gd's layout): fishermen mending nets at the racks and sitting by the boats on the beach, sellers behind the fish market's tables and buyers among them, men at the coffee house's terrace tables, boatbuilders at the hull on stocks, walkers on the harbour street, the quay and out along the harbour wall. Townsfolk models, the tinted stand-ins a minority; porters on the harbour. Gulls over the harbour (AmbientLife birds, white). Written by tools/crowd/make_route_crowds.py; tests/coast_town_test checks every point is on the navmesh.",
 	"density": {
 		"low": 12,
 		"medium": 20,
@@ -9,7 +9,13 @@
 	"keep_clear": 2.5,
 	"seed": 1925,
 	"models": [
+		"townsfolk/townsman.glb",
+		"townsfolk/townswoman.glb",
+		"townsfolk/townsman.glb",
+		"townsfolk/townswoman.glb",
+		"townsfolk/townsman.glb",
 		"bandits/bandit_scout.glb",
+		"townsfolk/townswoman.glb",
 		"bandits/bandit_raider.glb"
 	],
 	"tint": [
@@ -356,6 +362,11 @@
 		{
 			"name": "harbour",
 			"share": 0.22,
+			"models": [
+				"townsfolk/porter.glb",
+				"townsfolk/porter.glb",
+				"townsfolk/townsman.glb"
+			],
 			"roles": {
 				"walk": 0.55,
 				"carry": 0.35,

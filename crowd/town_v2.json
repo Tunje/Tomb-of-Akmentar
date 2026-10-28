@@ -1,5 +1,5 @@
 {
-	"_help": "TownV2's crowd (gameplan/route_stops_plan.md stage 1; scripts/acts/town_v2.gd's layout): the souk's lanes (z 28-32, 56-60; x 226-230, 262-266) busy with sellers and buyers, women at the well and the stalls on the well square, camel men and loads in the caravanserai's court with camels and donkeys, walkers on the cross street, the gate street and the back lane, and a few at the mosque's gate. Camels are big HorseRigs until there's a camel. Written by tools/crowd/make_route_crowds.py; tests/town_v2_test checks every point is on the navmesh.",
+	"_help": "TownV2's crowd (gameplan/route_stops_plan.md stage 1; scripts/acts/town_v2.gd's layout): the souk's lanes (z 28-32, 56-60; x 226-230, 262-266) busy with sellers and buyers, women at the well and the stalls on the well square, camel men and loads in the caravanserai's court with camels and donkeys, walkers on the cross street, the gate street and the back lane, and a few at the mosque's gate. Townsfolk models, the tinted stand-ins a minority; porters in the caravanserai. Camels are big HorseRigs until there's a camel. Written by tools/crowd/make_route_crowds.py; tests/town_v2_test checks every point is on the navmesh.",
 	"density": {
 		"low": 14,
 		"medium": 24,
@@ -9,7 +9,13 @@
 	"keep_clear": 2.5,
 	"seed": 1923,
 	"models": [
+		"townsfolk/townsman.glb",
+		"townsfolk/townswoman.glb",
+		"townsfolk/townsman.glb",
+		"townsfolk/townswoman.glb",
+		"townsfolk/townsman.glb",
 		"bandits/bandit_scout.glb",
+		"townsfolk/townswoman.glb",
 		"bandits/bandit_raider.glb"
 	],
 	"tint": [
@@ -371,6 +377,11 @@
 		{
 			"name": "caravanserai",
 			"share": 0.22,
+			"models": [
+				"townsfolk/porter.glb",
+				"townsfolk/porter.glb",
+				"townsfolk/townsman.glb"
+			],
 			"roles": {
 				"stall": 0.45,
 				"walk": 0.25,
@@ -505,6 +516,12 @@
 		{
 			"name": "streets",
 			"share": 0.16,
+			"models": [
+				"townsfolk/townsman.glb",
+				"townsfolk/townswoman.glb",
+				"townsfolk/tourist.glb",
+				"townsfolk/townsman.glb"
+			],
 			"roles": {
 				"walk": 0.55,
 				"carry": 0.3,
