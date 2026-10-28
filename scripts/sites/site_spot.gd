@@ -238,11 +238,6 @@ func report(by: Node) -> ClueCard:
 	return ClueCard.open(get_parent(), str(site.get("name", site_id)), c, by)
 
 
-## (The old name: act5_party.gd's reveal calls it; the same thing.)
-func _second_clue() -> void:
-	second_clue()
-
-
 ## The site's second clue (the Builders' Way's trail), into the journal with a word on the notice
 ## line; then whether the trail is put together. (Public: Act 5's studying reveal calls it too.)
 func second_clue() -> void:
