@@ -12,7 +12,9 @@ extends TownV2
 ##   whitewashed houses with blue doors (a different palette from the desert town)
 ## Placeholders (blockout until models come): every building and the doors, the harbour wall and
 ## quay, the lighthouse and hut, the boats (hulls and masts as boxes), the net racks, the market
-## stalls, the hull on stocks, palms (a trunk and a crown), the well.
+## stalls, the hull on stocks, palms (a trunk and a crown), the well. The people are crowd stand-ins
+## (crowd/coast_town.json), the gulls AmbientLife's birds in white. South of the town on the
+## beach, the trucks' night camp (BeachCamp).
 
 const SEA_X := -30.0     # the waterline (the beach runs from here to the town at x 0)
 const SEA_FLOOR := -2.5
@@ -30,6 +32,9 @@ const COAST_SPOTS := {
 	"boatyard": Vector3(100, 0, 140), "well": Vector3(90, 0, 194),
 }
 
+const CAMP_AT := Vector3(-5, 0, 330)
+
+var camp: BeachCamp
 var _blue: StandardMaterial3D
 var _sea_mat: StandardMaterial3D
 var _wood: StandardMaterial3D
@@ -54,12 +59,12 @@ func _ready() -> void:
 	_deco.name = "Deco"
 	add_child(_deco)
 	# The land from the waterline east, the sea floor west of it under the water.
-	_box(_nav, Vector3((SEA_X + 260.0) * 0.5, -0.5, 110.0), Vector3(260.0 - SEA_X, 1.0, 340.0), _sand)
-	_box(_nav, Vector3(SEA_X - 115.0, SEA_FLOOR - 0.5, 110.0), Vector3(230.0, 1.0, 340.0), _floor_mat)
+	_box(_nav, Vector3((SEA_X + 260.0) * 0.5, -0.5, 170.0), Vector3(260.0 - SEA_X, 1.0, 460.0), _sand)
+	_box(_nav, Vector3(SEA_X - 115.0, SEA_FLOOR - 0.5, 170.0), Vector3(230.0, 1.0, 460.0), _floor_mat)
 	var sea := PlaneMesh.new()
 	sea.size = Vector2(700, 900)
 	_mesh(sea, Vector3(SEA_X - 350.0, -0.6, 110.0), _sea_mat)
-	_flat(Rect2(196, -60, 10, 340), _floor_mat, 0.02)    # the shore road
+	_flat(Rect2(196, -60, 10, 460), _floor_mat, 0.02)    # the shore road
 	_flat(Rect2(0, 74, 196, 8), _floor_mat, 0.02)        # the harbour street
 	_harbour()
 	_beach()
@@ -69,8 +74,13 @@ func _ready() -> void:
 	_boatyard()
 	_palms_and_well()
 	_coast_houses()
+	# The beach camp south of the town: the trucks turned off the shore road onto the sand.
+	camp = BeachCamp.build(self, CAMP_AT, -PI * 0.5)
+	_flat(Rect2(CAMP_AT.x + 30.0, CAMP_AT.z - 2.0, 196.0 - CAMP_AT.x - 30.0, 4.0), _floor_mat, 0.02)
 	for id: String in COAST_SPOTS:
 		spots[id] = COAST_SPOTS[id]
+	spots.camp = camp.anchor
+	spots.camp_lookout = camp.spots.lookout
 	player_spawn = spots.arrival
 	_environment()
 	_sun.rotation = Vector3(deg_to_rad(-26), deg_to_rad(-70), 0)  # late afternoon, from over the sea
@@ -80,6 +90,8 @@ func _ready() -> void:
 	RenderBudget.quiet_minor(_deco)
 	if not "--no-merge" in OS.get_cmdline_user_args():
 		print("COAST town deco merged: %d draw calls fewer" % RenderBudget.merge_static(_deco))
+	if not "--no-crowd" in OS.get_cmdline_user_args():
+		Crowd.populate(self, "coast_town")
 
 
 ## A solid from the sea floor up to the ground's level (a pier, the harbour wall's walk).

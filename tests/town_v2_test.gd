@@ -90,6 +90,7 @@ func _run() -> void:
 			var p: Vector3 = _level.spots[s]
 			return r.grow(1.0).has_point(Vector2(p.x, p.z)))
 		_check(not in_it.is_empty(), "district %-13s has %s" % [id, in_it])
+	_crowd_points(map, "town_v2")
 	if DisplayServer.get_name() != "headless":
 		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 		var cam := Camera3D.new()
@@ -112,3 +113,30 @@ func _run() -> void:
 			get_viewport().get_texture().get_image().save_png(_dir.path_join("town_v2_%s.png" % name))
 	print("RESULT town_v2_test %s (%d failed)" % ["PASS" if _fails == 0 else "FAIL", _fails])
 	get_tree().quit(0 if _fails == 0 else 1)
+
+
+## Every point in the place's crowd data on the navmesh: where people walk, stand and sit, and
+## both ends of each animal's beat.
+func _crowd_points(map: RID, place: String) -> void:
+	var d := Crowd.load_data(place)
+	var bad: Array = []
+	var n := 0
+	var all: Array = []
+	for g: Dictionary in d.get("groups", []):
+		for key: String in ["waypoints", "stalls", "seats"]:
+			for p: Array in g.get(key, []):
+				all.append(["%s %s" % [g.name, key], p])
+	for b: Array in d.get("beasts", []):
+		all.append(["beast", b[0]])
+		all.append(["beast", b[1]])
+	for e: Array in all:
+		var p: Array = e[1]
+		var at := Vector3(float(p[0]), 0, float(p[1]))
+		var q := NavigationServer3D.map_get_closest_point(map, at)
+		n += 1
+		if Vector2(q.x - at.x, q.z - at.z).length() > 0.8 or absf(q.y) > 0.6:
+			bad.append("%s %s" % [e[0], at])
+	_check(bad.is_empty(), "%s crowd: %d points, all on the navmesh%s" % [place, n, "" if bad.is_empty() else "; OFF: %s" % [bad]])
+	var crowd := _level.get_node_or_null("Crowd") as Crowd
+	if crowd:
+		print("RESULT %s crowd: %d people, %d beasts" % [place, crowd.people.size(), crowd.beasts.size()])

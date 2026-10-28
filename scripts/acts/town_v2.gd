@@ -66,6 +66,8 @@ func _ready() -> void:
 	RenderBudget.quiet_minor(_deco)
 	if not "--no-merge" in OS.get_cmdline_user_args():
 		print("TOWN v2 deco merged: %d draw calls fewer" % RenderBudget.merge_static(_deco))
+	if not "--no-crowd" in OS.get_cmdline_user_args():
+		Crowd.populate(self, "town_v2")  # crowd/town_v2.json: the souk, the well, the caravanserai's camels
 
 
 ## The town itself (on ground that's already there; RoadV2 builds it at the road's north end).
@@ -217,8 +219,11 @@ func _caravanserai() -> void:
 ## The well square: open ground, the well in the middle, a dovecote, a sycamore, a few stalls.
 func _well_square() -> void:
 	_cylinder(_nav, Vector3(150, 0.5, 55), 1.6, 1.0)
-	_solid(Rect2(146, 50, 0.3, 10), 2.6, _bark)       # the well's frame (two posts and a beam)
-	_solid(Rect2(153.7, 50, 0.3, 10), 2.6, _bark)
+	_solid(Rect2(147.6, 54.85, 0.3, 0.3), 2.6, _bark)   # the well's frame: two posts and a beam
+	_solid(Rect2(152.1, 54.85, 0.3, 0.3), 2.6, _bark)
+	var beam := BoxMesh.new()
+	beam.size = Vector3(5.0, 0.2, 0.2)
+	_mesh(beam, Vector3(150, 2.6, 55), _bark)
 	_solid(Rect2(141, 62, 5, 1), 0.6, _mud[0])        # a trough
 	var dove := _cylinder(_nav, Vector3(180, 5.0, 30), 3.4, 10.0)
 	(dove.get_child(1) as MeshInstance3D).material_override = _whitewash

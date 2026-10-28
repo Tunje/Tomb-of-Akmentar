@@ -18,7 +18,9 @@ extends TownV2
 ## they join): one bake of the whole 460 x 1300 m at 0.25 m cells is too much at once.
 ## Placeholders (blockout until models come): the canyon's cliffs and shelves, the rise and the
 ## tower's broken walls, the well, the milestones, the dead camel (boxes), the boulders and the
-## buttes on the skyline, the temple track; the toppled statue is statue_horus.glb laid down.
+## buttes on the skyline, the banks round the map's sides and the dune mounds at their feet, the
+## temple track; the toppled statue is statue_horus.glb laid down. The town's people are crowd
+## stand-ins (crowd/town_v2.json, the camels big HorseRigs), the vultures AmbientLife's birds.
 
 const START_Z := 1210.0
 const CAMEL_Z := 1080.0
@@ -85,6 +87,7 @@ func _ready() -> void:
 	camp = DesertCamp.build(self, road_point(CAMP_Z) + Vector3(70, 0, 0), -PI * 0.5)
 	_track(road_point(CAMP_Z) + Vector3(ROAD_W * 0.5, 0, 0), camp.spots.gate)
 	_scatter()
+	_edges()
 	spots.start = road_point(START_Z - 10.0)
 	spots.storm = road_point(STORM_Z)
 	spots.ambush = road_point(AMBUSH_Z)
@@ -93,12 +96,22 @@ func _ready() -> void:
 	player_spawn = spots.start
 	_environment()
 	_sun.rotation = Vector3(deg_to_rad(-30), deg_to_rad(-120), 0)
-	_env.fog_density = 0.0015
+	_env.fog_density = 0.0024           # the haze: the far road and the buttes fade into it
+	_env.fog_aerial_perspective = 0.35
 	_env.fog_light_color = Color(0.8, 0.66, 0.48)
 	_bake_tiles()
 	RenderBudget.quiet_minor(_deco)
+	RenderBudget.quiet_minor(_nav)
 	if not "--no-merge" in OS.get_cmdline_user_args():
-		print("ROAD v2 deco merged: %d draw calls fewer" % RenderBudget.merge_static(_deco))
+		# The long views: the dressing and the solids' meshes merged by area (the solids' in 64 m
+		# cells: 1 km of road in 24 m ones was still ~500 draw calls looking down it).
+		print("ROAD v2 merged: deco %d, solids %d draw calls fewer" % [RenderBudget.merge_static(_deco),
+			RenderBudget.merge_static(_nav, 64.0)])
+	if not "--no-crowd" in OS.get_cmdline_user_args():
+		Crowd.populate(self, "town_v2")
+		# Vultures over the canyon.
+		AmbientLife.add(self, {"birds": {"count": 5, "center": [road_x(AMBUSH_Z), AMBUSH_Z], "radius": 35, "height": 38, "span": 2.8},
+			"critters": 6})
 
 
 ## The navmesh in tiles from one parse of the solids under _nav.
@@ -114,8 +127,10 @@ func _bake_tiles() -> void:
 		while z < GROUND.end.y:
 			var nm := Level.nav_mesh()
 			nm.border_size = border
+			# (Clipped to the ground: the banks' top edges past it would bake as islands.)
+			var size := Vector2(minf(TILE, GROUND.end.x - x), minf(TILE, GROUND.end.y - z))
 			nm.filter_baking_aabb = AABB(Vector3(x - border, b.position.y - 1.0, z - border),
-				Vector3(TILE + border * 2.0, b.size.y + 2.0, TILE + border * 2.0))
+				Vector3(size.x + border * 2.0, b.size.y + 2.0, size.y + border * 2.0))
 			NavigationServer3D.bake_from_source_geometry_data(nm, src)
 			if nm.get_polygon_count() > 0:
 				var r := NavigationRegion3D.new()
@@ -235,7 +250,10 @@ func _canyon() -> void:
 		for s: float in [-1.0, 1.0]:
 			var shelf_w := SHELF.y - SHELF.x
 			_box(_nav, Vector3(x + s * (SHELF.x + shelf_w * 0.5), SHELF_H * 0.5, mid), Vector3(shelf_w, SHELF_H, step + 0.2), _stone)
-			_box(_nav, Vector3(x + s * (SHELF.y + 30.0), CLIFF_H * 0.5, mid), Vector3(60.0, CLIFF_H, step + 0.2), _stone)
+			# The cliff runs out to the map's side: the canyon is the only way through.
+			var inner := x + s * SHELF.y
+			var outer := GROUND.position.x if s < 0.0 else GROUND.end.x
+			_box(_nav, Vector3((inner + outer) * 0.5, CLIFF_H * 0.5, mid), Vector3(absf(outer - inner), CLIFF_H, step + 0.2), _stone)
 			if int(z) % 20 == 0:
 				var rock := _box(_nav, Vector3(x + s * (SHELF.x + 0.9), SHELF_H + 0.55, mid), Vector3(1.4, 1.1, 2.2), _stone)
 				_mark_cover(rock, Vector3(1.4, 1.1, 2.2))
@@ -288,9 +306,51 @@ func _scatter() -> void:
 		var b := _box(_nav, p + Vector3(0, s.y * 0.5 - 0.05, 0), s, _stone)
 		b.rotation.y = _rng.randf() * PI
 		_mark_cover(b, s)
-	for k in 8:
+	# Buttes on the skyline, out past the banks either side and beyond both ends.
+	var butte := _stone.duplicate() as StandardMaterial3D
+	butte.albedo_texture = _noise_tex(Color(0.5, 0.36, 0.24), Color(0.66, 0.5, 0.34), 0.03, false)
+	for k in 22:
 		var bm := BoxMesh.new()
-		bm.size = Vector3(_rng.randf_range(40, 90), _rng.randf_range(25, 45), _rng.randf_range(40, 80))
-		var side := -1.0 if k % 2 == 0 else 1.0
-		_mesh(bm, Vector3(180.0 + side * _rng.randf_range(320, 420), bm.size.y * 0.5, _rng.randf_range(100, 1200)), _stone,
-			Vector3(0, _rng.randf() * PI, 0))
+		bm.size = Vector3(_rng.randf_range(40, 110), _rng.randf_range(30, 70), _rng.randf_range(40, 100))
+		var at: Vector3
+		if k < 16:
+			var side := -1.0 if k % 2 == 0 else 1.0
+			at = Vector3(180.0 + side * _rng.randf_range(340, 560), 0, _rng.randf_range(-150, 1400))
+		else:
+			at = Vector3(_rng.randf_range(-200, 560), 0, -260.0 if k % 2 == 0 else 1500.0)
+		_mesh(bm, at + Vector3(0, bm.size.y * 0.5 - 2.0, 0), butte, Vector3(0, _rng.randf() * PI, 0))
+
+
+## The map's sides: banks of sand too steep to climb (48-58 degrees) all round the ground, in
+## 40 m lengths of different heights so the skyline rolls, dune mounds along their feet.
+func _edges() -> void:
+	var seg := 40.0
+	for side: float in [-1.0, 1.0]:
+		var ex := GROUND.position.x if side < 0.0 else GROUND.end.x
+		var z := GROUND.position.y
+		while z < GROUND.end.y:
+			_bank(Vector3(ex, 0, z + seg * 0.5), Vector3(side, 0, 0), seg)
+			z += seg
+		var ez := GROUND.position.y if side < 0.0 else GROUND.end.y
+		var x := GROUND.position.x
+		while x < GROUND.end.x:
+			_bank(Vector3(x + seg * 0.5, 0, ez), Vector3(0, 0, side), seg)
+			x += seg
+
+
+## One length of bank at `at` on the edge, rising outward (`out`).
+func _bank(at: Vector3, out: Vector3, seg: float) -> void:
+	var tilt := deg_to_rad(_rng.randf_range(48.0, 58.0))
+	var l := _rng.randf_range(22.0, 44.0)
+	var u := out * cos(tilt) + Vector3.UP * sin(tilt)      # up the slope
+	var w := Vector3(-out.z, 0, out.x)                      # along the edge
+	var n := w.cross(u)                                     # the slab's face normal (inward and up)
+	var body := _box(_nav, Vector3.ZERO, Vector3(l, 2.0, seg + 4.0), _sand)
+	body.basis = Basis(u, n, w)
+	body.position = at + u * (l * 0.5) - n * 1.0 + out * 0.5
+	var sm := SphereMesh.new()
+	var r := _rng.randf_range(12.0, 22.0)
+	sm.radius = r
+	sm.height = r * 2.0
+	var mound := _mesh(sm, at + out * (r * 1.1) + Vector3(w.x, 0, w.z) * _rng.randf_range(-15, 15) + Vector3(0, -r * 0.62, 0), _sand)
+	mound.scale = Vector3(1.4, 1.0, 1.4)

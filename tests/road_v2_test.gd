@@ -17,6 +17,7 @@ const VIEWS := {
 	"fork": [Vector3(0, 0, 0), Vector3(0, 0, 0)],
 	"camp": [Vector3(0, 0, 0), Vector3(0, 0, 0)],
 	"town_approach": [Vector3(0, 0, 0), Vector3(180, 6.0, 150)],
+	"left_edge": [Vector3(0, 0, 0), Vector3(0, 0, 0)],          # the banks at the map's west side
 }
 ## Town spots walked as well (the town's own test has every one).
 const TOWN := ["south_gate", "well", "caravanserai", "souk", "store", "inn"]
@@ -65,6 +66,23 @@ func _run() -> void:
 		_walk(map, "camp_bed_%d" % k, _level.camp.spots.beds[k])
 	for name: String in TOWN:
 		_walk(map, name, _level.spots[name])
+	# The map is closed: nothing walkable past the banks round its sides, and the canyon is the
+	# only way north (the walk from the start to the gate goes down it).
+	var outside := [Vector3(-160, 0, 700), Vector3(460, 0, 700), Vector3(180, 0, -120), Vector3(180, 0, 1340)]
+	var inside := RoadV2.GROUND.grow(1.0)
+	var from := NavigationServer3D.map_get_closest_point(map, _level.player_spawn)
+	var escaped := outside.filter(func(p: Vector3) -> bool:
+		var q := NavigationServer3D.map_get_closest_point(map, p)
+		var path := NavigationServer3D.map_get_path(map, from, q, true)
+		return not inside.has_point(Vector2(q.x, q.z)) and path.size() > 1 and path[-1].distance_to(q) < 1.0)
+	_check(escaped.is_empty(), "nothing walkable past the banks (%s)" % [escaped])
+	var through := NavigationServer3D.map_get_path(map, NavigationServer3D.map_get_closest_point(map, _level.spots.start),
+		NavigationServer3D.map_get_closest_point(map, _level.spots.south_gate), true)
+	var in_canyon := true
+	for q: Vector3 in through:
+		if q.z > RoadV2.CANYON.x and q.z < RoadV2.CANYON.y and (absf(q.x - RoadV2.road_x(q.z)) > RoadV2.SHELF.y or q.y > 0.6):
+			in_canyon = false
+	_check(in_canyon and through.size() > 1, "the way north runs down the canyon (%d path points)" % through.size())
 	# Each stop from the one before it, along the road (on foot).
 	var order := ["start", "dead_camel", "tower", "ambush", "camp", "fork", "south_gate", "caravanserai"]
 	for i in range(1, order.size()):
@@ -79,6 +97,7 @@ func _run() -> void:
 		views.canyon_shelf = [post + Vector3(-1.0, 1.7, 0), RoadV2.road_point(RoadV2.CANYON.y + 30.0)]
 		views.fork = [RoadV2.road_point(RoadV2.FORK_Z - 20.0) + Vector3(4, 1.7, 0), RoadV2.road_point(RoadV2.FORK_Z) + Vector3(-12, 0, 8)]
 		views.camp = [RoadV2.road_point(RoadV2.CAMP_Z) + Vector3(30, 6.0, 20), _level.camp.anchor]
+		views.left_edge = [RoadV2.road_point(800) + Vector3(-60, 1.7, 0), Vector3(-80, 8.0, 760)]
 		views.town_approach = [RoadV2.road_point(RoadV2.GATE_Z + 160.0) + Vector3(0, 1.7, 0), Vector3(180, 6.0, 150)]
 		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 		var cam := Camera3D.new()

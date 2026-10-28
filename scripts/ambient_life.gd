@@ -70,7 +70,10 @@ func setup(spec: Dictionary) -> void:
 			birds.append({"center": Vector3(float(c[0]), 0, float(c[1])), "radius": float(b.get("radius", 40)) * _rng.randf_range(0.6, 1.2),
 				"height": float(b.get("height", 40)) + _rng.randf_range(-6, 8), "speed": _rng.randf_range(0.12, 0.22) * (1.0 if i % 2 == 0 else -1.0),
 				"phase": _rng.randf() * TAU, "follow": b.get("follow", null), "flap": _rng.randf_range(0.0, 1.0)})
-		_bird_mm = _multimesh(_bird_mesh(2.3), birds.size(), Color(0.22, 0.17, 0.12), 3.5)
+		# "tint" [r, g, b] and "span" (m): gulls over a harbour are white and smaller than the kites.
+		var tint: Array = b.get("tint", [0.22, 0.17, 0.12])
+		_bird_mm = _multimesh(_bird_mesh(float(b.get("span", 2.3))), birds.size(), Color(float(tint[0]), float(tint[1]), float(tint[2])),
+			float(b.get("flap", 3.5)))
 	if spec.has("pigeons"):
 		for f in spec.pigeons:
 			var home := Vector3(float(f[0]), 0, float(f[1]))
