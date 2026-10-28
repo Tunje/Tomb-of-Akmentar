@@ -58,6 +58,10 @@ var _lod_frame := randi() % 12  # (out of step with the others)
 ## Starts the role (stall keepers, diggers and sitters already in place, so the place isn't empty).
 func begin(rng: RandomNumberGenerator) -> void:
 	_rng.seed = rng.randi()
+	# Posed once now, whatever the culling does next: a body whose tree never ran shows its model's
+	# rest pose (a T) if it's ever drawn before its tree wakes.
+	if _tree:
+		_tree.advance(0.0)
 	if not look.is_empty():
 		dress(look)
 	var wps: Array = group.get("waypoints", [])

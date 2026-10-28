@@ -31,6 +31,9 @@ const THINK := 0.5
 ## Tests (crowd_test --freeze=anim|think|both): what a frame costs without the people's
 ## animation (and so their pose copies), their own think, or both.
 static var debug_freeze := ""
+## On screen means any part of them could be: a sphere this big round the body's middle, not one
+## point (half in frame at the edge, a body with its tree resting showed its rest pose).
+const VIEW_MARGIN := 1.6
 const LOD_NEAR := 18.0
 const LOD_FAR := 40.0
 const MURMURS := 3              # positional murmur loops, moved to the busiest knots of people near you
@@ -348,6 +351,7 @@ func _process(delta: float) -> void:
 	var at := cam.global_position
 	cam_at = at
 	var max_lod := clampi(int(Engine.get_frames_per_second() / 30.0), 1, 3)
+	var planes := cam.get_frustum()
 	minders.clear()
 	for n in get_tree().get_nodes_in_group("party"):
 		if n is Node3D:
@@ -360,7 +364,7 @@ func _process(delta: float) -> void:
 		if on != p.visible:
 			p.visible = on
 			p.process_mode = Node.PROCESS_MODE_INHERIT if on else Node.PROCESS_MODE_DISABLED
-		p.set_animated(on and cam.is_position_in_frustum(p.global_position + Vector3.UP) and not debug_freeze in ["anim", "both"])
+		p.set_animated(on and _in_view(planes, p.global_position + Vector3.UP, VIEW_MARGIN) and not debug_freeze in ["anim", "both"])
 		if debug_freeze in ["think", "both"]:
 			p.set_process(false)
 		# Near: every frame; past LOD_NEAR every 2nd; past LOD_FAR every 3rd (fleeing: always 1);
@@ -396,6 +400,14 @@ func _curse() -> void:
 ## The talk of the crowd where it is: up to MURMURS loops placed at knots of people (awake, not
 ## fleeing) within MURMUR_NEAR of the camera, louder for more of them. Fewer about (set_fraction),
 ## fewer and quieter knots; none at all and they fall silent.
+## A sphere at `p` of `r` against the camera's frustum planes (Camera3D.get_frustum: normals out).
+static func _in_view(planes: Array[Plane], p: Vector3, r: float) -> bool:
+	for pl in planes:
+		if pl.distance_to(p) > r:
+			return false
+	return true
+
+
 func _murmur(at: Vector3) -> void:
 	var near: Array[CrowdPerson] = []
 	for p in people:
