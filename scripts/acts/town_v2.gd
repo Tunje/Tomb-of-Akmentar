@@ -56,6 +56,20 @@ func _ready() -> void:
 	# The ground: the town and 40 m of desert round it, the road south from the gate.
 	_box(_nav, Vector3(SIZE.x * 0.5, -0.5, SIZE.y * 0.5 + 20.0), Vector3(SIZE.x + 80.0, 1.0, SIZE.y + 120.0), _sand)
 	_flat(Rect2(GATE.x + 2.0, SIZE.y, GATE.y - GATE.x - 4.0, 60.0), _floor_mat, 0.02)
+	_town()
+	player_spawn = spots.arrival
+	_environment()
+	_sun.rotation = Vector3(deg_to_rad(-34), deg_to_rad(-130), 0)
+	_env.fog_density = 0.002
+	_env.fog_light_color = Color(0.8, 0.66, 0.48)
+	_nav.bake_navigation_mesh(false)
+	RenderBudget.quiet_minor(_deco)
+	if not "--no-merge" in OS.get_cmdline_user_args():
+		print("TOWN v2 deco merged: %d draw calls fewer" % RenderBudget.merge_static(_deco))
+
+
+## The town itself (on ground that's already there; RoadV2 builds it at the road's north end).
+func _town() -> void:
 	_wall()
 	_caravanserai()
 	_well_square()
@@ -66,15 +80,6 @@ func _ready() -> void:
 	_houses()
 	for id: String in SPOTS:
 		spots[id] = SPOTS[id]
-	player_spawn = spots.arrival
-	_environment()
-	_sun.rotation = Vector3(deg_to_rad(-34), deg_to_rad(-130), 0)
-	_env.fog_density = 0.002
-	_env.fog_light_color = Color(0.8, 0.66, 0.48)
-	_nav.bake_navigation_mesh(false)
-	RenderBudget.quiet_minor(_deco)
-	if not "--no-merge" in OS.get_cmdline_user_args():
-		print("TOWN v2 deco merged: %d draw calls fewer" % RenderBudget.merge_static(_deco))
 
 
 func _town_materials() -> void:
