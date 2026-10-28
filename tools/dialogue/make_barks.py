@@ -18,7 +18,7 @@ SITUATIONS = ["combat_start", "reloading", "ally_down", "enemy_down", "low_healt
               "guardian_seen", "scarabs", "slab_falling", "entering_tomb", "idle_explore", "idle_city", "campfire",
               "horse_ride", "truck_ride", "act5_escape", "act7_curse",
               "helping_up", "callout_dynamite", "callout_flank_left", "callout_flank_right", "callout_leader_down",
-              "callout_rifleman", "focus_target", "sandstorm"]
+              "callout_rifleman", "focus_target", "sandstorm", "regroup"]
 
 
 def T(who, n):
@@ -300,6 +300,7 @@ B = {
         "focus_target": ["On it.", "That one, got it.", "Him? Right."],
         "sandstorm": ["Cover your faces!", "Sandstorm! Keep close, keep moving!", "Tie the scarves, it's coming!",
                       "Stay with the trucks, you'll lose the road in this!"],
+        "regroup": ["Reload, quick, before the next lot!", "Breathe. They're not done.", "Close up, close up!", "Here they come again!"],
     },
 }
 

@@ -26,7 +26,8 @@
 		"callout_leader_down",
 		"callout_rifleman",
 		"focus_target",
-		"sandstorm"
+		"sandstorm",
+		"regroup"
 	],
 	"speakers": {
 		"eleanor": {
@@ -2071,6 +2072,20 @@
 				},
 				{
 					"text": "Stay with the trucks, you'll lose the road in this!"
+				}
+			],
+			"regroup": [
+				{
+					"text": "Reload, quick, before the next lot!"
+				},
+				{
+					"text": "Breathe. They're not done."
+				},
+				{
+					"text": "Close up, close up!"
+				},
+				{
+					"text": "Here they come again!"
 				}
 			]
 		}

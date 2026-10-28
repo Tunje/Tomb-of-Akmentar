@@ -20,6 +20,7 @@ const WAVES := [6, 8]
 const SERVANT_HP := 115.0  # (mummy.gd: 100; tests/difficulty_test: at 130 the boat fell 2 runs in 5)
 const NEXT_WAVE_WHEN := 1          # the next wave comes when this few are still up...
 const NEXT_WAVE_AFTER := 40.0      # ...or after this long
+const WAVE_GAP := 5.5               # s between the call and the next wave coming over: a beat to reload and regroup
 const DRIFT := 1.5                 # m/s on the still water before they come
 const GUARDIAN_ASTERN := Vector3(0, 0, 34.0)  # boat-local: where he stands on the river
 const IN_THE_WAY := 2.0            # a servant goes for whoever is this close, else the carrier
@@ -54,6 +55,8 @@ var _carrier_id := "player"
 var _party_start: Array[String] = []
 var _wave := 0
 var _wave_t := 0.0
+var _gap_t := -1.0  # counting down to the next wave (< 0: none called)
+var _regrouped := false  # a companion has called the breather
 var _wave_members: Array[Mummy] = []
 var _killed := 0
 var _fighting := false
@@ -310,8 +313,15 @@ func _fight_step(delta: float) -> void:
 		print("RESULT act8_boat carrier %s fell t=%.1f; the player carries it" % [who, _t])
 		if is_instance_valid(guardian):
 			guardian.target = player
-	if _wave < WAVES.size() and (_up(_wave_members) <= NEXT_WAVE_WHEN or _wave_t > NEXT_WAVE_AFTER) and _wave_members.size() >= WAVES[_wave - 1]:
-		_next_wave()
+	if _gap_t >= 0.0:
+		_gap_t -= delta
+		if not _regrouped:  # (Barks keeps 4 s between lines: the last one down's "Down." may hold it a moment)
+			_regrouped = Barks.say_any(get_tree(), "regroup", player.global_position) != ""
+		if _gap_t < 0.0:
+			_next_wave()
+	elif _wave < WAVES.size() and (_up(_wave_members) <= NEXT_WAVE_WHEN or _wave_t > NEXT_WAVE_AFTER) and _wave_members.size() >= WAVES[_wave - 1]:
+		_gap_t = WAVE_GAP  # a breath first (limb by limb, the second wave straight on the first's heels lost the boat)
+		_regrouped = false
 	elif _wave == WAVES.size() and _wave_members.size() >= WAVES[_wave - 1] and _up(servants) == 0:
 		_held()
 
