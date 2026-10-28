@@ -79,6 +79,14 @@ const ROOM_PEOPLE := {
 	"yacoub": [Vector3(40.0, 0, 86.0), Vector3(40, 0, 82)],
 	"hassan": [Vector3(42.3, 0, 82.2), Vector3(43.5, 0, 82.2)],
 }
+## Which venue each spot and person is in (to move them with it on a moved map).
+const SPOT_VENUE := {"tavern": "tavern", "cafe": "tavern", "hotel": "hotel", "hotel_bed": "hotel",
+	"museum": "museum", "outfitter": "outfitter", "telegraph": "telegraph", "club": "club",
+	"freddie": "club", "gunsmith": "gunsmith", "dealer": "dealer"}
+const PEOPLE_VENUE := {"mckenna": "tavern", "isabelle": "tavern", "idris": "tavern", "karim": "tavern",
+	"clara": "hotel", "archivist": "museum", "eleanor": "museum", "pembroke": "museum",
+	"samira": "outfitter", "nabil": "telegraph", "hargreaves": "club", "zaki": "gunsmith",
+	"yacoub": "dealer", "hassan": "dealer", "umm_sayed": "club"}
 ## Act 1's (not for place_people: she's only there the once): Umm Sayed in Freddie's office.
 const UMM_SAYED := [Vector3(57.3, 0, 58.0), Vector3(58.15, 0, 56)]
 
@@ -90,6 +98,14 @@ var _pane_mat: StandardMaterial3D
 var _glow_mat: StandardMaterial3D
 var _solid_mat: StandardMaterial3D
 var _t := 0.0
+## Where each venue stands relative to today's layout (a moved Cairo's MOVES, e.g. CairoV2's:
+## venue id -> offset; none = today's places). The rooms are built in today's coordinates under a
+## holder at the offset, so the furnishing tables stay as they are.
+var moves := {}
+var room_spots := {}             # ROOM_SPOTS, where they are on this map
+var room_people := {}            # ROOM_PEOPLE, likewise
+var _off := Vector3.ZERO         # the venue being built: its offset ...
+var _holder: Node3D              # ... and the node its meshes and lights go under
 
 
 ## Tests: no interiors at all (the "before" of a frame-rate run).
@@ -104,6 +120,14 @@ static func build(cairo: Node3D) -> CairoInteriors:
 	ci.level = cairo
 	cairo.add_child(ci)
 	ci._materials()
+	var consts := (cairo.get_script() as Script).get_script_constant_map() if cairo.get_script() else {}
+	ci.moves = consts.get("MOVES", {})
+	for id: String in ROOM_SPOTS:
+		ci.room_spots[id] = ROOM_SPOTS[id] + ci.moves.get(SPOT_VENUE.get(id, ""), Vector3.ZERO)
+	for id: String in ROOM_PEOPLE:
+		var p: Array = ROOM_PEOPLE[id]
+		var off: Vector3 = ci.moves.get(PEOPLE_VENUE.get(id, ""), Vector3.ZERO)
+		ci.room_people[id] = [p[0] + off, p[1] + off]
 	for v: Dictionary in VENUES:
 		ci._venue(v)
 	print("INTERIORS %d rooms, %d chairs, %d lights" % [ci.rooms.size(), ci.seats.size(), ci._lights.size()])
@@ -139,7 +163,9 @@ func crowd_groups() -> Array:
 	var rect: Rect2 = bar.rect
 	var free := seats.filter(func(s: Dictionary) -> bool: return not s.host and rect.has_point(Vector2(s.pos.x, s.pos.z)))
 	return [{"name": "patrons", "indoor": true, "share": 0.1, "roles": {"sit": 1.0},
-		"waypoints": [[20.0, 63.4], [23.6, 66.6], [18.4, 69.6], [24.2, 61.2]],
+		"waypoints": [[20.0, 63.4], [23.6, 66.6], [18.4, 69.6], [24.2, 61.2]].map(func(w: Array) -> Array:
+			var o: Vector3 = moves.get("tavern", Vector3.ZERO)
+			return [float(w[0]) + o.x, float(w[1]) + o.z]),
 		"seats": free.map(func(s: Dictionary) -> Array: return [s.pos.x, s.pos.z, s.yaw])}]
 
 
@@ -164,11 +190,22 @@ func _materials() -> void:
 	_pane_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 
 
+## Umm Sayed's place in Freddie's office on this map ([position, facing point]).
+func umm_sayed() -> Array:
+	var off: Vector3 = moves.get("club", Vector3.ZERO)
+	return [UMM_SAYED[0] + off, UMM_SAYED[1] + off]
+
+
 func _venue(v: Dictionary) -> void:
 	var r: Rect2 = v.rect
 	var h := float(v.h)
 	var nav: Node = level.get("_nav")
-	var centre := Vector3(r.get_center().x, h * 0.5, r.get_center().y)
+	_off = moves.get(v.id, Vector3.ZERO)
+	_holder = Node3D.new()
+	_holder.name = "Venue_" + str(v.id)
+	add_child(_holder)
+	_holder.position = _off
+	var centre := Vector3(r.get_center().x, h * 0.5, r.get_center().y) + _off
 	var old: StaticBody3D = null
 	for c in nav.get_children():
 		if c is StaticBody3D and (c as StaticBody3D).position.distance_to(centre) < 0.05:
@@ -194,7 +231,7 @@ func _venue(v: Dictionary) -> void:
 		for z in [rr.position.y, rr.end.y]:
 			if not zs.has(z):
 				zs.append(z)
-		rooms.append({"id": room.id, "rect": rr, "floor": float(room.floor), "ceil": float(room.ceil), "kind": room.kind})
+		rooms.append({"id": room.id, "rect": Rect2(rr.position + Vector2(_off.x, _off.z), rr.size), "floor": float(room.floor), "ceil": float(room.ceil), "kind": room.kind})
 	xs.sort()
 	zs.sort()
 	var boxes: Array[AABB] = []
@@ -285,8 +322,9 @@ func _shell(boxes: Array[AABB], mat: Material, nav: Node) -> void:
 	m.name = "Shell"
 	m.mesh = st.commit()
 	m.material_override = mat
-	add_child(m)
+	_holder.add_child(m)
 	nav.add_child(body)
+	body.position = _off
 
 
 ## The entrance's dark door panel (cairo.gd's _entrance) out of the opening.
@@ -296,10 +334,11 @@ func _open_doors(v: Dictionary) -> void:
 	for d: Array in v.doors:
 		var at: Vector3 = d[0]
 		var n := Vector3((d[1] as Vector2).x, 0, (d[1] as Vector2).y)
-		var panel := at + Vector3.UP * float(d[3]) * 0.5 + n * 0.05
-		for c in deco.get_children():
-			if c is MeshInstance3D and (c as MeshInstance3D).material_override == dark and (c as MeshInstance3D).position.distance_to(panel) < 0.6:
-				deco.remove_child(c)  # out now, not at the frame's end: Cairo merges its decoration in this _ready
+		var panel := at + Vector3.UP * float(d[3]) * 0.5 + n * 0.05 + _off
+		# (A moved Cairo builds each landmark's dressing under its own offset holder: look deep.)
+		for c in deco.find_children("*", "MeshInstance3D", true, false):
+			if (c as MeshInstance3D).material_override == dark and (c as MeshInstance3D).global_position.distance_to(panel) < 0.6:
+				c.get_parent().remove_child(c)  # out now, not at the frame's end: Cairo merges its decoration in this _ready
 				c.queue_free()
 
 
@@ -452,7 +491,7 @@ func _windows(r: Rect2, fl: float, doors: Array) -> void:
 	m.material_override = _pane_mat
 	m.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	m.visibility_range_end = FAR
-	add_child(m)
+	_holder.add_child(m)
 
 
 ## A wall segment on one of its building's street faces ("faces": cairo.gd's facades with
@@ -480,7 +519,7 @@ func _commit(k: Kit, id: String) -> void:
 	m.visibility_range_end = FAR
 	m.visibility_range_end_margin = 4.0
 	m.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
-	add_child(m)
+	_holder.add_child(m)
 	if k.any_glow:
 		k.glow.generate_normals()
 		var g := MeshInstance3D.new()
@@ -488,7 +527,7 @@ func _commit(k: Kit, id: String) -> void:
 		g.material_override = _glow_mat
 		g.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		g.visibility_range_end = FAR
-		add_child(g)
+		_holder.add_child(g)
 	if not k.solids.is_empty():
 		var body := StaticBody3D.new()
 		body.name = "Furniture_" + id
@@ -502,6 +541,7 @@ func _commit(k: Kit, id: String) -> void:
 			body.add_child(cs)
 			cs.position = b.get_center()
 		(level.get("_nav") as Node).add_child(body)
+		body.position = _off
 
 
 ## A lamp: its glow, and a light that never casts a shadow and fades out past 22 m.
@@ -518,7 +558,7 @@ func _lamp(k: Kit, at: Vector3, range_m := 6.0, energy := 1.2, hanging := true) 
 	l.distance_fade_enabled = true
 	l.distance_fade_begin = 22.0
 	l.distance_fade_length = 8.0
-	add_child(l)
+	_holder.add_child(l)
 	l.position = at + Vector3.DOWN * 0.2
 	_lights.append(l)
 
@@ -536,14 +576,14 @@ func _chair(k: Kit, at: Vector3, yaw: float, host := false, col := WOOD, arm := 
 	if arm:
 		for sx in [-0.26, 0.26]:
 			k.box(seat + b * Vector3(sx, 0, 0) + Vector3.UP * 0.6, Vector3(0.08, 0.3, 0.46), col, false, yaw)
-	seats.append({"pos": at, "yaw": yaw, "host": host})
+	seats.append({"pos": at + _off, "yaw": yaw, "host": host})
 
 
 ## A bar stool (sitting point `at`, facing `yaw`): taller, at the counter.
 func _stool(k: Kit, at: Vector3, yaw: float, host := false) -> void:
 	var seat := at + Basis(Vector3.UP, yaw) * Vector3(0, 0, 0.12)
 	k.cyl(seat + Vector3.UP * 0.225, 0.19, 0.45, WOOD, true)
-	seats.append({"pos": at, "yaw": yaw, "host": host})
+	seats.append({"pos": at + _off, "yaw": yaw, "host": host})
 
 
 func _table(k: Kit, at: Vector3, r := 0.45, h := 0.75, cloth := Color(0, 0, 0, 0)) -> void:
