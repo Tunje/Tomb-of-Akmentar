@@ -492,6 +492,8 @@ func _build_tomb() -> void:
 	if not "--no-merge" in OS.get_cmdline_user_args():  # (tests: the before, to compare)
 		var inst := _instance_kit(96.0, [amulet, sarc_lid])
 		print("TOMB merged: %d draw calls fewer (%d kit props instanced)" % [RenderBudget.merge_static(self, 24.0, [amulet, sarc_lid]), inst])
+	if TombPaint.enabled():
+		TombPaint.ceilings(self)   # star ceilings over the halls (after the merge: their own meshes)
 
 
 ## One level: its rock (only what faces something: the inside of the mass is never seen or
@@ -1029,6 +1031,11 @@ func _glyph_walls() -> void:
 						h += 1
 					if frieze:
 						patches[key][3].append(Transform3D(turn, Vector3(face.x, top_y - FRIEZE.y, face.z) - out * (FRIEZE.z * 0.5 - 0.05)))
+	if TombPaint.enabled():   # (the carving painted: gameplan/reference/tomb_look)
+		for i in 3:
+			meshes[i] = TombPaint.painted(meshes[i], "wall")
+		if frieze:
+			frieze = TombPaint.painted(frieze, "frieze")
 	for key in patches:
 		for i in 3:
 			_multimesh(meshes[i], patches[key][i])
@@ -1072,6 +1079,8 @@ func _instance_kit(cell: float, keep: Array) -> int:
 		var mm := MultiMesh.new()
 		mm.transform_format = MultiMesh.TRANSFORM_3D
 		mm.mesh = from.mesh
+		if from.material_override == null and "pillar" in from.mesh.resource_path and TombPaint.enabled():
+			mm.mesh = TombPaint.painted(from.mesh, "pillar")   # (painted bands up the columns)
 		mm.instance_count = xforms.size()
 		for i in xforms.size():
 			mm.set_instance_transform(i, xforms[i])
