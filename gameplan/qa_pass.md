@@ -84,8 +84,8 @@ Each shot's log line now carries the frame rate, the world markers shown and the
 
 | What | Where | Owner |
 |---|---|---|
-| Nine companion tags (name and health bar) in a fight overlap one another, and clip at the screen's edge ("moud") | Act 4's raid ([shot](qa_pass/party9_act4_raid_after.jpg)), Act 9 ([shot](qa_pass/party9_act9_tags.jpg)) | -bf: a shared layout like the markers', or the bar only for the hurt and those far off |
-| Companion tags show through the ground: in Act 5's escape the nine still climbing the shaft hang in the sky over the pit | Act 5 ([shot](qa_pass/party9_act5_escape_tags.jpg)) | -bf: tags depth-tested, or hidden when the ray to them is blocked (as markers do) |
+| Nine companion tags (name and health bar) in a fight overlap one another, and clip at the screen's edge ("moud") | Act 4's raid ([shot](qa_pass/party9_act4_raid_after.jpg)), Act 9 ([shot](qa_pass/party9_act9_tags.jpg)) | -bf: **done** in 6499013. Tags share one layout (nearest first), are pulled in from the edge, and a healthy fighter shows none with more than 4 companions ([after](qa_pass/party9_act4_raid_tags_after.jpg)) |
+| Companion tags show through the ground: in Act 5's escape the nine still climbing the shaft hang in the sky over the pit | Act 5 ([shot](qa_pass/party9_act5_escape_tags.jpg)) | -bf: **done** in 6499013. A tag hides when the camera's ray to it is blocked beyond 7 m ([after](qa_pass/party9_act5_escape_after.jpg)) |
 
 ## Checked, not bugs
 
