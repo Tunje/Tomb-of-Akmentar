@@ -35,6 +35,8 @@ var interactable: Interactable
 ## Act 4: nobody walks up and inspects; the expeditions study their claims all day (act4.gd) and
 ## report at sunset (report()). The marker only says whose claim it is (set_marker_only).
 var marker_only := false
+## Act 5: who was left here studying it ("" = nobody): the label says so, not "E  study it".
+var studying := ""
 
 
 static func load_area(area_id: String) -> Dictionary:
@@ -147,6 +149,8 @@ func _show_state() -> void:
 	if Journal.has(clue_id()):
 		col = DONE
 		line = "studied"
+	elif studying != "":
+		line = "%s %s studying here" % [studying, "are" if studying.contains(" and ") else "is"]
 	elif why != "":
 		col = BARRED
 		line = why.get_slice(".", 0)  # the reason's first sentence

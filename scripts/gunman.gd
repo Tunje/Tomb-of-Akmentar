@@ -304,7 +304,9 @@ func _ready() -> void:
 	add_child(shape)
 	_agent = NavigationAgent3D.new()
 	_agent.radius = 0.45
-	_agent.path_desired_distance = 0.6
+	# A companion's path rides up to 0.7 m over its feet by a raised floor (Akmentar's souls site):
+	# within 0.6 m in 3D a point it had reached stayed "unreached" and turned it back, a 20 s stall.
+	_agent.path_desired_distance = 1.0 if team == PARTY else 0.6
 	_agent.target_desired_distance = 0.3
 	add_child(_agent)
 	_build_model()
@@ -1421,10 +1423,6 @@ func _move_to(dest: Vector3, speed: float, delta: float, path: bool) -> Vector3:
 			_repath = 0.3
 			_agent.target_position = dest
 		var next := _flat(_agent.get_next_path_position() - global_position)
-		# Not the agent's next point as such: its path starts where we were at the last repath, and
-		# by a raised floor it rides 0.7 m over our feet, so a point we're level with or past can stay
-		# "unreached" and turn us back. Go by where we are along the path, on the flat.
-		next = _path_ahead(next)
 		if next.length() > 0.05 and not _agent.is_navigation_finished():
 			dir = next.normalized()
 	# A stair or a raised floor's edge: step up onto it (CharacterBody3D won't).
@@ -1442,30 +1440,6 @@ func _move_to(dest: Vector3, speed: float, delta: float, path: bool) -> Vector3:
 			_detour_t = 0.6
 			dir = _detour
 	return dir * minf(speed, to.length() / maxf(delta, 0.001) * 0.5)
-
-
-## The agent's path from the segment nearest us (on the flat): the way to its first point at
-## least 0.6 m on. `fallback` when the path's too short for that. (Only segments near our
-## height: a stair's flight above us lies right over the one we're on.)
-func _path_ahead(fallback: Vector3) -> Vector3:
-	var way := _agent.get_current_navigation_path()
-	var at := _flat(global_position)
-	var seg := -1
-	var best := INF
-	for i in range(maxi(_agent.get_current_navigation_path_index(), 1), way.size()):
-		if minf(absf(way[i - 1].y - global_position.y), absf(way[i].y - global_position.y)) > 1.5:
-			continue
-		var d := at.distance_to(Geometry3D.get_closest_point_to_segment(at, _flat(way[i - 1]), _flat(way[i])))
-		if d < best:
-			best = d
-			seg = i
-	if seg < 0:
-		return fallback
-	for i in range(seg, way.size()):
-		var d := _flat(way[i]) - at
-		if d.length() >= 0.6:
-			return d
-	return fallback
 
 
 ## On a boat's deck (DeckNav): the way to `dest`, the path kept in the boat's frame so it sails
@@ -1915,6 +1889,7 @@ func _maybe_throw() -> bool:
 const ALLY_HELP_TIME := 3.0      # s kneeling to get a downed companion up (the player's E is instant)
 const ALLY_HELP_SAFE := 8.0      # m: nothing hostile this near the downed one, or no going
 const ALLY_HELP_REACH := 15.0    # m they'll go to help
+const ESCAPE_HELP_REACH := 6.0   # m: running for it (Act 5), they stop only for one they're passing
 const ALLY_HELP_RANGE := 1.4
 const SHOT_AT_GAP := 2.0         # s since they were last hit before they'll go
 static var _helping := {}        # downed instance id -> helper instance id (one help at a time)
@@ -1929,7 +1904,7 @@ var _last_hurt := -100.0
 ## Going to (or kneeling by) a downed companion: true while that's what this one is doing, with
 ## the move in _help_move. Only when it's safe; anything coming near, or a hit, calls it off.
 func _help_step(delta: float) -> bool:
-	if escape or stumbled or not is_active():
+	if stumbled or not is_active():
 		return false
 	if _help_target == null:
 		_help_look -= delta
@@ -1969,10 +1944,11 @@ func _find_downed() -> Gunman:
 			return null
 		_helping.erase(k)
 	var best: Gunman = null
-	var bd := ALLY_HELP_REACH
+	var bd := ESCAPE_HELP_REACH if escape else ALLY_HELP_REACH
 	for n in get_tree().get_nodes_in_group("gunmen"):
 		var g := n as Gunman
-		if g == null or g == self or g.team != PARTY or not g.downed or not g.stumbled or not g.is_active():
+		# (In the escape a trip counts too: down on the stairs, not shot down.)
+		if g == null or g == self or g.team != PARTY or not (g.downed or escape) or not g.stumbled or not g.is_active():
 			continue
 		var d := global_position.distance_to(g.global_position)
 		if d < bd and _help_safe(g):
@@ -2022,7 +1998,7 @@ func _poll_focus(delta: float) -> void:
 	if f == _order_frame:
 		return
 	_order_frame = f
-	var p := leader as Player
+	var p := leader as Player if is_instance_valid(leader) else null  # (a way-out pacer, Act 5, may be gone)
 	if p == null or not p.alive or not p.controls_enabled:
 		return
 	var focus := InputMap.has_action("party_focus") and Input.is_action_just_pressed("party_focus")

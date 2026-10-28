@@ -343,7 +343,8 @@ static func _enemy_near(g: Gunman, foes: Array) -> bool:
 
 
 ## Where each downed companion is on screen: {id, at (screen point), off (off screen: an arrow
-## at the edge), angle (the arrow's), dist (m)}. The test reads this too.
+## at the edge), angle (the arrow's), dist (m), down}. The test reads this too. Also those left
+## behind in Act 5's escape (meta "left_behind", making their own way out): down false.
 func downed_markers() -> Array:
 	var out: Array = []
 	if player == null or player.camera == null:
@@ -355,7 +356,8 @@ func downed_markers() -> Array:
 	var c := rect.size * 0.5
 	var edge := rect.grow(-48.0)
 	for g in companions():
-		if not (g.downed or g.stumbled):
+		var down := g.downed or g.stumbled
+		if not down and not g.has_meta("left_behind"):
 			continue
 		var at := g.global_position + Vector3.UP * 1.0
 		var behind := cam.is_position_behind(at)
@@ -376,7 +378,7 @@ func downed_markers() -> Array:
 		# In view with their own name tag up ("E help up"): the tag says it; no second label here.
 		var tagged := not off and g._tag != null and g._tag.is_visible_in_tree()
 		out.append({"id": g.companion_id, "at": shown, "off": off, "angle": dir.angle(),
-			"dist": roundi(player.global_position.distance_to(g.global_position)), "tagged": tagged,
+			"dist": roundi(player.global_position.distance_to(g.global_position)), "tagged": tagged, "down": down,
 			"tag_at": cam.unproject_position(g._tag.global_position) if tagged else shown, "who": g})
 	return out
 
@@ -400,10 +402,10 @@ func _draw_downed_arrows(_size: Vector2) -> void:
 			var d := Vector2.from_angle(m.angle)
 			var side := d.orthogonal() * 10.0 * _scale
 			var tip := at + d * 16.0 * _scale
-			_canvas.draw_colored_polygon(PackedVector2Array([tip, at + side, at - side]), Color(DOWN_RED, pulse))
+			_canvas.draw_colored_polygon(PackedVector2Array([tip, at + side, at - side]), Color(DOWN_RED, pulse) if m.down else Color(col, 0.85))
 			_canvas.draw_polyline(PackedVector2Array([tip, at + side, at - side, tip]), Color(0, 0, 0, 0.7), 1.5)
 		else:
-			_canvas.draw_circle(at + Vector2.UP * 14.0, 6.0 * _scale, Color(DOWN_RED, pulse))
+			_canvas.draw_circle(at + Vector2.UP * 14.0, 6.0 * _scale, Color(DOWN_RED, pulse) if m.down else Color(col, 0.85))
 		var label := "%s %d m" % [DayLog.person(str(m.id)).get_slice(" ", 0), m.dist]
 		var lp := at - Vector2.from_angle(m.angle) * 26.0 * _scale - Vector2(font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x * 0.5, 0)
 		_canvas.draw_string_outline(font, lp, label, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, 7, Color(0, 0, 0, 0.9))
