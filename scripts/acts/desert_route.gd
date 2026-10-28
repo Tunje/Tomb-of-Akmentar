@@ -101,6 +101,7 @@ func _sea() -> void:
 	m.set_shader_parameter("deep", Color(0.06, 0.22, 0.34))
 	m.set_shader_parameter("shallow", Color(0.2, 0.46, 0.52))
 	m.set_shader_parameter("flow", Vector2(0.3, 0.0))
+	RiverWater.depth(water, 0.8, 0.4)  # (-f9's: clearer than the Nile, foam where it meets the beach)
 	var beach := MeshInstance3D.new()
 	var pm := PlaneMesh.new()
 	pm.size = Vector2(30.0, L + 600.0)

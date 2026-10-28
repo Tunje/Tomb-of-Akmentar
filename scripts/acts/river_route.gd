@@ -28,7 +28,8 @@ func _ready() -> void:
 	c.bake_interval = 0.5
 	path.curve = c
 	add_child(path)
-	RiverWater.make(self, Vector2(260, LENGTH + 300.0), 0.0, Vector3(0, 0, -LENGTH * 0.5))
+	var water := RiverWater.make(self, Vector2(260, LENGTH + 300.0), 0.0, Vector3(0, 0, -LENGTH * 0.5))
+	RiverWater.depth(water, 3.0, 0.3)  # (-f9's: the Nile's mud with depth, foam at the banks and the hull)
 	_banks()
 	_environment()
 	_sun.rotation = Vector3(deg_to_rad(-34), deg_to_rad(-60), 0)  # morning, from the east
@@ -115,14 +116,15 @@ func _banks() -> void:
 		s += 12.0
 		k += 1
 	_bank_sheets()
-	# Desert under everything, beyond the banks' ends (below the water, so never over it).
+	# Desert under everything, beyond the banks' ends: the river's bed too, 2 m down (the water's
+	# depth tint reads it; at 0.3 m it showed through as sand).
 	var far := MeshInstance3D.new()
 	var plane := PlaneMesh.new()
 	plane.size = Vector2(1400, LENGTH + 1200.0)
 	far.mesh = plane
 	far.material_override = _sand
 	add_child(far)
-	far.position = Vector3(0, -0.3, -LENGTH * 0.5)
+	far.position = Vector3(0, -2.0, -LENGTH * 0.5)
 
 
 ## Each bank as one continuous sheet (top, and the cut face down into the water) following the
