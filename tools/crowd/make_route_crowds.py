@@ -1,4 +1,4 @@
-"""Writes crowd/town_v2.json and crowd/coast_town.json for the stage-1 route maps (TownV2,
+"""Writes crowd/town_v2.json, crowd/coast_town.json and crowd/landing.json for the stage-1 route maps (TownV2,
 CoastTown): run from the repo root, `python tools/crowd/make_route_crowds.py`."""
 import json, math
 
@@ -118,7 +118,47 @@ coast = {
                 "critters": 4},
 }
 
-for name, d in (("town_v2", town), ("coast_town", coast)):
+# ---------------------------------------------------------------- the village landing (LandingV2)
+import math as _m
+market_stalls = []
+for k in range(8):
+    a = 2 * _m.pi * k / 8
+    px, pz = 36 + _m.cos(a) * 14, -22 + _m.sin(a) * 14
+    if abs(pz + 22) < 4 and px < 36:
+        continue
+    # the seller on the tree's side of the stall, facing out
+    sx, sz = 36 + _m.cos(a) * 12.4, -22 + _m.sin(a) * 12.4
+    market_stalls.append([round(sx, 2), round(sz, 2), round(_m.atan2(-_m.cos(a), -_m.sin(a)), 4)])
+landing = {
+    "_help": "LandingV2's crowd (gameplan/route_stops_plan.md stage 1; scripts/acts/landing_v2.gd's layout): sellers at the market's stalls round the sycamore and buyers among them, men sitting under the tree, women at the shadoofs and the water, farmers in the fields behind, villagers on the lanes and the riverfront. Water buffalo (HorseRigs until there's a model), donkeys and goats. Written by tools/crowd/make_route_crowds.py; tests/landing_test checks every point is on the navmesh.",
+    "density": {"low": 12, "medium": 20, "high": 28},
+    "alarm_radius": 50, "keep_clear": 2.5, "seed": 1928,
+    "models": MODELS, "tint": STAND_INS,
+    "groups": [
+        {"name": "market", "share": 0.34, "roles": {"stall": 0.5, "walk": 0.3, "carry": 0.2}, "prop": "basket",
+         "waypoints": [[30, -26], [44, -30], [44, -14], [28, -14], [20, -22], [52, -22], [14, -14]],
+         "stalls": market_stalls,
+         "seats": [[33.5, -20.5, -0.8, True], [38.5, -23.5, 2.3, True], [34.5, -24.0, 0.9, True]],
+         "anims": {"stall": ["talk", "pick", "fold"]}},
+        {"name": "water", "share": 0.2, "roles": {"stall": 0.6, "carry": 0.4}, "prop": "basket",
+         "waypoints": [[8, 40], [8, 20], [8, -40], [8, 60], [12, -14]],
+         "stalls": [[5.0, 29.0, _m.pi / 2], [5.0, 51.0, _m.pi / 2], [5.0, -63.0, _m.pi / 2], [1.5, 44.0, _m.pi / 2]],
+         "anims": {"stall": ["kneel", "pick"]}},
+        {"name": "fields", "share": 0.2, "roles": {"dig": 0.7, "walk": 0.3},
+         "waypoints": [[140, 10], [120, -40], [120, 60], [170, -60], [170, 50]],
+         "digs": [[131, -27], [153, -27], [131, 21], [153, 21], [175, 45], [131, 69]]},
+        {"name": "lanes", "share": 0.26, "roles": {"walk": 0.6, "carry": 0.25, "sit": 0.15}, "prop": "crate",
+         "waypoints": [[64, 40], [64, -88], [64, -44], [9, -90], [9, 90], [114, 0], [64, 0], [40, 38], [40, -72]],
+         "seats": [[68.8, -24.0, 1.5708, False]]},
+    ],
+    "beasts": [[[124, -70], [124, -20], 0.9], [[150, 34], [180, 34], 0.9], [[6, 70], [6, 90], 0.9],
+               [[62, -60], [62, -80], 0.72], [[112, 30], [112, 60], 0.42], [[114, -50], [114, -70], 0.42]],
+    "looks": LOOKS, "skin": SKIN,
+    "ambient": {"birds": {"count": 5, "center": [-40, 0], "radius": 50, "height": 30, "span": 1.6},
+                "pigeons": [[36, -30], [66, 40]], "critters": 4},
+}
+
+for name, d in (("town_v2", town), ("coast_town", coast), ("landing", landing)):
     with open("crowd/%s.json" % name, "w", encoding="utf-8", newline="\n") as f:
         f.write(json.dumps(d, indent="\t", ensure_ascii=False) + "\n")
     print("wrote crowd/%s.json" % name)

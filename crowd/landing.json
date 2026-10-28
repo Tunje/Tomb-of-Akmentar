@@ -1,0 +1,519 @@
+{
+	"_help": "LandingV2's crowd (gameplan/route_stops_plan.md stage 1; scripts/acts/landing_v2.gd's layout): sellers at the market's stalls round the sycamore and buyers among them, men sitting under the tree, women at the shadoofs and the water, farmers in the fields behind, villagers on the lanes and the riverfront. Water buffalo (HorseRigs until there's a model), donkeys and goats. Written by tools/crowd/make_route_crowds.py; tests/landing_test checks every point is on the navmesh.",
+	"density": {
+		"low": 12,
+		"medium": 20,
+		"high": 28
+	},
+	"alarm_radius": 50,
+	"keep_clear": 2.5,
+	"seed": 1928,
+	"models": [
+		"townsfolk/townsman.glb",
+		"townsfolk/townswoman.glb",
+		"townsfolk/townsman.glb",
+		"townsfolk/townswoman.glb",
+		"townsfolk/townsman.glb",
+		"bandits/bandit_scout.glb",
+		"townsfolk/townswoman.glb",
+		"bandits/bandit_raider.glb"
+	],
+	"tint": [
+		"bandits/bandit_scout.glb",
+		"bandits/bandit_raider.glb"
+	],
+	"groups": [
+		{
+			"name": "market",
+			"share": 0.34,
+			"roles": {
+				"stall": 0.5,
+				"walk": 0.3,
+				"carry": 0.2
+			},
+			"prop": "basket",
+			"waypoints": [
+				[
+					30,
+					-26
+				],
+				[
+					44,
+					-30
+				],
+				[
+					44,
+					-14
+				],
+				[
+					28,
+					-14
+				],
+				[
+					20,
+					-22
+				],
+				[
+					52,
+					-22
+				],
+				[
+					14,
+					-14
+				]
+			],
+			"stalls": [
+				[
+					48.4,
+					-22.0,
+					-1.5708
+				],
+				[
+					44.77,
+					-13.23,
+					-2.3562
+				],
+				[
+					36.0,
+					-9.6,
+					-3.1416
+				],
+				[
+					27.23,
+					-13.23,
+					2.3562
+				],
+				[
+					27.23,
+					-30.77,
+					0.7854
+				],
+				[
+					36.0,
+					-34.4,
+					0.0
+				],
+				[
+					44.77,
+					-30.77,
+					-0.7854
+				]
+			],
+			"seats": [
+				[
+					33.5,
+					-20.5,
+					-0.8,
+					true
+				],
+				[
+					38.5,
+					-23.5,
+					2.3,
+					true
+				],
+				[
+					34.5,
+					-24.0,
+					0.9,
+					true
+				]
+			],
+			"anims": {
+				"stall": [
+					"talk",
+					"pick",
+					"fold"
+				]
+			}
+		},
+		{
+			"name": "water",
+			"share": 0.2,
+			"roles": {
+				"stall": 0.6,
+				"carry": 0.4
+			},
+			"prop": "basket",
+			"waypoints": [
+				[
+					8,
+					40
+				],
+				[
+					8,
+					20
+				],
+				[
+					8,
+					-40
+				],
+				[
+					8,
+					60
+				],
+				[
+					12,
+					-14
+				]
+			],
+			"stalls": [
+				[
+					5.0,
+					29.0,
+					1.5707963267948966
+				],
+				[
+					5.0,
+					51.0,
+					1.5707963267948966
+				],
+				[
+					5.0,
+					-63.0,
+					1.5707963267948966
+				],
+				[
+					1.5,
+					44.0,
+					1.5707963267948966
+				]
+			],
+			"anims": {
+				"stall": [
+					"kneel",
+					"pick"
+				]
+			}
+		},
+		{
+			"name": "fields",
+			"share": 0.2,
+			"roles": {
+				"dig": 0.7,
+				"walk": 0.3
+			},
+			"waypoints": [
+				[
+					140,
+					10
+				],
+				[
+					120,
+					-40
+				],
+				[
+					120,
+					60
+				],
+				[
+					170,
+					-60
+				],
+				[
+					170,
+					50
+				]
+			],
+			"digs": [
+				[
+					131,
+					-27
+				],
+				[
+					153,
+					-27
+				],
+				[
+					131,
+					21
+				],
+				[
+					153,
+					21
+				],
+				[
+					175,
+					45
+				],
+				[
+					131,
+					69
+				]
+			]
+		},
+		{
+			"name": "lanes",
+			"share": 0.26,
+			"roles": {
+				"walk": 0.6,
+				"carry": 0.25,
+				"sit": 0.15
+			},
+			"prop": "crate",
+			"waypoints": [
+				[
+					64,
+					40
+				],
+				[
+					64,
+					-88
+				],
+				[
+					64,
+					-44
+				],
+				[
+					9,
+					-90
+				],
+				[
+					9,
+					90
+				],
+				[
+					114,
+					0
+				],
+				[
+					64,
+					0
+				],
+				[
+					40,
+					38
+				],
+				[
+					40,
+					-72
+				]
+			],
+			"seats": [
+				[
+					68.8,
+					-24.0,
+					1.5708,
+					false
+				]
+			]
+		}
+	],
+	"beasts": [
+		[
+			[
+				124,
+				-70
+			],
+			[
+				124,
+				-20
+			],
+			0.9
+		],
+		[
+			[
+				150,
+				34
+			],
+			[
+				180,
+				34
+			],
+			0.9
+		],
+		[
+			[
+				6,
+				70
+			],
+			[
+				6,
+				90
+			],
+			0.9
+		],
+		[
+			[
+				62,
+				-60
+			],
+			[
+				62,
+				-80
+			],
+			0.72
+		],
+		[
+			[
+				112,
+				30
+			],
+			[
+				112,
+				60
+			],
+			0.42
+		],
+		[
+			[
+				114,
+				-50
+			],
+			[
+				114,
+				-70
+			],
+			0.42
+		]
+	],
+	"looks": [
+		{
+			"name": "white galabeya",
+			"w": 26,
+			"cloth": [
+				0.93,
+				0.91,
+				0.85
+			]
+		},
+		{
+			"name": "cream galabeya",
+			"w": 18,
+			"cloth": [
+				0.87,
+				0.8,
+				0.65
+			]
+		},
+		{
+			"name": "sand galabeya",
+			"w": 14,
+			"cloth": [
+				0.76,
+				0.66,
+				0.5
+			]
+		},
+		{
+			"name": "striped galabeya",
+			"w": 8,
+			"cloth": [
+				0.88,
+				0.86,
+				0.8
+			],
+			"stripe": [
+				0.3,
+				0.36,
+				0.62
+			]
+		},
+		{
+			"name": "brown striped",
+			"w": 5,
+			"cloth": [
+				0.8,
+				0.72,
+				0.58
+			],
+			"stripe": [
+				0.42,
+				0.28,
+				0.18
+			]
+		},
+		{
+			"name": "blue robe",
+			"w": 7,
+			"cloth": [
+				0.27,
+				0.38,
+				0.62
+			]
+		},
+		{
+			"name": "effendi's suit",
+			"w": 7,
+			"cloth": [
+				0.2,
+				0.2,
+				0.22
+			],
+			"fez": true
+		},
+		{
+			"name": "linen suit",
+			"w": 4,
+			"cloth": [
+				0.78,
+				0.74,
+				0.64
+			],
+			"fez": true
+		},
+		{
+			"name": "galabeya and fez",
+			"w": 4,
+			"cloth": [
+				0.92,
+				0.9,
+				0.84
+			],
+			"fez": true
+		},
+		{
+			"name": "black melaya",
+			"w": 6,
+			"cloth": [
+				0.07,
+				0.07,
+				0.08
+			]
+		},
+		{
+			"name": "dark-blue melaya",
+			"w": 4,
+			"cloth": [
+				0.1,
+				0.12,
+				0.26
+			]
+		}
+	],
+	"skin": [
+		[
+			0.84,
+			0.64,
+			0.5
+		],
+		[
+			0.38,
+			0.25,
+			0.18
+		]
+	],
+	"ambient": {
+		"birds": {
+			"count": 5,
+			"center": [
+				-40,
+				0
+			],
+			"radius": 50,
+			"height": 30,
+			"span": 1.6
+		},
+		"pigeons": [
+			[
+				36,
+				-30
+			],
+			[
+				66,
+				40
+			]
+		],
+		"critters": 4
+	}
+}
