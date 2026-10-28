@@ -420,7 +420,7 @@ func _choose_target() -> void:
 	# Look from where we'd shoot: over / round the cover, not from the crouch.
 	var eye := _peek_eye() if not _spot.get("exposed", true) else _eye()
 	# "Focus my target": the player's pick, while it lasts and they can see it.
-	if team == PARTY and _focus_on() and _clear(eye, _point_on(focus_target)):
+	if team == PARTY and _focus_on() and _clear(eye, _point_on(focus_target, eye)):
 		if target != focus_target:
 			_seen_t = 0.0
 		target = focus_target
@@ -435,7 +435,7 @@ func _choose_target() -> void:
 		if n == target and keep:
 			continue
 		var d := global_position.distance_to(n.global_position)
-		if d < best_d and _clear(eye, _point_on(n)):
+		if d < best_d and _clear(eye, _point_on(n, eye)):
 			best = n
 			best_d = d
 		elif team == PARTY and d < unseen_d:
@@ -484,7 +484,7 @@ func _candidates() -> Array[Node3D]:
 
 
 ## Where to aim on `n`: the chest, lower when it crouches or crawls.
-static func _point_on(n) -> Vector3:  # untyped: it may have been freed
+static func _point_on(n, from := Vector3.INF) -> Vector3:  # untyped: it may have been freed
 	if n == null or not is_instance_valid(n):
 		return Vector3.ZERO
 	var h := 1.0
@@ -493,7 +493,7 @@ static func _point_on(n) -> Vector3:  # untyped: it may have been freed
 	elif n is Gunman:
 		h = 0.9 if (n as Gunman).crouched else 1.3
 	elif n is Mummy:
-		h = 0.5 if (n as Mummy).crawling else 1.2
+		return (n as Mummy).aim_point(from)  # a limb (one in sight from `from`): that's what puts one down
 	return n.global_position + Vector3.UP * h
 
 
@@ -1028,12 +1028,19 @@ func _make_tag() -> void:
 	add_child(_tag)
 
 
+## A title card or a talk / menu screen is up: tags and barks (Label3Ds drawn over everything)
+## keep out of its way.
+static func screen_busy() -> bool:
+	return ActionMenu.ui_open() or Hud.card_up
+
+
 ## Shown in a fight, when hurt or when holding; hidden while following at full health.
 func _update_tag() -> void:
 	if _tag == null:
 		return
 	var k := clampf(health / max_health, 0.0, 1.0)
-	_tag.visible = state != State.DEAD and (k < 1.0 or state != State.IDLE or (order == "hold" and not at_job) or stumbled)
+	_tag.visible = state != State.DEAD and (k < 1.0 or state != State.IDLE or (order == "hold" and not at_job) or stumbled) \
+		and not screen_busy()
 	if not _tag.visible:
 		return
 	var full := int(ceilf(k * 10.0))
@@ -1482,7 +1489,7 @@ func _peek_eye() -> Vector3:
 
 
 func _target_point() -> Vector3:
-	return _point_on(target)
+	return _point_on(target, _eye())
 
 
 func _fire() -> void:

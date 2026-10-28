@@ -412,7 +412,7 @@ func _bot(delta: float) -> void:
 		FightBot.press("aim", false)
 		FightBot.press("fire", false)
 		return
-	var at := best.global_position + Vector3.UP * (0.4 if best.crawling else 1.5)
+	var at := best.aim_point(player.camera.global_position)  # a limb: mummies are shot apart, never killed
 	var to := at - player.camera.global_position
 	var want := atan2(-to.x, -to.z)
 	player.yaw = lerp_angle(player.yaw, want, minf(delta * 8.0, 1.0))

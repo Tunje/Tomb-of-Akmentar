@@ -161,6 +161,7 @@ class BarkLabel extends Label3D:
 	const GAP_PX := 10.0
 
 	func _process(_delta: float) -> void:
+		visible = not Gunman.screen_busy()  # not over a title card or a menu
 		follow()
 
 	func follow() -> void:

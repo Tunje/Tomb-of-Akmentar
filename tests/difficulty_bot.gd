@@ -99,7 +99,7 @@ func _physics_process(delta: float) -> void:
 		print("BOT   unseen=%.1f hide=%.1f fwd=%s back=%s crouch=%s path=%s" % [_unseen, _hide_t, Input.is_action_pressed("move_forward"),
 			Input.is_action_pressed("move_back"), Input.is_action_pressed("crouch"), _walker._path if _walker else []])
 		for n in foes:
-			var q := PhysicsRayQueryParameters3D.create(p.camera.global_position, _aim_point(n), 1)
+			var q := PhysicsRayQueryParameters3D.create(p.camera.global_position, _aim_point(n, p.camera.global_position), 1)
 			q.exclude = [p.get_rid()]
 			var hit := p.get_world_3d().direct_space_state.intersect_ray(q)
 			print("BOT   %s at %s %.0fm ray hits %s at %s, visible=%s, state=%s" % [n.name, n.global_position.snapped(Vector3.ONE * 0.1),
@@ -186,9 +186,9 @@ func _guardian() -> Variant:
 	return null
 
 
-func _aim_point(n: Node3D) -> Vector3:
+func _aim_point(n: Node3D, from := Vector3.INF) -> Vector3:
 	if n is Mummy:
-		return n.global_position + Vector3.UP * (0.5 if (n as Mummy).crawling else 1.3)
+		return (n as Mummy).aim_point(from)  # a limb in sight: it never dies, it's shot apart
 	if n is Guardian:
 		return n.global_position + Vector3.UP * 1.6
 	return n.global_position + Vector3.UP * 1.3
@@ -197,7 +197,7 @@ func _aim_point(n: Node3D) -> Vector3:
 ## Whether any of him shows: the chest, else the head, else low (a man crouched behind cover
 ## shows his head when he comes up to shoot). Remembers the part that showed in _shows.
 func _visible(p: Player, n: Node3D) -> bool:
-	var chest := _aim_point(n)
+	var chest := _aim_point(n, p.camera.global_position)
 	var tries: Array[Vector3] = [chest]
 	if n is Gunman:
 		tries.append(n.global_position + Vector3.UP * 1.65)

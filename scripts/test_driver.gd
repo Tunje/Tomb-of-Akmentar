@@ -196,7 +196,7 @@ func _bot(delta: float) -> void:
 		_press("aim", false)
 		_press("fire", false)
 		return
-	var aim_at := _bot_target.global_position + Vector3.UP * (0.6 if _bot_target.crawling else 1.3)
+	var aim_at: Vector3 = _bot_target.aim_point(p.camera.global_position)  # a limb: mummies are shot apart, never killed
 	var d := aim_at - p.camera.global_position
 	var want_yaw := atan2(-d.x, -d.z)
 	var want_pitch := asin(clampf(d.normalized().y, -1, 1))

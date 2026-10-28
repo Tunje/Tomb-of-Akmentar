@@ -180,7 +180,7 @@ func explode() -> void:
 			(b as Player).trauma = 1.0
 			(b as Player).velocity += (b.global_position - at).normalized() * KNOCK
 		elif b.has_method("take_hit") and b is Mummy:
-			b.call("take_hit", "torso", dmg, (b.global_position - at).normalized(), b.global_position, 3.0, 1.0)
+			b.call("take_hit", "blast", dmg, (b.global_position - at).normalized(), b.global_position, 3.0, 1.0)
 		elif b.has_method("take_damage"):
 			b.call("take_damage", dmg, at)
 
