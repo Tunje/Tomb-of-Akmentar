@@ -220,8 +220,7 @@ func _reveal(s: SiteSpot, ids: Array) -> void:
 		"title": str(c.get("title", "")), "text": str(c.get("text", ""))})
 	Game.set_flag(s.clue_id())
 	Game.apply(s.site.get("do", []))
-	if s.has_method("_second_clue"):
-		s.call("_second_clue")  # the Builders' Way's trail, as SiteSpot.inspect does
+	s.second_clue()  # the Builders' Way's trail, as SiteSpot.inspect does
 	var names := ids.map(func(id: String) -> String: return Hud._first_name(act.companions[id]))
 	DayLog.add("%s studied the %s" % [" and ".join(names), s.site.get("name", s.site_id)])
 	s.inspected.emit(s.site_id)

@@ -14,22 +14,29 @@ extends Node3D
 signal finished(result: Dictionary)
 
 const TEAM := "bounty_men"
-const DOOR := Vector3(27.3, 0, 66)  # the tavern spot
-## Where they come from: the south gate (two) and the bazaar lane's mouth.
-const ENTRIES := [Vector3(28.4, 0, 95.5), Vector3(30.6, 0, 94.5), Vector3(40.0, 0, 77.0)]
+## Everything is laid out from the tavern's door, so the fight works on whichever Cairo it's in
+## (today's and cairo_v2): offsets Vector2(out, along) = metres out of the door (its facing,
+## Cairo.SPOTS.tavern[1]) and along the street to its right of that (on today's map, +X and +Z: the
+## street running south from the tavern to the gate).
+## Where they come from: down the street from the gate (two), and a side lane's mouth.
+const ENTRIES := [Vector2(1.1, 29.5), Vector2(3.3, 28.5), Vector2(12.7, 11.0)]
 const MODELS := ["res://assets/characters/bandits/bandit_brute.glb", "res://assets/characters/bandits/bandit_gunhand.glb",
 	"res://assets/characters/bandits/bandit_raider.glb"]
 const NAMES := ["Bounty_Man_1", "Bounty_Man_2", "Bounty_Man_3"]
-## Cover along the street (centre, size): your side by the tavern, the middle, theirs by the gate.
-## The street is x 26-32; each piece leaves at least 3.5 m to walk past it.
+## Cover along the street (offset, size: x across the door's facing, z along the street): your
+## side by the tavern, the middle, theirs by the gate. On today's map the street is 6 m wide (out
+## -1.3 to 4.7); each piece leaves at least 3.5 m to walk past it.
 const COVER := [
-	[Vector3(29.6, 0, 71.6), Vector3(1.8, 0.9, 0.5)],   # the upturned table
-	[Vector3(31.2, 0, 68.0), Vector3(1.0, 1.0, 1.0)],
-	[Vector3(27.4, 0, 77.5), Vector3(1.0, 1.0, 1.6)],
-	[Vector3(31.0, 0, 81.5), Vector3(1.2, 1.0, 1.0)],
-	[Vector3(27.6, 0, 91.5), Vector3(1.0, 1.0, 1.4)],
-	[Vector3(31.0, 0, 92.6), Vector3(1.2, 1.0, 1.0)],
+	[Vector2(2.3, 5.6), Vector3(1.8, 0.9, 0.5)],   # the upturned table
+	[Vector2(3.9, 2.0), Vector3(1.0, 1.0, 1.0)],
+	[Vector2(0.1, 11.5), Vector3(1.0, 1.0, 1.6)],
+	[Vector2(3.7, 15.5), Vector3(1.2, 1.0, 1.0)],
+	[Vector2(0.3, 25.5), Vector3(1.0, 1.0, 1.4)],
+	[Vector2(3.7, 26.6), Vector3(1.2, 1.0, 1.0)],
 ]
+## Today's Cairo: the tavern's door (level.spots.tavern is a point inside, at the bar). A map
+## that moves the tavern sets `tavern_door` (cairo_v2).
+const DOOR_TODAY := Vector3(27.3, 0, 66)
 const SCATTER := 35.0        # townsfolk this near the street go indoors for it
 const MAX_HEALTH := 80.0
 const DAMAGE := 7.0  # (Gunman: 8) Act 2 has no party yet: at 8 the bot died 2 runs in 5 (tests/difficulty_test)
@@ -42,6 +49,9 @@ var men: Array[Gunman] = []
 var killed: Array[String] = []
 var surrendered: Array[String] = []
 var _hidden: Array[Node3D] = []
+var door := DOOR_TODAY       # the tavern's door, on this level
+var out_dir := Vector3.RIGHT  # out of its door
+var along := Vector3.BACK     # along the street: out_dir turned a quarter (today: +Z, towards the gate)
 
 
 static func start(lvl: Level, p: Player) -> StreetFight:
@@ -54,7 +64,24 @@ static func start(lvl: Level, p: Player) -> StreetFight:
 
 
 func _ready() -> void:
+	var d: Variant = level.get("tavern_door")
+	door = d if d is Vector3 else DOOR_TODAY
+	var face: Vector2 = Cairo.SPOTS.tavern[1]
+	out_dir = Vector3(face.x, 0, face.y).normalized()
+	along = Vector3(-out_dir.z, 0, out_dir.x)
 	_run()
+
+
+## A street offset (out of the door, along the street) as a point on this level.
+func at(o: Vector2) -> Vector3:
+	return door + out_dir * o.x + along * o.y
+
+
+## The same, put on the navmesh (a man must stand where he can walk).
+func _walkable(o: Vector2) -> Vector3:
+	var p := at(o)
+	var q := NavigationServer3D.map_get_closest_point(get_world_3d().navigation_map, p)
+	return q if q != Vector3.ZERO and q.distance_to(p) < 6.0 else p
 
 
 func _run() -> void:
@@ -69,11 +96,11 @@ func _run() -> void:
 		g.health = MAX_HEALTH
 		g.damage = DAMAGE
 		g.surrender_chance = SURRENDER_CHANCE
-		g.hunt_at = DOOR
+		g.hunt_at = door
 		g.hunt_radius = 45.0
 		level.add_child(g)
-		g.global_position = ENTRIES[i]
-		g.look_at(Vector3(DOOR.x, g.global_position.y, DOOR.z), Vector3.UP)
+		g.global_position = _walkable(ENTRIES[i])
+		g.look_at(Vector3(door.x, g.global_position.y, door.z), Vector3.UP)
 		g.target = player
 		g.killed.connect(func(_g): killed.append(String(g.name)))
 		men.append(g)
@@ -112,7 +139,9 @@ func _place_cover() -> void:
 	var wood: Material = level.get("_wood")
 	for c in COVER:
 		var size: Vector3 = c[1]
-		var box := level._box(nav if nav else level, c[0] + Vector3.UP * size.y * 0.5, size, wood)
+		if absf(out_dir.z) > absf(out_dir.x):
+			size = Vector3(size.z, size.y, size.x)  # (a tavern facing north or south: the street runs east-west)
+		var box := level._box(nav if nav else level, at(c[0]) + Vector3.UP * size.y * 0.5, size, wood)
 		level._mark_cover(box, size)
 		if level.has_method("_dress") and size.y >= 1.0:
 			level.call("_dress", box, "prop_crate_large.glb", Vector3(1.0, 0.52, 0.49))
@@ -144,7 +173,7 @@ func _scatter(on: bool) -> void:
 		return
 	var folk: Array = level.get("townsfolk") if "townsfolk" in level else []
 	for t: Node3D in folk:
-		if is_instance_valid(t) and t.visible and t.global_position.distance_to(DOOR + Vector3(0, 0, 14)) < SCATTER:
+		if is_instance_valid(t) and t.visible and t.global_position.distance_to(at(Vector2(0, 14))) < SCATTER:
 			t.visible = false
 			t.process_mode = Node.PROCESS_MODE_DISABLED
 			if t is CollisionObject3D:  # indoors: not in the way of a round either
