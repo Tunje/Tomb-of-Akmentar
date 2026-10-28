@@ -27,6 +27,7 @@ var label: Label3D
 var _t := 0.0
 var _alpha := 0.0
 var _goal := 0.0
+static var _laid_at := -1.0   # (the last layout of them all: _declutter)
 
 
 static func attach(to: Node3D, name_text: String, height := 2.3) -> WorldMarker:
@@ -74,7 +75,8 @@ func _look() -> void:
 	if visible_if.is_valid() and not bool(visible_if.call()):
 		return
 	var cam := get_viewport().get_camera_3d()
-	if cam == null or ActionMenu.ui_open() or Hud.card_up:
+	# (In a fight they all keep out of the way: a camp's talk markers over a raid were a wall of text.)
+	if cam == null or ActionMenu.ui_open() or Hud.card_up or Gunman.fight_on(get_tree()):
 		return
 	var d := cam.global_position.distance_to(global_position)
 	if d > range:
@@ -93,26 +95,41 @@ func _look() -> void:
 	else:
 		label.text = "%s\n%s\n▼" % [text, why] if d < maxf(range * 0.75, 11.0) else "%s\n▼" % text  # the reason on approach
 		label.modulate = Color(BARRED, label.modulate.a)
-	_declutter(cam, d)
+	_declutter(cam)
 
 
-## Markers that would print over each other (a bed beside a fire): the farther one steps up two
-## lines for each nearer one in its way, so both read.
-func _declutter(cam: Camera3D, d: float) -> void:
-	var me := cam.unproject_position(global_position)
+## Markers that would print over each other (a bed beside a fire, a camp's people): one layout
+## for all shown markers, at most every half UPDATE, nearest first, each label lifted by whole
+## slots until its box on screen is clear of every label placed before it.
+func _declutter(cam: Camera3D) -> void:
+	var now := Time.get_ticks_msec() / 1000.0
+	if now - _laid_at < UPDATE * 0.5:
+		return
+	_laid_at = now
 	var h := get_viewport().get_visible_rect().size.y
-	var up := 0
+	var unit := label.pixel_size * h / (2.0 * tan(deg_to_rad(cam.fov) * 0.5))  # screen px per label px (fixed_size)
+	var list: Array = []
 	for n in get_tree().get_nodes_in_group("world_marker"):
-		var o := n as WorldMarker
-		if o == self or not o.shown() or cam.is_position_behind(o.global_position):
-			continue
-		var od := cam.global_position.distance_to(o.global_position)
-		if od > d or (od == d and o.get_instance_id() > get_instance_id()):
-			continue
-		var at := cam.unproject_position(o.global_position)
-		if absf(at.x - me.x) < h * 0.19 and absf(at.y - me.y) < h * 0.045:
+		var m := n as WorldMarker
+		if m.shown() and not cam.is_position_behind(m.global_position):
+			list.append([cam.global_position.distance_to(m.global_position), m])
+	list.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
+	var placed: Array[Rect2] = []
+	for e: Array in list:
+		var m: WorldMarker = e[1]
+		var p := cam.unproject_position(m.global_position)
+		var lines := m.label.text.count("\n") + 1
+		var line := m.label.font_size * 1.25 * unit
+		var w := 0.0
+		for t: String in m.label.text.split("\n"):
+			w = maxf(w, t.length() * m.label.font_size * 0.55 * unit)
+		var box := Rect2(p.x - w * 0.5, p.y - lines * line, w, lines * line)
+		var up := 0
+		while up < 8 and placed.any(func(r: Rect2) -> bool: return r.intersects(box.grow(2.0))):
 			up += 1
-	label.offset.y = up * label.font_size * 2.4
+			box.position.y -= 2.0 * line
+		m.label.offset.y = up * 2.0 * m.label.font_size * 1.25
+		placed.append(box)
 
 
 ## Something solid between the camera and the marker (the world's layer 1, not people).

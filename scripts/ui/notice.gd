@@ -42,7 +42,7 @@ func _init() -> void:
 func _process(delta: float) -> void:
 	_t += delta
 	_label.modulate.a = clampf((_seconds - _t) / 0.5, 0.0, 1.0)
-	_label.visible = Conversation.current == null and ModalScreen.open_count == 0  # never over a talk's subtitle, the journal or a card
+	_label.visible = not ActionMenu.ui_open()  # never over a talk's subtitle, a menu, the day's summary, the journal or a card
 	# Low centre, but above a subtitle when one shows: the two never overlap.
 	var h := get_viewport().get_visible_rect().size.y
 	_label.offset_bottom = minf(-170.0, Subtitles.top() - 12.0 - h)

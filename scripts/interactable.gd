@@ -42,6 +42,8 @@ func _ready() -> void:
 	if show_marker and not id.begins_with("help_"):
 		marker = WorldMarker.attach(self, prompt, 1.4)
 		marker.visible_if = available
+		if id.begins_with("camp_job_"):
+			marker.range = 6.0  # (a companion at their job: their own tag names them; the talk marker on approach)
 
 
 func available() -> bool:

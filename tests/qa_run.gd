@@ -56,7 +56,8 @@ class Shots extends Node:
 		var img := get_viewport().get_texture().get_image()
 		var file := "%03d_%s_%04d.png" % [_n, _scene, int(_scene_t)]
 		img.save_png(dir.path_join(file))
-		print("QA shot %s" % file)
+		var shown := get_tree().get_nodes_in_group("world_marker").filter(func(m: Node) -> bool: return (m as WorldMarker).shown()).size()
+		print("QA shot %s fps %d markers %d party %d" % [file, Engine.get_frames_per_second(), shown, Game.party().size()])
 		# Raw {tokens} in anything on screen.
 		for c in get_tree().root.find_children("*", "Control", true, false):
 			var ctl := c as Control

@@ -47,3 +47,47 @@ Shots referred to below are in [qa_pass/](qa_pass/).
 
 - **A plain grey frame between Act 8 and the boat** in the test shots. With test arguments the Loader switches scenes at once, with no card. In play the loading card covers that frame.
 - **Servants standing on the river's surface beyond the rail.** They come up out of the water and climb the paddle wheel and rails, as the boat's own toast says.
+
+---
+
+# Second pass: a big party (2026-10-28)
+
+**What was run.** The whole chain from a new game with `--hire=` ten names, `--route=desert`, windowed, a shot every 5 s (81 shots). Saleh's terms didn't fit the last £300, so nine came: Mahmoud, Khalil and Naguib (and their crews) plus Eleanor, Hargreaves, Pembroke, Isabelle, Hassan and Youssef. On top of that:
+- Act 4 with the same nine (`--party`), for the camp and the night raid on the new marker code.
+- Act 3's coast set piece with nine, for the convoy's horse riders.
+
+Each shot's log line now carries the frame rate, the world markers shown and the party size (`tests/qa_run`).
+
+## Clean
+
+- **Camps:** every one placed all nine at a job.
+  - Act 3's night: Eleanor reads; Hargreaves on watch; Hassan on the stars; the rest at the fire.
+  - Act 4's day: Mahmoud and Khalil dig at our sites; Naguib at the loads; Pembroke cataloguing; Isabelle with her pistol; Youssef scouting.
+  - Act 4's night, Act 6's stop and Act 8's prep likewise.
+- **Crews:** our 12 men worked our three claimed sites, the Germans' and Americans' 9 each theirs.
+- **Act 8's riders choice:** the desert route with 4 horses took three riders (Mahmoud, Khalil, Naguib); the rest stayed in Cairo.
+- **The coast convoy's riders:** horses for those who don't fit the truck. The ambush ended at 80 s game time (fought, 4 killed, 4 surrendered, no party losses, one horse lost).
+- **Act 5's escape with nine:** everyone out, with one companion downed and carried on the stairs.
+- **Frame rate:** held at the paced 60 throughout (`--fixed-fps 60`, so this shows it kept up, not the headroom). The lowest was 57 in Act 5 and 53 in Act 8's Cairo.
+- **No raw `{tokens}`, no script errors.**
+
+## Fixed (mine)
+
+| What | Where | Fix |
+|---|---|---|
+| A wall of text in the night raid: every companion's "Talk to X" camp marker over the fight, on top of their own tags ([before](qa_pass/party9_act4_raid_before.jpg), [after](qa_pass/party9_act4_raid_after.jpg)) | Act 4's night, any camp fight | World markers hide while a fight is on (`Gunman.fight_on`) |
+| Camp "Talk to X" markers for nine people at once, from 15 m | Act 4, Act 6's stop, Act 3's camp | A companion at their job already has their own tag; the talk marker shows within 6 m, on approach |
+| Markers still printing on one line ("Talk to Naguib Sabet" over "Talk to Dr. Arthur Pembroke", [shot](qa_pass/party9_act6_stop_before.jpg)): each marker judged its lift from the others' anchors, not where their labels ended up | everywhere | One layout for all shown markers, nearest first, each label lifted by whole slots until its box on screen is clear of every label placed before it ([after](qa_pass/party9_act4_camp_after.jpg): the camp's markers in a readable column) |
+| A hint ("J, then Tab: the people you've met…") printed across the day's summary of nine hires ([shot](qa_pass/party9_day_summary_notice.jpg)) | Act 2's end of day | Notices hide under any open screen (the day summary and menus too, not only talks and cards) |
+
+## Sent to their owners
+
+| What | Where | Owner |
+|---|---|---|
+| Nine companion tags (name and health bar) in a fight overlap one another, and clip at the screen's edge ("moud") | Act 4's raid ([shot](qa_pass/party9_act4_raid_after.jpg)), Act 9 ([shot](qa_pass/party9_act9_tags.jpg)) | -bf: a shared layout like the markers', or the bar only for the hurt and those far off |
+| Companion tags show through the ground: in Act 5's escape the nine still climbing the shaft hang in the sky over the pit | Act 5 ([shot](qa_pass/party9_act5_escape_tags.jpg)) | -bf: tags depth-tested, or hidden when the ray to them is blocked (as markers do) |
+
+## Checked, not bugs
+
+- **hud_test fails 5 headless** (downed markers, arrows). It needs a real window: `downed_markers()` returns nothing under 120 px. Windowed it passes.
+- **The windowed coast ambush ran past 120 s real time**; headless it ends at 80 s game time.
