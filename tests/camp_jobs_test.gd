@@ -234,6 +234,7 @@ func _day() -> void:
 	var el := companions.eleanor as Gunman
 	_check(hg.rig.gun_holder.visible and not el.rig.gun_holder.visible, "day: Hargreaves on watch with his gun, Eleanor's put away")
 	_check(h.jobs.values().all(func(j: Dictionary) -> bool: return (j.g as Gunman).order == "hold"), "day: all holding (none trailing the player)")
+	_check(h.jobs.values().all(func(j: Dictionary) -> bool: return not (j.g as Gunman)._tag.text.contains("(holding)")), "day: no '(holding)' on their tags (at a job)")
 	var talks := h.jobs.values().filter(func(j: Dictionary) -> bool: return j.get("talk") is Interactable and (j.talk as Interactable).is_in_group("interactable")).size()
 	_check(talks >= 8, "day: %d 'Talk to' at their jobs" % talks)
 	var crews := CampJobs.staff_sites(level, _sites)
