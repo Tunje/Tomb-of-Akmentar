@@ -3,12 +3,16 @@ extends Level
 ## Stage 1 of gameplan/route_stops_plan.md: the caravan town at the end of the desert road, about
 ## 300 x 220 m inside its wall, in districts, as blockout. No act uses it yet: today's town (the
 ## houses at DesertRoute's north end) stays the game's until Simon approves (tests/town_v2_test
-## walks it). North is -z; the convoy comes in at the south gate.
+## walks it). North is -z; the convoy comes in at the south gate, and a second gate in the west
+## wall (Simon) opens the cross street onto the track to the temple fork.
 ##   the caravanserai (NW): a courtyard 72 x 46 m in a ring of rooms, its gate east on the lane
 ##   the well square (N): the well, a dovecote, a sycamore, a few stalls
 ##   the souk (NE): blocks of shops on narrow lanes under awnings
 ##   the mosque (middle): a walled court, the prayer hall east under a dome, the minaret
-##   Mariam's store and the inn (SE): the store on the gate street, the inn round its own court
+##   Mariam's store and the inn (SE): the store on the gate street, the inn round its own court:
+##   a place to stay the night (Simon): a bed (inn_bed, sleep and save) and a fire in the court
+##   (inn_fire, the rapport stop: CampJobs.assign(level, comps, "town_inn", true,
+##   {"anchor": spots.inn_court}) puts everyone at their own place round it)
 ##   the palm grove and gardens (SW): walled plots, palms, a channel
 ##   houses between, the cross street (z 90-104) and the gate street (x 174-186)
 ## Placeholders (blockout until models come): every building (boxes in mud-brick and plaster), the
@@ -19,6 +23,7 @@ extends Level
 const SIZE := Vector2(300, 220)
 const TOWN_WALL_H := 5.0
 const GATE := Vector2(174, 186)       # the south gate's opening (x)
+const WEST_GATE := Vector2(92, 102)   # the west gate's opening (z), on the cross street
 ## Each district's ground (for the test's overview and anyone placing things in it).
 const DISTRICTS := {
 	"caravanserai": Rect2(10, 24, 88, 64), "well_square": Rect2(112, 18, 78, 72), "souk": Rect2(190, 2, 108, 88),
@@ -31,6 +36,7 @@ const SPOTS := {
 	"souk": Vector3(228, 0, 30), "souk_east": Vector3(282, 0, 58), "mosque": Vector3(126, 0, 122),
 	"store": Vector3(184, 0, 115), "inn": Vector3(246, 0, 124), "grove": Vector3(54, 0, 160),
 	"cross_street": Vector3(150, 0, 97), "back_lane": Vector3(156, 0, 190),
+	"west_gate": Vector3(8, 0, 97), "inn_court": Vector3(238, 0, 133), "inn_bed": Vector3(240, 0, 115),
 }
 
 var spots := {}
@@ -176,7 +182,13 @@ func _tree(p: Vector3, h: float, crown: float, trunk := 0.22) -> void:
 func _wall() -> void:
 	var t := 1.5
 	_solid(Rect2(0, 0, SIZE.x, t), TOWN_WALL_H, _mud[0])
-	_solid(Rect2(0, 0, t, SIZE.y), TOWN_WALL_H, _mud[0])
+	_solid(Rect2(0, 0, t, WEST_GATE.x), TOWN_WALL_H, _mud[0])
+	_solid(Rect2(0, WEST_GATE.y, t, SIZE.y - WEST_GATE.y), TOWN_WALL_H, _mud[0])
+	for z: float in [WEST_GATE.x - 4.0, WEST_GATE.y]:     # the west gate's towers
+		_solid(Rect2(-2.5, z, 5.0, 4.0), 8.0, _mud[1])
+	var west_arch := BoxMesh.new()
+	west_arch.size = Vector3(2.0, 1.6, WEST_GATE.y - WEST_GATE.x)
+	_mesh(west_arch, Vector3(0.5, 6.4, (WEST_GATE.x + WEST_GATE.y) * 0.5), _mud[1])
 	_solid(Rect2(SIZE.x - t, 0, t, SIZE.y), TOWN_WALL_H, _mud[0])
 	_solid(Rect2(0, SIZE.y - t, GATE.x - 4.0, t), TOWN_WALL_H, _mud[0])
 	_solid(Rect2(GATE.y + 4.0, SIZE.y - t, SIZE.x - GATE.y - 4.0, t), TOWN_WALL_H, _mud[0])
@@ -302,6 +314,33 @@ func _store_and_inn() -> void:
 	_solid(Rect2(r.position.x, gz.x, d, gz.y - gz.x), 2.0, m, h - 2.0)
 	_tree(Vector3(254, 0, 134), 5.0, 4.0, 0.4)
 	_block(Rect2(282, 106, 16.5, 54), 4.0, 6.5)
+	_inn_stay()
+
+
+## The inn as a night's stop (Simon): a room's door off the court with the bed beyond it (sleep
+## and save), and a fire in the court with stools round it, where the party sits and talks.
+func _inn_stay() -> void:
+	var door := BoxMesh.new()
+	door.size = Vector3(1.4, 2.3, 0.1)
+	var wood := StandardMaterial3D.new()
+	wood.albedo_color = Color(0.32, 0.2, 0.1)
+	_mesh(door, Vector3(240, 1.15, 112.95), wood)
+	interactables["inn_bed"] = Interactable.make(self, Vector3(240, 0.9, 114.2), "Sleep at the inn (save)", "inn_bed", 1.0)
+	var at := Vector3(238, 0, 133)
+	_prop(_deco, "prop_campfire.glb", at)
+	var f := Node3D.new()
+	f.name = "InnFire"
+	add_child(f)
+	f.position = at
+	_flame(f, Vector3.UP * 0.45, 2.4, 11.0, true)
+	interactables["inn_fire"] = Interactable.make(self, at + Vector3.UP * 0.6, "Sit by the fire", "inn_fire", 1.2)
+	for k in 5:  # the stools (meshes: CampJobs puts its own where it seats people)
+		var a := TAU * k / 5.0 + 0.3
+		var st := CylinderMesh.new()
+		st.top_radius = 0.22
+		st.bottom_radius = 0.24
+		st.height = 0.45
+		_mesh(st, at + Vector3(cos(a), 0, sin(a)) * 2.6 + Vector3.UP * 0.22, wood)
 
 
 ## The palm grove and its gardens: four walled plots with gaps, palms, beds, a channel.

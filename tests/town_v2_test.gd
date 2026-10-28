@@ -91,6 +91,8 @@ func _run() -> void:
 			return r.grow(1.0).has_point(Vector2(p.x, p.z)))
 		_check(not in_it.is_empty(), "district %-13s has %s" % [id, in_it])
 	_crowd_points(map, "town_v2")
+	_inn_jobs()
+	_check(_level.interactables.has("inn_bed") and _level.interactables.has("inn_fire"), "the inn: a bed (save) and a fire (talk)")
 	if DisplayServer.get_name() != "headless":
 		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 		var cam := Camera3D.new()
@@ -140,3 +142,24 @@ func _crowd_points(map: RID, place: String) -> void:
 	var crowd := _level.get_node_or_null("Crowd") as Crowd
 	if crowd:
 		print("RESULT %s crowd: %d people, %d beasts" % [place, crowd.people.size(), crowd.beasts.size()])
+
+
+## CampJobs round the inn's fire (the party's night in town): every job gets a spot, no two within
+## 1.6 m, four seats at the fire; the scout's crest falls back to a ring (no high ground in town).
+func _inn_jobs() -> void:
+	var h := CampJobs.host(_level)
+	h.jobs.clear()
+	h.anchor = _level.spots.inn_court
+	for kind: String in CampJobs.KINDS:
+		for s in (4 if kind == "fire" else 1):
+			var j: Dictionary = h._camp_job(kind, s if kind == "fire" else -1)
+			if j.is_empty():
+				_check(kind == "scout", "inn: no spot for %s%s" % [kind, " (the scout: none in town, fine)" if kind == "scout" else ""])
+				continue
+			j.g = null  # (CampJobs' _process skips a job without its Gunman)
+			h.jobs["%s_%d" % [kind, s]] = j
+			var spot: Vector3 = j.spot
+			var d := Vector2(spot.x - h.anchor.x, spot.z - h.anchor.z).length()
+			var r := float(CampJobs.KINDS[kind].r)
+			_check(kind == "scout" or absf(d - r) <= 2.5, "inn: %-9s at %.1f m (wants %.1f)" % [kind, d, r])
+	h.jobs.clear()

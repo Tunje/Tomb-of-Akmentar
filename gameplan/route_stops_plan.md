@@ -94,6 +94,13 @@ Numbers for today are from [the world audit](world_audit.md) (sections 2, 3, 4, 
 3. The night camp as a rock shelter by a spring: or would you rather an oasis, or a ruined caravanserai?
 4. Should Act 6's way back reuse this camp, so you return to a place you know, or have its own?
 
+**Simon's answers (2026-10-28):**
+1. A shorter road with more stops: about 500–600 m, every stop kept (or more added).
+2. The town is a place to stay the night: the inn is a save point and a rapport stop.
+3. The night camp stays the rock shelter by the spring.
+4. Act 6's way back gets a new camp of its own, not this one (to be designed with the lead).
+5. (Added) The town gets a second gate, toward the temple fork.
+
 ---
 
 ## 2. The coast route: the fishing town, the harbour, the shore road
@@ -149,6 +156,11 @@ Numbers for today are from [the world audit](world_audit.md) (sections 2, 3, 4, 
 1. Should the coast and the chase share one shore, Act 3 north and Act 8 south, so the fort and the town are the same places?
 2. The trucks as the coast camp: or a proper camp in the town's khan?
 3. Should the lighthouse keeper be a character with something to tell (a rival seen, the old charts)? Or is he scenery?
+
+**Simon's answers (2026-10-28):**
+1. Yes: one shore for Act 3 (north) and Act 8 (south), the same fort and town.
+2. The camp stays the trucks on the beach.
+3. The lighthouse keeper is scenery.
 
 ---
 
@@ -207,6 +219,12 @@ Numbers for today are from [the world audit](world_audit.md) (sections 2, 3, 4, 
 2. Should the landing be a place to spend time (a story beat, a market), or only a view as you pass?
 3. Should you be able to go inside the saloon and cabins (built in Godot as -f9 did Cairo's interiors), or only walk the decks?
 4. Act 8's boat at night: the same boat? Or a different, darker one, since Hamdi's steamer was attacked in Act 3?
+
+**Simon's answers (2026-10-28):**
+1. A 52 m Cook's steamer.
+2. The village landing is a real stop: a story beat and a market.
+3. The saloon and cabins are walk-in interiors, built in Godot like the Cairo rooms.
+4. Act 8's night boat is the same steamer.
 
 ---
 

@@ -8,9 +8,11 @@ extends Node3D
 ##   godot --path . res://tests/road_v2_test.tscn -- --shot-dir=C:/path
 
 const VIEWS := {
-	"overview": [Vector3(520, 520, 1100), Vector3(180, 0, 620)],
-	"start": [Vector3(184, 1.7, 1235), Vector3(170, 2.0, 1150)],
-	"dead_camel": [Vector3(186, 1.7, 1096), Vector3(170, 0.5, 1078)],
+	"overview": [Vector3(520, 420, 820), Vector3(180, 0, 420)],
+	"start": [Vector3(0, 0, 0), Vector3(0, 0, 0)],           # (set in _run, from the road)
+	"dead_camel": [Vector3(0, 0, 0), Vector3(0, 0, 0)],
+	"graves": [Vector3(0, 0, 0), Vector3(0, 0, 0)],
+	"west_gate": [Vector3(-30, 1.7, 150), Vector3(0, 4.0, 97)],
 	"tower_view": [Vector3(0, 0, 0), Vector3(0, 0, 0)],       # from its top, down the road (set in _run)
 	"canyon_road": [Vector3(0, 0, 0), Vector3(0, 0, 0)],      # from the south, into it
 	"canyon_shelf": [Vector3(0, 0, 0), Vector3(0, 0, 0)],     # a bandit's view from the west shelf
@@ -20,7 +22,7 @@ const VIEWS := {
 	"left_edge": [Vector3(0, 0, 0), Vector3(0, 0, 0)],          # the banks at the map's west side
 }
 ## Town spots walked as well (the town's own test has every one).
-const TOWN := ["south_gate", "well", "caravanserai", "souk", "store", "inn"]
+const TOWN := ["south_gate", "west_gate", "well", "caravanserai", "souk", "store", "inn", "inn_court", "inn_bed"]
 
 var _level: RoadV2
 var _fails := 0
@@ -57,8 +59,8 @@ func _run() -> void:
 	var road := RoadV2.road_length(RoadV2.START_Z, RoadV2.GATE_Z)
 	print("RESULT the road, start to gate: %.0f m. Truck flat out (%.1f m/s) %.0f s; galloping (%.0f m/s) %.0f s; the convoy's pace (3.4 m/s, the act3 bot's) %.0f s; walking %.0f s" % [
 		road, Truck.MAX_SPEED, road / Truck.MAX_SPEED, Horse.GALLOP, road / Horse.GALLOP, road / 3.4, road / Player.WALK])
-	_check(road > 950.0 and road < 1150.0, "about 1 km of road (%.0f m)" % road)
-	for name: String in ["start", "start_well", "dead_camel", "tower", "tower_view", "storm", "ambush", "fork", "temple_track", "camp", "camp_lookout"]:
+	_check(road > 500.0 and road < 650.0, "about 550 m of road (%.0f m)" % road)
+	for name: String in ["start", "start_well", "dead_camel", "tower", "tower_view", "storm", "graves", "graves_ring", "ambush", "fork", "temple_track", "camp", "camp_lookout"]:
 		_walk(map, name, _level.spots[name])
 	for k in _level.bandit_posts.size():
 		_walk(map, "bandit_post_%d" % k, _level.bandit_posts[k])
@@ -84,12 +86,15 @@ func _run() -> void:
 			in_canyon = false
 	_check(in_canyon and through.size() > 1, "the way north runs down the canyon (%d path points)" % through.size())
 	# Each stop from the one before it, along the road (on foot).
-	var order := ["start", "dead_camel", "tower", "ambush", "camp", "fork", "south_gate", "caravanserai"]
+	var order := ["start", "dead_camel", "tower", "graves", "ambush", "camp", "fork", "south_gate", "inn_court", "west_gate", "temple_track"]
 	for i in range(1, order.size()):
 		var l := _length(map, _level.spots[order[i - 1]], _level.spots[order[i]])
 		print("RESULT walk %s -> %s: %.0f m (%.0f s)" % [order[i - 1], order[i], l, l / Player.WALK])
 	if DisplayServer.get_name() != "headless":
 		var views := VIEWS.duplicate(true)
+		views.start = [RoadV2.road_point(RoadV2.START_Z + 25.0) + Vector3(4, 1.7, 0), RoadV2.road_point(RoadV2.START_Z - 70.0) + Vector3(0, 2, 0)]
+		views.dead_camel = [RoadV2.road_point(RoadV2.CAMEL_Z + 16.0) + Vector3(5, 1.7, 0), _level.spots.dead_camel]
+		views.graves = [RoadV2.road_point(RoadV2.GRAVES_Z + 18.0) + Vector3(3, 1.7, 0), _level.spots.graves_ring]
 		var tw: Vector3 = _level.spots.tower_view
 		views.tower_view = [tw + Vector3(0, 1.7, 0), RoadV2.road_point(RoadV2.TOWER_Z - 120.0)]
 		views.canyon_road = [RoadV2.road_point(RoadV2.CANYON.y + 40.0) + Vector3(0, 1.7, 0), RoadV2.road_point(RoadV2.AMBUSH_Z) + Vector3(0, 3, 0)]

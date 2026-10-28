@@ -1,42 +1,46 @@
 class_name RoadV2
 extends TownV2
-## Stage 1 of gameplan/route_stops_plan.md: the desert road at about 3x, 1 km from the start to the
-## caravan town's south gate, with its stops, as blockout. No act uses it yet: DesertRoute stays the
-## game's until Simon approves (tests/road_v2_test walks and times it). North is -z; the convoy
-## starts in the south (z 1210) and drives north to the gate (z 220); TownV2 stands at the north
+## Stage 1 of gameplan/route_stops_plan.md: the desert road, about 550 m from the start to the
+## caravan town's south gate (Simon: shorter, with more stops), as blockout. No act uses it yet:
+## DesertRoute stays the game's until Simon approves (tests/road_v2_test walks and times it). North
+## is -z; the convoy starts in the south (z 760) and drives north to the gate (z 220); TownV2 stands at the north
 ## end where it is on its own map, and the night camp (DesertCamp) is off the road east, between the
 ## canyon and the town. The stops, south to north:
 ##   the start: a well with a milestone, where the convoy forms up      START_Z
 ##   the dead camel and a milestone                                     CAMEL_Z
 ##   the ruined watch-tower on a rise east of the road (Youssef's)      TOWER_Z
 ##   the sandstorm blows up just past it                                STORM_Z
+##   the caravan graves: cairns and a ring of stones by the road        GRAVES_Z
 ##   the wadi canyon: cliffs both sides, a shelf on each for the ambush CANYON (ambush at AMBUSH_Z)
 ##   the night camp, 70 m east by a track                               CAMP_Z
 ##   the fork: a track west to the temple, by a toppled statue          FORK_Z
 ##   the town gate                                                      TownV2.SPOTS.south_gate
+## and from the town's west gate a track out to the temple track (Simon's second gate).
 ## The navmesh is baked in tiles (TILE m, one geometry parse, each tile cut clean at its edges so
-## they join): one bake of the whole 460 x 1300 m at 0.25 m cells is too much at once.
+## they join): one bake of the whole 460 x 900 m at 0.25 m cells is too much at once.
 ## Placeholders (blockout until models come): the canyon's cliffs and shelves, the rise and the
-## tower's broken walls, the well, the milestones, the dead camel (boxes), the boulders and the
+## tower's broken walls, the well, the milestones, the dead camel and the graves' cairns and ring
+## (boxes), the boulders and the
 ## buttes on the skyline, the banks round the map's sides and the dune mounds at their feet, the
 ## temple track; the toppled statue is statue_horus.glb laid down. The town's people are crowd
 ## stand-ins (crowd/town_v2.json, the camels big HorseRigs), the vultures AmbientLife's birds.
 
-const START_Z := 1210.0
-const CAMEL_Z := 1080.0
-const TOWER_Z := 930.0
-const STORM_Z := 860.0
-const CANYON := Vector2(560, 640)    # z, north end to south end
-const AMBUSH_Z := 600.0
-const CAMP_Z := 480.0
-const FORK_Z := 430.0
+const START_Z := 760.0
+const CAMEL_Z := 700.0
+const TOWER_Z := 640.0
+const STORM_Z := 600.0
+const GRAVES_Z := 560.0
+const CANYON := Vector2(460, 520)    # z, north end to south end
+const AMBUSH_Z := 490.0
+const CAMP_Z := 400.0
+const FORK_Z := 340.0
 const GATE_Z := 220.0
 const ROAD_W := 6.0
 const SHELF := Vector2(4.0, 9.5)     # the canyon's shelves: from this far off the road's middle to this
 const SHELF_H := 4.5
 const CLIFF_H := 11.0
 const TILE := 64.0
-const GROUND := Rect2(-80, -40, 460, 1300)
+const GROUND := Rect2(-80, -40, 460, 860)
 
 ## Where the bandits lie in wait on the shelves (as DesertRoute.bandit_posts).
 var bandit_posts: Array[Vector3] = []
@@ -84,12 +88,15 @@ func _ready() -> void:
 	_tower()
 	_canyon()
 	_fork()
+	_graves()
+	_track(TownV2.SPOTS.west_gate + Vector3(-12.0, 0, 0), spots.temple_track + Vector3(4.0, 0, -4.0))  # the west gate's way to the fork
 	camp = DesertCamp.build(self, road_point(CAMP_Z) + Vector3(70, 0, 0), -PI * 0.5)
 	_track(road_point(CAMP_Z) + Vector3(ROAD_W * 0.5, 0, 0), camp.spots.gate)
 	_scatter()
 	_edges()
 	spots.start = road_point(START_Z - 10.0)
 	spots.storm = road_point(STORM_Z)
+	spots.graves = road_point(GRAVES_Z) + Vector3(-6.0, 0, 0)
 	spots.ambush = road_point(AMBUSH_Z)
 	spots.camp = camp.anchor
 	spots.camp_lookout = camp.spots.lookout
@@ -306,6 +313,23 @@ func _fork() -> void:
 	spots.temple_track = end
 
 
+## The caravan graves: a row of cairns and a ring of stones west of the road, where caravans
+## buried their dead (a stop: shade under the one acacia, and a view back down the road).
+func _graves() -> void:
+	var c := road_point(GRAVES_Z) + Vector3(-12.0, 0, 0)
+	for k in 7:
+		var p := c + Vector3(_rng.randf_range(-3.0, 3.0), 0, -9.0 + k * 3.0)
+		var s := Vector3(1.2, _rng.randf_range(0.5, 0.9), 2.0)
+		var b := _box(_nav, p + Vector3(0, s.y * 0.5, 0), s, _stone)
+		b.rotation.y = _rng.randf_range(-0.2, 0.2)
+		_mark_cover(b, s)
+	for k in 10:  # the ring
+		var a := TAU * k / 10.0
+		_box(_nav, c + Vector3(-9.0, 0, 0) + Vector3(cos(a), 0, sin(a)) * 4.5 + Vector3.UP * 0.35, Vector3(0.6, 0.7, 0.5), _stone)
+	_tree(c + Vector3(-16.0, 0, 6.0), 3.5, 2.8, 0.25)   # a dead acacia's shade (a trunk and a crown)
+	spots.graves_ring = c + Vector3(-9.0, 0, 0)
+
+
 ## Boulders off the road and buttes on the skyline.
 func _scatter() -> void:
 	for k in 60:
@@ -314,7 +338,7 @@ func _scatter() -> void:
 			continue
 		var side := -1.0 if _rng.randf() < 0.5 else 1.0
 		var p := road_point(z) + Vector3(side * _rng.randf_range(9.0, 70.0), 0, 0)
-		if p.distance_to(camp.anchor) < 35.0 or absf(z - TOWER_Z) < 20.0 or absf(z - FORK_Z) < 25.0:
+		if p.distance_to(camp.anchor) < 35.0 or absf(z - TOWER_Z) < 20.0 or absf(z - FORK_Z) < 25.0 or absf(z - GRAVES_Z) < 18.0:
 			continue
 		var s := Vector3(_rng.randf_range(1.0, 3.5), _rng.randf_range(0.8, 2.2), _rng.randf_range(1.0, 3.0))
 		var b := _box(_nav, p + Vector3(0, s.y * 0.5 - 0.05, 0), s, _stone)
@@ -329,9 +353,9 @@ func _scatter() -> void:
 		var at: Vector3
 		if k < 16:
 			var side := -1.0 if k % 2 == 0 else 1.0
-			at = Vector3(180.0 + side * _rng.randf_range(340, 560), 0, _rng.randf_range(-150, 1400))
+			at = Vector3(180.0 + side * _rng.randf_range(340, 560), 0, _rng.randf_range(-150, 950))
 		else:
-			at = Vector3(_rng.randf_range(-200, 560), 0, -260.0 if k % 2 == 0 else 1500.0)
+			at = Vector3(_rng.randf_range(-200, 560), 0, -260.0 if k % 2 == 0 else 1050.0)
 		_mesh(bm, at + Vector3(0, bm.size.y * 0.5 - 2.0, 0), butte, Vector3(0, _rng.randf() * PI, 0))
 
 
