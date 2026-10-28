@@ -232,15 +232,20 @@ func report(by: Node) -> ClueCard:
 		"title": str(c.get("title", "")), "text": str(c.get("text", ""))})
 	Game.set_flag(clue_id())
 	Game.apply(site.get("do", []))
-	_second_clue()
+	second_clue()
 	DayLog.add("Studied the %s" % site.get("name", site_id))
 	inspected.emit(site_id)
 	return ClueCard.open(get_parent(), str(site.get("name", site_id)), c, by)
 
 
-## The site's second clue (the Builders' Way's trail), into the journal with a word on the notice
-## line; then whether the trail is put together.
+## (The old name: act5_party.gd's reveal calls it; the same thing.)
 func _second_clue() -> void:
+	second_clue()
+
+
+## The site's second clue (the Builders' Way's trail), into the journal with a word on the notice
+## line; then whether the trail is put together. (Public: Act 5's studying reveal calls it too.)
+func second_clue() -> void:
 	var b: Dictionary = site.get("builders", {})
 	if b.is_empty() or Journal.has(str(b.get("id", ""))):
 		return
@@ -266,7 +271,7 @@ func inspect(by: Node) -> bool:
 		"title": str(c.get("title", "")), "text": str(c.get("text", ""))})
 	Game.set_flag(clue_id())
 	Game.apply(site.get("do", []))
-	_second_clue()
+	second_clue()
 	DayLog.add("Inspected the %s" % site.get("name", site_id))
 	inspected.emit(site_id)
 	var card := ClueCard.open(get_parent(), str(site.get("name", site_id)), c, by)
