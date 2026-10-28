@@ -5,7 +5,7 @@ extends Node3D
 ##          second, every person: a SPOT_CLIPS clip while not at the spot claimed for it, and any
 ##          rigged body on screen still in its model's raw rest pose (never posed). Prints each.
 ##   --atlas   (windowed) a row of the crowd's stand-in, one per clip plus its raw rest pose, to
-##             tell which pose that was; --shot-dir=path
+##             tell which pose that was; --model=townsfolk/x.glb, --side (in profile), --shot-dir=path
 ## Never takes focus or captures the mouse.
 
 var level: Node3D
@@ -150,6 +150,8 @@ func _atlas() -> void:
 			return
 		add_child(b)
 		b.position = Vector3(i * 1.3, 0, 0)
+		if args.has("side"):
+			b.rotation.y = PI * 0.5   # in profile: a head thrown back shows
 		bodies.append(b)
 		var l := Label3D.new()
 		l.text = str(keys[i])
@@ -174,7 +176,7 @@ func _atlas() -> void:
 		await RenderingServer.frame_post_draw
 		var dir: String = args.get("shot-dir", "user://pose_shots")
 		DirAccess.make_dir_recursive_absolute(dir)
-		get_viewport().get_texture().get_image().save_png(dir.path_join("crowd_poses_%s.png" % str(args.get("model", "scout")).get_file().get_basename()))
+		get_viewport().get_texture().get_image().save_png(dir.path_join("crowd_poses_%s%s.png" % [str(args.get("model", "scout")).get_file().get_basename(), "_side" if args.has("side") else ""]))
 		print("RESULT shot %s" % dir.path_join("crowd_poses.png"))
 	_end()
 
