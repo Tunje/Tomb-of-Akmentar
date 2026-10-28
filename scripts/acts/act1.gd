@@ -82,8 +82,9 @@ func _ready() -> void:
 func _to_office() -> void:
 	step = Step.OFFICE
 	var at: Vector3 = level.spots[OFFICE]
-	var umm := Npc.make(level, "umm_sayed", CairoInteriors.UMM_SAYED[0], "", Characters.glb("umm_sayed"))
-	umm.face_towards(CairoInteriors.UMM_SAYED[1])  # in Freddie's office, turned to the door
+	var office: Array = level.interiors.umm_sayed() if level.interiors else CairoInteriors.UMM_SAYED  # where this Cairo put the office
+	var umm := Npc.make(level, "umm_sayed", office[0], "", Characters.glb("umm_sayed"))
+	umm.face_towards(office[1])  # in Freddie's office, turned to the door
 	_office = Interactable.make(level, at, "Freddie's office", "act1_office", 1.4)
 	_office.used.connect(func(_by): _talk("act1_office", umm, _after_office))
 	hud.toast("Find Freddie's office, by the club.", 4.0)
@@ -143,7 +144,8 @@ func _armed_men() -> void:
 func _to_cafe() -> void:
 	step = Step.OFFER
 	var at: Vector3 = level.spots[CAFE]
-	_karim = Npc.make(level, "karim", CairoInteriors.ROOM_PEOPLE.karim[0], "", Characters.glb("karim"))  # on his café chair: he sits
+	var seat: Array = level.interiors.room_people.get("karim", CairoInteriors.ROOM_PEOPLE.karim) if level.interiors else CairoInteriors.ROOM_PEOPLE.karim
+	_karim = Npc.make(level, "karim", seat[0], "", Characters.glb("karim"))  # on his café chair: he sits
 	_cafe = Interactable.make(level, at, "Meet Karim Fahmy", "act1_cafe", 1.4)
 	_cafe.used.connect(func(_by): _talk("act1_offer", _karim, _after_offer))
 	hud.toast("A man called Karim Fahmy left word: he's waiting at the café by the tavern.", 4.0)
