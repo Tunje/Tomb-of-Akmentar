@@ -159,12 +159,12 @@ These have hardcoded Cairo positions and become relative to spots or districts, 
 - **Memory.** Act 2 is 505 MB today, with the textures compressed. More of the same models costs little; each new kit model adds about 5–16 MB.
 - **Loading.** The navmesh bake grows with the area. It runs at load behind the loading card, and moves to a thread if it passes about 1 s.
 
-## Questions for Simon
+## Simon's answers (28 October): the plan as drawn
 
-1. **The European quarter.** Is a 1920s European quarter with a hotel terrace (Shepheard's-like) the feel he wants, or should the hotel sit in the old city?
-2. **The museum.** On its own square by the Nile (like the real Egyptian Museum), as drawn?
-3. **The citadel.** Should there be a citadel on a hill as the skyline's landmark, seen but not entered, besides the mosque?
-4. **The city edge.** A walled city with one gate (as drawn), or open edges where the city thins into the desert?
+1. **The hotel:** in the 1920s European quarter, with a terrace on the Boulevard.
+2. **The museum:** on its own square by the Nile.
+3. **The citadel:** yes. It stands on a hill as the skyline's landmark, seen but not entered: south-south-west of the walls, on a 45 m hill, high enough to show over the old town's roofs from its squares. It's blockout now, and the image-to-3d brief is in [asset_briefs.md](asset_briefs.md) (Cairo, `cai_citadel`).
+4. **The city's edge:** a walled city with one gate.
 
 ## Stage 1, built as `cairo_v2` (not used by any act yet)
 

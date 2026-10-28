@@ -461,6 +461,24 @@ Picture rules (for the 3D step): EXACTLY FRONT-ON orthographic view of the face,
 
 </details>
 
+### Added 28 October: the citadel (Simon's skyline landmark)
+
+| Asset | Real size | Variants | Kind | Triangles | Matches |
+|---|---|---|---|---|---|
+| **Hilltop citadel** `cai_citadel` | 120 x 90 m, 65 m to the tops of the minarets (on a 45 m hill, built in Godot) | 1 | one-off, seen from 150 m and more | 30k | period: Cairo's Citadel with Muhammad Ali's mosque, 1920s photographs |
+
+<details><summary>Hilltop citadel</summary>
+
+```
+# Hilltop citadel
+Priority 2 (Tombs world pass: Cairo). Image: `../generated/cai_citadel.png`
+A great walled fortress on the flat top of a rocky hill, seen from far below: long crenellated limestone curtain walls with round towers at the corners, and inside them a huge Ottoman-style mosque with a great central dome ringed by half-domes and two very tall, slim pencil minarets with conical caps. Pale honey limestone and grey domes, weathered, the walls darker at their foot. Only the fortress on its hilltop plateau, no slopes below it. Seen only from a distance: big clear forms, no fine detail. Real size: 120 x 90 m, 65 m to the tops of the minarets. Variants: 1.
+View: 3/4 view from below and slightly to the side, the whole fortress and its minarets in frame.
+Picture rules (for the 3D step): whole object in frame, pure white background, no people, no floor, no floor shadow, even soft lighting. No loose ropes, cords, thin wires, straps or fringe (thin loose bits become black streaks in 3D): anything that would be a rope or wire is drawn as a THICK solid rod. Solid readable mid-tone colours, not near-black. At least 1024 px. All original designs: no readable text in any modern language, no logos.
+```
+
+</details>
+
 ## 3. The river and the riverboat
 
 The boat is a deck of boxes and the river has nothing on its banks (audit, 4). These make the steamer a place and give the banks life.

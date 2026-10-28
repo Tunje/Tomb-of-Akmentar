@@ -76,7 +76,7 @@ func _ready() -> void:
 	_v2_quay()
 	_v2_landmarks()
 	interiors = CairoInteriors.build(self)  # -f9's rooms, at the moved venues (it reads MOVES); before the bake and the merge
-	_moved(Vector3(60, 0, 52), _skyline)
+	_v2_skyline()
 	for id: String in SPOTS:
 		var s: Array = SPOTS[id]
 		var at: Vector3 = QUAY_SPOTS.get(id, s[0] + MOVES.get(SPOT_OF.get(id, id), Vector3.ZERO))
@@ -300,6 +300,101 @@ func _v2_landmarks() -> void:
 			_one_off(aw, Vector3(x, 0, 135.0), 0.0)  # across the souk lane (its span along Z)
 		for z: float in [142.0, 172.0, 190.0]:
 			_one_off(aw, Vector3(100.0, 0, z), PI * 0.5)  # across the Old Street
+
+
+## Beyond the walls (seen, never reached, so no collision): the rest of the city low on every side
+## but the river, two far minarets, and the citadel on its hill to the south-south-west (Simon,
+## 28 Oct: "a citadel on a hill as the skyline landmark"). Blockout until image-to-3d's citadel.
+const CITADEL_AT := Vector3(0, 0, 300)
+const CITADEL_HILL := 45.0  # high enough to stand over the old town's roofs from its squares
+
+func _v2_skyline() -> void:
+	for i in 90:
+		var side := i % 3
+		var t := _rng.randf()
+		var out := _rng.randf_range(10, 60)
+		var p: Vector3
+		match side:
+			0: p = Vector3(-RING - out, 0, lerpf(-RING - 60, V2_SOUTH + RING + 60, t))
+			1: p = Vector3(lerpf(-RING - 60, V2_RIVER_X - 30, t), 0, -RING - out)
+			_: p = Vector3(lerpf(-RING - 60, V2_RIVER_X - 30, t), 0, V2_SOUTH + RING + out)
+		if side == 2 and absf(p.x - 100.0) < 18.0:
+			continue  # the road south from the gate stays open
+		var h := _rng.randf_range(6, 16)
+		_mesh(p + Vector3.UP * h * 0.5, Vector3(_rng.randf_range(10, 20), h, _rng.randf_range(10, 20)),
+			_plaster[_rng.randi() % _plaster.size()])
+	var minaret := _kit_scene(MINARET_2)
+	for p: Vector3 in [Vector3(-60, 0, 120), Vector3(70, 0, -55)]:
+		if minaret:
+			_one_off(minaret, p, 0.0)
+		else:
+			_minaret(p, 26.0)
+	_citadel()
+
+
+## The citadel: a rocky hill, crenellated walls with round towers round its top, and a great
+## domed mosque with two pencil minarets (Muhammad Ali's, seen from the old city).
+func _citadel() -> void:
+	var c := CITADEL_AT
+	var hill := MeshInstance3D.new()
+	var sm := SphereMesh.new()
+	sm.radius = 100.0
+	sm.height = 100.0
+	hill.mesh = sm
+	hill.material_override = _sand
+	_deco.add_child(hill)
+	hill.position = c + Vector3.UP * (CITADEL_HILL - 50.0)
+	hill.scale = Vector3(1.0, 1.0, 0.8)
+	var top := c + Vector3.UP * CITADEL_HILL
+	var stone: StandardMaterial3D = _plaster[4]
+	var w := 110.0
+	var d := 80.0
+	for side: Array in [[Vector3(0, 0, -d * 0.5), Vector3(w, 0, 3)], [Vector3(0, 0, d * 0.5), Vector3(w, 0, 3)],
+			[Vector3(-w * 0.5, 0, 0), Vector3(3, 0, d)], [Vector3(w * 0.5, 0, 0), Vector3(3, 0, d)]]:
+		var sz: Vector3 = side[1]
+		_mesh(top + side[0] + Vector3.UP * 6.0, Vector3(sz.x, 12.0, sz.z), stone)
+		for k in int(maxf(sz.x, sz.z) / 6.0):  # crenellations
+			var u := -maxf(sz.x, sz.z) * 0.5 + 3.0 + k * 6.0
+			var along := Vector3(u, 0, 0) if sz.x > sz.z else Vector3(0, 0, u)
+			_mesh(top + side[0] + along + Vector3.UP * 12.8, Vector3(2.0 if sz.x > sz.z else 3.2, 1.6, 3.2 if sz.x > sz.z else 2.0), stone)
+	for corner: Vector3 in [Vector3(-w, 0, -d), Vector3(w, 0, -d), Vector3(-w, 0, d), Vector3(w, 0, d), Vector3(0, 0, d)]:
+		var tower := MeshInstance3D.new()
+		var cm := CylinderMesh.new()
+		cm.top_radius = 6.0
+		cm.bottom_radius = 7.0
+		cm.height = 16.0
+		tower.mesh = cm
+		tower.material_override = stone
+		_deco.add_child(tower)
+		tower.position = top + corner * 0.5 + Vector3.UP * 8.0
+	# The mosque: a block, a great dome and half-domes, two pencil minarets.
+	var m := top + Vector3(-10, 0, -8)
+	_mesh(m + Vector3.UP * 9.0, Vector3(36, 18, 36), _plaster[0])
+	var dome := MeshInstance3D.new()
+	var ds := SphereMesh.new()
+	ds.radius = 13.0
+	ds.height = 22.0
+	dome.mesh = ds
+	dome.material_override = _plaster[0]
+	_deco.add_child(dome)
+	dome.position = m + Vector3.UP * 22.0
+	for k in 4:
+		var hd := MeshInstance3D.new()
+		var hs := SphereMesh.new()
+		hs.radius = 7.0
+		hs.height = 9.0
+		hd.mesh = hs
+		hd.material_override = _plaster[0]
+		_deco.add_child(hd)
+		hd.position = m + Vector3(cos(k * PI * 0.5), 0, sin(k * PI * 0.5)) * 14.0 + Vector3.UP * 18.5
+	var mn := _kit_scene(MINARET_2)
+	for x: float in [-19.0, 19.0]:
+		var at := m + Vector3(x, 0, 19.0)
+		if mn:
+			var mi := _one_off(mn, at, 0.0)
+			mi.scale = Vector3.ONE * 1.3  # (taller and slimmer than the old city's)
+		else:
+			_minaret(at, 50.0)
 
 
 ## The city wall along the south, with the gate (today's, moved) at the Old Street's end.
