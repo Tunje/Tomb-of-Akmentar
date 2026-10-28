@@ -201,7 +201,7 @@ func place_people(conversations := {}, only: Array = []) -> Dictionary:
 	for id in NPC_POINTS:
 		if (only.is_empty() and id in LATER_PEOPLE) or (not only.is_empty() and not id in only):
 			continue
-		var p: Array = CairoInteriors.ROOM_PEOPLE.get(id, NPC_POINTS[id])  # indoors where -f9 has a room
+		var p: Array = (interiors.room_people if interiors else CairoInteriors.ROOM_PEOPLE).get(id, NPC_POINTS[id])  # indoors where -f9 has a room (on this map)
 		var n := Npc.make(self, id, p[0], conversations.get(id, ""), Characters.glb(id))
 		n.face_towards(p[1])
 		n.rotation.y = atan2(-(p[1] - p[0]).x, -(p[1] - p[0]).z)
@@ -627,7 +627,7 @@ func _mosque() -> void:
 	dome.position = Vector3(13, 9.0, 21)
 	_mesh(Vector3(13, 9.3, 21), Vector3(10.4, 0.6, 10.4), _trim)
 	_minaret(Vector3(20, 9.0, 12), 18.0)
-	SoundLife.call_to_prayer(self, Vector3(20, 27.0, 12))  # -f9's: from the minaret's top (no-op until prayer.ogg)
+	SoundLife.call_to_prayer(self, _deco.global_position + Vector3(20, 27.0, 12))  # -f9's: the minaret's top (_deco is the moved holder in v2; no-op until prayer.ogg)
 	_mesh(Vector3(22.05, 2.0, 24), Vector3(0.12, 4.0, 2.4), _dark)
 	_mesh(Vector3(22.1, 4.2, 24), Vector3(0.22, 0.4, 3.0), _trim)
 

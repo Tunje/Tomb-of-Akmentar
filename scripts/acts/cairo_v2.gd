@@ -4,8 +4,8 @@ extends Cairo
 ## Nile front along the east), in districts, as blockout. No act uses it yet: today's Cairo stays
 ## the game's until Simon approves (tests/cairo_v2_test walks it). The landmarks are today's
 ## builders, each built shifted to its new place (MOVES); the blocks between them are new.
-## Not here yet (they read today's positions; their owners move them): -f9's interiors, crowd and
-## townsfolk, the street life and animals.
+## -f9's interiors are built at the moved venues; their crowd comes with `with_life`. Not here yet:
+## the townsfolk's chatting pairs, the street life and animals.
 
 const V2_RIVER_X := 232.0   # the quay edge
 const V2_SOUTH := 205.0     # the city wall
@@ -21,6 +21,9 @@ const MOVES := {
 ## Which landmark carries each spot (the rest are on the new quay).
 const SPOT_OF := {"hotel_bed": "hotel", "freddie": "club", "cafe": "tavern"}
 const QUAY_SPOTS := {"docks": Vector3(220, 0, 110), "labour": Vector3(220, 0, 135)}
+
+## -f9's crowd for v2 (crowd/cairo_v2.json): off until the acts use v2 (cairo_v2_test --with-life).
+static var with_life := false
 
 
 func _ready() -> void:
@@ -42,17 +45,20 @@ func _ready() -> void:
 	_v2_blocks()
 	_v2_wall()
 	_v2_quay()
+	interiors = CairoInteriors.build(self)  # -f9's rooms, at the moved venues (it reads MOVES); before the bake and the merge
 	_moved(Vector3(60, 0, 52), _skyline)
 	for id: String in SPOTS:
 		var s: Array = SPOTS[id]
 		var at: Vector3 = QUAY_SPOTS.get(id, s[0] + MOVES.get(SPOT_OF.get(id, id), Vector3.ZERO))
-		spots[id] = at
+		spots[id] = interiors.room_spots.get(id, at) if interiors else at
 	interactables["hotel_bed"] = Interactable.make(self, spots.hotel_bed + Vector3.UP * 0.9, SPOTS.hotel_bed[2], "hotel_bed", 1.0)
 	player_spawn = spots.hotel + Vector3(0, 0, 2.0)
 	mooring = Transform3D(Basis.IDENTITY, Vector3(V2_RIVER_X + 9.0, WATER_Y, 90.0))
 	_environment()
 	set_day_time(day_time)
 	_nav.bake_navigation_mesh(false)
+	if with_life:
+		crowd = Crowd.populate(self, "cairo_v2")
 	RenderBudget.quiet_minor(_deco)
 	if not "--no-merge" in OS.get_cmdline_user_args():
 		print("CAIRO v2 deco merged: %d draw calls fewer" % RenderBudget.merge_static(_deco))

@@ -2,7 +2,7 @@ extends Node3D
 ## Cairo v2 (gameplan/cairo_plan.md, stage 1), walked: it builds, every spot stands on the navmesh
 ## and can be walked to from the start, and how long each walk is (at 4 m/s). Prints a walk table
 ## and the longest walk; windowed, it also saves an overview and street views.
-##   godot --headless --path . res://tests/cairo_v2_test.tscn -- --ci
+##   godot --headless --path . res://tests/cairo_v2_test.tscn -- --ci [--with-life]
 ##   godot --path . res://tests/cairo_v2_test.tscn -- --shot-dir=C:/path
 
 const VIEWS := {
@@ -14,8 +14,8 @@ const VIEWS := {
 	"corniche": [Vector3(218, 2.0, 8), Vector3(218, 2.0, 200)],
 }
 
-## Spots inside a room: reachable once -f9's interiors are built into v2.
-const INDOORS := ["cafe", "freddie"]
+## Spots inside a room (-f9's interiors): checked like the rest now the rooms are built in v2.
+const INDOORS: Array[String] = []
 
 var _level: CairoV2
 var _fails := 0
@@ -26,6 +26,7 @@ func _ready() -> void:
 	get_window().set_flag(Window.FLAG_NO_FOCUS, true)
 	_dir = str(TestDriver.parse_args().get("shot-dir", _dir))
 	DirAccess.make_dir_recursive_absolute(_dir)
+	CairoV2.with_life = TestDriver.parse_args().has("with-life")
 	var t0 := Time.get_ticks_msec()
 	_level = CairoV2.new()
 	add_child(_level)
