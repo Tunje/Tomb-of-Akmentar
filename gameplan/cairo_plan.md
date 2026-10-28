@@ -165,3 +165,53 @@ These have hardcoded Cairo positions and become relative to spots or districts, 
 2. **The museum.** On its own square by the Nile (like the real Egyptian Museum), as drawn?
 3. **The citadel.** Should there be a citadel on a hill as the skyline's landmark, seen but not entered, besides the mosque?
 4. **The city edge.** A walled city with one gate (as drawn), or open edges where the city thins into the desert?
+
+## Stage 1, built as `cairo_v2` (not used by any act yet)
+
+`scripts/acts/cairo_v2.gd` (`CairoV2`) is the layout in blockout. Today's Cairo stays the game's until Simon approves.
+- **Landmarks:** today's builders, each built shifted to its new place (`MOVES`). Every door keeps today's facing, so some spots land a little off the table above. The hotel, for one, faces the Boulevard at z 59.
+- **New:** the blocks between them, the city wall with the gate, and a quay along the whole Nile front.
+- **Not in yet:** -f9's interiors, crowd and townsfolk, the street life and animals. They read today's positions, so their owners move them in stage 1's second half.
+
+`tests/cairo_v2_test` walks it: every spot is on the navmesh and reachable from the start, apart from the café and Freddie's office, which are indoors and need the rooms. Measured walks:
+
+| From the start (the hotel) to | Distance | Time at a walk |
+|---|---|---|
+| the labour market (longest) | 162 m | 40 s (24 s sprinting) |
+| the road gate | 147 m | 37 s |
+| the bazaar | 129 m | 32 s |
+| the station | 99 m | 25 s |
+
+| Walk | Distance | Time at a walk |
+|---|---|---|
+| Hotel to bazaar | 129 m | 32 s |
+| Station to docks | 236 m | 59 s |
+| Gate to museum | 199 m | 50 s |
+| Docks to gate | 188 m | 47 s |
+
+Spots as built (x, z):
+
+| Spot | Position |
+|---|---|
+| hotel | 112, 59 |
+| hotel_bed | 119, 59 |
+| bank | 133, 59 |
+| outfitter | 111, 65 |
+| club | 163, 65 |
+| freddie | 158, 68 |
+| consulate | 153, 26 |
+| museum | 182, 30 |
+| telegraph | 206, 75 |
+| station | 15, 50 |
+| police | 33, 65 |
+| gunsmith | 61, 110 |
+| tavern | 97, 128 |
+| cafe | 91, 130 |
+| bazaar | 175, 135 |
+| dealer | 154, 160 |
+| caravanserai | 179, 163 |
+| docks | 220, 110 |
+| labour | 220, 135 |
+| road_gate | 100, 203 |
+
+![Stage 1: from above, the Boulevard, the Old Street, the mosque square, the souk lane, the corniche](cairo_plan/stage1_sheet.jpg)
