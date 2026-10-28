@@ -148,7 +148,9 @@ func _place_spots() -> void:
 			continue
 		ActionSpot.make(level, str(spots[id]), level.spots[id])
 	# Sit with the expedition in the lobby: each companion's next rapport rung, once a day, free (tools/dialogue/rapport.py).
-	ActionSpot.make(level, "hotel_lobby", Vector3(44.0, 0.0, 41.5))
+	# (In the lobby, by the reception desk: where the hotel's room is on this map.)
+	var desk: Vector3 = level.interiors.room_spots.get("hotel", Vector3(47.0, 0, 39.6)) if level.interiors else Vector3(47.0, 0, 39.6)
+	ActionSpot.make(level, "hotel_lobby", desk + Vector3(-3.0, 0.0, 1.9))
 	var bed: Interactable = level.interactables.get("hotel_bed")
 	if bed:
 		bed.used.connect(func(_by): _sleep())
@@ -373,7 +375,7 @@ func _leader_id() -> String:
 func _post_crew(where: String) -> void:
 	_clear_crew()
 	var spot: Array = Cairo.SPOTS[where]
-	var base: Vector3 = spot[0]
+	var base: Vector3 = level.spots[where]  # where it is on this map (Cairo v2 moves it); the facing is the same
 	var n: Vector2 = spot[1]
 	# Out from the facade into the street; a place with no facing faces back into town.
 	var out := Vector3(n.x, 0, n.y) if n != Vector2.ZERO else (level.player_spawn - base) * Vector3(1, 0, 1)

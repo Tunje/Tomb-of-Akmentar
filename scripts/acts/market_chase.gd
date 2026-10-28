@@ -11,11 +11,10 @@ extends Node3D
 
 signal finished(result: Dictionary)
 
-## His way out, after `from`: the avenue's east end, down Sharia east, the bazaar lane, the gate.
-const ROUTE := [Vector3(76, 0, 51), Vector3(76, 0, 77), Vector3(31, 0, 77), Vector3(29.5, 0, 96)]
-## Knots of townsfolk in the way: where, and which way along the street he comes.
-const KNOTS := [[Vector3(76, 0, 63), Vector3(0, 0, 1)], [Vector3(57, 0, 76.8), Vector3(-1, 0, 0)],
-	[Vector3(44, 0, 77.2), Vector3(-1, 0, 0)], [Vector3(30.5, 0, 86), Vector3(0, 0, 1)]]
+## His way out is the map's own (level.spots, so today's Cairo and Cairo v2 alike): round to the
+## bazaar lane's east end (22 m past the bazaar: today's Sharia corner), west along the lane past
+## the bazaar to the gate road's corner, out by the south gate (_route). Knots of townsfolk stand
+## in his way along it (_knots): on his way to the lane, twice down the lane, on the gate road.
 const SPEED := 6.3            # the player sprints at 6.6
 const BURST := 7.6            # a spurt when you're on his heels
 const BARGE_SLOW := 2.6       # pushing through a knot
@@ -38,6 +37,7 @@ var _burst_wait := 0.0
 var _barge := 0.0
 var _far := 0.0
 var _marker: Label3D
+var route: Array[Vector3] = []
 
 
 ## Starts the chase on `lvl` (Cairo) from `from`, with the snatch happening now.
@@ -53,11 +53,19 @@ static func start(lvl: Cairo, p: Player, from: Vector3) -> MarketChase:
 
 
 func _begin(from: Vector3) -> void:
+	route = _route()
 	var away := from - player.global_position
 	away.y = 0.0
 	if away.length() < 0.5:
-		away = ROUTE[0] - from
+		away = route[0] - from
 	var at := level.open_point(player.global_position + away.normalized() * LEAD)
+	# On the street's navmesh, never in a block's footprint (on Cairo v2 an open point by a corner
+	# was inside one, and his path ran straight through it).
+	var map := level.get_world_3d().navigation_map
+	if NavigationServer3D.map_get_iteration_id(map) > 0:
+		var q := NavigationServer3D.map_get_closest_point(map, at)
+		if Vector2(q.x - at.x, q.z - at.z).length() < 3.0:  # (a map still filling in answers from afar)
+			at = Vector3(q.x, at.y, q.z)
 	thief = Thief.new()
 	thief.glb = GLB
 	add_child(thief)
@@ -75,13 +83,31 @@ func _begin(from: Vector3) -> void:
 	_marker.outline_size = 8
 	_marker.position.y = 2.3
 	thief.add_child(_marker)
-	for k: Array in KNOTS:
+	for k: Array in _knots(from):
 		_knot(k[0], k[1])
 	var hud := _hud()
 	if hud:
 		hud.toast(("He's got Freddie's note!" if item == "note" else "He's got your suitcase!") + " After him! ({sprint} to sprint, {cover} to grab)", 4.0)
 	print("RESULT market_chase start item=%s" % item)
 	Objective.set_goal("Catch the thief ({cover} to grab him)")
+
+
+## The lane's east end, the lane's corner where it meets the gate road (the gate's x, the bazaar's
+## z), the gate.
+func _route() -> Array[Vector3]:
+	var b: Vector3 = level.spots.bazaar
+	var g: Vector3 = level.spots.road_gate
+	return [b + Vector3(22.0, 0, 0), Vector3(g.x + 2.0, 0, b.z), g + Vector3(0, 0, -1.5)]
+
+
+## [where, which way along the street he comes] for each knot.
+func _knots(from: Vector3) -> Array:
+	var b := route[0]
+	var corner := route[1]
+	var g := route[2]
+	var lane := (corner - b).normalized()
+	return [[from.lerp(b, 0.55), (b - from).normalized()], [b.lerp(corner, 0.3), lane], [b.lerp(corner, 0.7), lane],
+		[corner.lerp(g, 0.5), (g - corner).normalized()]]
 
 
 ## Two or three people standing about, close enough that you can't run straight through.
@@ -134,18 +160,21 @@ func _physics_process(delta: float) -> void:
 		_lost("lost in the crowd")
 
 
-## The navmesh path from where he is to the next ROUTE point, a corner at a time.
+## The navmesh path from where he is to the next route point, a corner at a time.
 func _next_point() -> Vector3:
 	while _path.size() > 0 and _flat(_path[0] - thief.global_position).length() < 0.3:
 		_path.remove_at(0)
 	if _path.size() > 0:
 		return _path[0]
-	if _leg >= ROUTE.size():
+	if _leg >= route.size():
 		return Vector3.INF
-	var to: Vector3 = ROUTE[_leg]
+	var to: Vector3 = route[_leg]
 	_leg += 1
 	var map := get_world_3d().navigation_map
-	_path = NavigationServer3D.map_get_path(map, thief.global_position, to, true) \
+	var here := NavigationServer3D.map_get_closest_point(map, thief.global_position)
+	if Vector2(here.x - thief.global_position.x, here.z - thief.global_position.z).length() > 3.0:
+		here = thief.global_position
+	_path = NavigationServer3D.map_get_path(map, here, to, true) \
 		if NavigationServer3D.map_get_iteration_id(map) > 0 else PackedVector3Array()
 	if _path.is_empty():
 		_path = PackedVector3Array([to])

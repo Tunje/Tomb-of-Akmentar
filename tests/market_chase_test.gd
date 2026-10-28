@@ -40,6 +40,11 @@ func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	for i in 3:
 		await get_tree().physics_frame
+	# The navmesh syncs in real time (a big map, Cairo v2, takes longer): the thief paths on it.
+	var map := get_world_3d().navigation_map
+	var t0 := Time.get_ticks_msec()
+	while NavigationServer3D.map_get_iteration_id(map) == 0 and Time.get_ticks_msec() - t0 < 30000:
+		await get_tree().physics_frame
 	var plan := str(args.get("plan", "both"))
 	if plan in ["both", "chase"]:
 		var r := await _round(true)
