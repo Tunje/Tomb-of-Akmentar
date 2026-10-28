@@ -215,3 +215,39 @@ Spots as built (x, z):
 | road_gate | 100, 203 |
 
 ![Stage 1: from above, the Boulevard, the Old Street, the mosque square, the souk lane, the corniche](cairo_plan/stage1_sheet.jpg)
+
+## Switching the acts to `cairo_v2` (planned, not done)
+
+The idea: first make everything that names a Cairo position work on **both** maps (step 1). Then flip all five acts in **one** commit that one revert undoes (step 2), and keep today's Cairo in the tree until v2 has been played.
+
+### Step 1: positions relative to the map (works on today's Cairo as on v2)
+
+| Where | Today | Becomes | Owner |
+|---|---|---|---|
+| `act1.gd` 85–86 | `CairoInteriors.UMM_SAYED` | `level.interiors.umm_sayed()` | lead |
+| `act1.gd` 146 | `CairoInteriors.ROOM_PEOPLE.karim` | `level.interiors.room_people.karim` | lead |
+| `act6.gd` 403 | arrival `Vector3(29, 0, 93)` | `level.spots.road_gate + Vector3(0, 0, -5)` | -7f |
+| `act7.gd` 375–378 (`_post_crew`) | `Cairo.SPOTS[where][0]` (today's positions) | `level.spots[where]` (the facing stays `Cairo.SPOTS[where][1]`) | -2d |
+| `act7.gd` 151 | lobby `Vector3(44, 0, 41.5)` | relative to the hotel's lobby room (`level.interiors`) | -2d |
+| `market_chase.gd` `ROUTE` | 4 fixed points | bazaar → covered lane → mosque square → gate, from `level.spots` and the layout | -2d |
+| `gunman_street.gd` (StreetFight) | `DOOR`, `ENTRIES`, cover all around today's tavern | offsets from `level.spots.tavern` and its facing | -bf |
+| tests: `retry_test`, `difficulty_test`, `gunman_street_test`, `brawl_guards_test` | Act 2's fights at `(29.6, 0, 70.7)` and `(92, 0, 31.5)` | relative to `level.spots.tavern` / `museum` | -7f |
+
+Act 1's office, Act 7's sign text and its spot facings read `Cairo.SPOTS[id][1]` / `[2]` (facing and prompt). Those are the same on both maps, since the landmarks keep their facing, so they need nothing.
+
+### Step 2: the flip (one commit)
+
+1. **The five acts:** `Cairo.new()` → `CairoV2.new()` in `act1.gd` 53, `act2.gd` 49, `act6.gd` 402, `act7.gd` 85 and `act8.gd` 51.
+2. **The crowd:** `CairoV2.with_life` defaults to true, so -f9's crowd for v2 is on.
+3. **Before committing,** green on v2:
+   - `resume_test` (every place) and `retry_test` (Act 1's, Act 2's and Act 7's pieces);
+   - `act1`/`act2`/`act6`/`act7`/`act8 --auto`;
+   - `cairo_v2_test --with-life`;
+   - `soak_test` for memory;
+   - `perf_test cairo_walk` on every preset.
+4. **Rollback:** reverting that one commit puts every act back on today's Cairo.
+
+### Not yet in v2 (cosmetic: not blocking the flip, but noticeable)
+
+- **Today's Cairo extras:** the townsfolk's chatting pairs, its street life (carts, sacks) and the standing horses, not yet re-placed in v2.
+- **Still to come from image-to-3d:** the dome, souk vault, stalls, mashrabiya window, striped awning, gate arch, feluccas, 10 props and the citadel.
