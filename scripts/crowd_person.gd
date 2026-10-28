@@ -59,8 +59,10 @@ var _lod_frame := randi() % 12  # (out of step with the others)
 func begin(rng: RandomNumberGenerator) -> void:
 	_rng.seed = rng.randi()
 	# Posed once now, whatever the culling does next: a body whose tree never ran shows its model's
-	# rest pose (a T) if it's ever drawn before its tree wakes.
+	# rest pose (a T) if it's ever drawn before its tree wakes. The Transition has no state until
+	# its first request, and _play("idle") on a new person (anim starts "idle") sends none: ask now.
 	if _tree:
+		_tree.set("parameters/state/transition_request", anim)
 		_tree.advance(0.0)
 	if not look.is_empty():
 		dress(look)

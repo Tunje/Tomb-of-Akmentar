@@ -71,10 +71,14 @@ func _ready() -> void:
 
 
 ## As coast_town_test takes its views: the camera jumps somewhere new and the shot comes 70 frames
-## later (under the crowd's 0.5 s think). Anyone in view then in a T (hands out at shoulder height)?
+## later (under the crowd's 0.5 s think), vsync off, the overview first. Anyone in view then in a T
+## (hands out at shoulder height), or anyone whose Transition never got a state (a rest pose)?
 func _jumps(crowd: Crowd) -> void:
 	var views := [[Vector3(56, 1.7, 72), Vector3(10, 1.5, 36)], [Vector3(20, 3, 20), Vector3(60, 1, 60)],
 		[Vector3(90, 2, 40), Vector3(40, 1, 70)], [Vector3(10, 2, 80), Vector3(60, 1, 30)]]
+	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+	Engine.max_fps = 0
+	views.push_front([Vector3(30, 200, 330), Vector3(30, 0, 110)])
 	var cam := Camera3D.new()
 	add_child(cam)
 	cam.make_current()
@@ -100,6 +104,9 @@ func _jumps(crowd: Crowd) -> void:
 					("state %s anim %s lod %d" % [cp.state, cp.anim, cp.lod]) if cp else "", p._tree.active if p._tree else false,
 					p.global_position.snapped(Vector3.ONE * 0.1), cam.global_position.distance_to(p.global_position)])
 	_check(t_bad == 0, "jumps: nobody in a T-pose 70 frames after the camera moves (%d)" % t_bad)
+	# A Transition with no state outputs nothing: the body stands in its rest pose.
+	var stateless := crowd.people.filter(func(p: CrowdPerson) -> bool: return p._tree and str(p._tree.get("parameters/state/current_state")) == "")
+	_check(stateless.is_empty(), "jumps: everyone's clip chosen (none stateless: %s)" % str(stateless.map(func(p: CrowdPerson) -> String: return p.name)))
 
 
 ## Its body's bones all still at their rest (the pose never copied onto it).
