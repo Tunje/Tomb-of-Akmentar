@@ -6,11 +6,11 @@ extends Node3D
 ## two decks, moving) stays the game's.
 ##   var boat := Steamer.build(level, at, yaw)   # `at` on the waterline, midships; before the bake
 ## Local frame as RiverBoat's: -Z the bow, +X starboard. The decks:
-##   the hold (its floor just over the waterline): cargo, down a stair from the aft deck
-##   the main deck (2.5 m up): the foredeck with the loads and a gangway gap each side; the deck
+##   the hold (its floor 1 m under the waterline): cargo, down a stair from the aft deck
+##   the main deck (1.25 m up): the foredeck with the loads and a gangway gap each side; the deck
 ##     house, walk-in: the saloon forward (dining tables, the piano, the bar), then six cabins on a
 ##     corridor; the galley aft; side walkways round it; the stern wheel behind the aft deck
-##   the sun deck (the house's roof, 5.5 m up), by a stair from the foredeck: the wheelhouse
+##   the sun deck (the house's roof, 4.25 m up), by a stair from the foredeck: the wheelhouse
 ##     forward, the funnel, deckchairs under an awning aft (the Americans' corner); its rails and
 ##     the saloon roof are the fight's high ground
 ## spots: foredeck, gangway_port, gangway_starboard, saloon, piano, bar, corridor, cabin_1..6,
@@ -22,13 +22,13 @@ extends Node3D
 
 const LENGTH := 52.0
 const BEAM := 11.0
-## The hold's floor is just over the waterline: under it, the river's surface (a plane through the
-## hull) showed inside the hold. So the main deck stands 2.5 m up, more than a real steamer's.
+## A real steamer's freeboard: the river's surface is kept out of the hull (-f9's
+## RiverWater.mask_hull), so the hold can sit under the waterline without the water showing in it.
 ## Every floor is on the navmesh's 0.25 m grid (with `at` on it too): off it, the navmesh rode half
 ## a metre over the decks and the stairs' joins came apart.
-const DECK := 2.5          # the main deck's surface over the waterline
-const SUN := 5.5           # the sun deck's
-const HOLD := 0.25         # the hold's floor (2.25 m under the deck: the navmesh wants headroom)
+const DECK := 1.25         # the main deck's surface over the waterline
+const SUN := 4.25          # the sun deck's
+const HOLD := -1.0         # the hold's floor (2.25 m under the deck: the navmesh wants headroom)
 const HOUSE := Rect2(-3.8, -10, 7.6, 22)    # the deck house (x, z): saloon z -10..2, cabins 2..12
 const SALOON_END := 2.0
 const CABINS_END := 12.0
@@ -60,6 +60,7 @@ static func build(lvl: Level, at: Vector3, facing := 0.0) -> Steamer:
 	s._xf = Transform3D(Basis(Vector3.UP, facing), at)
 	lvl.add_child(s)
 	s.global_transform = s._xf
+	RiverWater.mask_hull(s, Vector2(BEAM * 0.5 - 0.15, 21.8), 4.0)   # no river inside the hull
 	s._materials()
 	s._hull_and_hold()
 	s._main_deck()

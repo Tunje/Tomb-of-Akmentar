@@ -15,7 +15,7 @@ extends TownV2
 ## sycamore (a trunk and a crown), the field beds and the channel; the palms are -f9's Palms; the
 ## buffalo are HorseRigs (no model); the steamer's own (see Steamer).
 
-const WATER_Y := -2.5   # (the steamer's deck, 2.5 m over it, level with the bank)
+const WATER_Y := -1.25  # (the steamer's deck, 1.25 m over it, level with the bank)
 const SPOTS_LANDING := {
 	"landing_stage": Vector3(-2.0, 0, -14.5), "riverfront": Vector3(9, 0, 40), "shadoof": Vector3(9, 0, 52),
 	"market": Vector3(30, 0, -26), "sycamore": Vector3(34, 0, -15), "omda": Vector3(66, 0, -21),
