@@ -302,7 +302,7 @@ func _storm_step(delta: float) -> void:
 		_base = {}
 
 
-## Wisps off the crests: the highest of a ring of rays round you, upwind ones first.
+## Wisps off the crests: the highest of a ring of rays round you (on flat sand, a couple anywhere).
 func _crests(delta: float, at: Vector3) -> void:
 	_crest_t -= delta
 	if _crest_t > 0.0:
@@ -320,12 +320,16 @@ func _crests(delta: float, at: Vector3) -> void:
 	found.sort_custom(func(x: Vector3, y: Vector3) -> bool: return x.y > y.y)
 	# Crests stand above the lowest ground round about (the road, a hollow), not above the camera.
 	var low: float = (found[-1] as Vector3).y if not found.is_empty() else at.y
+	var crests := found.filter(func(p: Vector3) -> bool: return p.y > low + 0.5)
+	if crests.is_empty():
+		# Open flat sand (the dunes are only drawn, nothing to find): a couple lift off it anyway.
+		crests = found.slice(0, 2)
 	for i in _wisps.size():
 		var w := _wisps[i]
-		var on := i < found.size() and (found[i] as Vector3).y > low + 0.5
+		var on := i < crests.size()
 		w.emitting = on and not night
 		if on:
-			w.global_position = found[i] + Vector3.UP * 0.3
+			w.global_position = crests[i] + Vector3.UP * 0.3
 		w.amount_ratio = 1.0 if storm_f < 0.3 else 0.0
 
 

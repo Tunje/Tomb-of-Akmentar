@@ -56,8 +56,9 @@ static var _frond_mat: ShaderMaterial
 static var _pending := {}   # parent instance id -> [parent, [Transform3D, variant]...]
 
 
-## One palm at `at` (on the ground), about `height` m tall (0 = any). `nav`: where its trunk's
-## collision goes (a level's _nav, so a bake goes round it); null = no collision.
+## One palm at `at` (on the ground, in `parent`'s frame), about `height` m tall (0 = any). `nav`:
+## where its trunk's collision goes (a level's _nav, so a bake goes round it); null = no collision.
+## (The trunk goes where the palm is now: a parent moved before this, both agree.)
 static func add(parent: Node3D, at: Vector3, height := 0.0, nav: Node = null) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(Vector3i(roundi(at.x * 10.0), roundi(at.y * 10.0), roundi(at.z * 10.0)))
@@ -81,7 +82,10 @@ static func add(parent: Node3D, at: Vector3, height := 0.0, nav: Node = null) ->
 		cs.shape = cyl
 		body.add_child(cs)
 		nav.add_child(body)
-		body.global_position = at + Vector3.UP * h * 0.45
+		if parent.is_inside_tree() and nav.is_inside_tree():
+			body.global_position = parent.global_transform * (at + Vector3.UP * h * 0.45)
+		else:
+			body.position = at + Vector3.UP * h * 0.45   # (not in the tree yet: frames taken as one)
 
 
 ## Many at once (built now): `points` are ground positions; heights vary by variant.
@@ -118,8 +122,7 @@ static func _flush(id: int) -> void:
 		mi.name = "Palms_%d" % v
 		mi.multimesh = mm
 		mi.visibility_range_end = 260.0
-		parent.add_child(mi)
-		mi.global_transform = Transform3D.IDENTITY
+		parent.add_child(mi)   # (instances in the parent's frame)
 
 
 static func _variant_for(height: float, rng: RandomNumberGenerator) -> int:
