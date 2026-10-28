@@ -72,11 +72,15 @@ func _ready() -> void:
 # ---------------------------------------------------------------- the levels
 
 ## Swap the map under the player (the party comes along): the old one goes.
-func _use_level(l: Level, at: Vector3, yaw: float) -> void:
+## `at_fn` (optional): where to stand, asked of the map once it's built (its spots: Cairo or Cairo
+## v2 alike); otherwise `at`.
+func _use_level(l: Level, at: Vector3, yaw: float, at_fn := Callable()) -> void:
 	if level:
 		level.queue_free()
 	level = l
 	add_child(level)
+	if at_fn.is_valid():
+		at = at_fn.call(level)
 	if not has_node("Warmup"):
 		Warmup.start(self, Warmup.MUMMIES)  # what spawns mid-fight, loaded now (tests/perf_test)
 	player.global_position = at
@@ -93,7 +97,7 @@ func _use_level(l: Level, at: Vector3, yaw: float) -> void:
 
 ## A map change mid-act, under a black veil: to black, the new map built, a few frames for its
 ## first draw (its shaders compile, its navmesh bakes: a 1.1 s stall on the road), back in.
-func _change_level(l: Level, at: Vector3, yaw: float) -> void:
+func _change_level(l: Level, at: Vector3, yaw: float, at_fn := Callable()) -> void:
 	if _veil == null:
 		var layer := CanvasLayer.new()
 		layer.layer = 60
@@ -106,7 +110,7 @@ func _change_level(l: Level, at: Vector3, yaw: float) -> void:
 	var tw := create_tween()
 	tw.tween_property(_veil, "color:a", 1.0, 0.3)
 	await tw.finished
-	_use_level(l, at, yaw)
+	_use_level(l, at, yaw, at_fn)
 	for i in 3:
 		await get_tree().process_frame
 	tw = create_tween()
@@ -392,7 +396,7 @@ func _servant(camp: Vector3, a: float, priest: bool, down: Array) -> void:
 	if args.has("auto") and not args.has("skill-bot"):  # --skill-bot: tests/difficulty_test fights them
 		get_tree().create_timer(1.0).timeout.connect(func():
 			if is_instance_valid(m) and m.is_active():
-				m._die(Vector3.FORWARD, false))  # as a fatal shot would
+				m._out(Vector3.FORWARD))  # out of the fight, as all four limbs gone would (mummies never die now)
 
 
 # ---------------------------------------------------------------- Cairo
@@ -400,7 +404,8 @@ func _servant(camp: Vector3, a: float, priest: bool, down: Array) -> void:
 func _arrival() -> void:
 	step = Step.ARRIVAL
 	var cairo := Cairo.new()
-	await _change_level(cairo, Vector3(29, 0, 93), 0.0)  # inside the south gate, looking up the street
+	# Inside the south gate, looking up the street (from the map's own gate: today's Cairo or v2).
+	await _change_level(cairo, Vector3.ZERO, 0.0, func(l: Level) -> Vector3: return (l as Cairo).spots.road_gate + Vector3(0, 0, -4.5))
 	cairo.set_day_time(0.85)
 	cairo.set_curse(1.0, 0.0)  # the dust that won't settle
 	Ambience.play(self, "cairo")

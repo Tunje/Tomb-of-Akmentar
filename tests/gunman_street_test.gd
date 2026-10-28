@@ -9,7 +9,7 @@ extends Node3D
 ##   --shots=4,12        screenshot times (s) after the fight starts; --shot-dir=C:/path
 ## RESULT lines every 2 s, on each man down / surrendering, and the result and flags at the end.
 
-const BEHIND := Vector3(29.6, 0, 70.7)  # north of StreetFight's upturned table
+const BEHIND := Vector3(2.3, 0, 4.7)  # from the tavern's spot: north of StreetFight's upturned table (either Cairo)
 
 var args := {}
 var act: Node
@@ -35,7 +35,7 @@ func _ready() -> void:
 	if args.has("god"):
 		player.max_health = 100000.0
 		player.health = 100000.0
-	player.global_position = BEHIND
+	player.global_position = (act.get("level") as Cairo).spots.tavern + BEHIND
 	player.yaw = PI
 	for i in 3:
 		await get_tree().physics_frame

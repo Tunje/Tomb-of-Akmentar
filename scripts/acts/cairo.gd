@@ -1226,7 +1226,7 @@ func near_spot(id: String, along: float, out := 0.0) -> Vector3:
 	return (spots.get(id, s[0]) as Vector3) + right * along + n * out
 
 
-## The nearest open ground to `want` where a person fits: for acts that put people round the
+## The nearest open ground to `want` where a person fits, on the streets (reachable): for acts that put people round the
 ## player or a door, so nobody stands inside a building. Rings outward, 1 m apart, up to 15 m.
 ## (Not the navmesh: baked from collision triangles, it also has unreachable islands on the
 ## ground inside every building.)
@@ -1238,12 +1238,28 @@ func open_point(want: Vector3) -> Vector3:
 	cap.height = 1.7
 	q.shape = cap
 	q.collision_mask = 1
+	# Free of solids, and on the streets: reachable from where the player arrives (a room whose
+	# doors open onto nothing, or a building's sealed floor, is free but an island). Before the map
+	# has synced there's no telling: the first free spot does.
+	var map := get_world_3d().navigation_map
+	var from := NavigationServer3D.map_get_closest_point(map, player_spawn)
+	var synced := from != Vector3.ZERO
+	var first_free := Vector3.INF
 	for r in 16:
 		var steps := 1 if r == 0 else 8 + r * 4
 		for k in steps:
 			var a := TAU * k / steps
 			var p := want + Vector3(cos(a), 0, sin(a)) * r
 			q.transform = Transform3D(Basis.IDENTITY, Vector3(p.x, 1.0, p.z))
-			if space.intersect_shape(q, 1).is_empty():
-				return Vector3(p.x, want.y, p.z)
-	return want
+			if not space.intersect_shape(q, 1).is_empty():
+				continue
+			var at := Vector3(p.x, want.y, p.z)
+			if not synced:
+				return at
+			if first_free == Vector3.INF:
+				first_free = at
+			var on := NavigationServer3D.map_get_closest_point(map, at)
+			var path := NavigationServer3D.map_get_path(map, from, on, true)
+			if Vector2(on.x - at.x, on.z - at.z).length() < 0.6 and path.size() > 1 and path[path.size() - 1].distance_to(on) < 0.6:
+				return at
+	return first_free if first_free != Vector3.INF else want
