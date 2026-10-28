@@ -38,6 +38,7 @@ var _barge := 0.0
 var _far := 0.0
 var _marker: Label3D
 var route: Array[Vector3] = []
+var _ask := 0.0               # s waiting for the map to answer a leg's path
 
 
 ## Starts the chase on `lvl` (Cairo) from `from`, with the snatch happening now.
@@ -59,12 +60,15 @@ func _begin(from: Vector3) -> void:
 	if away.length() < 0.5:
 		away = route[0] - from
 	var at := level.open_point(player.global_position + away.normalized() * LEAD)
-	# On the street's navmesh, never in a block's footprint (on Cairo v2 an open point by a corner
-	# was inside one, and his path ran straight through it).
+	# On the street you're on, never in a block's footprint: the nearest point a path from you
+	# reaches (on Cairo v2 an open point by a corner was inside a building, on the sealed navmesh
+	# island Recast leaves in a box, and his path ran straight through the block).
 	var map := level.get_world_3d().navigation_map
 	if NavigationServer3D.map_get_iteration_id(map) > 0:
-		var q := NavigationServer3D.map_get_closest_point(map, at)
-		if Vector2(q.x - at.x, q.z - at.z).length() < 3.0:  # (a map still filling in answers from afar)
+		var mine := NavigationServer3D.map_get_closest_point(map, player.global_position)
+		var path := NavigationServer3D.map_get_path(map, mine, NavigationServer3D.map_get_closest_point(map, at), true)
+		var q: Vector3 = path[path.size() - 1] if path.size() > 0 else at
+		if Vector2(q.x - at.x, q.z - at.z).length() < 15.0:  # (a map still filling in answers from afar)
 			at = Vector3(q.x, at.y, q.z)
 	thief = Thief.new()
 	thief.glb = GLB
@@ -88,7 +92,7 @@ func _begin(from: Vector3) -> void:
 	var hud := _hud()
 	if hud:
 		hud.toast(("He's got Freddie's note!" if item == "note" else "He's got your suitcase!") + " After him! ({sprint} to sprint, {cover} to grab)", 4.0)
-	print("RESULT market_chase start item=%s" % item)
+	print("RESULT market_chase start item=%s at=%s route=%s" % [item, at.snapped(Vector3.ONE * 0.1), route])
 	Objective.set_goal("Catch the thief ({cover} to grab him)")
 
 
@@ -176,6 +180,13 @@ func _next_point() -> Vector3:
 		here = thief.global_position
 	_path = NavigationServer3D.map_get_path(map, here, to, true) \
 		if NavigationServer3D.map_get_iteration_id(map) > 0 else PackedVector3Array()
+	if _path.is_empty() and _ask < 1.0:
+		# No answer yet (the map updating): ask again next frame, not a straight line through the
+		# block (Cairo v2: he ran straight through a building).
+		_ask += get_physics_process_delta_time()
+		_leg -= 1
+		return thief.global_position
+	_ask = 0.0
 	if _path.is_empty():
 		_path = PackedVector3Array([to])
 	return _path[0]
