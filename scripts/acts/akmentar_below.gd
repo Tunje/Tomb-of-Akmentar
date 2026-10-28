@@ -490,7 +490,8 @@ func _build_tomb() -> void:
 	# Every still piece of the five levels as a few meshes per 24 m (2525 meshes were ~5800 draw
 	# calls with their shadows); the doors (scripted), the amulet and the lid stay their own.
 	if not "--no-merge" in OS.get_cmdline_user_args():  # (tests: the before, to compare)
-		print("TOMB merged: %d draw calls fewer" % RenderBudget.merge_static(self, 24.0, [amulet, sarc_lid]))
+		var inst := _instance_kit(96.0, [amulet, sarc_lid])
+		print("TOMB merged: %d draw calls fewer (%d kit props instanced)" % [RenderBudget.merge_static(self, 24.0, [amulet, sarc_lid]), inst])
 
 
 ## One level: its rock (only what faces something: the inside of the mass is never seen or
@@ -987,6 +988,7 @@ const KIT := "dungeon/"
 const BLOCK := Vector3(2.0, 2.5, 0.4)  # a glyph wall block; its carved face is +Z
 const FRIEZE := Vector3(2.0, 0.6, 0.45)
 const CHUNK := 16  # glyph walls are drawn per 16 x 16 cell patch per level, so the camera culls them
+const KIT_INSTANCE_VERTS := 2000   # a kit prop this heavy is instanced, not merged (_instance_kit)
 const WALL_SEEN := 70.0  # m: wall carving further off than this isn't drawn (the dark hides it)
 
 
@@ -1032,6 +1034,61 @@ func _glyph_walls() -> void:
 			_multimesh(meshes[i], patches[key][i])
 		if frieze:
 			_multimesh(frieze, patches[key][3])
+
+
+## The kit's heavy props (a wall sconce is ~30k vertices, a pillar ~20k) as one MultiMesh per mesh
+## per `cell` m instead of merged: merging copied ~11M vertices into new meshes (4 s of the tomb's
+## load, and the memory) for the same few draw calls. What the merge would take, nothing else: not
+## under `keep` or a scripted node, not animated, no surface overrides. Returns how many.
+func _instance_kit(cell: float, keep: Array) -> int:
+	var groups := {}
+	var to_local := global_transform.affine_inverse()
+	for m: MeshInstance3D in find_children("*", "MeshInstance3D", true, false):
+		if m.mesh == null or not ".glb::" in m.mesh.resource_path or not m.is_visible_in_tree() or m.get_child_count() > 0:
+			continue
+		var verts := 0
+		var overridden := false
+		for i in m.mesh.get_surface_count():
+			verts += (m.mesh as ArrayMesh).surface_get_array_len(i) if m.mesh is ArrayMesh else 0
+			overridden = overridden or m.get_surface_override_material(i) != null
+		if verts < KIT_INSTANCE_VERTS or overridden or m.get_node_or_null(m.skeleton) is Skeleton3D:
+			continue
+		if (m.mesh as ArrayMesh).get_blend_shape_count() > 0 or RenderBudget._going(m, self) or RenderBudget._kept(m, self, keep) or RenderBudget._animated(m, self):
+			continue
+		var xf := to_local * m.global_transform
+		var c := Vector2i(floori(xf.origin.x / cell), floori(xf.origin.z / cell))
+		var key := "%s|%d|%d|%d|%.1f" % [c, m.mesh.get_instance_id(), m.material_override.get_instance_id() if m.material_override else 0,
+			m.cast_shadow, m.visibility_range_end]
+		if not groups.has(key):
+			groups[key] = {"from": m, "xforms": [], "nodes": []}
+		(groups[key].xforms as Array).append(xf)
+		(groups[key].nodes as Array).append(m)
+	var n := 0
+	for key: String in groups:
+		var g: Dictionary = groups[key]
+		var from: MeshInstance3D = g.from
+		var xforms: Array = g.xforms
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.mesh = from.mesh
+		mm.instance_count = xforms.size()
+		for i in xforms.size():
+			mm.set_instance_transform(i, xforms[i])
+		var mmi := MultiMeshInstance3D.new()
+		mmi.name = "Kit"
+		mmi.multimesh = mm
+		mmi.material_override = from.material_override
+		mmi.cast_shadow = from.cast_shadow
+		mmi.visibility_range_end = from.visibility_range_end
+		mmi.visibility_range_end_margin = from.visibility_range_end_margin
+		mmi.visibility_range_fade_mode = from.visibility_range_fade_mode
+		add_child(mmi)
+		n += xforms.size()
+	for key: String in groups:
+		for m: MeshInstance3D in groups[key].nodes:
+			m.get_parent().remove_child(m)
+			m.queue_free()
+	return n
 
 
 func _multimesh(mesh: Mesh, xforms: Array) -> void:
