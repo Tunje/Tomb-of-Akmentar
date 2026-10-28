@@ -22,7 +22,7 @@ func _ready() -> void:
 	if args.has("atlas"):
 		await _atlas()
 		return
-	level = Cairo.new()
+	level = CoastTown.new() if str(args.get("map", "")) == "coast" else Cairo.new()
 	add_child(level)
 	player = Player.new()
 	add_child(player)
@@ -30,7 +30,10 @@ func _ready() -> void:
 	player.set_armed(false)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	await get_tree().physics_frame
-	var crowd: Crowd = level.get("crowd")
+	var crowd: Crowd = level.get("crowd") as Crowd if "crowd" in level else null
+	if crowd == null:
+		var found := level.find_children("*", "", false, false).filter(func(n: Node) -> bool: return n is Crowd)
+		crowd = found[0] if not found.is_empty() else null
 	_check(crowd != null and crowd.people.size() > 10, "survey: Cairo's crowd (%d)" % (crowd.people.size() if crowd else 0))
 	if crowd == null:
 		_end()
@@ -45,7 +48,8 @@ func _ready() -> void:
 		await get_tree().create_timer(0.5 * Engine.time_scale).timeout
 		t += 0.5 * Engine.time_scale
 		# Walk the player about so the culling and the people's manners both get exercised.
-		player.global_position = Vector3(30.0 + fmod(t * 1.7, 50.0), 0.1, 50.0 + 25.0 * sin(t * 0.05))
+		if level is Cairo:
+			player.global_position = Vector3(30.0 + fmod(t * 1.7, 50.0), 0.1, 50.0 + 25.0 * sin(t * 0.05))
 		for p in crowd.people:
 			clips[p.anim] = int(clips.get(p.anim, 0)) + 1
 			if p.anim in CrowdPerson.SPOT_CLIPS and not p._at_spot():
@@ -58,10 +62,44 @@ func _ready() -> void:
 					raw += 1
 					_once("raw " + str(n.get_path()), "RESULT raw-pose %s (%s) at %s" % [n.name, n.get_class(), (n as Node3D).global_position.snapped(Vector3.ONE * 0.1)])
 	Engine.time_scale = 1.0
+	if args.has("jump"):
+		await _jumps(crowd)
 	print("RESULT info clips seen: %s" % str(clips))
 	_check(off_spot == 0, "survey: no seat/rail/table clip away from its spot (%d)" % off_spot)
 	_check(raw == 0, "survey: nobody on screen in a raw rest pose (%d)" % raw)
 	_end()
+
+
+## As coast_town_test takes its views: the camera jumps somewhere new and the shot comes 70 frames
+## later (under the crowd's 0.5 s think). Anyone in view then in a T (hands out at shoulder height)?
+func _jumps(crowd: Crowd) -> void:
+	var views := [[Vector3(56, 1.7, 72), Vector3(10, 1.5, 36)], [Vector3(20, 3, 20), Vector3(60, 1, 60)],
+		[Vector3(90, 2, 40), Vector3(40, 1, 70)], [Vector3(10, 2, 80), Vector3(60, 1, 30)]]
+	var cam := Camera3D.new()
+	add_child(cam)
+	cam.make_current()
+	var t_bad := 0
+	for v: Array in views:
+		cam.global_position = v[0]
+		cam.look_at(v[1], Vector3.UP)
+		for i in 70:
+			await get_tree().process_frame
+		for n in level.find_children("*", "", true, false):
+			if not n is RiggedBody:
+				continue
+			var p := n as RiggedBody
+			if not p.is_visible_in_tree() or not cam.is_position_in_frustum(p.global_position + Vector3.UP) or p.skeleton == null:
+				continue
+			var hl := p.bone_point("hand_l")
+			var hr := p.bone_point("hand_r")
+			var sh := p.bone_point("upperarm_l")
+			if absf(hl.y - sh.y) < 0.25 and hl.distance_to(hr) > 1.2:
+				t_bad += 1
+				var cp := p as CrowdPerson
+				print("RESULT T-pose %s (%s, under %s) %s tree active %s at %s, %.0f m from the camera" % [p.name, p.get_class(), p.get_parent().name,
+					("state %s anim %s lod %d" % [cp.state, cp.anim, cp.lod]) if cp else "", p._tree.active if p._tree else false,
+					p.global_position.snapped(Vector3.ONE * 0.1), cam.global_position.distance_to(p.global_position)])
+	_check(t_bad == 0, "jumps: nobody in a T-pose 70 frames after the camera moves (%d)" % t_bad)
 
 
 ## Its body's bones all still at their rest (the pose never copied onto it).
@@ -98,7 +136,7 @@ func _atlas() -> void:
 	var keys: Array = ["rest"] + CrowdPerson.CLIPS.keys()
 	var bodies: Array[NpcBody] = []
 	for i in keys.size():
-		var b := NpcBody.create(Characters.DIR + "bandits/bandit_scout.glb")
+		var b := NpcBody.create(Characters.DIR + str(args.get("model", "bandits/bandit_scout.glb")))
 		if b == null:
 			_check(false, "atlas: the stand-in's model")
 			_end()
@@ -129,7 +167,7 @@ func _atlas() -> void:
 		await RenderingServer.frame_post_draw
 		var dir: String = args.get("shot-dir", "user://pose_shots")
 		DirAccess.make_dir_recursive_absolute(dir)
-		get_viewport().get_texture().get_image().save_png(dir.path_join("crowd_poses.png"))
+		get_viewport().get_texture().get_image().save_png(dir.path_join("crowd_poses_%s.png" % str(args.get("model", "scout")).get_file().get_basename()))
 		print("RESULT shot %s" % dir.path_join("crowd_poses.png"))
 	_end()
 
