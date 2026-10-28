@@ -89,6 +89,17 @@ func _ready() -> void:
 			to += player.global_position
 		_cam.look_at_from_position(from, to)
 		_cam.make_current()
+		if args.has("label"):
+			# A world marker in the shimmer's band (it should stay straight: the shimmer bends
+			# only the opaque world).
+			var l := Label3D.new()
+			l.text = "Rest by the fire (save)"
+			l.font_size = 64
+			l.pixel_size = 0.02
+			l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+			l.no_depth_test = true
+			add_child(l)
+			l.global_position = from + (to - from).normalized() * 20.0
 	if off or args.has("look"):
 		if what == "storm" and not off:
 			Weather.sandstorm(level, float(args.get("seconds", "30")))

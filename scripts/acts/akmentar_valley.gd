@@ -50,7 +50,6 @@ var boat_landing := Vector3.ZERO
 var airstrip := Vector3.ZERO
 var _gold: StandardMaterial3D
 var _rock: StandardMaterial3D
-var _water_mat: StandardMaterial3D
 var _rng := RandomNumberGenerator.new()
 
 
@@ -81,8 +80,8 @@ func _ready() -> void:
 	_sun.rotation = Vector3(deg_to_rad(-42), deg_to_rad(18), 0)  # from the south: the facade (facing south) in the light
 	_env.fog_density = 0.0012
 	var t0 := Time.get_ticks_msec()
-	_nav.bake_navigation_mesh(false)
-	print("VALLEY navmesh baked in %d ms" % (Time.get_ticks_msec() - t0))
+	var cached := NavCache.bake(_nav, "akmentar_valley")
+	print("VALLEY navmesh %s in %d ms" % ["from the cache" if cached else "baked", Time.get_ticks_msec() - t0])
 
 
 ## Act 4's SiteSpots at the valley's sites (main calls this, as for the surface).
@@ -121,12 +120,6 @@ func _valley_materials() -> void:
 	_gold.roughness = 0.35
 	_rock = _stone.duplicate() as StandardMaterial3D
 	_rock.albedo_color = Color(0.62, 0.46, 0.32)
-	_water_mat = StandardMaterial3D.new()
-	_water_mat.albedo_color = Color(0.5, 0.7, 0.8, 0.75)
-	_water_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	_water_mat.emission_enabled = true
-	_water_mat.emission = Color(0.7, 0.85, 0.95)
-	_water_mat.emission_energy_multiplier = 0.3
 
 
 # ---------------------------------------------------------------- the ground
@@ -150,9 +143,15 @@ func _slab(r: Rect2, top: float) -> void:
 	_box(_nav, Vector3(r.get_center().x, top - 0.5, r.get_center().y), Vector3(r.size.x, 1.0, r.size.y), _sand)
 
 
-func _water(r: Rect2, y: float) -> void:
+## Water over `r` at height `y`: `murk` how fast its bed fades (clear 0.3 .. muddy 1.2), `foam_w`
+## how far out from its edges the foam reaches (in m of depth: small for a shallow pool).
+func _water(r: Rect2, y: float, murk := 0.45, foam_w := 0.6) -> void:
 	var w := RiverWater.make(self, r.size, y, Vector3(r.get_center().x, y, r.get_center().y))
 	w.name = "Water"
+	RiverWater.depth(w, murk, foam_w)
+	var m := w.material_override as ShaderMaterial
+	m.set_shader_parameter("deep", Color(0.08, 0.2, 0.22))
+	m.set_shader_parameter("shallow", Color(0.3, 0.45, 0.4))
 
 
 ## A mesh with no collision (paving, markings).
@@ -213,7 +212,7 @@ func _gorge_and_causeway() -> void:
 	var z0 := GORGE.x
 	var z1 := GORGE.y
 	_box(_nav, Vector3(10, GORGE_Y - 0.5, (z0 + z1) * 0.5), Vector3(540, 1.0, z1 - z0), _rock)
-	_water(Rect2(-260, z0 + 6, 540, z1 - z0 - 12), GORGE_Y + 0.4)
+	_water(Rect2(-260, z0 + 6, 540, z1 - z0 - 12), GORGE_Y + 0.4, 0.6, 0.15)   # (0.4 m deep: a shallow stream)
 	# 2: the causeway, 16 m wide, level with the ground, on piers, with balustrades.
 	_box(_nav, Vector3(0, -0.5, (z0 + z1) * 0.5), Vector3(16, 1.0, z1 - z0 + 2), _floor_mat)
 	for sx in [-8.2, 8.2]:
@@ -347,27 +346,22 @@ func _sides() -> void:
 	_box(_nav, Vector3(105, -0.5, 240), Vector3(12, 1, 12), _floor_mat)          # its island
 	_block(Rect2(109, 236, 2, 8), 0, 4, _gold)
 	# 17: the waterfall gardens: the fall off the west cliff, pools, palms.
-	var fall := MeshInstance3D.new()
-	var fm := BoxMesh.new()
-	fm.size = Vector3(1.5, 40, 22)
-	fall.mesh = fm
-	fall.material_override = _water_mat
-	add_child(fall)
-	fall.position = Vector3(-214, 20, 200)
-	_water(Rect2(-205, 185, 30, 40), 0.05)
+	# The fall pours east off the west cliff (its face at x -215) into a walled pool at its foot.
+	Waterfall.make(self, Vector3(-215, 40, 200), 14.0, 39.2, Vector3.RIGHT)
+	for e in [Rect2(-215, 185, 30, 1), Rect2(-215, 215, 30, 1), Rect2(-186, 186, 1, 29)]:
+		_block(e, 0, 0.9, _stone)
+	_water(Rect2(-215, 186, 29, 29), 0.75, 0.35, 0.25)
 	for k in 18:
-		_palm(Vector3(_rng.randf_range(-210, -115), 0, _rng.randf_range(155, 325)))
+		var at := Vector3(_rng.randf_range(-210, -115), 0, _rng.randf_range(155, 325))
+		if Rect2(-217, 183, 34, 34).has_point(Vector2(at.x, at.z)):
+			at.x += 34.0   # not in the pool
+		_palm(at)
 	for k in 10:
 		var x := _rng.randf_range(-100, 140)
 		_palm(Vector3(x, 0, _rng.randf_range(452, 470)))
 
 
-## A palm: a leaning trunk and a crown of fronds (meshes; the trunk solid).
+## A palm (Palms: a date palm, its trunk solid in the navmesh); the height drawn from the
+## level's own dice as before, so the rest of the layout doesn't shift.
 func _palm(at: Vector3) -> void:
-	var h := _rng.randf_range(6.0, 9.0)
-	var trunk := _cylinder(_nav, at + Vector3.UP * h * 0.5, 0.22, h)
-	(trunk.get_child(1) as MeshInstance3D).material_override = _floor_mat
-	for k in 7:
-		var a := TAU * k / 7.0
-		var leaf := _flat(at + Vector3(cos(a) * 1.4, h - 0.3, sin(a) * 1.4), Vector3(0.6, 0.06, 3.0), Color(0.24, 0.38, 0.16))
-		leaf.rotation = Vector3(0.35, -a + PI * 0.5, 0)
+	Palms.add(self, at, _rng.randf_range(6.0, 9.0), _nav)

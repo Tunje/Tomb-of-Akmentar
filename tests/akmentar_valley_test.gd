@@ -43,7 +43,8 @@ func _ready() -> void:
 	var t0 := Time.get_ticks_msec()
 	level = AkmentarValley.new()
 	add_child(level)
-	print("RESULT info valley built in %d ms" % (Time.get_ticks_msec() - t0))
+	var nc: Dictionary = NavCache.last.get("akmentar_valley", {})
+	print("RESULT info valley built in %d ms (its navmesh %s in %d ms)" % [Time.get_ticks_msec() - t0, nc.get("from", "?"), int(nc.get("ms", -1))])
 	player = Player.new()
 	add_child(player)
 	player.global_position = level.player_spawn

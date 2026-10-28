@@ -3,14 +3,18 @@ extends MeshInstance3D
 ## The river: one big subdivided plane with a moving shader. A slow swell; ripples at two scales
 ## drifting with the current at two speeds; a muddy Nile green that takes the sky's colour at a
 ## low angle; sun glints twinkling where the ripples catch the sun (they follow the level's sun,
-## and fade as it goes down). No physics: anything that falls through is the boat's problem
+## and fade as it goes down). With depth (RiverWater.depth(w), for water over a real bed): it sees
+## the bed through the depth buffer, clear at the edge, tinted and darker the deeper it gets
+## (`murk` per metre: the Nile's mud, a lake's clear water), and a line of foam where it meets a
+## bank, a wall or a hull, breathing in and out. (Off by default: a map whose ground runs on just
+## under its water would show through as sand.) No physics: anything that falls through is the boat's problem
 ## (RiverBoat.watch puts people back on deck).
 ##   RiverWater.make(self, Vector2(400, 400), 0.0)
 ## On a RiverRoute it also lays reed beds along both banks (one MultiMesh, swaying in the wind).
 
 const SHADER := """
 shader_type spatial;
-render_mode cull_disabled;
+render_mode cull_disabled, depth_draw_always;
 
 uniform vec4 deep : source_color = vec4(0.10, 0.20, 0.18, 1.0);
 uniform vec4 shallow : source_color = vec4(0.30, 0.38, 0.27, 1.0);
@@ -20,6 +24,11 @@ uniform float swell = 0.06;
 uniform vec3 sun_dir = vec3(0.4, 0.6, 0.3);   // toward the sun, world space
 uniform vec4 sun_col : source_color = vec4(1.0, 0.92, 0.75, 1.0);
 uniform float glint = 1.0;
+uniform float depth_fx = 0.0;                   // 1: the depth tint and the shore foam (depth())
+uniform float murk = 3.0;                       // how fast the bed fades out, per metre (the Nile: mud)
+uniform vec4 foam_col : source_color = vec4(0.92, 0.93, 0.88, 1.0);
+uniform float foam_w = 0.3;                     // m of water depth the shore foam reaches out to
+uniform sampler2D depth_tex : hint_depth_texture, filter_nearest;
 
 varying vec3 wpos;
 
@@ -41,6 +50,13 @@ vec2 slope(vec2 p, float t) {
 
 float hash(vec2 p) {
 	return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
+float vnoise(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
 }
 
 void vertex() {
@@ -66,6 +82,23 @@ void fragment() {
 	vec2 cell = floor(wpos.xz * 5.0 + flow * TIME * 5.0);
 	float tw = step(0.72, hash(cell)) * (0.5 + 0.5 * sin(TIME * 9.0 + hash(cell + 3.1) * 40.0));
 	EMISSION = sun_col.rgb * sun * tw * glint * 7.0;
+	// Depth to the bed below this point (the depth buffer, back to world space): the colour deepens
+	// and the bed fades out with it; nothing behind (the sky, far off) reads as deep.
+	vec3 here = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	vec4 bv = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, texture(depth_tex, SCREEN_UV).r, 1.0);
+	vec3 bed = (INV_VIEW_MATRIX * vec4(bv.xyz / bv.w, 1.0)).xyz;
+	float depth = max(here.y - bed.y, 0.0) + max(length(bed - here) - 60.0, 0.0);
+	float seen = exp(-depth * murk);                       // 1 at the edge, 0 deep
+	ALBEDO = mix(ALBEDO, mix(shallow.rgb, ALBEDO, 0.35) * 1.15, seen * 0.6 * depth_fx);
+	ALPHA = mix(1.0, clamp(1.0 - seen * 0.75 + fres * 0.5, 0.0, 1.0), depth_fx);
+	// The shore's foam: a band at the edge, broken up by the ripples, lapping in and out.
+	float edge = 1.0 - smoothstep(0.0, foam_w, depth);
+	float lap = 0.5 + 0.5 * sin(depth * 9.0 - TIME * 1.6 + r * 1.5);
+	float broken = smoothstep(0.25, 0.75, vnoise(here.xz * 3.0 + flow * TIME * 1.5) * 0.5 + rip(here.xz * 1.7, TIME) * 0.25 + 0.25);
+	float foam = edge * edge * mix(0.55, 1.0, lap) * mix(0.5, 1.0, broken);
+	foam = max(foam, step(0.82, edge) * 0.9) * depth_fx;
+	ALBEDO = mix(ALBEDO, foam_col.rgb, foam);
+	ALPHA = max(ALPHA, foam);
 	ROUGHNESS = 0.12;
 	SPECULAR = 0.6;
 	METALLIC = 0.0;
@@ -113,6 +146,16 @@ static func make(parent: Node3D, size: Vector2, y := 0.0, centre := Vector3.ZERO
 	if parent is RiverRoute and (parent as RiverRoute).path:
 		reed_beds(parent, (parent as RiverRoute).path, RiverRoute.HALF_W, y)
 	return w
+
+
+## Turns on the depth tint and shore foam (water over a real bed, at least a metre or so deep
+## where it should read as deep): `murk` per metre (clear 0.3 .. muddy 3), `foam_w` m of depth the
+## foam reaches out to (small for a shallow pool).
+static func depth(w: RiverWater, murk := 3.0, foam_w := 0.3) -> void:
+	var m := w.material_override as ShaderMaterial
+	m.set_shader_parameter("depth_fx", 1.0)
+	m.set_shader_parameter("murk", murk)
+	m.set_shader_parameter("foam_w", foam_w)
 
 
 ## The sun's direction and height into the glints, twice a second (the level sets its sun after).

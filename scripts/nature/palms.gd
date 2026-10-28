@@ -97,9 +97,9 @@ static func _flush(id: int) -> void:
 		return
 	var entry: Array = _pending[id]
 	_pending.erase(id)
+	if not is_instance_valid(entry[0]):
+		return   # (freed before the end of its frame)
 	var parent: Node3D = entry[0]
-	if not is_instance_valid(parent):
-		return
 	_ensure()
 	var by: Array = [[], [], [], []]
 	for e: Array in entry[1]:

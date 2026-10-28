@@ -20,22 +20,32 @@ const STORM_DENSITY := 0.055
 const STORM_TINT := Color(0.66, 0.42, 0.2)
 const CRESTS := 5
 const CREST_EVERY := 3.0
+## (A full-screen quad first in the 3D transparent pass: it bends only the opaque world; markers,
+## tags, water and particles all draw after it, straight.)
 const SHIMMER := """
-shader_type canvas_item;
+shader_type spatial;
+render_mode unshaded, fog_disabled, depth_test_disabled, depth_draw_never, cull_disabled, shadows_disabled;
 uniform sampler2D screen : hint_screen_texture, filter_linear_mipmap;
 uniform float horizon = 0.5;
 uniform float strength = 0.0;
 uniform float band = 0.12;
+void vertex() {
+	POSITION = vec4(VERTEX.xy * 2.0, 1.0, 1.0);
+}
 void fragment() {
 	vec2 uv = SCREEN_UV;
 	float d = uv.y - horizon;
 	// Strongest just below the horizon (the far, hot ground), fading up into the sky.
 	float m = exp(-d * d / (band * band)) * (d > 0.0 ? 1.0 : 0.35) * strength;
+	if (m < 0.002) {
+		discard;
+	}
 	float w = sin(uv.y * 340.0 + TIME * 6.0 + sin(uv.x * 40.0 + TIME * 1.3) * 2.0)
 		+ 0.5 * sin(uv.y * 610.0 - TIME * 9.0 + uv.x * 25.0);
 	uv.x += w * 0.0011 * m;
 	uv.y += cos(uv.x * 260.0 + TIME * 5.0) * 0.0006 * m;
-	COLOR = vec4(textureLod(screen, uv, 0.0).rgb, 1.0);
+	ALBEDO = textureLod(screen, uv, 0.0).rgb;
+	ALPHA = 1.0;
 }
 """
 const VEIL := """
@@ -61,7 +71,7 @@ var _driven := false          # storm() set it directly: no event timeline
 var _own_fog := false         # storm(.., own_fog): the scene's fog is its own business
 var _env: Environment
 var _base := {}               # the scene's own fog, kept while a storm blows
-var _shimmer: ColorRect
+var _shimmer: MeshInstance3D
 var _veil: ColorRect
 var _layer: CanvasLayer
 var _grains: GPUParticles3D
@@ -133,7 +143,7 @@ func _ready() -> void:
 	_layer = CanvasLayer.new()
 	_layer.layer = -10   # over the 3D, under every HUD layer
 	add_child(_layer)
-	_shimmer = _rect(SHIMMER)
+	_shimmer = _screen_quad(SHIMMER)
 	_veil = _rect(VEIL)
 	_grains = _sand(900, Vector3(40, 5, 40), Vector2(0.012, 0.06), 0.45, 6.0)
 	_streaks = _sand(1600, Vector3(26, 9, 26), Vector2(0.02, 0.9), 0.7, 22.0)
@@ -158,6 +168,25 @@ func _rect(code: String) -> ColorRect:
 	r.visible = false
 	_layer.add_child(r)
 	return r
+
+
+## A quad over the whole view in the 3D pass (its vertex shader puts it there), drawn before any
+## other transparent thing.
+func _screen_quad(code: String) -> MeshInstance3D:
+	var q := MeshInstance3D.new()
+	q.name = "Shimmer"
+	q.mesh = QuadMesh.new()
+	q.extra_cull_margin = 16384.0   # (never culled: it's wherever the camera is)
+	q.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var sh := Shader.new()
+	sh.code = code
+	var m := ShaderMaterial.new()
+	m.shader = sh
+	m.render_priority = Material.RENDER_PRIORITY_MIN
+	q.material_override = m
+	q.visible = false
+	add_child(q)
+	return q
 
 
 ## Grains on the wind: thin quads stretched along their flight (`size` x width, y length).
@@ -314,7 +343,7 @@ func _shimmer_step(cam: Camera3D) -> void:
 	var y := 0.5
 	if not cam.is_position_behind(far):
 		y = cam.unproject_position(far).y / maxf(vp.y, 1.0)
-	var m := _shimmer.material as ShaderMaterial
+	var m := _shimmer.material_override as ShaderMaterial
 	m.set_shader_parameter("horizon", y)
 	m.set_shader_parameter("strength", strength)
 

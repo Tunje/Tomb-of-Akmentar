@@ -2,7 +2,7 @@ class_name SoundLife
 extends Node3D
 ## The little sounds of life, positional and cheap (procedural, no audio files): pigeon wings, a
 ## donkey's bray, a goat's bleat, a hull's creak, a pick's clink, grit trickling, a crowd murmur, a
-## paddle wheel. Played on the Ambience bus (the options' ambience volume: 0 is silence).
+## paddle wheel, a waterfall's roar. Played on the Ambience bus (the options' ambience volume: 0 is silence).
 ##   SoundLife.play(self, "flap", pos)               # a one-shot (dropped if the camera is far)
 ##   SoundLife.loop(node, "paddle", -8.0)             # a looping player under `node` (distance-culled)
 ## One-shots come from a pool of POOL players per scene (the oldest is taken if all are busy);
@@ -13,11 +13,12 @@ const RATE := 22050
 const POOL := 10
 const CULL := 40.0
 const AUDIO_DIR := "res://assets/audio/"
-const KINDS := ["flap", "bray", "bleat", "creak", "clink", "grit", "murmur", "paddle", "prayer"]
+const KINDS := ["flap", "bray", "bleat", "creak", "clink", "grit", "murmur", "paddle", "prayer", "falls"]
 ## Per kind: volume dB, unit size (how far it carries), max distance.
 const MIX := {"flap": [-8.0, 3.0, 30.0], "bray": [-6.0, 6.0, 45.0], "bleat": [-10.0, 4.0, 35.0],
 	"creak": [-12.0, 3.0, 25.0], "clink": [-14.0, 2.5, 25.0], "grit": [-16.0, 2.0, 18.0],
-	"murmur": [-14.0, 6.0, 35.0], "paddle": [-10.0, 6.0, 40.0], "prayer": [-12.0, 60.0, 400.0]}
+	"murmur": [-14.0, 6.0, 35.0], "paddle": [-10.0, 6.0, 40.0], "prayer": [-12.0, 60.0, 400.0],
+	"falls": [-4.0, 14.0, 160.0]}
 
 static var _cache := {}
 var _pool: Array[AudioStreamPlayer3D] = []
@@ -186,6 +187,8 @@ static func _make(kind: String) -> AudioStreamWAV:
 			return _wav(_murmur(rng))
 		"paddle":
 			return _wav(_paddle(rng))
+		"falls":
+			return _wav(_falls(rng))
 	return _wav(PackedFloat32Array([0.0]))  # "prayer" and anything else: silence unless a file exists
 
 
@@ -330,6 +333,32 @@ static func _paddle(rng: RandomNumberGenerator) -> PackedFloat32Array:
 		var slap := pow(maxf(0.0, sin(t * TAU * 2.0)), 6.0)          # two slaps a second
 		lp += (rng.randf_range(-1, 1) - lp) * 0.08
 		buf[i] = lp * (0.35 + slap * 0.9) * 0.8
+	return _seam(buf)
+
+
+## A waterfall (a loop): a deep rumble under a broad hiss, both surging slowly, and the odd
+## heavier slap of water landing.
+static func _falls(rng: RandomNumberGenerator) -> PackedFloat32Array:
+	var secs := 5.0
+	var n := int(RATE * secs)
+	var buf := PackedFloat32Array()
+	buf.resize(n)
+	var low := 0.0
+	var low2 := 0.0
+	var mid := 0.0
+	var slap := 0.0
+	for i in n:
+		var t := float(i) / RATE
+		var w := rng.randf_range(-1, 1)
+		low += (w - low) * 0.02
+		low2 += (low - low2) * 0.05
+		mid += (w - mid) * 0.3
+		var hiss := w - mid               # the high part: spray
+		var surge := 0.8 + 0.2 * sin(t * TAU * 0.4) * sin(t * TAU * 0.13 + 1.0)
+		if rng.randf() < 0.0004:
+			slap = rng.randf_range(0.4, 0.9)
+		slap *= 0.9993
+		buf[i] = (low2 * 6.0 * (1.0 + slap) + mid * 0.35 + hiss * 0.18) * surge * 0.6
 	return _seam(buf)
 
 
