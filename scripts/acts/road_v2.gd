@@ -117,32 +117,46 @@ func _ready() -> void:
 ## The navmesh in tiles from one parse of the solids under _nav.
 func _bake_tiles() -> void:
 	var t0 := Time.get_ticks_msec()
-	var src := NavigationMeshSourceGeometryData3D.new()
-	NavigationServer3D.parse_source_geometry_data(_nav.navigation_mesh, src, _nav)
-	var b := src.get_bounds()
-	var border := 2.0
-	var x := GROUND.position.x
-	while x < GROUND.end.x:
-		var z := GROUND.position.y
-		while z < GROUND.end.y:
-			var nm := Level.nav_mesh()
-			nm.border_size = border
-			# (Clipped to the ground: the banks' top edges past it would bake as islands.)
-			var size := Vector2(minf(TILE, GROUND.end.x - x), minf(TILE, GROUND.end.y - z))
-			nm.filter_baking_aabb = AABB(Vector3(x - border, b.position.y - 1.0, z - border),
-				Vector3(size.x + border * 2.0, b.size.y + 2.0, size.y + border * 2.0))
-			NavigationServer3D.bake_from_source_geometry_data(nm, src)
-			if nm.get_polygon_count() > 0:
-				var r := NavigationRegion3D.new()
-				r.name = "Tile_%d_%d" % [int(x), int(z)]
-				r.navigation_mesh = nm
-				add_child(r)
-				tiles += 1
-			z += TILE
-		x += TILE
+	# From -f9's NavCache when the geometry's the same (the signature covers every shape under _nav).
+	var cached := NavCache.tiles(_nav, "road_v2", "%s_%s" % [TILE, GROUND])
+	if not cached.is_empty():
+		for n: String in cached:
+			_tile(n, cached[n])
+	else:
+		var made := {}
+		var src := NavigationMeshSourceGeometryData3D.new()
+		NavigationServer3D.parse_source_geometry_data(_nav.navigation_mesh, src, _nav)
+		var b := src.get_bounds()
+		var border := 2.0
+		var x := GROUND.position.x
+		while x < GROUND.end.x:
+			var z := GROUND.position.y
+			while z < GROUND.end.y:
+				var nm := Level.nav_mesh()
+				nm.border_size = border
+				# (Clipped to the ground: the banks' top edges past it would bake as islands.)
+				var size := Vector2(minf(TILE, GROUND.end.x - x), minf(TILE, GROUND.end.y - z))
+				nm.filter_baking_aabb = AABB(Vector3(x - border, b.position.y - 1.0, z - border),
+					Vector3(size.x + border * 2.0, b.size.y + 2.0, size.y + border * 2.0))
+				NavigationServer3D.bake_from_source_geometry_data(nm, src)
+				if nm.get_polygon_count() > 0:
+					var n := "Tile_%d_%d" % [int(x), int(z)]
+					_tile(n, nm)
+					made[n] = nm
+				z += TILE
+			x += TILE
+		NavCache.save_tiles("road_v2", made)
 	_nav.enabled = false  # (it only holds the solids; the tiles are the navmesh)
 	bake_ms = Time.get_ticks_msec() - t0
-	print("ROAD v2 navmesh: %d tiles in %d ms" % [tiles, bake_ms])
+	print("ROAD v2 navmesh: %d tiles in %d ms%s" % [tiles, bake_ms, " (cached)" if not cached.is_empty() else ""])
+
+
+func _tile(n: String, nm: NavigationMesh) -> void:
+	var r := NavigationRegion3D.new()
+	r.name = n
+	r.navigation_mesh = nm
+	add_child(r)
+	tiles += 1
 
 
 # ---------------------------------------------------------------- the road
@@ -184,8 +198,8 @@ func _start() -> void:
 	_cylinder(_nav, p + Vector3(-9.0, 0.45, 0), 1.4, 0.9)
 	_box(_nav, p + Vector3(-9.0, 0.3, 3.5), Vector3(4.0, 0.6, 0.9), _stone)
 	_milestone(p + Vector3(ROAD_W * 0.5 + 1.0, 0, -3.0))
-	_tree(p + Vector3(-14.0, 0, -2.0), 7.0, 2.4)
-	_tree(p + Vector3(-12.5, 0, 3.0), 6.0, 2.2)
+	_palm(p + Vector3(-14.0, 0, -2.0), 7.0)
+	_palm(p + Vector3(-12.5, 0, 3.0), 6.0)
 	spots.start_well = p + Vector3(-6.5, 0, 0)
 
 

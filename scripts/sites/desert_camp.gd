@@ -14,7 +14,7 @@ extends Node3D
 ## The solids go into the level's _nav (its bake reads them); the dressing stays under this node.
 ## The ground is the level's: put it down on flat ground (`at.y` its height).
 ## Placeholders (blockout until models come): the rock shelter and the knoll (boxes), the spring's
-## pool and rim, the palms (a trunk and a crown), the picket posts and rope. The animals are the
+## pool and rim, the picket posts and rope (the palms are -f9's Palms). The animals are the
 ## act's own (tie them at `picket`).
 
 ## The camp's places, in its own frame (x east, z toward the open desert; the fire at the origin).
@@ -35,7 +35,6 @@ var spots := {}
 var _xf := Transform3D.IDENTITY
 var _rock: StandardMaterial3D
 var _water: StandardMaterial3D
-var _palm: StandardMaterial3D
 var _bark: StandardMaterial3D
 
 
@@ -69,8 +68,6 @@ func _materials() -> void:
 	_water.albedo_color = Color(0.2, 0.32, 0.34)
 	_water.roughness = 0.05
 	_water.metallic = 0.3
-	_palm = StandardMaterial3D.new()
-	_palm.albedo_color = Color(0.3, 0.42, 0.18)
 	_bark = StandardMaterial3D.new()
 	_bark.albedo_color = Color(0.4, 0.3, 0.2)
 
@@ -128,13 +125,9 @@ func _spring() -> void:
 	spots.spring = _w(c + Vector3(2.4, 0, 0))
 
 
+## A date palm (-f9's Palms: batched, swaying; its trunk solid in the level's _nav for the bake).
 func _palm_tree(p: Vector3, h: float) -> void:
-	var trunk := level._cylinder(level._nav, _w(p + Vector3(0, h * 0.5, 0)), 0.22, h)
-	(trunk.get_child(1) as MeshInstance3D).material_override = _bark
-	var crown := SphereMesh.new()
-	crown.radius = 2.2
-	crown.height = 1.3
-	_mesh(crown, p + Vector3(0, h + 0.3, 0), _palm)
+	Palms.add(self, _w(p), h, level._nav)
 
 
 ## The cook fire: the camp's middle, its light, the stools round it are CampJobs' props.

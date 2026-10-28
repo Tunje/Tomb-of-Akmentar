@@ -12,7 +12,7 @@ extends TownV2
 ##   whitewashed houses with blue doors (a different palette from the desert town)
 ## Placeholders (blockout until models come): every building and the doors, the harbour wall and
 ## quay, the lighthouse and hut, the boats (hulls and masts as boxes), the net racks, the market
-## stalls, the hull on stocks, palms (a trunk and a crown), the well. The people are crowd stand-ins
+## stalls, the hull on stocks, the well (the palms are -f9's Palms). The people are crowd stand-ins
 ## (crowd/coast_town.json), the gulls AmbientLife's birds in white. South of the town on the
 ## beach, the trucks' night camp (BeachCamp).
 
@@ -86,7 +86,7 @@ func _ready() -> void:
 	_sun.rotation = Vector3(deg_to_rad(-26), deg_to_rad(-70), 0)  # late afternoon, from over the sea
 	_env.fog_density = 0.0015
 	_env.fog_light_color = Color(0.75, 0.78, 0.8)
-	_nav.bake_navigation_mesh(false)
+	NavCache.bake(_nav, "coast_town")
 	RenderBudget.quiet_minor(_deco)
 	if not "--no-merge" in OS.get_cmdline_user_args():
 		print("COAST town deco merged: %d draw calls fewer" % RenderBudget.merge_static(_deco))
@@ -255,7 +255,7 @@ func _palms_and_well() -> void:
 		var p := Vector2(_rng.randf_range(10, 184), _rng.randf_range(170, 212))
 		if p.distance_to(Vector2(90, 192)) < 9.0:
 			continue
-		_tree(Vector3(p.x, 0, p.y), _rng.randf_range(6.0, 9.5), 2.4)
+		_palm(Vector3(p.x, 0, p.y), _rng.randf_range(6.0, 9.5))
 
 
 ## Houses between: north of the market and the coffee house, east along the shore road, south of

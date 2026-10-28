@@ -12,8 +12,9 @@ extends Level
 ##   the palm grove and gardens (SW): walled plots, palms, a channel
 ##   houses between, the cross street (z 90-104) and the gate street (x 174-186)
 ## Placeholders (blockout until models come): every building (boxes in mud-brick and plaster), the
-## wall and gate towers, the well, the dovecote, the dome and minaret, palms and the sycamore (a
-## trunk and a crown), stalls and awnings (cloth boxes), the garden beds and the channel.
+## wall and gate towers, the well, the dovecote, the dome and minaret, the sycamore and the inn's
+## tree (a trunk and a crown), stalls and awnings (cloth boxes), the garden beds and the channel.
+## The grove's date palms are -f9's Palms.
 
 const SIZE := Vector2(300, 220)
 const TOWN_WALL_H := 5.0
@@ -62,7 +63,7 @@ func _ready() -> void:
 	_sun.rotation = Vector3(deg_to_rad(-34), deg_to_rad(-130), 0)
 	_env.fog_density = 0.002
 	_env.fog_light_color = Color(0.8, 0.66, 0.48)
-	_nav.bake_navigation_mesh(false)
+	NavCache.bake(_nav, "town_v2")
 	RenderBudget.quiet_minor(_deco)
 	if not "--no-merge" in OS.get_cmdline_user_args():
 		print("TOWN v2 deco merged: %d draw calls fewer" % RenderBudget.merge_static(_deco))
@@ -153,6 +154,11 @@ func _awning(r: Rect2, y := 3.2) -> void:
 	bm.size = Vector3(r.size.x, 0.06, r.size.y)
 	_mesh(bm, Vector3(r.get_center().x, y, r.get_center().y), _cloth[_rng.randi() % _cloth.size()],
 		Vector3(_rng.randf_range(-0.06, 0.06), 0, 0))
+
+
+## A date palm (-f9's Palms: batched, swaying; its trunk solid in _nav for the bake).
+func _palm(p: Vector3, h: float) -> void:
+	Palms.add(_deco, p, h, _nav)
 
 
 func _tree(p: Vector3, h: float, crown: float, trunk := 0.22) -> void:
@@ -326,7 +332,7 @@ func _grove() -> void:
 					continue  # the paths through the middle stay open
 				var p := plot.position + Vector2(3.5 + i * (plot.size.x - 7.0) / 3.0, 3.5 + j * (plot.size.y - 7.0) / 3.0)
 				p += Vector2(_rng.randf_range(-1, 1), _rng.randf_range(-1, 1))
-				_tree(Vector3(p.x, 0, p.y), _rng.randf_range(6.0, 9.0), 2.4)
+				_palm(Vector3(p.x, 0, p.y), _rng.randf_range(6.0, 9.0))
 
 
 ## Houses: north of the caravanserai and the square, along the west lane, south of the mosque.
