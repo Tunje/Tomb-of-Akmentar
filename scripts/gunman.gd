@@ -207,8 +207,14 @@ var _hitboxes: Array[StaticBody3D] = []
 var _exclude: Array[RID] = []
 var _tag: Label3D  # companions: name and health over the head
 const TAG_Y := 2.15
-const TAG_ROW_PX := 58.0   # a stacked tag's height on screen
-var _tag_row := 0          # how many rows up _stack_tag put it
+const TAG_SEE_THROUGH := 7.0  # m: nearer than this a tag shows through walls (a huddle round a corner)
+const TAG_EDGE_PX := 12.0     # a tag keeps this far inside the screen's edges
+const TAG_PARTY := 4          # a bigger party: healthy fighters show no tag
+static var _tags_laid := -1   # the frame _lay_tags last ran
+static var _party_frame := -1
+static var _party_n := 0
+var _tag_ray_t := 0.0
+var _tag_hid := false
 var _help: Interactable  # "Help <name> up" while stumbled
 ## --companion-trace (after "--"): escape-mode companions print a line every 0.5 s.
 var _ctrace := "--companion-trace" in OS.get_cmdline_user_args()
@@ -1039,8 +1045,13 @@ func _update_tag() -> void:
 	if _tag == null:
 		return
 	var k := clampf(health / max_health, 0.0, 1.0)
-	_tag.visible = state != State.DEAD and (k < 1.0 or state != State.IDLE or (order == "hold" and not at_job) or stumbled) \
-		and not screen_busy()
+	var holding := order == "hold" and not at_job
+	# Fighting at full health says little: with a big party (over TAG_PARTY) only the hurt, the
+	# holding and the down keep a tag, or nine fill the screen.
+	var fighting := state != State.IDLE and (_party_size(get_tree()) <= TAG_PARTY)
+	var cam := get_viewport().get_camera_3d()
+	_tag.visible = state != State.DEAD and (k < 1.0 or fighting or holding or stumbled) \
+		and not screen_busy() and not (cam and _tag_blocked(cam))
 	if not _tag.visible:
 		return
 	var full := int(ceilf(k * 10.0))
@@ -1051,41 +1062,87 @@ func _update_tag() -> void:
 	else:
 		_tag.text = who + ("  (holding)" if order == "hold" and not at_job else "") + char(10) + bar
 	_tag.modulate = Color(1.0, 0.35, 0.25).lerp(Color(0.55, 1.0, 0.45), k)
-	_stack_tag()
+	_lay_tags(get_tree())
 
 
-## Two companions side by side would print their tags over each other: lift this one a tag's
-## height for each other shown tag that lands on the same spot on screen.
-func _stack_tag() -> void:
-	var cam := get_viewport().get_camera_3d()
-	var lift := 0.0
+## Companions with a tag to show (Gunman in group "party"), counted once a frame.
+static func _party_size(tree: SceneTree) -> int:
+	if Engine.get_process_frames() != _party_frame:
+		_party_frame = Engine.get_process_frames()
+		_party_n = 0
+		for n in tree.get_nodes_in_group("party"):
+			_party_n += int(n is Gunman and (n as Gunman).state != State.DEAD)
+	return _party_n
+
+
+## Behind a wall or under the ground from the camera (beyond TAG_SEE_THROUGH: a huddle round a
+## corner keeps its tags), checked a few times a second. Tags draw over everything, so nine
+## companions still climbing the shaft hung in the sky over the pit.
+func _tag_blocked(cam: Camera3D) -> bool:
+	_tag_ray_t -= get_physics_process_delta_time()
+	if _tag_ray_t > 0.0:
+		return _tag_hid
+	_tag_ray_t = 0.25
 	var head := global_position + Vector3.UP * TAG_Y
-	_tag_row = 0
-	if cam and not cam.is_position_behind(head):
-		var me := cam.unproject_position(head)
-		# The lowest row clear of every lower-id tag where it now sits (five companions in a
-		# huddle lifted onto each other when each only counted its neighbours).
-		var taken := {}
-		for n in get_tree().get_nodes_in_group("gunmen"):
-			var g := n as Gunman
-			if g == self or g == null or g._tag == null or not g._tag.visible or g.get_instance_id() > get_instance_id():
-				continue
-			var at := g.global_position + Vector3.UP * TAG_Y
-			if cam.is_position_behind(at):
-				continue
-			var o := cam.unproject_position(at)
-			if absf(o.x - me.x) >= 210.0:
-				continue
-			for r in 6:
-				if absf((me.y - r * TAG_ROW_PX) - (o.y - g._tag_row * TAG_ROW_PX)) < TAG_ROW_PX - 8.0:
-					taken[r] = true
-		while taken.has(_tag_row) and _tag_row < 5:
-			_tag_row += 1
-		# The rows in pixels, as metres at this distance.
-		var px := 2.0 * cam.global_position.distance_to(head) * tan(deg_to_rad(cam.fov) * 0.5) \
-			/ get_viewport().get_visible_rect().size.y
-		lift = _tag_row * TAG_ROW_PX * px
-	_tag.position.y = TAG_Y + lift
+	_tag_hid = false
+	if cam.global_position.distance_to(head) > TAG_SEE_THROUGH:
+		var hit := get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(cam.global_position, head, 1))
+		_tag_hid = not hit.is_empty() and (hit.position as Vector3).distance_to(head) > 1.0
+	return _tag_hid
+
+
+## Lays every shown companion tag out together, once a frame: nearest first, each lifted by
+## whole tags until its screen box is clear of those placed before (WorldMarker._declutter's
+## way), and kept inside the screen's edges ("moud" at the edge with nine). Moves the label
+## itself, so the HUD's bleed ring and a bark over it follow.
+static func _lay_tags(tree: SceneTree) -> void:
+	if Engine.get_process_frames() == _tags_laid:
+		return
+	_tags_laid = Engine.get_process_frames()
+	var cam := tree.root.get_viewport().get_camera_3d() if tree and tree.root else null
+	if cam == null:
+		return
+	var size := cam.get_viewport().get_visible_rect().size
+	var tan_half := tan(deg_to_rad(cam.fov) * 0.5)
+	var list: Array = []
+	for n in tree.get_nodes_in_group("gunmen"):
+		var g := n as Gunman
+		if g == null or g._tag == null or not g._tag.visible:
+			continue
+		var head := g.global_position + Vector3.UP * TAG_Y
+		if cam.is_position_behind(head):
+			continue
+		list.append([cam.global_position.distance_to(head), g, head])
+	list.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
+	var placed: Array[Rect2] = []
+	for e: Array in list:
+		var g: Gunman = e[1]
+		var head: Vector3 = e[2]
+		var unit: float = g._tag.pixel_size * size.y / (2.0 * tan_half)  # screen px per label px (fixed_size)
+		var lines := g._tag.text.split(char(10))
+		var w := 0.0
+		for t: String in lines:
+			w = maxf(w, t.length() * g._tag.font_size * 0.55 * unit)
+		var h := lines.size() * g._tag.font_size * 1.25 * unit
+		var p := cam.unproject_position(head)
+		var box := Rect2(p.x - w * 0.5, p.y - h * 0.5, w, h)
+		# In from the edge first (any tag partly on screen: half a name at the edge read "moud";
+		# one wholly off is left to the HUD's edge arrows), then up clear of those placed.
+		var shift := 0.0
+		if box.intersects(Rect2(Vector2.ZERO, size)):
+			if box.position.x < TAG_EDGE_PX:
+				shift = TAG_EDGE_PX - box.position.x
+			elif box.end.x > size.x - TAG_EDGE_PX:
+				shift = size.x - TAG_EDGE_PX - box.end.x
+		box.position.x += shift
+		var up := 0
+		while up < 8 and placed.any(func(r: Rect2) -> bool: return r.intersects(box.grow(2.0))):
+			up += 1
+			box.position.y -= h
+		placed.append(box)
+		var depth := (head - cam.global_position).dot(-cam.global_basis.z)  # (not the distance: off-centre that overshoots)
+		var m_per_px := 2.0 * depth * tan_half / size.y  # screen px as metres at its depth
+		g._tag.global_position = head + cam.global_basis.y * (up * h * m_per_px) + cam.global_basis.x * (shift * m_per_px)
 
 
 # ---------------------------------------------------------------- cover spots
