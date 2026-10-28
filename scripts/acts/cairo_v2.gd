@@ -29,15 +29,19 @@ static var with_life := false
 ## tile; each module's front is its +Z, its origin at the bottom centre of the front's width.
 const KIT := "res://assets/props/cairo/"
 const OLD_GROUND := ["cai_house_shop_open", "cai_house_shop_closed"]
-const OLD_UPPER := ["cai_house_upper_shutters"]
+const OLD_UPPER := ["cai_house_upper_shutters", "cai_house_upper_bay"]
+const OLD_ROOF := "cai_house_roofline"
 const OLD_CORNER := "cai_house_corner"
 const EURO := ["cai_euro_bay_balconies", "cai_euro_bay_arcade"]
 const QUAY := "cai_quay_wall_rings"
+const MOSQUE := "cai_mosque_wall"
+const MOSQUE_W := 6.0
+const MOSQUE_H := 10.0
 const STOREY := 4.0      # an old-quarter module's height (and its width)
 const EURO_W := 6.0
 const EURO_H := 14.0
 
-var _kit := ""           # "old" / "euro" while _v2_blocks builds that district; "" = blockout
+var _kit := ""           # "old" / "euro" / "mosque" while that's being built; "" = blockout
 var _kit_scenes := {}    # id -> PackedScene
 
 
@@ -56,7 +60,9 @@ func _ready() -> void:
 		Vector3(V2_RIVER_X + RING, 1.0, V2_SOUTH + RING * 2.0), _street)
 	_v2_river()
 	for id: String in MOVES:
+		_kit = "mosque" if id == "mosque" else ""
 		_moved(MOVES[id], Callable(self, "_" + id))
+	_kit = ""
 	_v2_blocks()
 	_v2_wall()
 	_v2_quay()
@@ -92,6 +98,9 @@ func _kit_scene(id: String) -> PackedScene:
 func _building(r: Rect2, h: float, mat: Material, faces: Array, door := true) -> void:
 	var euro := _kit == "euro" and _kit_scene(EURO[0]) != null
 	var old := _kit == "old" and _kit_scene(OLD_GROUND[0]) != null and _kit_scene(OLD_UPPER[0]) != null
+	if _kit == "mosque" and _kit_scene(MOSQUE):
+		_mosque_walls(r)
+		return
 	if not (euro or old):
 		super(r, h, mat, faces, door)
 		return
@@ -113,9 +122,32 @@ func _building(r: Rect2, h: float, mat: Material, faces: Array, door := true) ->
 			_kit_row(face, n, along, inner, 0.0, OLD_GROUND, STOREY, STOREY)
 			for fl in range(1, int(h / STOREY)):
 				_kit_row(face, n, along, inner, fl * STOREY, OLD_UPPER, STOREY, STOREY)
+			if _kit_scene(OLD_ROOF):
+				_kit_row(face, n, along, inner, h, [OLD_ROOF], STOREY, STOREY)  # the stepped parapet on top
 			if corner:
 				for side: float in [-1.0, 1.0]:
 					_kit_piece(corner, face + along * side * (width * 0.5 - 0.75), n, Vector3(1.0, h / 9.0, 1.0))
+
+
+## The mosque's block faced all round with the mosque wall (it stands in a square now), its east
+## door left open (today's door, until the portal arrives).
+func _mosque_walls(r: Rect2) -> void:
+	var c := Vector3(r.get_center().x, 0, r.get_center().y)
+	_box(_nav, c + Vector3.UP * MOSQUE_H * 0.5, Vector3(r.size.x, MOSQUE_H, r.size.y), _plaster[0])
+	for f: Vector2 in [Vector2(1, 0), Vector2(-1, 0), Vector2(0, 1), Vector2(0, -1)]:
+		var n := Vector3(f.x, 0, f.y)
+		var along := Vector3(absf(n.z), 0, absf(n.x))
+		var width := r.size.x if n.z != 0 else r.size.y
+		var depth := r.size.y if n.z != 0 else r.size.x
+		var face := c + n * depth * 0.5
+		var count := maxi(1, roundi(width / MOSQUE_W))
+		var sx := width / (count * MOSQUE_W)
+		for k in count:
+			var u := (k - (count - 1) * 0.5) * MOSQUE_W * sx
+			var at := face + along * u
+			if n.x > 0.5 and absf(at.z - 24.0) < MOSQUE_W * sx * 0.5:
+				continue  # the door (today's builder puts it at z 24 on the east face)
+			_kit_piece(_kit_scene(MOSQUE), at, n, Vector3(sx, 1.0, 1.0))
 
 
 ## One row of modules along a face, `width` wide, its foot at `y`: as many as fit, stretched (or
@@ -137,15 +169,17 @@ func _kit_piece(sc: PackedScene, at: Vector3, n: Vector3, scale_by: Vector3) -> 
 	_deco.add_child(m)
 	m.rotation.y = atan2(n.x, n.z)
 	m.scale = scale_by
-	m.global_position = at + n * (0.03 - _front_z(m))  # its front 3 cm proud of the wall, the rest inside
+	m.position = at + n * (0.03 - _front_z(m))  # its front 3 cm proud of the wall (in _deco's frame: moved holders too)
 
 
-## How far a module's front (+Z) stands from its origin, from its meshes' bounds.
+## How far a module's wall face (+Z) stands from its origin. The modules are symmetric in depth
+## about their origin, so it's the back face's distance; the front's bounds include what projects
+## (a mashrabiya bay, a water spout) and would push the wall out.
 func _front_z(m: Node3D) -> float:
 	var z := 0.0
 	for mi: MeshInstance3D in m.find_children("*", "MeshInstance3D", true, false):
-		z = maxf(z, (mi.transform * mi.get_aabb()).end.z)
-	return z
+		z = minf(z, (mi.transform * mi.get_aabb()).position.z)
+	return -z
 
 
 ## Build with today's builder, shifted by `off`: its solids and its dressing go under offset
