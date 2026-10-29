@@ -6,7 +6,7 @@ extends Node3D
 ## - enough_horses and trucks_running are worked out, then the return board (act6_return). Every
 ##   day travelled ticks the countdowns (RouteBoard -> Game.end_day). Desert without enough_horses:
 ##   the mummy catches you in the open, game over (event desert_return).
-## - The road (DesertRoute as the backdrop, at night): the camp, act6_road (the thieves' trail if
+## - The road: the night's stop at the ruined monastery (-f9's MonasteryNight), the camp, act6_road (the thieves' trail if
 ##   they fled the same way), then ride on or hold: fight_mummy_servants brings the guardian's
 ##   servants out of the dark (Mummy enemies round the camp).
 ## - Arrival at Cairo's south gate in the dust (act6_arrival), then Enter goes to Act 7.
@@ -262,14 +262,13 @@ func _caught() -> void:
 func _road(route: String) -> void:
 	step = Step.ROAD
 	Game.set_flag("act6_desert_pick" if route == "desert" else "act6_coast_pick")
-	var road := DesertRoute.new()
-	road.coast = route == "coast"
-	var z := DesertRoute.START_Z - 30.0
-	var camp := DesertRoute.road_point(z) + Vector3(9.0, 0, 0)
-	await _change_level(road, camp + Vector3(-2.5, 0, 2.0), 0.0)
-	_darken(0.85)
+	# The night's stop: -f9's ruined Coptic monastery (Simon's pick), its courtyard fire at the origin,
+	# the gate south. It has its own fire and bedrolls; it's night already.
+	var stop := MonasteryNight.new()
+	stop.coast = route == "coast"
+	var camp := Vector3.ZERO
+	await _change_level(stop, Vector3(0, 0, 18.0), 0.0)  # inside the gate, facing the fire
 	Ambience.play(self, "night")
-	_camp(camp)
 	CampJobs.assign(level, companions, "act6_stop", true, {"anchor": camp})  # -f9's: each at their job at the stop, fighting from their posts
 	hud.show_message("THE ROAD BACK", "The %s road. Night falls; you make camp." % route)
 	await get_tree().create_timer(2.5).timeout
@@ -293,17 +292,6 @@ func _road(route: String) -> void:
 	Weather.sandstorm(self, 40.0)  # -f9's: the last miles to Cairo in blowing sand
 	CampJobs.release(level)
 	_arrival()
-
-
-func _camp(at: Vector3) -> void:
-	var fire := Node3D.new()
-	level.add_child(fire)
-	fire.position = at
-	level._flame(fire, Vector3.UP * 0.45, 2.8, 14.0, true)
-	level._prop(level, "prop_campfire.glb", at)
-	for k in 3:
-		var a := PI * 0.5 + (k - 1) * 1.1
-		level._prop(level, "prop_bedroll.glb", at + Vector3(cos(a), 0, sin(a)) * 2.6, a)
 
 
 ## The guardian's servants come out of the dark at the camp, not all at once: three from
@@ -330,13 +318,24 @@ func _servants(camp: Vector3) -> void:
 	var spawned := 0
 	var t := 0.0
 	var next_t := 0.0
-	var first_a := randf() * TAU
+	# They come in by the monastery's ways in (just outside each gap: close, but unseen from the
+	# fire) and out of its cemetery's graves.
+	var mon := (level as MonasteryNight).monastery
+	var mouths: Array = mon.spots.mouths.values()
+	var graves: Array = (mon.spots.graves as Array).duplicate()
+	graves.shuffle()
 	var t0 := Time.get_ticks_msec()
 	while player.alive:
 		if spawned < SERVANTS and t >= next_t:
 			for k in (3 if spawned == 0 else mini(SERVANTS_THEN, SERVANTS - spawned)):
-				var a := first_a + TAU * k / 3.0 if spawned < 3 else randf() * TAU
-				_servant(camp, a, spawned == 0, down)
+				var p: Vector3
+				if spawned < 3:
+					p = mouths[k % mouths.size()]  # the first three: one at each way in
+				elif spawned % 3 == 2 and not graves.is_empty():
+					p = graves.pop_back()  # every third after: the cemetery gives up one of its own
+				else:
+					p = mouths[randi() % mouths.size()]
+				_servant_at(p, spawned == 0, down)
 				spawned += 1
 			next_t = t + randf_range(2.5, 4.0)
 		if spawned >= SERVANTS and down[0] >= SERVANTS:
@@ -378,16 +377,14 @@ func _on_helped_up(g: Gunman) -> void:
 	print("RESULT act6 helped up %s" % g.companion_id)
 
 
-## One servant out of the dark at bearing `a` from the camp.
-func _servant(camp: Vector3, a: float, priest: bool, down: Array) -> void:
+## One servant out of the dark at `p` (a way in, or a grave; the monastery's ground is flat at y 0).
+func _servant_at(p: Vector3, priest: bool, down: Array) -> void:
 	var m := Mummy.new()
 	m.priest = priest
 	add_child(m)
 	m.health = SERVANT_HP
 	m.speed *= SERVANT_PACE
 	m.party_margin = 5.0  # they come for you (and the amulet) unless a companion is clearly nearer
-	var p := camp + Vector3(cos(a), 0, sin(a)) * randf_range(11.0, 15.0)  # out of the dark close by (16-22 m: shot down before they arrived)
-	p.y = DesertRoute.ground_y(p.z)
 	m.global_position = p
 	m.target = player
 	m.wake()
