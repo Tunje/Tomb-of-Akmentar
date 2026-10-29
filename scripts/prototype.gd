@@ -127,20 +127,7 @@ func _party() -> void:
 		g.global_position = _camp + Vector3(2.0 + i, 0, 2.0)
 		companions[cid] = g
 		i += 1
-	_jobs_when_ready()
-
-
-## CampJobs once this map's navmesh answers at the camp: the navigation map outlives a scene change,
-## so right after one it still answers from the last map's regions (and every job came back empty).
-func _jobs_when_ready() -> void:
-	var map := get_world_3d().navigation_map
-	var t0 := Time.get_ticks_msec()
-	while Time.get_ticks_msec() - t0 < 15000:
-		await get_tree().physics_frame
-		var q := NavigationServer3D.map_get_closest_point(map, _camp)
-		if NavigationServer3D.map_get_iteration_id(map) > 0 and Vector2(q.x - _camp.x, q.z - _camp.z).length() < 2.0:
-			break
-	CampJobs.assign(level, companions, "act3_camp", false, {"anchor": _camp})
+	CampJobs.assign(level, companions, "act3_camp", false, {"anchor": _camp})   # (it waits for this map's navmesh)
 
 
 ## A marker over each of the map's named places (its spots), seen from further than a usable thing's.
