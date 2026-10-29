@@ -42,6 +42,7 @@ const GANGWAY := Vector2(-16, -13)          # the rail's gap each side (z)
 var level: Level
 var yaw := 0.0
 var spots := {}
+var wheel: Node3D
 var _xf := Transform3D.IDENTITY
 var _white: StandardMaterial3D
 var _hull: StandardMaterial3D
@@ -386,12 +387,31 @@ func _sun_deck() -> void:
 # ---------------------------------------------------------------- the wheel and the loads
 
 ## The stern wheel in its housing, behind the aft rail (dressing; the rail stops anyone going over).
+## `wheel` turns it (spin(): under way); keep it out of a merge (RenderBudget.merge_static's keep).
 func _wheel() -> void:
-	var paddles := CylinderMesh.new()
-	paddles.top_radius = 2.4
-	paddles.bottom_radius = 2.4
-	paddles.height = BEAM - 1.6
-	_mesh(paddles, Vector3(0, DECK - 0.3, 24.4), _wood, Vector3(0, 0, PI * 0.5))
+	wheel = Node3D.new()
+	wheel.name = "Wheel"
+	add_child(wheel)
+	wheel.position = Vector3(0, DECK - 0.3, 24.4)
+	var hub := CylinderMesh.new()
+	hub.top_radius = 0.6
+	hub.bottom_radius = 0.6
+	hub.height = BEAM - 1.6
+	var m := MeshInstance3D.new()
+	m.mesh = hub
+	m.material_override = _dark
+	m.rotation = Vector3(0, 0, PI * 0.5)
+	wheel.add_child(m)
+	for k in 10:   # the paddle boards, round the hub
+		var board := BoxMesh.new()
+		board.size = Vector3(BEAM - 1.8, 1.0, 0.12)
+		var b := MeshInstance3D.new()
+		b.mesh = board
+		b.material_override = _wood
+		var a := TAU * k / 10.0
+		b.position = Vector3(0, sin(a), cos(a)) * 1.9
+		b.rotation = Vector3(a, 0, 0)
+		wheel.add_child(b)
 	for s: float in [-1.0, 1.0]:
 		_box_mesh(s * (BEAM * 0.5 - 0.6), -0.4, 22.0, s * (BEAM * 0.5 - 0.3), DECK + 2.4, 26.0, _white)
 	_box_mesh(-BEAM * 0.5 + 0.3, DECK + 2.2, 22.0, BEAM * 0.5 - 0.3, DECK + 2.4, 26.0, _white)
@@ -405,3 +425,9 @@ func _loads() -> void:
 		level._mark_cover(b, c[1])
 	var cap := level._cylinder(level._nav, _w(Vector3(0, DECK + 0.4, -23.0)), 0.45, 0.8)
 	(cap.get_child(1) as MeshInstance3D).material_override = _dark
+
+
+## Under way: the stern wheel turning (rad/s, ahead is positive).
+func spin(rate: float, delta: float) -> void:
+	if wheel:
+		wheel.rotate_x(-rate * delta)

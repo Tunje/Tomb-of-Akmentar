@@ -2,8 +2,9 @@ class_name TitleScreen
 extends Node3D
 ## The title screen (title.tscn; main.tscn comes here when started without test args): Akmentar at
 ## dusk with the camera drifting round it, and Continue (when there's a last rest: its summary on
-## focus), New game (asks if a save exists), Load game, Chapters (Acts 1-9 and the playtest range;
-## titles in menus/title.json), Options, Credits (menus/title.json) and Quit. Keyboard, mouse or
+## focus), New game (asks if a save exists), Load game, Chapters (Acts 1-9 and the playtest range,
+## titles in menus/title.json; and the Prototypes, new maps to walk), Options, Credits
+## (menus/title.json) and Quit. Keyboard, mouse or
 ## pad. The number keys 1-9 still start an act straight away (testing).
 ##   TitleScreen.request: what main.tscn should do when the title sends it there ("range" = the
 ##   playtest range, "continue" = a last rest made there), read once by main.gd.
@@ -198,7 +199,7 @@ func _chapters() -> void:
 		if first == null:
 			first = b
 	_menu.add_child(_button("Playtest range", _range))
-	_menu.add_child(_button("Monastery night (prototype)", _monastery_night))
+	_menu.add_child(_button("Prototypes", _prototypes))
 	var back := _button("Back", _main_menu)
 	_menu.add_child(back)
 	(first if first else back).grab_focus.call_deferred()
@@ -211,6 +212,28 @@ func _start_act(act: int) -> void:
 	Game.reset()
 	Game.set_flag("quickstart_act")
 	Loader.go(get_tree(), "res://act%d.tscn" % act)
+
+
+## New maps no act uses yet, to walk (Prototype; Simon: "much better than writing"): each map's
+## entry in Prototype.ENTRIES, and the monastery night (-7f's).
+func _prototypes() -> void:
+	_clear()
+	var first: Button = null
+	for pid: String in Prototype.ENTRIES:
+		var b := _button(str(Prototype.ENTRIES[pid][0]), _prototype.bind(pid))
+		_menu.add_child(b)
+		if first == null:
+			first = b
+	_menu.add_child(_button("The monastery night (Act 6's fight)", _monastery_night))
+	var back := _button("Back", _chapters)
+	_menu.add_child(back)
+	(first if first else back).grab_focus.call_deferred()
+
+
+func _prototype(pid: String) -> void:
+	Game.reset()
+	Game.set_flag("prototype", pid)
+	Loader.go(get_tree(), "res://prototype.tscn")
 
 
 ## Act 6's night fight at -f9's monastery on its own (off in Act 6 itself: Simon plays it to decide

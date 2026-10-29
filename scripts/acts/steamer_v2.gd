@@ -6,6 +6,7 @@ extends TownV2
 ## Placeholders: the steamer's (see Steamer), the banks (boxes), the palms are -f9's Palms.
 
 var boat: Steamer
+var water: RiverWater
 
 
 func _ready() -> void:
@@ -23,7 +24,7 @@ func _ready() -> void:
 		_box(_nav, Vector3(s * 110.0, -2.0, 0), Vector3(80, 5.0, 500), _sand)   # the banks, 0.5 m over the water
 		for k in 18:
 			_palm(Vector3(s * _rng.randf_range(76.0, 140.0), 0.5, _rng.randf_range(-220.0, 220.0)), _rng.randf_range(6.0, 10.0))
-	var water := RiverWater.make(self, Vector2(400, 500), 0.0, Vector3.ZERO)
+	water = RiverWater.make(self, Vector2(400, 500), 0.0, Vector3.ZERO)
 	RiverWater.depth(water, 3.0, 0.3)
 	boat = Steamer.build(self, Vector3.ZERO, 0.0)
 	spots = boat.spots.duplicate()
@@ -34,4 +35,4 @@ func _ready() -> void:
 	NavCache.bake(_nav, "steamer_v2")
 	RenderBudget.quiet_minor(_deco)
 	if not "--no-merge" in OS.get_cmdline_user_args():
-		print("STEAMER v2 merged: deco %d, boat %d draw calls fewer" % [RenderBudget.merge_static(_deco), RenderBudget.merge_static(boat)])
+		print("STEAMER v2 merged: deco %d, boat %d draw calls fewer" % [RenderBudget.merge_static(_deco), RenderBudget.merge_static(boat, 24.0, [boat.wheel])])

@@ -64,7 +64,7 @@ func _ready() -> void:
 	NavCache.bake(_nav, "landing_v2")
 	RenderBudget.quiet_minor(_deco)
 	if not "--no-merge" in OS.get_cmdline_user_args():
-		print("LANDING v2 merged: deco %d, boat %d draw calls fewer" % [RenderBudget.merge_static(_deco), RenderBudget.merge_static(boat)])
+		print("LANDING v2 merged: deco %d, boat %d draw calls fewer" % [RenderBudget.merge_static(_deco), RenderBudget.merge_static(boat, 24.0, [boat.wheel])])
 	if not "--no-crowd" in OS.get_cmdline_user_args():
 		Crowd.populate(self, "landing")
 
