@@ -145,6 +145,10 @@ func _ways(map: RID, m: Monastery) -> void:
 		for p: Vector3 in ways[id]:
 			var len := _path(map, p, m.anchor)
 			_check(len > 0.0, "ways: %-5s from %s to the fire: %s" % [id, p.snapped(Vector3.ONE), "%.0f m" % len if len > 0.0 else "NO PATH"])
+	for id: String in m.spots.mouths:
+		var p: Vector3 = m.spots.mouths[id]
+		var len := _path(map, p, m.anchor)
+		_check(len > 0.0, "ways: %-5s mouth %s to the fire: %s" % [id, p.snapped(Vector3.ONE), "%.0f m" % len if len > 0.0 else "NO PATH"])
 	var bad := 0
 	for g: Vector3 in m.spots.graves:
 		if _path(map, g, m.anchor) <= 0.0:

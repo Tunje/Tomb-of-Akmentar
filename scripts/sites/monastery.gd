@@ -14,7 +14,8 @@ extends Node3D
 ## - The cemetery outside the east wall: graves, two tomb-houses, crosses. In the fight its graves
 ##   give up their dead: `spots.graves`.
 ## The servants' ways in (`spots.ways`): from out of the dark at the gate, the north breach and the
-## east breach, and from the graves (act6.gd's spawn points instead of a ring round the fire).
+## east breach, and from the graves (act6.gd's spawn points instead of a ring round the fire);
+## `spots.mouths`: one just outside each gap, close but unseen.
 ##   var m := Monastery.build(level, at, yaw)     # before the level bakes its navmesh
 ##   CampJobs.assign(level, companions, "act6_stop", true, {"anchor": m.anchor})
 ## The solids go into the level's _nav; the dressing stays under this node. Flat ground at `at.y`.
@@ -324,6 +325,14 @@ func _ways() -> void:
 		"gate": [_w(Vector3(-4, 0, s + 13)), _w(Vector3(3, 0, s + 16)), _w(Vector3(9, 0, s + 12))],
 		"north": [_w(Vector3(nx - 4, 0, n - 13)), _w(Vector3(nx + 3, 0, n - 16)), _w(Vector3(nx + 8, 0, n - 12))],
 		"east": [_w(Vector3(CEMETERY.end.x + 6, 0, -12)), _w(Vector3(CEMETERY.end.x + 8, 0, 2)), _w(Vector3(CEMETERY.end.x + 5, 0, -20))],
+	}
+	# Just outside each gap, out of the light and out of sight from the fire: where one steps out
+	# of the dark close enough to matter (act6's old ring was 11-15 m from the fire for that).
+	var ex := INNER.end.x + WALL_T
+	spots.mouths = {
+		"gate": _w(Vector3(1.5, 0, s + 3.0)),
+		"north": _w(Vector3(nx, 0, n - 3.0)),
+		"east": _w(Vector3(ex + 1.6, 0, (BREACH_E.x + BREACH_E.y) * 0.5 + 6.0)),
 	}
 
 
