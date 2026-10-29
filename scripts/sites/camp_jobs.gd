@@ -116,11 +116,12 @@ static func release(lvl: Node3D) -> void:
 
 func _assign(companions: Dictionary, where: String, at_night: bool, opts: Dictionary) -> void:
 	# The spots are checked against the navmesh: a level that bakes it on a thread may not have
-	# it yet. Wait for it (up to 10 s), then place everyone.
+	# it yet, and just after a scene change the map still answers from the last scene's regions
+	# (-2d). Ready means a point of this navmesh by the anchor; wait for it (up to 10 s).
 	var map := get_world_3d().navigation_map
 	var a: Vector3 = opts.get("anchor", _default_anchor())
-	var unsynced := NavigationServer3D.map_get_iteration_id(map) == 0
-	if (unsynced or NavigationServer3D.map_get_closest_point(map, a) == Vector3.ZERO) and _wait < 10.0:
+	var ready := _ready_at(map, a) if where != "act8_prep" else NavigationServer3D.map_get_iteration_id(map) > 0  # (Cairo's prep: fixed places, no anchor)
+	if not ready and _wait < 10.0:
 		_pending = [companions, where, at_night, opts]
 		return
 	_pending = []
@@ -192,8 +193,23 @@ func _assign(companions: Dictionary, where: String, at_night: bool, opts: Dictio
 		g.hold_at = job.spot
 		g.set("at_job", true)  # -bf's Gunman: no "(holding)" tag for a job (set(): harmless before it's there)
 		_talk_spot(id, job)
+	# Nobody placed though there's someone to place: the map wasn't this level's yet after all.
+	# Try again (still inside the 10 s).
+	if jobs.is_empty() and not ids.is_empty() and _wait < 10.0 and where != "act8_prep":
+		_release()
+		_pending = [companions, where, at_night, opts]
+		return
+	_wait = 0.0
 	print("CAMPJOBS %s: %s" % [where, ", ".join(jobs.keys().map(func(k: String) -> String: return "%s %s" % [k, jobs[k].kind]))])
 
+
+## The navmesh answers for this level here: synced, and its nearest point to `a` close by (just
+## after a scene change the map's nearest point is the last level's, metres off or ZERO).
+func _ready_at(map: RID, a: Vector3) -> bool:
+	if NavigationServer3D.map_get_iteration_id(map) == 0:
+		return false
+	var q := NavigationServer3D.map_get_closest_point(map, a)
+	return q != Vector3.ZERO and Vector2(q.x - a.x, q.z - a.z).length() < 2.5 and absf(q.y - a.y) < 3.0
 
 func _default_anchor() -> Vector3:
 	var camps: Variant = level.get("camps")
