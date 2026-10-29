@@ -1167,9 +1167,9 @@ func set_indoor(_f: float) -> void:
 
 ## The pairs chatting in the street (the walking townsfolk are the Crowd's now; WALKS stays for
 ## tests/cairo_test's clear-walk check).
-func _townsfolk() -> void:
+func _townsfolk(chats: Array = CHATS) -> void:
 	var k := 0
-	for pair in CHATS:
+	for pair in chats:
 		for i in 2:
 			var p: Vector3 = pair[i]
 			var n := Npc.make(self, "townsfolk_%d" % k, p, "", Characters.DIR + TOWNSFOLK_MODELS[k % TOWNSFOLK_MODELS.size()])
@@ -1183,8 +1183,8 @@ func _townsfolk() -> void:
 
 ## Horses and donkeys standing about (HorseRig only, idling: no Ride prompt and not in the
 ## expedition's transport). Each stands in a box the navmesh goes round.
-func _animals() -> void:
-	for a in ANIMALS:
+func _animals(animals: Array = ANIMALS) -> void:
+	for a in animals:
 		var at: Vector3 = a[0]
 		var size: float = a[2]
 		var body := StaticBody3D.new()

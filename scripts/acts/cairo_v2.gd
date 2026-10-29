@@ -21,6 +21,18 @@ const MOVES := {
 ## Which landmark carries each spot (the rest are on the new quay).
 const SPOT_OF := {"hotel_bed": "hotel", "freddie": "club", "cafe": "tavern"}
 const QUAY_SPOTS := {"docks": Vector3(220, 0, 110), "labour": Vector3(220, 0, 135)}
+## People talking in pairs, by district (Cairo's CHATS, re-placed).
+const V2_CHATS := [
+	[Vector3(122, 0, 152), Vector3(122.9, 0, 152.6)], [Vector3(117, 0, 64.6), Vector3(117.9, 0, 64.0)],
+	[Vector3(150.5, 0, 133), Vector3(151.3, 0, 133.7)], [Vector3(28, 0, 52), Vector3(28.9, 0, 52.5)],
+	[Vector3(214, 0, 88), Vector3(214.8, 0, 88.6)], [Vector3(60, 0, 88), Vector3(60.9, 0, 88.3)],
+]
+## Animals standing about (Cairo's ANIMALS, re-placed): cab horses at the station, a horse at the
+## hotel's door, donkeys in the souk and at the caravanserai's gate. [where, yaw, size]
+const V2_ANIMALS := [
+	[Vector3(20, 0, 70), 0.0, 1.0], [Vector3(23.5, 0, 70), 0.1, 1.0], [Vector3(103, 0, 61.5), PI * 0.5, 1.0],
+	[Vector3(163, 0, 137.5), PI * 0.5, 0.72], [Vector3(176.5, 0, 168), 0.3, 0.72], [Vector3(140, 0, 158), -0.4, 0.72],
+]
 
 ## -f9's crowd for v2 (crowd/cairo_v2.json): on, the acts use v2 (tests can turn it off).
 static var with_life := true
@@ -75,6 +87,8 @@ func _ready() -> void:
 	_v2_wall()
 	_v2_quay()
 	_v2_landmarks()
+	_v2_street_life()
+	_animals(V2_ANIMALS)
 	interiors = CairoInteriors.build(self)  # -f9's rooms, at the moved venues (it reads MOVES); before the bake and the merge
 	_v2_skyline()
 	for id: String in SPOTS:
@@ -90,6 +104,7 @@ func _ready() -> void:
 	_nav.bake_navigation_mesh(false)
 	if with_life:
 		crowd = Crowd.populate(self, "cairo_v2")
+	_townsfolk(V2_CHATS)
 	RenderBudget.quiet_minor(_deco)
 	if not "--no-merge" in OS.get_cmdline_user_args():
 		print("CAIRO v2 deco merged: %d draw calls fewer" % RenderBudget.merge_static(_deco))
@@ -401,6 +416,28 @@ func _citadel() -> void:
 			mi.scale = Vector3.ONE * 1.3  # (taller and slimmer than the old city's)
 		else:
 			_minaret(at, 50.0)
+
+
+## Lamps along the Boulevard and the Old Street, a truck parked on the Boulevard, carts in the
+## station square and the souk, and crates to duck behind (Cairo's street life, re-placed).
+func _v2_street_life() -> void:
+	for x in range(44, 205, 16):
+		_street_lamp(Vector3(x, 0, 58.6))
+		_street_lamp(Vector3(x + 8, 0, 65.4))
+	for z in range(80, 200, 18):  # (not 74: that row put a lamp post in the tavern's doorway at z 128)
+		_street_lamp(Vector3(96.6, 0, z))
+		_street_lamp(Vector3(103.4, 0, z + 9))
+	var truck := _box(_nav, Vector3(88, 1.1, 64.2), Vector3(2.1, 2.2, 5.0), _wood)
+	truck.rotation.y = PI * 0.5
+	_dress_native(truck, "vehicle_truck.glb")
+	_cart(Vector3(34, 0, 46), 0.2)
+	_cart(Vector3(171, 0, 137.6), PI * 0.5)
+	for p: Array in [[Vector3(98, 0, 112), Vector3(0.9, 1.0, 2.4)], [Vector3(102.5, 0, 150), Vector3(0.9, 1.0, 2.0)],
+			[Vector3(158, 0, 132.5), Vector3(2.0, 1.0, 0.9)], [Vector3(36, 0, 60), Vector3(2.4, 1.0, 0.8)],
+			[Vector3(126, 0, 106.5), Vector3(2.0, 1.0, 0.9)]]:
+		var crate := _box(_nav, p[0] + Vector3.UP * p[1].y * 0.5, p[1], _wood)
+		_mark_cover(crate, p[1])
+		_dress(crate, "prop_crate_large.glb", Vector3(1.0, 0.52, 0.49))
 
 
 ## The city wall along the south, with the gate (today's, moved) at the Old Street's end.
