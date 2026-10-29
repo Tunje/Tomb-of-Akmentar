@@ -339,8 +339,8 @@ func _servants(camp: Vector3) -> void:
 			print("RESULT act6 no way out to the fire from %s (closest %s)" % [want, at])
 	if inside.is_empty():
 		inside = mouths
-	# Never more than this many on their feet at once (Difficulty's servant_cap: Story 8, Normal 10,
-	# Hard 12): a batch waits till there's room (uncapped, all 15 were out in 16 s).
+	# Never more than this many on their feet at once (Difficulty's servant_cap: Story 8, Normal 9,
+	# Hard 11): a batch waits till there's room (uncapped, all 15 were out in 16 s).
 	var max_up := int(Difficulty.f("servant_cap"))
 	var t0 := Time.get_ticks_msec()
 	while player.alive:
