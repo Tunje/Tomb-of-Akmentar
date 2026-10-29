@@ -336,6 +336,74 @@ func _ways() -> void:
 	}
 
 
+## A grave giving up its dead (act6's servants rising in the cemetery): the soil heaves and bursts,
+## a slow cloud of dust hangs over the grave, clods fall back, grit trickles. Frees itself. Lit by
+## the moon's grey (unshaded but dim: shaded, the moonlight left it a black smudge), so it's a pale
+## shape in the dark, not a glow; the clods are shaded.
+static func grave_dust(parent: Node, at: Vector3) -> void:
+	var root := Node3D.new()
+	root.name = "GraveDust"
+	parent.add_child(root)
+	root.global_position = at
+	var dot := Fx.soft_dot()
+	var cloud := _particles(24, 2.8, Vector2(1.4, 3.0), Color(0.36, 0.36, 0.4, 0.6), dot, true)
+	cloud.direction = Vector3.UP
+	cloud.spread = 50.0
+	cloud.initial_velocity_min = 0.5
+	cloud.initial_velocity_max = 1.6
+	cloud.gravity = Vector3(0, 0.1, 0)
+	cloud.damping_min = 1.0
+	cloud.damping_max = 2.0
+	root.add_child(cloud)
+	cloud.position = Vector3.UP * 0.3
+	var clods := _particles(14, 1.2, Vector2(0.12, 0.25), Color(0.32, 0.26, 0.2, 1.0), null)
+	clods.direction = Vector3.UP
+	clods.spread = 35.0
+	clods.initial_velocity_min = 2.5
+	clods.initial_velocity_max = 4.5
+	clods.gravity = Vector3(0, -9.8, 0)
+	root.add_child(clods)
+	clods.position = Vector3.UP * 0.2
+	cloud.emitting = true
+	clods.emitting = true
+	SoundLife.play(parent, "grit", at, 4.0, 0.1)
+	parent.get_tree().create_timer(4.0).timeout.connect(root.queue_free)
+
+
+static func _particles(n: int, life: float, size: Vector2, c: Color, tex: Texture2D, unshaded := false) -> CPUParticles3D:
+	var p := CPUParticles3D.new()
+	p.one_shot = true
+	p.explosiveness = 0.85
+	p.amount = n
+	p.lifetime = life
+	p.scale_amount_min = size.x
+	p.scale_amount_max = size.y
+	var g := Gradient.new()
+	g.set_color(0, c)
+	g.set_color(1, Color(c, 0.0))
+	p.color_ramp = g
+	var m := StandardMaterial3D.new()
+	m.vertex_color_use_as_albedo = true
+	m.roughness = 1.0
+	if unshaded:
+		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	if tex:
+		var q := QuadMesh.new()
+		q.size = Vector2.ONE
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		m.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+		m.albedo_texture = tex
+		q.material = m
+		p.mesh = q
+	else:
+		var b := BoxMesh.new()
+		b.size = Vector3.ONE
+		b.material = m
+		p.mesh = b
+	p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return p
+
+
 func _lantern(p: Vector3) -> void:
 	level._prop(self, "prop_lantern.glb", _w(p), yaw)
 	var l := OmniLight3D.new()

@@ -56,6 +56,22 @@ func _run() -> void:
 	_walk(map, m)
 	_jobs(m)
 	_ways(map, m)
+	# A grave giving up its dead: the burst is there, and gone again by itself.
+	var g: Vector3 = (m.spots.graves as Array)[5]
+	Monastery.grave_dust(_level, g)
+	var puff := _level.get_node_or_null("GraveDust")
+	_check(puff != null and puff.get_child_count() == 2, "grave dust: the cloud and the clods at a grave")
+	if DisplayServer.get_name() != "headless":
+		var cam0 := Camera3D.new()
+		add_child(cam0)
+		cam0.look_at_from_position(g + Vector3(4, 2.2, 5), g + Vector3(0, 0.8, 0))
+		cam0.make_current()
+		await get_tree().create_timer(0.6).timeout
+		await RenderingServer.frame_post_draw
+		get_viewport().get_texture().get_image().save_png(_dir.path_join("monastery_grave_dust.png"))
+		cam0.queue_free()
+	await get_tree().create_timer(4.5).timeout
+	_check(not is_instance_valid(puff), "grave dust: gone by itself")
 	if DisplayServer.get_name() != "headless":
 		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 		Engine.max_fps = 0
