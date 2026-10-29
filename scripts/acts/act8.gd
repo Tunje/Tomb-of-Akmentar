@@ -48,7 +48,7 @@ func _ready() -> void:
 			Game.set_flag("hired_" + id)
 		Game.money = maxi(Game.money, 2000)
 		Game.set_flag("artifacts_recovered")
-	var cairo := Cairo.new()
+	var cairo := CairoV2.new()
 	level = cairo
 	add_child(cairo)
 	Ambience.play(self, "cairo")

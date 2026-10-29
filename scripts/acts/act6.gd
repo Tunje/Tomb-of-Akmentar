@@ -403,7 +403,7 @@ func _servant(camp: Vector3, a: float, priest: bool, down: Array) -> void:
 
 func _arrival() -> void:
 	step = Step.ARRIVAL
-	var cairo := Cairo.new()
+	var cairo := CairoV2.new()
 	# Inside the south gate, looking up the street (from the map's own gate: today's Cairo or v2).
 	await _change_level(cairo, Vector3.ZERO, 0.0, func(l: Level) -> Vector3: return (l as Cairo).spots.road_gate + Vector3(0, 0, -4.5))
 	cairo.set_day_time(0.85)

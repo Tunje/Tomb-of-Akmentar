@@ -22,8 +22,8 @@ const MOVES := {
 const SPOT_OF := {"hotel_bed": "hotel", "freddie": "club", "cafe": "tavern"}
 const QUAY_SPOTS := {"docks": Vector3(220, 0, 110), "labour": Vector3(220, 0, 135)}
 
-## -f9's crowd for v2 (crowd/cairo_v2.json): off until the acts use v2 (cairo_v2_test --with-life).
-static var with_life := false
+## -f9's crowd for v2 (crowd/cairo_v2.json): on, the acts use v2 (tests can turn it off).
+static var with_life := true
 
 ## Stage 2: image-to-3d's facade kit (gameplan/asset_briefs.md, Cairo). Flat-fronted boxes that
 ## tile; each module's front is its +Z, its origin at the bottom centre of the front's width.

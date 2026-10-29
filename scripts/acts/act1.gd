@@ -50,7 +50,7 @@ func _ready() -> void:
 	if not Game.place.begins_with("act1_"):
 		Game.place = "act1_start"  # a death loads this (SaveRoute): Act 1 from the docks
 		Game.save_game()
-	level = Cairo.new()
+	level = CairoV2.new()
 	add_child(level)
 	Warmup.start(self, Warmup.BANDITS)  # what spawns mid-fight, loaded now (tests/perf_test)
 	Ambience.play(self, "cairo")

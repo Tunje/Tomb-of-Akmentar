@@ -46,7 +46,7 @@ func _ready() -> void:
 	if not Game.place.begins_with("act2_"):
 		Game.place = "act2_start"  # a death loads the last save: this, or a night at the hotel
 		Game.save_game()
-	level = Cairo.new()
+	level = CairoV2.new()
 	add_child(level)
 	Ambience.play(self, "cairo")
 	level.set_day_time(Cairo.day_time_for(Game.actions_left, Game.ACTIONS_PER_DAY))

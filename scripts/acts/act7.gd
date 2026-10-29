@@ -82,7 +82,7 @@ func _ready() -> void:
 		Game.set_flag("thieves_" + str(args.thieves))
 	elif _thief() == "":
 		Game.set_flag("thieves_americans")  # nobody said who stole them (a test start)
-	level = Cairo.new()
+	level = CairoV2.new()
 	add_child(level)
 	Warmup.start(self, GUARDS.get(_thief(), []).map(func(id: String) -> String: return Characters.glb(id)))  # the thieves' guns
 	Ambience.play(self, "cairo")
