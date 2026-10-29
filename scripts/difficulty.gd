@@ -26,6 +26,7 @@ const TABLE := {
 	"downed_grace": {"story": 10.0, "normal": 6.0, "hard": 4.0},  # s enemies leave the downed alone
 	"guardian_pace": {"story": 0.8, "normal": 1.0, "hard": 1.1},  # his walk and catch-up
 	"grab_cooldown": {"story": 8.0, "normal": 0.0, "hard": 0.0},  # s after a slam before his next grab
+	"servant_cap": {"story": 8, "normal": 10, "hard": 12},  # Act 6's monastery: servants on their feet at once (a count)
 	"ritual_slams": {"story": 6, "normal": 2, "hard": 1},  # the ritual's guardian: slams before the kill (Story at 3: the bot still died 3 in 5)
 	"ammo_pickups": {"story": 1.5, "normal": 1.0, "hard": 0.7},  # for pickups (the game has none yet)
 }

@@ -24,7 +24,6 @@ const CAMP_TOUGHNESS := 1.0                # companions' health x this for the c
 const SERVANTS := 15                       # mummies at the night stop (the monastery: 12 came through its gaps to be shot down unhurt)
 const SERVANTS_THEN := 3                   # after the first three, this many together every 2.5-4 s (one at a time: shot down unhurt)
 const INSIDE_EVERY := 5                    # every 5th after the first three rises inside the walls (at the church's and the refectory's doors)
-const MAX_UP := 9                          # never more than this on their feet at once (a batch waits till there's room: else all 15 were out in 16 s)
 const SPAWN_CLEAR := 10.0                   # m: never out of the dark nearer you than this (holding the gate, the gate's mouth isn't used)
 
 var _veil: ColorRect  # black over a map change (_change_level)
@@ -340,11 +339,14 @@ func _servants(camp: Vector3) -> void:
 			print("RESULT act6 no way out to the fire from %s (closest %s)" % [want, at])
 	if inside.is_empty():
 		inside = mouths
+	# Never more than this many on their feet at once (Difficulty's servant_cap: Story 8, Normal 10,
+	# Hard 12): a batch waits till there's room (uncapped, all 15 were out in 16 s).
+	var max_up := int(Difficulty.f("servant_cap"))
 	var t0 := Time.get_ticks_msec()
 	while player.alive:
 		var up := servants.filter(func(m): return is_instance_valid(m) and m.is_active()).size()
-		if spawned < SERVANTS and t >= next_t and up < MAX_UP:
-			for k in (3 if spawned == 0 else mini(mini(SERVANTS_THEN, MAX_UP - up), SERVANTS - spawned)):
+		if spawned < SERVANTS and t >= next_t and up < max_up:
+			for k in (3 if spawned == 0 else mini(mini(SERVANTS_THEN, max_up - up), SERVANTS - spawned)):
 				var p: Vector3 = mouths[k % mouths.size()]  # the first three: one at each way in
 				var rising := false
 				var grave := false
