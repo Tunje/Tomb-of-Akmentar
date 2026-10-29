@@ -21,8 +21,11 @@ const RIVALS := ["americans", "germans"]   # the expeditions that can lend horse
 const SERVANT_HP := 130.0                  # (mummy.gd: 100) at 100 the party shot them down unhurt (tests/difficulty_test)
 const SERVANT_PACE := 1.5                  # x their walk
 const CAMP_TOUGHNESS := 1.0                # companions' health x this for the camp fight (they take the first of it)
-const SERVANTS := 12                       # mummies at the night camp
-const SERVANTS_THEN := 2                   # after the first three, this many together every 2.5-4 s (one at a time: shot down unhurt)
+const SERVANTS := 15                       # mummies at the night stop (the monastery: 12 came through its gaps to be shot down unhurt)
+const SERVANTS_THEN := 3                   # after the first three, this many together every 2.5-4 s (one at a time: shot down unhurt)
+const INSIDE_EVERY := 5                    # every 5th after the first three rises inside the walls (at the church's and the refectory's doors)
+const MAX_UP := 9                          # never more than this on their feet at once (a batch waits till there's room: else all 15 were out in 16 s)
+const SPAWN_CLEAR := 10.0                   # m: never out of the dark nearer you than this (holding the gate, the gate's mouth isn't used)
 
 var _veil: ColorRect  # black over a map change (_change_level)
 var level: Level
@@ -267,7 +270,7 @@ func _road(route: String) -> void:
 	var stop := MonasteryNight.new()
 	stop.coast = route == "coast"
 	var camp := Vector3.ZERO
-	await _change_level(stop, Vector3(0, 0, 18.0), 0.0)  # inside the gate, facing the fire
+	await _change_level(stop, Vector3(0, 0, 4.5), 0.0)  # by the fire, facing it, the yard behind (at the gate, its corner was a trap)
 	Ambience.play(self, "night")
 	CampJobs.assign(level, companions, "act6_stop", true, {"anchor": camp})  # -f9's: each at their job at the stop, fighting from their posts
 	hud.show_message("THE ROAD BACK", "The %s road. Night falls; you make camp." % route)
@@ -324,18 +327,47 @@ func _servants(camp: Vector3) -> void:
 	var mouths: Array = mon.spots.mouths.values()
 	var graves: Array = (mon.spots.graves as Array).duplicate()
 	graves.shuffle()
+	# And inside the walls: the monks' own dead, out of the church and the refectory (at each door:
+	# their insides are no way out on the navmesh), so the fire is never safe behind the gaps alone.
+	var inside: Array = []
+	var map := get_world_3d().navigation_map
+	for want: Vector3 in [mon.spots.church_door, mon.spots.refectory_door]:
+		var at := NavigationServer3D.map_get_closest_point(map, want)
+		var path := NavigationServer3D.map_get_path(map, at, camp, true)
+		if at.distance_to(want) < 2.0 and path.size() > 1 and path[path.size() - 1].distance_to(camp) < 3.0:
+			inside.append(at)  # (only where a servant can walk out to the fire)
+		else:
+			print("RESULT act6 no way out to the fire from %s (closest %s)" % [want, at])
+	if inside.is_empty():
+		inside = mouths
 	var t0 := Time.get_ticks_msec()
 	while player.alive:
-		if spawned < SERVANTS and t >= next_t:
-			for k in (3 if spawned == 0 else mini(SERVANTS_THEN, SERVANTS - spawned)):
-				var p: Vector3
+		var up := servants.filter(func(m): return is_instance_valid(m) and m.is_active()).size()
+		if spawned < SERVANTS and t >= next_t and up < MAX_UP:
+			for k in (3 if spawned == 0 else mini(mini(SERVANTS_THEN, MAX_UP - up), SERVANTS - spawned)):
+				var p: Vector3 = mouths[k % mouths.size()]  # the first three: one at each way in
+				var rising := false
+				var grave := false
 				if spawned < 3:
-					p = mouths[k % mouths.size()]  # the first three: one at each way in
+					pass
+				elif spawned % INSIDE_EVERY == 0:
+					p = inside[(spawned / INSIDE_EVERY) % inside.size()]  # then every fifth from inside, rising
+					rising = true
 				elif spawned % 3 == 2 and not graves.is_empty():
-					p = graves.pop_back()  # every third after: the cemetery gives up one of its own
+					p = graves.pop_back()  # every third after: the cemetery gives up one of its own, rising
+					rising = true
+					grave = true
 				else:
 					p = mouths[randi() % mouths.size()]
-				_servant_at(p, spawned == 0, down)
+				if p.distance_to(player.global_position) < SPAWN_CLEAR:  # on top of you: another way in instead
+					var far := mouths.filter(func(q: Vector3): return q.distance_to(player.global_position) >= SPAWN_CLEAR)
+					if not far.is_empty():
+						p = far[randi() % far.size()]
+						rising = false
+						grave = false
+				if grave:
+					Monastery.grave_dust(self, p)
+				_servant_at(p, spawned == 0, down, rising)
 				spawned += 1
 			next_t = t + randf_range(2.5, 4.0)
 		if spawned >= SERVANTS and down[0] >= SERVANTS:
@@ -378,16 +410,22 @@ func _on_helped_up(g: Gunman) -> void:
 
 
 ## One servant out of the dark at `p` (a way in, or a grave; the monastery's ground is flat at y 0).
-func _servant_at(p: Vector3, priest: bool, down: Array) -> void:
+## `rising`: it claws up out of the ground there first (Mummy.rise: a groan, about 1.6 s), the
+## warning a grave or a door gives before it's on you.
+func _servant_at(p: Vector3, priest: bool, down: Array, rising := false) -> void:
 	var m := Mummy.new()
 	m.priest = priest
 	add_child(m)
 	m.health = SERVANT_HP
 	m.speed *= SERVANT_PACE
-	m.party_margin = 5.0  # they come for you (and the amulet) unless a companion is clearly nearer
+	m.party_margin = 2.0  # they come for you (and the amulet) unless a companion is nearer: the party shares it
 	m.global_position = p
 	m.target = player
-	m.wake()
+	if rising:  # up out of the ground a step back from where it stands, facing the fire
+		var back := Vector3(p.x, 0, p.z).normalized() * 0.5 if Vector3(p.x, 0, p.z).length() > 0.1 else Vector3.BACK * 0.5
+		m.rise(p + back + Vector3.DOWN * 1.6, p)
+	else:
+		m.wake()
 	m.killed.connect(func(_m): down[0] += 1)
 	servants.append(m)
 	if args.has("auto") and not args.has("skill-bot"):  # --skill-bot: tests/difficulty_test fights them
