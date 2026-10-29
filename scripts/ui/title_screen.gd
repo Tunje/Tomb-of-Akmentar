@@ -198,6 +198,7 @@ func _chapters() -> void:
 		if first == null:
 			first = b
 	_menu.add_child(_button("Playtest range", _range))
+	_menu.add_child(_button("Monastery night (prototype)", _monastery_night))
 	var back := _button("Back", _main_menu)
 	_menu.add_child(back)
 	(first if first else back).grab_focus.call_deferred()
@@ -210,6 +211,14 @@ func _start_act(act: int) -> void:
 	Game.reset()
 	Game.set_flag("quickstart_act")
 	Loader.go(get_tree(), "res://act%d.tscn" % act)
+
+
+## Act 6's night fight at -f9's monastery on its own (off in Act 6 itself: Simon plays it to decide
+## whether it stays). Act 6 sees the flag, fights it, and comes back here.
+func _monastery_night() -> void:
+	Game.reset()
+	Game.set_flag("monastery_night")
+	Loader.go(get_tree(), "res://act6.tscn")
 
 
 func _range() -> void:
